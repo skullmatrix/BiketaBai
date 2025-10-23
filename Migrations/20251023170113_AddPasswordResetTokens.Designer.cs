@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251023170113_AddPasswordResetTokens")]
+    partial class AddPasswordResetTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -792,11 +795,6 @@ namespace BiketaBai.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("full_name");
 
-                    b.Property<string>("IdDocumentUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("id_document_url");
-
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_admin");
@@ -816,10 +814,6 @@ namespace BiketaBai.Migrations
                     b.Property<bool>("IsSuspended")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_suspended");
-
-                    b.Property<bool>("IsVerifiedOwner")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("is_verified_owner");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -849,16 +843,6 @@ namespace BiketaBai.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
-
-                    b.Property<DateTime?>("VerificationDate")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("verification_date");
-
-                    b.Property<string>("VerificationStatus")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("verification_status");
 
                     b.HasKey("UserId");
 

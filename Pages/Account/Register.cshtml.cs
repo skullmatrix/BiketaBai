@@ -16,18 +16,23 @@ public class RegisterModel : PageModel
     private readonly PointsService _pointsService;
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _environment;
 
-    public RegisterModel(BiketaBaiDbContext context, WalletService walletService, PointsService pointsService, EmailService emailService, IConfiguration configuration)
+    public RegisterModel(BiketaBaiDbContext context, WalletService walletService, PointsService pointsService, EmailService emailService, IConfiguration configuration, IWebHostEnvironment environment)
     {
         _context = context;
         _walletService = walletService;
         _pointsService = pointsService;
         _emailService = emailService;
         _configuration = configuration;
+        _environment = environment;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
+
+    [BindProperty]
+    public IFormFile? IdDocument { get; set; }
 
     public string? ErrorMessage { get; set; }
 
@@ -96,6 +101,51 @@ public class RegisterModel : PageModel
             return Page();
         }
 
+        // Validate ID document if registering as owner
+        if (Input.IsOwner && IdDocument == null)
+        {
+            ErrorMessage = "ID document is required for bike owners";
+            return Page();
+        }
+
+        string? idDocumentPath = null;
+
+        // Handle ID document upload for owners
+        if (Input.IsOwner && IdDocument != null)
+        {
+            // Validate file size (max 5MB)
+            if (IdDocument.Length > 5 * 1024 * 1024)
+            {
+                ErrorMessage = "ID document must be less than 5MB";
+                return Page();
+            }
+
+            // Validate file type
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+            var fileExtension = Path.GetExtension(IdDocument.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                ErrorMessage = "ID document must be JPG, PNG, or PDF";
+                return Page();
+            }
+
+            // Create uploads directory if it doesn't exist
+            var uploadsDir = Path.Combine(_environment.WebRootPath, "uploads", "id-documents");
+            Directory.CreateDirectory(uploadsDir);
+
+            // Generate unique filename
+            var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+            var filePath = Path.Combine(uploadsDir, uniqueFileName);
+
+            // Save file
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await IdDocument.CopyToAsync(stream);
+            }
+
+            idDocumentPath = $"/uploads/id-documents/{uniqueFileName}";
+        }
+
         // Generate verification token
         var verificationToken = Guid.NewGuid().ToString("N");
         
@@ -113,6 +163,9 @@ public class RegisterModel : PageModel
             IsEmailVerified = false, // Not verified yet
             EmailVerificationToken = verificationToken,
             EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24), // 24 hour expiry
+            IdDocumentUrl = idDocumentPath,
+            IsVerifiedOwner = false, // Owner verification pending
+            VerificationStatus = Input.IsOwner ? "Pending" : "N/A",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

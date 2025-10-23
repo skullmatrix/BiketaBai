@@ -7,47 +7,127 @@
 }
 
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-eco-green"><i class="bi bi-speedometer2"></i> Owner Dashboard</h2>
-        <a href="/Owner/AddBike" class="btn btn-eco-primary"><i class="bi bi-plus-circle"></i> Add New Bike</a>
+    <!-- Header Section with Welcome Message -->
+    <div class="dashboard-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="text-eco-green mb-2">
+                    <i class="bi bi-speedometer2"></i> Owner Dashboard
+                </h2>
+                <p class="text-muted mb-0">Welcome back! Here's an overview of your bike rental business.</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="/Owner/AddBike" class="btn btn-success btn-lg mb-2 me-2">
+                    <i class="bi bi-plus-circle"></i> Add Bike
+                </a>
+                <a href="/Owner/MyBikes" class="btn btn-outline-success btn-lg mb-2">
+                    <i class="bi bi-list-ul"></i> Manage Listings
+                </a>
+            </div>
+        </div>
     </div>
 
-    <!-- Stats Overview -->
+    <!-- Enhanced Stats Overview -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="stat-card green">
-                <h3>@Model.TotalBikes</h3>
-                <p>Total Bikes</p>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card blue">
-                <h3>@Model.ActiveRentalsCount</h3>
-                <p>Active Rentals</p>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card orange">
-                <h3>₱@Model.TotalEarnings.ToString("F2")</h3>
-                <p>Total Earnings</p>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card">
-                <div class="rating-stars text-warning">
-                    @for (int i = 1; i <= 5; i++)
-                    {
-                        if (i <= Model.AverageRating)
-                        {
-                            <i class="bi bi-star-fill fs-3"></i>
-                        }
-                        else
-                        {
-                            <i class="bi bi-star fs-3"></i>
-                        }
-                    }
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-green">
+                <div class="stat-icon">
+                    <i class="bi bi-bicycle"></i>
                 </div>
-                <p>@Model.AverageRating.ToString("F1") Average Rating</p>
+                <div class="stat-details">
+                    <h3 class="stat-value">@Model.TotalBikes</h3>
+                    <p class="stat-label">Total Bikes Listed</p>
+                    <small class="text-white-50">
+                        @{
+                            var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatusId == 1);
+                        }
+                        <i class="bi bi-check-circle"></i> @availableBikes Available
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-blue">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">@Model.ActiveRentalsCount</h3>
+                    <p class="stat-label">Active Rentals</p>
+                    <small class="text-white-50">
+                        <i class="bi bi-graph-up-arrow"></i> Currently Rented
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-orange">
+                <div class="stat-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">₱@Model.TotalEarnings.ToString("N2")</h3>
+                    <p class="stat-label">Total Earnings</p>
+                    <small class="text-white-50">
+                        <i class="bi bi-calendar-check"></i> All Time
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-purple">
+                <div class="stat-icon">
+                    <i class="bi bi-star-fill"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">@Model.AverageRating.ToString("F1")</h3>
+                    <p class="stat-label">Average Rating</p>
+                    <div class="rating-stars-small">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= Model.AverageRating)
+                            {
+                                <i class="bi bi-star-fill text-warning"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-star text-white-50"></i>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <a href="/Owner/MyBikes" class="quick-action-link">
+                        <i class="bi bi-grid-3x3-gap fs-1 text-success"></i>
+                        <p class="mb-0 mt-2 fw-bold">Manage Listings</p>
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <a href="#" class="quick-action-link">
+                        <i class="bi bi-inbox fs-1 text-primary"></i>
+                        <p class="mb-0 mt-2 fw-bold">View Requests</p>
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <a href="/Wallet/Index" class="quick-action-link">
+                        <i class="bi bi-wallet2 fs-1 text-warning"></i>
+                        <p class="mb-0 mt-2 fw-bold">My Wallet</p>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="#" class="quick-action-link">
+                        <i class="bi bi-bar-chart fs-1 text-info"></i>
+                        <p class="mb-0 mt-2 fw-bold">Analytics</p>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

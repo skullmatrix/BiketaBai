@@ -333,3 +333,504 @@ main {
     box-shadow: 0 4px 15px rgba(45, 127, 62, 0.2);
 }
 
+/* ================================
+   MODERN LANDING PAGE STYLES
+   ================================ */
+
+/* Modern Hero Section */
+.hero-modern {
+    position: relative;
+    background: linear-gradient(135deg, #1b5e20 0%, #2d7f3e 50%, #4caf50 100%);
+    padding: 120px 0 80px;
+    overflow: hidden;
+}
+
+.hero-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+    background-size: cover;
+    opacity: 0.3;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.logo-section {
+    animation: fadeInDown 1s;
+}
+
+.tagline {
+    font-size: 2rem;
+    font-weight: 600;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    animation: fadeInUp 1s;
+}
+
+.cta-buttons .btn {
+    min-width: 150px;
+    font-weight: 600;
+    animation: fadeInUp 1.2s;
+}
+
+.hero-stats-card {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: fadeInRight 1s;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--eco-green);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+.search-box-modern {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+    animation: fadeInUp 1.5s;
+}
+
+/* How It Works Section */
+.how-it-works {
+    background: #f8f9fa;
+}
+
+.how-it-works-card {
+    background: white;
+    padding: 40px 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+}
+
+.how-it-works-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(45, 127, 62, 0.2);
+}
+
+.step-number {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #4caf50, #2d7f3e);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(45, 127, 62, 0.4);
+}
+
+.step-icon {
+    font-size: 4rem;
+    color: var(--eco-green);
+    margin: 30px 0 20px;
+}
+
+.how-it-works-card h4 {
+    color: var(--eco-green);
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.how-it-works-card p {
+    color: #666;
+    line-height: 1.6;
+}
+
+/* Why Choose Us Section */
+.why-choose-us {
+    background: white;
+}
+
+.feature-card {
+    background: white;
+    padding: 30px 20px;
+    border-radius: 15px;
+    border: 2px solid #f0f0f0;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.feature-card:hover {
+    border-color: var(--eco-green);
+    box-shadow: 0 10px 30px rgba(45, 127, 62, 0.15);
+    transform: translateY(-5px);
+}
+
+.feature-icon-modern {
+    font-size: 3.5rem;
+    color: var(--eco-green);
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover .feature-icon-modern {
+    transform: scale(1.1);
+}
+
+.feature-card h4 {
+    color: var(--eco-green);
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.feature-card p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* Featured Bikes Section */
+.featured-bikes {
+    background: #f8f9fa;
+}
+
+.bike-card-modern {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.bike-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15) !important;
+}
+
+.bike-image-featured {
+    height: 250px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.bike-card-modern:hover .bike-image-featured {
+    transform: scale(1.05);
+}
+
+.placeholder-image-featured {
+    height: 250px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.price-display {
+    font-weight: bold;
+}
+
+.price-amount {
+    font-size: 1.5rem;
+    color: var(--eco-green);
+}
+
+.price-unit {
+    font-size: 1rem;
+    color: #999;
+}
+
+/* Call to Action Section */
+.cta-section {
+    background: linear-gradient(135deg, #f1f8f4 0%, #e8f5e9 100%);
+}
+
+.cta-card {
+    background: white;
+    padding: 50px 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.user-type-card {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 15px;
+    border: 3px solid #f0f0f0;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.user-type-card:hover {
+    border-color: var(--eco-green);
+    box-shadow: 0 10px 30px rgba(45, 127, 62, 0.2);
+    transform: translateY(-5px);
+}
+
+.user-type-card h4 {
+    color: var(--eco-green);
+    font-weight: 600;
+}
+
+.user-type-card p {
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.cta-section-logged {
+    background: linear-gradient(135deg, #2d7f3e 0%, #1b5e20 100%);
+    color: white;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Responsive Design for Modern Landing */
+@media (max-width: 768px) {
+    .hero-modern {
+        padding: 80px 0 60px;
+    }
+    
+    .logo-section i {
+        font-size: 3rem !important;
+    }
+    
+    .logo-section h1 {
+        font-size: 2.5rem !important;
+    }
+    
+    .tagline {
+        font-size: 1.5rem !important;
+    }
+    
+    .hero-stats-card {
+        margin-top: 40px;
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .search-box-modern {
+        padding: 15px;
+    }
+    
+    .how-it-works-card,
+    .feature-card,
+    .user-type-card {
+        margin-bottom: 20px;
+    }
+    
+    .cta-buttons .btn {
+        display: block;
+        margin: 10px 0;
+        width: 100%;
+    }
+}
+
+/* ================================
+   MODERN DASHBOARD STYLES
+   ================================ */
+
+/* Modern Stat Cards */
+.modern-stat-card {
+    padding: 25px;
+    border-radius: 15px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
+
+.modern-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.modern-stat-card .stat-icon {
+    font-size: 3rem;
+    opacity: 0.9;
+}
+
+.modern-stat-card .stat-details {
+    flex: 1;
+}
+
+.modern-stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0;
+    line-height: 1;
+}
+
+.modern-stat-card .stat-label {
+    margin: 8px 0 5px;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.rating-stars-small {
+    margin-top: 5px;
+}
+
+.rating-stars-small i {
+    font-size: 0.9rem;
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-green {
+    background: linear-gradient(135deg, #2d7f3e 0%, #4caf50 100%);
+}
+
+.bg-gradient-blue {
+    background: linear-gradient(135deg, #0288d1 0%, #03a9f4 100%);
+}
+
+.bg-gradient-orange {
+    background: linear-gradient(135deg, #ff6f00 0%, #ff9800 100%);
+}
+
+.bg-gradient-purple {
+    background: linear-gradient(135deg, #6a1b9a 0%, #9c27b0 100%);
+}
+
+/* Quick Action Links */
+.quick-action-link {
+    display: block;
+    padding: 20px;
+    text-decoration: none;
+    color: #333;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.quick-action-link:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    color: #333;
+}
+
+.quick-action-link i {
+    transition: transform 0.3s ease;
+}
+
+.quick-action-link:hover i {
+    transform: scale(1.1);
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+/* Enhanced Card Styles */
+.card.shadow-eco {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.card-header.bg-eco-primary {
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+    .modern-stat-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .modern-stat-card .stat-icon {
+        font-size: 2.5rem;
+    }
+    
+    .modern-stat-card .stat-value {
+        font-size: 2rem;
+    }
+    
+    .quick-action-link {
+        padding: 15px;
+    }
+    
+    .dashboard-header .btn-lg {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+

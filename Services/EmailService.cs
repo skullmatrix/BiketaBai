@@ -230,5 +230,188 @@ public class EmailService
 
         await SendEmailAsync(toEmail, subject, htmlBody);
     }
+
+    public async Task SendPasswordResetEmailAsync(string toEmail, string fullName, string resetLink)
+    {
+        var subject = "Reset Your Password - Bike Ta Bai";
+        
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }}
+        .content {{
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+        }}
+        .header {{
+            text-align: center;
+            color: #2d7f3e;
+            margin-bottom: 30px;
+        }}
+        .button {{
+            display: inline-block;
+            padding: 15px 30px;
+            background-color: #2d7f3e;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }}
+        .warning {{
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }}
+        .footer {{
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='content'>
+            <div class='header'>
+                <h1>🚴 Bike Ta Bai</h1>
+                <h2>Password Reset Request</h2>
+            </div>
+            
+            <p>Hi <strong>{fullName}</strong>,</p>
+            
+            <p>We received a request to reset your password for your Bike Ta Bai account.</p>
+            
+            <p>If you made this request, click the button below to reset your password:</p>
+            
+            <div style='text-align: center;'>
+                <a href='{resetLink}' class='button'>Reset Password</a>
+            </div>
+            
+            <p>Or copy and paste this link into your browser:</p>
+            <p style='background-color: #f0f0f0; padding: 10px; word-break: break-all;'>{resetLink}</p>
+            
+            <div class='warning'>
+                <strong>⚠️ Important Security Information:</strong>
+                <ul>
+                    <li>This link will expire in <strong>1 hour</strong></li>
+                    <li>If you didn't request this, please ignore this email</li>
+                    <li>Your password will remain unchanged if you don't click the link</li>
+                    <li>Never share this link with anyone</li>
+                </ul>
+            </div>
+            
+            <p>If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.</p>
+            
+            <p>For security reasons, please do not reply to this email.</p>
+            
+            <div class='footer'>
+                <p>Best regards,<br>The Bike Ta Bai Team</p>
+                <p>🌱 Ride Green, Live Clean 🌱</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    public async Task SendPasswordChangedNotificationAsync(string toEmail, string fullName)
+    {
+        var subject = "Password Changed Successfully - Bike Ta Bai";
+        
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }}
+        .content {{
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+        }}
+        .header {{
+            text-align: center;
+            color: #2d7f3e;
+            margin-bottom: 30px;
+        }}
+        .success {{
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+        }}
+        .warning {{
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='content'>
+            <div class='header'>
+                <h1>🚴 Bike Ta Bai</h1>
+                <h2>Password Changed Successfully</h2>
+            </div>
+            
+            <p>Hi <strong>{fullName}</strong>,</p>
+            
+            <div class='success'>
+                <p><strong>✅ Your password has been changed successfully!</strong></p>
+            </div>
+            
+            <p>This is a confirmation that your Bike Ta Bai account password was just changed.</p>
+            
+            <p>You can now log in with your new password.</p>
+            
+            <div class='warning'>
+                <strong>⚠️ Didn't change your password?</strong>
+                <p>If you did not make this change, please contact our support team immediately. Someone may have unauthorized access to your account.</p>
+            </div>
+            
+            <p style='text-align: center; margin: 30px 0;'>
+                <a href='http://localhost:5000/Account/Login' style='display: inline-block; padding: 15px 30px; background-color: #2d7f3e; color: white; text-decoration: none; border-radius: 5px;'>Login to Your Account</a>
+            </p>
+            
+            <p style='text-align: center; color: #666; font-size: 12px;'>
+                Thank you for keeping your account secure!<br>
+                🌱 Ride Green, Live Clean 🌱
+            </p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await SendEmailAsync(toEmail, subject, htmlBody);
+    }
 }
 

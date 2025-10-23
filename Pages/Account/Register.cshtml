@@ -18,7 +18,7 @@
                         <div class="alert alert-danger">@Model.ErrorMessage</div>
                     }
 
-                    <form method="post" class="form-eco">
+                    <form method="post" enctype="multipart/form-data" class="form-eco">
                         <div class="mb-3">
                             <label asp-for="Input.FullName" class="form-label">Full Name</label>
                             <input asp-for="Input.FullName" class="form-control" required />
@@ -57,18 +57,46 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label d-block">I want to:</label>
-                            <div class="form-check">
+                            <label class="form-label d-block fw-bold">I want to:</label>
+                            <div class="form-check mb-2">
                                 <input asp-for="Input.IsRenter" class="form-check-input" type="checkbox" />
                                 <label asp-for="Input.IsRenter" class="form-check-label">
-                                    Rent bikes for commuting
+                                    <i class="bi bi-bicycle text-success"></i> Rent bikes for commuting
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input asp-for="Input.IsOwner" class="form-check-input" type="checkbox" />
+                                <input asp-for="Input.IsOwner" class="form-check-input" type="checkbox" id="ownerCheckbox" />
                                 <label asp-for="Input.IsOwner" class="form-check-label">
-                                    List my bikes for rent
+                                    <i class="bi bi-shop text-success"></i> List my bikes for rent
                                 </label>
+                            </div>
+                        </div>
+
+                        <!-- Owner Verification Section (shown when IsOwner is checked) -->
+                        <div id="ownerVerificationSection" style="display: none;" class="mb-4">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> <strong>Bike Owner Verification Required</strong>
+                                <p class="mb-0 mt-2 small">To ensure platform safety, bike owners must upload a valid government-issued ID (Driver's License, Passport, or National ID). Your ID will be reviewed by our admin team within 24-48 hours.</p>
+                            </div>
+                            
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-eco-green mb-3"><i class="bi bi-card-checklist"></i> Upload Your ID Document</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="idDocument" class="form-label">Valid Government ID <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" id="idDocument" name="idDocument" accept="image/*,.pdf" />
+                                        <small class="form-text text-muted">
+                                            Accepted: Driver's License, Passport, National ID (JPG, PNG, PDF - Max 5MB)
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="alert alert-warning mb-0">
+                                        <small>
+                                            <i class="bi bi-shield-check"></i> <strong>Privacy Notice:</strong> Your ID is securely stored and only visible to admin staff for verification purposes. It will never be shared publicly.
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -88,5 +116,42 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Toggle owner verification section when owner checkbox is checked
+        document.addEventListener('DOMContentLoaded', function() {
+            const ownerCheckbox = document.getElementById('ownerCheckbox');
+            const verificationSection = document.getElementById('ownerVerificationSection');
+            const idDocumentInput = document.getElementById('idDocument');
+            
+            ownerCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    verificationSection.style.display = 'block';
+                    verificationSection.classList.add('fade-in');
+                    idDocumentInput.required = true;
+                } else {
+                    verificationSection.style.display = 'none';
+                    idDocumentInput.required = false;
+                }
+            });
+            
+            // Check on page load in case checkbox is already checked
+            if (ownerCheckbox.checked) {
+                verificationSection.style.display = 'block';
+                idDocumentInput.required = true;
+            }
+        });
+    </script>
+    
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 }
 

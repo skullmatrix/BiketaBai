@@ -47,6 +47,20 @@ public class User
     [Column("profile_photo_url")]
     public string? ProfilePhotoUrl { get; set; }
 
+    [MaxLength(255)]
+    [Column("id_document_url")]
+    public string? IdDocumentUrl { get; set; }
+
+    [Column("is_verified_owner")]
+    public bool IsVerifiedOwner { get; set; } = false;
+
+    [Column("verification_date")]
+    public DateTime? VerificationDate { get; set; }
+
+    [MaxLength(100)]
+    [Column("verification_status")]
+    public string VerificationStatus { get; set; } = "Pending"; // Pending, Approved, Rejected
+
     [Column("is_email_verified")]
     public bool IsEmailVerified { get; set; } = false;
 
@@ -56,6 +70,13 @@ public class User
 
     [Column("email_verification_token_expires")]
     public DateTime? EmailVerificationTokenExpires { get; set; }
+
+    [MaxLength(100)]
+    [Column("password_reset_token")]
+    public string? PasswordResetToken { get; set; }
+
+    [Column("password_reset_token_expires")]
+    public DateTime? PasswordResetTokenExpires { get; set; }
 
     [Column("is_suspended")]
     public bool IsSuspended { get; set; } = false;
