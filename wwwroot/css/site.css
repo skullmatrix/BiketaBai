@@ -1,0 +1,335 @@
+/* Eco-Friendly Color Scheme */
+:root {
+    --eco-green: #2d7f3e;
+    --eco-green-light: #4caf50;
+    --eco-green-dark: #1b5e20;
+    --eco-blue: #0288d1;
+    --eco-earth: #8d6e63;
+    --eco-yellow: #ffc107;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navigation */
+.bg-eco-primary {
+    background: linear-gradient(135deg, var(--eco-green) 0%, var(--eco-green-dark) 100%);
+}
+
+.btn-eco-primary {
+    background-color: var(--eco-green);
+    border-color: var(--eco-green);
+    color: white;
+}
+
+.btn-eco-primary:hover {
+    background-color: var(--eco-green-dark);
+    border-color: var(--eco-green-dark);
+}
+
+.btn-eco-secondary {
+    background-color: var(--eco-blue);
+    border-color: var(--eco-blue);
+    color: white;
+}
+
+.btn-eco-secondary:hover {
+    background-color: #01579b;
+    border-color: #01579b;
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(135deg, var(--eco-green-light) 0%, var(--eco-green) 100%);
+    color: white;
+    padding: 100px 0;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.3rem;
+    margin-bottom: 2rem;
+}
+
+/* Search Box */
+.search-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Cards */
+.bike-card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    height: 100%;
+}
+
+.bike-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+.bike-card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.bike-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.bike-card .card-title {
+    font-weight: bold;
+    color: var(--eco-green);
+}
+
+.badge-bike-type {
+    background-color: var(--eco-blue);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.badge-available {
+    background-color: var(--eco-green-light);
+    color: white;
+}
+
+.badge-rented {
+    background-color: #f44336;
+    color: white;
+}
+
+.badge-maintenance {
+    background-color: var(--eco-yellow);
+    color: #333;
+}
+
+/* Rating Stars */
+.rating-stars {
+    color: var(--eco-yellow);
+}
+
+.rating-stars i {
+    font-size: 1rem;
+}
+
+/* Price Tag */
+.price-tag {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--eco-green);
+}
+
+/* Feature Icons */
+.feature-icon {
+    font-size: 3rem;
+    color: var(--eco-green);
+    margin-bottom: 1rem;
+}
+
+/* Stats Cards */
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.stat-card.green {
+    background: linear-gradient(135deg, var(--eco-green-light) 0%, var(--eco-green) 100%);
+}
+
+.stat-card.blue {
+    background: linear-gradient(135deg, #42a5f5 0%, var(--eco-blue) 100%);
+}
+
+.stat-card.orange {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+.stat-card h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.stat-card p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Eco Impact Widget */
+.eco-impact {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.eco-impact h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.eco-impact .impact-value {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+/* Wallet Balance Widget */
+.wallet-widget {
+    background: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.wallet-widget .balance {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+/* Points Badge */
+.points-badge {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #333;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+/* Form Styling */
+.form-eco {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-eco .form-label {
+    font-weight: 600;
+    color: var(--eco-green-dark);
+}
+
+.form-eco .form-control:focus,
+.form-eco .form-select:focus {
+    border-color: var(--eco-green);
+    box-shadow: 0 0 0 0.2rem rgba(45, 127, 62, 0.25);
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--eco-green);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.4rem;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--eco-green);
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px var(--eco-green);
+}
+
+/* Map Container */
+.map-container {
+    height: 400px;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+/* Loading Spinner */
+.spinner-eco {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--eco-green);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 2rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .hero p {
+        font-size: 1rem;
+    }
+    
+    .search-box {
+        padding: 1rem;
+    }
+}
+
+/* Utility Classes */
+.text-eco-green {
+    color: var(--eco-green);
+}
+
+.bg-eco-light {
+    background-color: #f1f8f4;
+}
+
+.shadow-eco {
+    box-shadow: 0 4px 15px rgba(45, 127, 62, 0.2);
+}
+

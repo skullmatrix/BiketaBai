@@ -1,0 +1,114 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model AddBikeModel
+@{
+    ViewData["Title"] = "Add Bike";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-eco">
+                <div class="card-body p-5">
+                    <h2 class="text-eco-green mb-4"><i class="bi bi-plus-circle"></i> List Your Bike</h2>
+
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">@Model.ErrorMessage</div>
+                    }
+
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Brand" class="form-label">Brand</label>
+                                <input asp-for="Input.Brand" class="form-control" required />
+                                <span asp-validation-for="Input.Brand" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Model" class="form-label">Model</label>
+                                <input asp-for="Input.Model" class="form-control" required />
+                                <span asp-validation-for="Input.Model" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.BikeTypeId" class="form-label">Bike Type</label>
+                                <select asp-for="Input.BikeTypeId" class="form-select" required>
+                                    <option value="">Select Type</option>
+                                    @foreach (var type in Model.BikeTypes)
+                                    {
+                                        <option value="@type.BikeTypeId">@type.TypeName</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Input.BikeTypeId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Mileage" class="form-label">Mileage (km)</label>
+                                <input asp-for="Input.Mileage" class="form-control" type="number" step="0.01" required />
+                                <span asp-validation-for="Input.Mileage" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Location" class="form-label">Location</label>
+                            <input asp-for="Input.Location" class="form-control" required />
+                            <small class="form-text text-muted">Enter the pickup location for the bike</small>
+                            <span asp-validation-for="Input.Location" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Latitude" class="form-label">Latitude (Optional)</label>
+                                <input asp-for="Input.Latitude" class="form-control" type="number" step="0.0000001" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Longitude" class="form-label">Longitude (Optional)</label>
+                                <input asp-for="Input.Longitude" class="form-control" type="number" step="0.0000001" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Description" class="form-label">Description</label>
+                            <textarea asp-for="Input.Description" class="form-control" rows="4"></textarea>
+                            <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.HourlyRate" class="form-label">Hourly Rate (₱)</label>
+                                <input asp-for="Input.HourlyRate" class="form-control" type="number" step="0.01" required />
+                                <span asp-validation-for="Input.HourlyRate" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.DailyRate" class="form-label">Daily Rate (₱)</label>
+                                <input asp-for="Input.DailyRate" class="form-control" type="number" step="0.01" required />
+                                <span asp-validation-for="Input.DailyRate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Input.Images" class="form-label">Bike Images</label>
+                            <input asp-for="Input.Images" class="form-control" type="file" multiple accept="image/*" />
+                            <small class="form-text text-muted">Upload up to 5 images of your bike</small>
+                            <span asp-validation-for="Input.Images" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-eco-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> List Bike
+                            </button>
+                            <a href="/Owner/MyBikes" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

@@ -1,0 +1,180 @@
+@using BiketaBai.Helpers
+@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-eco-primary">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-bicycle"></i> <strong>Bike Ta Bai</strong>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Bikes/Browse">Browse Bikes</a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            @if (AuthHelper.IsRenter(User))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/Dashboard/Renter">My Rentals</a>
+                                </li>
+                            }
+                            @if (AuthHelper.IsOwner(User))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/Dashboard/Owner">My Bikes</a>
+                                </li>
+                            }
+                            @if (AuthHelper.IsAdmin(User))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/Admin/Dashboard">Admin</a>
+                                </li>
+                            }
+                        }
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            var userId = AuthHelper.GetCurrentUserId(User);
+                            <li class="nav-item">
+                                <a class="nav-link" href="/Wallet/Index">
+                                    <i class="bi bi-wallet2"></i> Wallet
+                                    <span class="badge bg-light text-dark" id="walletBalance">₱0.00</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/Points/Index">
+                                    <i class="bi bi-star-fill text-warning"></i> Points
+                                    <span class="badge bg-warning text-dark" id="pointsBalance">0</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link position-relative" href="/Notifications/Index">
+                                    <i class="bi bi-bell"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationCount" style="display: none;">
+                                        0
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle"></i> @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="/Account/Profile"><i class="bi bi-person"></i> Profile</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/Account/Logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="/Account/Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="btn btn-eco-secondary ms-2" href="/Account/Register">Register</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+
+    <footer class="footer bg-dark text-white mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="bi bi-bicycle"></i> Bike Ta Bai</h5>
+                    <p>Eco-friendly bike rental platform for sustainable commuting.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/About" class="text-white-50">About Us</a></li>
+                        <li><a href="/Contact" class="text-white-50">Contact</a></li>
+                        <li><a href="/Privacy" class="text-white-50">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Connect With Us</h5>
+                    <div class="social-links">
+                        <a href="#" class="text-white-50 me-3"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="text-white-50 me-3"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="text-white-50"><i class="bi bi-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="bg-white-50" />
+            <div class="text-center">
+                <p>&copy; 2025 Bike Ta Bai. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script>
+            // Load wallet and points balance
+            $(document).ready(function() {
+                loadWalletBalance();
+                loadPointsBalance();
+                loadNotificationCount();
+                
+                // Refresh every 30 seconds
+                setInterval(function() {
+                    loadWalletBalance();
+                    loadPointsBalance();
+                    loadNotificationCount();
+                }, 30000);
+            });
+
+            function loadWalletBalance() {
+                $.get('/api/wallet/balance', function(data) {
+                    $('#walletBalance').text('₱' + data.balance.toFixed(2));
+                });
+            }
+
+            function loadPointsBalance() {
+                $.get('/api/points/balance', function(data) {
+                    $('#pointsBalance').text(data.points);
+                });
+            }
+
+            function loadNotificationCount() {
+                $.get('/api/notifications/unread-count', function(data) {
+                    if (data.count > 0) {
+                        $('#notificationCount').text(data.count).show();
+                    } else {
+                        $('#notificationCount').hide();
+                    }
+                });
+            }
+        </script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+

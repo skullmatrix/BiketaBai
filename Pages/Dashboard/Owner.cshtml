@@ -1,0 +1,238 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model OwnerDashboardModel
+@{
+    ViewData["Title"] = "Owner Dashboard";
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-eco-green"><i class="bi bi-speedometer2"></i> Owner Dashboard</h2>
+        <a href="/Owner/AddBike" class="btn btn-eco-primary"><i class="bi bi-plus-circle"></i> Add New Bike</a>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card green">
+                <h3>@Model.TotalBikes</h3>
+                <p>Total Bikes</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card blue">
+                <h3>@Model.ActiveRentalsCount</h3>
+                <p>Active Rentals</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card orange">
+                <h3>₱@Model.TotalEarnings.ToString("F2")</h3>
+                <p>Total Earnings</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="rating-stars text-warning">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        if (i <= Model.AverageRating)
+                        {
+                            <i class="bi bi-star-fill fs-3"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-star fs-3"></i>
+                        }
+                    }
+                </div>
+                <p>@Model.AverageRating.ToString("F1") Average Rating</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Rentals -->
+    @if (Model.ActiveBookings.Any())
+    {
+        <div class="card shadow-eco mb-4">
+            <div class="card-header bg-eco-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-bicycle"></i> Active Rentals</h5>
+            </div>
+            <div class="card-body">
+                @foreach (var booking in Model.ActiveBookings)
+                {
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    @if (booking.Bike.BikeImages.Any())
+                                    {
+                                        <img src="@booking.Bike.BikeImages.First().ImageUrl" class="img-fluid rounded" alt="Bike" />
+                                    }
+                                </div>
+                                <div class="col-md-5">
+                                    <h5>@booking.Bike.Brand @booking.Bike.Model</h5>
+                                    <p class="mb-1"><strong>Renter:</strong> @booking.Renter.FullName</p>
+                                    <p class="mb-1"><small>@booking.Renter.Phone</small></p>
+                                    <p class="mb-0">
+                                        <strong>Return by:</strong> @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
+                                    </p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p class="mb-1"><strong>Started:</strong> @booking.StartDate.ToString("MMM dd, hh:mm tt")</p>
+                                    <p class="mb-0"><strong>Earning:</strong> <span class="text-success">₱@((booking.TotalAmount * 0.9m).ToString("F2"))</span></p>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <a href="/Bookings/Details/@booking.BookingId" class="btn btn-eco-primary btn-sm w-100">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- My Bikes Quick View -->
+    <div class="card shadow-eco mb-4">
+        <div class="card-header bg-eco-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-bicycle"></i> My Bikes</h5>
+            <a href="/Owner/MyBikes" class="btn btn-light btn-sm">View All</a>
+        </div>
+        <div class="card-body">
+            @if (Model.Bikes.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Bike</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Rate</th>
+                                <th>Rating</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bike in Model.Bikes.Take(5))
+                            {
+                                <tr>
+                                    <td><strong>@bike.Brand @bike.Model</strong></td>
+                                    <td><span class="badge badge-bike-type">@bike.BikeType.TypeName</span></td>
+                                    <td>
+                                        @switch (bike.AvailabilityStatusId)
+                                        {
+                                            case 1:
+                                                <span class="badge badge-available">Available</span>
+                                                break;
+                                            case 2:
+                                                <span class="badge badge-rented">Rented</span>
+                                                break;
+                                            case 3:
+                                                <span class="badge badge-maintenance">Maintenance</span>
+                                                break;
+                                            case 4:
+                                                <span class="badge bg-secondary">Inactive</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>₱@bike.HourlyRate/hr</td>
+                                    <td>
+                                        <div class="rating-stars">
+                                            @{
+                                                var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                                                for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= avgRating)
+                                                    {
+                                                        <i class="bi bi-star-fill"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-star"></i>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="/Owner/EditBike/@bike.BikeId" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted text-center py-4">No bikes listed yet. <a href="/Owner/AddBike">Add your first bike</a>!</p>
+            }
+        </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="card shadow-eco">
+        <div class="card-header bg-eco-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Bookings</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.RecentBookings.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Bike</th>
+                                <th>Renter</th>
+                                <th>Dates</th>
+                                <th>Earning</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var booking in Model.RecentBookings.Take(10))
+                            {
+                                <tr>
+                                    <td>@booking.Bike.Brand @booking.Bike.Model</td>
+                                    <td>@booking.Renter.FullName</td>
+                                    <td>
+                                        <small>
+                                            @booking.StartDate.ToString("MMM dd")<br />
+                                            to @booking.EndDate.ToString("MMM dd")
+                                        </small>
+                                    </td>
+                                    <td>₱@((booking.TotalAmount * 0.9m).ToString("F2"))</td>
+                                    <td>
+                                        @switch (booking.BookingStatusId)
+                                        {
+                                            case 1:
+                                                <span class="badge bg-warning">Pending</span>
+                                                break;
+                                            case 2:
+                                                <span class="badge bg-primary">Active</span>
+                                                break;
+                                            case 3:
+                                                <span class="badge bg-success">Completed</span>
+                                                break;
+                                            case 4:
+                                                <span class="badge bg-danger">Cancelled</span>
+                                                break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted text-center py-4">No bookings yet</p>
+            }
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,56 @@
+@page
+@model RegistrationSuccessModel
+@{
+    ViewData["Title"] = "Registration Successful";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-eco">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-envelope-check" style="font-size: 5rem; color: var(--eco-green);"></i>
+                    </div>
+                    
+                    <h2 class="text-eco-green mb-4">Registration Successful!</h2>
+                    
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+                        </div>
+                    }
+                    
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                        </div>
+                    }
+                    
+                    <div class="card bg-eco-light p-4 mb-4">
+                        <h5 class="text-eco-green mb-3">
+                            <i class="bi bi-info-circle"></i> What's Next?
+                        </h5>
+                        <ol class="text-start">
+                            <li class="mb-2">Check your email inbox (and spam folder)</li>
+                            <li class="mb-2">Click the verification link in the email</li>
+                            <li class="mb-2">Once verified, you can log in and start using Bike Ta Bai!</li>
+                        </ol>
+                    </div>
+                    
+                    <p class="text-muted">
+                        <strong>Didn't receive the email?</strong><br>
+                        <small>The verification link will expire in 24 hours. If you don't receive it within a few minutes, please contact support.</small>
+                    </p>
+                    
+                    <a href="/Account/Login" class="btn btn-eco-primary mt-3">
+                        <i class="bi bi-box-arrow-in-right"></i> Go to Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

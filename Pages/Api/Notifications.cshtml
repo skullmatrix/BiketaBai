@@ -1,0 +1,21 @@
+@page
+@using BiketaBai.Helpers
+@using BiketaBai.Services
+@inject NotificationService NotificationService
+@{
+    Layout = null;
+    
+    var userId = AuthHelper.GetCurrentUserId(User);
+    if (userId.HasValue)
+    {
+        var count = await NotificationService.GetUnreadCountAsync(userId.Value);
+        
+        Response.ContentType = "application/json";
+        await Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { count }));
+    }
+    else
+    {
+        Response.StatusCode = 401;
+    }
+}
+

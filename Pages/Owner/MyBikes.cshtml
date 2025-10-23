@@ -1,0 +1,139 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model MyBikesModel
+@{
+    ViewData["Title"] = "My Bikes";
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-eco-green"><i class="bi bi-bicycle"></i> My Bikes</h2>
+        <a href="/Owner/AddBike" class="btn btn-eco-primary"><i class="bi bi-plus-circle"></i> Add New Bike</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        @if (Model.Bikes.Any())
+        {
+            @foreach (var bike in Model.Bikes)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card bike-card h-100">
+                        @if (bike.BikeImages.Any())
+                        {
+                            <img src="@bike.BikeImages.First(img => img.IsPrimary || bike.BikeImages.First() == img).ImageUrl" 
+                                 class="card-img-top" alt="@bike.Brand @bike.Model" />
+                        }
+                        else
+                        {
+                            <img src="/images/placeholder-bike.jpg" class="card-img-top" alt="Bike" />
+                        }
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">@bike.Brand @bike.Model</h5>
+                                @switch (bike.AvailabilityStatusId)
+                                {
+                                    case 1:
+                                        <span class="badge badge-available">Available</span>
+                                        break;
+                                    case 2:
+                                        <span class="badge badge-rented">Rented</span>
+                                        break;
+                                    case 3:
+                                        <span class="badge badge-maintenance">Maintenance</span>
+                                        break;
+                                    case 4:
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        break;
+                                }
+                            </div>
+                            <p class="text-muted mb-2">
+                                <span class="badge badge-bike-type">@bike.BikeType.TypeName</span>
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="bi bi-geo-alt"></i> @bike.Location
+                            </p>
+                            <div class="rating-stars mb-2">
+                                @{
+                                    var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                                    for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= avgRating)
+                                        {
+                                            <i class="bi bi-star-fill"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-star"></i>
+                                        }
+                                    }
+                                }
+                                <span class="text-muted">(@avgRating.ToString("F1"))</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>₱@bike.HourlyRate/hr</strong> · ₱@bike.DailyRate/day
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    Active Rentals: @Model.ActiveBookings.Count(b => b.BikeId == bike.BikeId)
+                                </small>
+                            </div>
+                            <div class="mt-auto">
+                                <div class="btn-group w-100">
+                                    <a href="/Owner/EditBike/@bike.BikeId" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    <a href="/Bikes/Details/@bike.BikeId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal@(bike.BikeId)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Confirmation Modal -->
+                <div class="modal fade" id="deleteModal@(bike.BikeId)" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete Bike</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to delete <strong>@bike.Brand @bike.Model</strong>?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form method="post" asp-page-handler="Delete" asp-route-id="@bike.BikeId" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-bicycle" style="font-size: 4rem; color: var(--eco-green);"></i>
+                <h3 class="text-muted mt-3">No bikes listed yet</h3>
+                <p>Start earning by listing your bikes for rent</p>
+                <a href="/Owner/AddBike" class="btn btn-eco-primary btn-lg"><i class="bi bi-plus-circle"></i> Add Your First Bike</a>
+            </div>
+        }
+    </div>
+</div>
+

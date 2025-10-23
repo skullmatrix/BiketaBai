@@ -1,0 +1,254 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model AdminDashboardModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid my-5">
+    <h2 class="text-eco-green mb-4"><i class="bi bi-speedometer"></i> Admin Dashboard</h2>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card green">
+                <h3>@Model.TotalUsers</h3>
+                <p>Total Users</p>
+                <small>@Model.RentersCount Renters | @Model.OwnersCount Owners</small>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card blue">
+                <h3>@Model.TotalBikes</h3>
+                <p>Total Bikes Listed</p>
+                <small>@Model.AvailableBikes Available</small>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card orange">
+                <h3>@Model.TotalBookings</h3>
+                <p>Total Bookings</p>
+                <small>@Model.ActiveBookings Active | @Model.CompletedBookings Completed</small>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <h3>₱@Model.TotalRevenue.ToString("F2")</h3>
+                <p>Platform Revenue</p>
+                <small>Service Fees Collected</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-eco">
+                <div class="card-body text-center">
+                    <h5>Total Wallet Balance</h5>
+                    <h3 class="text-eco-green">₱@Model.TotalWalletBalance.ToString("F2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-eco">
+                <div class="card-body text-center">
+                    <h5>Today's Bookings</h5>
+                    <h3 class="text-eco-green">@Model.TodayBookings</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-eco">
+                <div class="card-body text-center">
+                    <h5>This Week</h5>
+                    <h3 class="text-eco-green">@Model.WeekBookings</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="eco-impact">
+                <h5>CO₂ Saved</h5>
+                <h3>@Model.TotalCO2Saved.ToString("F1") kg</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="card shadow-eco mb-4">
+        <div class="card-header bg-eco-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-people"></i> Recent Users</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.RecentUsers)
+                        {
+                            <tr>
+                                <td>@user.UserId</td>
+                                <td>@user.FullName</td>
+                                <td>@user.Email</td>
+                                <td>
+                                    @if (user.IsRenter)
+                                    {
+                                        <span class="badge bg-primary">Renter</span>
+                                    }
+                                    @if (user.IsOwner)
+                                    {
+                                        <span class="badge bg-success">Owner</span>
+                                    }
+                                    @if (user.IsAdmin)
+                                    {
+                                        <span class="badge bg-danger">Admin</span>
+                                    }
+                                </td>
+                                <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (user.IsSuspended)
+                                    {
+                                        <span class="badge bg-danger">Suspended</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">View</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="card shadow-eco mb-4">
+        <div class="card-header bg-eco-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Recent Bookings</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Renter</th>
+                            <th>Bike</th>
+                            <th>Owner</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.RecentBookings)
+                        {
+                            <tr>
+                                <td>@booking.BookingId</td>
+                                <td>@booking.Renter.FullName</td>
+                                <td>@booking.Bike.Brand @booking.Bike.Model</td>
+                                <td>@booking.Bike.Owner.FullName</td>
+                                <td>₱@booking.TotalAmount.ToString("F2")</td>
+                                <td>
+                                    @switch (booking.BookingStatusId)
+                                    {
+                                        case 1:
+                                            <span class="badge bg-warning">Pending</span>
+                                            break;
+                                        case 2:
+                                            <span class="badge bg-primary">Active</span>
+                                            break;
+                                        case 3:
+                                            <span class="badge bg-success">Completed</span>
+                                            break;
+                                        case 4:
+                                            <span class="badge bg-danger">Cancelled</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>@booking.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Bikes -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-eco mb-4">
+                <div class="card-header bg-eco-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Earning Bikes</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Bike</th>
+                                <th>Owner</th>
+                                <th class="text-end">Earnings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bike in Model.TopBikes.Take(5))
+                            {
+                                <tr>
+                                    <td>@bike.Brand @bike.Model</td>
+                                    <td>@bike.Owner.FullName</td>
+                                    <td class="text-end text-success">₱@(Model.BikeEarnings.ContainsKey(bike.BikeId) ? Model.BikeEarnings[bike.BikeId].ToString("F2") : "0.00")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-eco mb-4">
+                <div class="card-header bg-eco-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bicycle"></i> Bike Type Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var stat in Model.BikeTypeStats)
+                            {
+                                <tr>
+                                    <td>@stat.TypeName</td>
+                                    <td class="text-end">@stat.Count</td>
+                                    <td class="text-end">@(((decimal)stat.Count / Model.TotalBikes * 100).ToString("F1"))%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

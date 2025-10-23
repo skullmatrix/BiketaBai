@@ -1,0 +1,76 @@
+@page
+@model VerifyEmailModel
+@{
+    ViewData["Title"] = "Verify Email";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-eco">
+                <div class="card-body text-center p-5">
+                    @if (Model.IsVerified)
+                    {
+                        <div class="mb-4">
+                            <i class="bi bi-check-circle-fill" style="font-size: 5rem; color: #4caf50;"></i>
+                        </div>
+                        
+                        <h2 class="text-success mb-4">Email Verified!</h2>
+                        
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Your email has been successfully verified.
+                        </div>
+                        
+                        <p class="lead">Welcome to Bike Ta Bai! 🚴</p>
+                        
+                        <p>Your account is now active. You can log in and start your eco-friendly journey!</p>
+                        
+                        <div class="card bg-eco-light p-4 my-4">
+                            <h5 class="text-eco-green mb-3">Get Started:</h5>
+                            <ul class="text-start list-unstyled">
+                                <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Browse available bikes</li>
+                                <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Load your wallet</li>
+                                <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Make your first booking</li>
+                                <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Earn loyalty points</li>
+                            </ul>
+                        </div>
+                        
+                        <a href="/Account/Login" class="btn btn-eco-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right"></i> Login to Your Account
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="mb-4">
+                            <i class="bi bi-x-circle-fill" style="font-size: 5rem; color: #f44336;"></i>
+                        </div>
+                        
+                        <h2 class="text-danger mb-4">Verification Failed</h2>
+                        
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                        </div>
+                        
+                        <p>Please try the following:</p>
+                        
+                        <ul class="text-start">
+                            <li>Check if you copied the entire verification link</li>
+                            <li>Make sure the link hasn't expired (valid for 24 hours)</li>
+                            <li>Try registering again if the link is too old</li>
+                        </ul>
+                        
+                        <div class="mt-4">
+                            <a href="/Account/Register" class="btn btn-eco-primary">
+                                <i class="bi bi-person-plus"></i> Register Again
+                            </a>
+                            <a href="/Account/Login" class="btn btn-outline-secondary ms-2">
+                                <i class="bi bi-box-arrow-in-right"></i> Try Login
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

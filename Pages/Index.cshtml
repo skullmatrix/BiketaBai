@@ -1,0 +1,153 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="hero">
+    <div class="container">
+        <h1><i class="bi bi-bicycle"></i> Bike Ta Bai</h1>
+        <p>Your Eco-Friendly Bike Rental Platform</p>
+        <p class="lead">Discover, rent, and ride bikes for sustainable commuting</p>
+        
+        <div class="search-box">
+            <form method="get" action="/Bikes/Browse">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" name="location" class="form-control form-control-lg" placeholder="Where do you want to ride?" />
+                    </div>
+                    <div class="col-md-3">
+                        <select name="bikeTypeId" class="form-select form-control-lg">
+                            <option value="">All Bike Types</option>
+                            @foreach (var bikeType in Model.BikeTypes)
+                            {
+                                <option value="@bikeType.BikeTypeId">@bikeType.TypeName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-eco-primary btn-lg w-100">
+                            <i class="bi bi-search"></i> Search Bikes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row text-center mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="feature-icon">
+                <i class="bi bi-geo-alt"></i>
+            </div>
+            <h3>Find Nearby Bikes</h3>
+            <p>Discover available bikes near your location with our interactive map</p>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h3>Safe & Secure</h3>
+            <p>Verified bike owners and secure payment methods for your peace of mind</p>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-icon">
+                <i class="bi bi-star"></i>
+            </div>
+            <h3>Earn Points</h3>
+            <p>Get rewarded for eco-friendly commuting with our loyalty points system</p>
+        </div>
+    </div>
+
+    <h2 class="text-center mb-4 text-eco-green">Platform Statistics</h2>
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card green">
+                <h3>@Model.TotalBikes</h3>
+                <p>Bikes Available</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card blue">
+                <h3>@Model.TotalUsers</h3>
+                <p>Active Users</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card orange">
+                <h3>@Model.TotalBookings</h3>
+                <p>Total Rentals</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <h3>@Model.CO2Saved kg</h3>
+                <p>CO₂ Saved</p>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="text-center mb-4 text-eco-green">Featured Bikes</h2>
+    <div class="row">
+        @foreach (var bike in Model.FeaturedBikes)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card bike-card">
+                    @if (bike.BikeImages.Any())
+                    {
+                        <img src="@bike.BikeImages.First().ImageUrl" class="card-img-top" alt="@bike.Brand @bike.Model" />
+                    }
+                    else
+                    {
+                        <img src="/images/placeholder-bike.jpg" class="card-img-top" alt="Bike" />
+                    }
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">@bike.Brand @bike.Model</h5>
+                            <span class="badge badge-bike-type">@bike.BikeType.TypeName</span>
+                        </div>
+                        <p class="text-muted mb-2">
+                            <i class="bi bi-geo-alt"></i> @bike.Location
+                        </p>
+                        <div class="rating-stars mb-2">
+                            @{
+                                var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                                for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= avgRating)
+                                    {
+                                        <i class="bi bi-star-fill"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-star"></i>
+                                    }
+                                }
+                            }
+                            <span class="text-muted">(@avgRating.ToString("F1"))</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <div class="price-tag">
+                                ₱@bike.HourlyRate<span class="fs-6 text-muted">/hr</span>
+                            </div>
+                            <a href="/Bikes/Details/@bike.BikeId" class="btn btn-eco-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (!User.Identity?.IsAuthenticated == true)
+    {
+        <div class="text-center my-5 p-5 bg-eco-light rounded">
+            <h2 class="text-eco-green">Ready to Start Your Eco-Friendly Journey?</h2>
+            <p class="lead">Join thousands of users who are making a difference</p>
+            <a href="/Account/Register" class="btn btn-eco-primary btn-lg me-2">Register as Renter</a>
+            <a href="/Account/Register" class="btn btn-eco-secondary btn-lg">Register as Owner</a>
+        </div>
+    }
+</div>
+

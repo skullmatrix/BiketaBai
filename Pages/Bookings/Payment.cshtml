@@ -1,0 +1,144 @@
+@page "{bookingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model PaymentModel
+@{
+    ViewData["Title"] = "Payment";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            @if (Model.Booking == null)
+            {
+                <div class="alert alert-danger">Booking not found</div>
+            }
+            else
+            {
+                <div class="card shadow-eco">
+                    <div class="card-body p-5">
+                        <h2 class="text-eco-green mb-4">
+                            <i class="bi bi-credit-card"></i> Complete Payment
+                        </h2>
+
+                        <!-- Booking Summary -->
+                        <div class="card bg-eco-light mb-4">
+                            <div class="card-body">
+                                <h5 class="text-eco-green">Booking Summary</h5>
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Bike:</strong> @Model.Booking.Bike.Brand @Model.Booking.Bike.Model</p>
+                                        <p><strong>Type:</strong> @Model.Booking.Bike.BikeType.TypeName</p>
+                                        <p><strong>Location:</strong> @Model.Booking.Bike.Location</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Start:</strong> @Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p><strong>End:</strong> @Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p><strong>Duration:</strong> @Model.Booking.RentalHours.ToString("F1") hours</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing Details -->
+                        <div class="card bg-eco-light mb-4">
+                            <div class="card-body">
+                                <h5 class="text-eco-green">Pricing Details</h5>
+                                <hr />
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Base Rate</span>
+                                    <strong>₱@Model.Booking.BaseRate.ToString("F2")</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Service Fee (10%)</span>
+                                    <strong>₱@Model.Booking.ServiceFee.ToString("F2")</strong>
+                                </div>
+                                <hr />
+                                <div class="d-flex justify-content-between">
+                                    <h5>Total Amount</h5>
+                                    <h5 class="text-eco-green">₱@Model.Booking.TotalAmount.ToString("F2")</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">@Model.ErrorMessage</div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                        {
+                            <div class="alert alert-success">@Model.SuccessMessage</div>
+                        }
+
+                        <!-- Payment Methods -->
+                        <h5 class="mb-3">Select Payment Method</h5>
+
+                        <form method="post">
+                            <div class="list-group mb-4">
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="1" checked />
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-wallet2 fs-3 me-3 text-eco-green"></i>
+                                        <div>
+                                            <strong>Wallet</strong>
+                                            <br />
+                                            <small class="text-muted">Current Balance: ₱<span id="walletBalance">@Model.WalletBalance.ToString("F2")</span></small>
+                                            @if (Model.WalletBalance < Model.Booking.TotalAmount)
+                                            {
+                                                <br />
+                                                <small class="text-danger">Insufficient balance</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="2" />
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-phone fs-3 me-3 text-primary"></i>
+                                        <div>
+                                            <strong>GCash</strong>
+                                            <br />
+                                            <small class="text-muted">Pay via GCash mobile payment</small>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="3" />
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-qr-code fs-3 me-3 text-info"></i>
+                                        <div>
+                                            <strong>QRPH</strong>
+                                            <br />
+                                            <small class="text-muted">Pay via QR PH</small>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="4" />
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-cash fs-3 me-3 text-success"></i>
+                                        <div>
+                                            <strong>Cash</strong>
+                                            <br />
+                                            <small class="text-muted">Pay directly to the owner</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-eco-primary btn-lg">
+                                    <i class="bi bi-check-circle"></i> Confirm Payment
+                                </button>
+                                <a href="/Dashboard/Renter" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,65 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model LoadWalletModel
+@{
+    ViewData["Title"] = "Load Wallet";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-eco">
+                <div class="card-body p-5">
+                    <h2 class="text-eco-green mb-4">
+                        <i class="bi bi-plus-circle"></i> Load Wallet
+                    </h2>
+
+                    <div class="wallet-widget mb-4">
+                        <h5>Current Balance</h5>
+                        <div class="balance">₱@Model.CurrentBalance.ToString("F2")</div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">@Model.ErrorMessage</div>
+                    }
+
+                    <form method="post">
+                        <div class="mb-3">
+                            <label asp-for="Input.Amount" class="form-label">Amount to Load (₱)</label>
+                            <input asp-for="Input.Amount" class="form-control form-control-lg" type="number" step="0.01" min="1" required autofocus />
+                            <span asp-validation-for="Input.Amount" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Payment Method</label>
+                            <div class="list-group">
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" asp-for="Input.PaymentMethodId" value="2" checked />
+                                    <i class="bi bi-phone text-primary"></i> <strong>GCash</strong>
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" asp-for="Input.PaymentMethodId" value="3" />
+                                    <i class="bi bi-qr-code text-info"></i> <strong>QRPH</strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-eco-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Confirm Load
+                            </button>
+                            <a href="/Wallet/Index" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
