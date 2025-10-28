@@ -2,386 +2,461 @@
 @model RegisterModel
 @{
     ViewData["Title"] = "Create Account";
+    Layout = null;
 }
 
-<!-- Modern Registration Container -->
-<div class="modern-auth-container modern-register-container">
-    <div class="container-fluid h-100">
-        <div class="row h-100 g-0">
-            <!-- Left Side - Visual/Branding -->
-            <div class="col-lg-5 d-none d-lg-flex modern-auth-visual modern-register-visual">
-                <div class="modern-auth-visual-content">
-                    <div class="modern-auth-brand mb-4" data-aos="fade-right">
-                        <i class="bi bi-bicycle"></i>
-                        <h2>Join Bike Ta Bai</h2>
-                        <p>Be part of the eco-friendly revolution</p>
-                    </div>
-                    
-                    <div class="register-benefits" data-aos="fade-right" data-aos-delay="200">
-                        <h3>What You Get</h3>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">
-                                <i class="bi bi-patch-check-fill"></i>
-                            </div>
-                            <div class="benefit-text">
-                                <h5>Verified Platform</h5>
-                                <p>All bikes and owners are verified for your safety</p>
-                            </div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">
-                                <i class="bi bi-wallet2"></i>
-                            </div>
-                            <div class="benefit-text">
-                                <h5>Flexible Payments</h5>
-                                <p>Multiple payment options including digital wallets</p>
-                            </div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">
-                                <i class="bi bi-star-fill"></i>
-                            </div>
-                            <div class="benefit-text">
-                                <h5>Earn Rewards</h5>
-                                <p>Get loyalty points with every rental or listing</p>
-                            </div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">
-                                <i class="bi bi-shield-lock-fill"></i>
-                            </div>
-                            <div class="benefit-text">
-                                <h5>Secure Transactions</h5>
-                                <p>Your data and payments are always protected</p>
-                            </div>
-                        </div>
-                    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth-minimal.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Minimalist Register Container -->
+    <div class="auth-minimal-container">
+        <div class="auth-card-minimal register">
+            <!-- Back to Home -->
+            <a href="/" class="auth-back-link">
+                <i class="bi bi-arrow-left"></i> Back to Home
+            </a>
+            
+            <!-- Header -->
+            <div class="auth-header-minimal">
+                <div class="auth-logo-minimal">
+                    <i class="bi bi-bicycle"></i>
+                </div>
+                <h1>Join Bike Ta Bai</h1>
+                <p>Start your eco-friendly journey today</p>
+            </div>
+            
+            <!-- Progress Steps -->
+            <div class="auth-progress-steps">
+                <div class="auth-step active" data-step="1">
+                    <div class="auth-step-circle">1</div>
+                    <div class="auth-step-label">Info</div>
+                </div>
+                <div class="auth-step-line"></div>
+                <div class="auth-step" data-step="2">
+                    <div class="auth-step-circle">2</div>
+                    <div class="auth-step-label">Security</div>
+                </div>
+                <div class="auth-step-line"></div>
+                <div class="auth-step" data-step="3">
+                    <div class="auth-step-circle">3</div>
+                    <div class="auth-step-label">Role</div>
                 </div>
             </div>
             
-            <!-- Right Side - Registration Form -->
-            <div class="col-lg-7 modern-auth-form-side">
-                <div class="modern-auth-form-container">
-                    <div class="modern-auth-form-wrapper modern-register-wrapper" data-aos="fade-left">
-                        <!-- Back to Home -->
-                        <a href="/" class="modern-back-link">
-                            <i class="bi bi-arrow-left"></i> Back to Home
-                        </a>
-                        
-                        <!-- Header -->
-                        <div class="modern-auth-header">
-                            <h1>Create Your Account</h1>
-                            <p>Start your eco-friendly journey in minutes</p>
-                        </div>
-                        
-                        <!-- Progress Indicator -->
-                        <div class="modern-progress-indicator">
-                            <div class="progress-step active" data-step="1">
-                                <div class="step-circle">1</div>
-                                <div class="step-label">Personal</div>
-                            </div>
-                            <div class="progress-line"></div>
-                            <div class="progress-step" data-step="2">
-                                <div class="step-circle">2</div>
-                                <div class="step-label">Security</div>
-                            </div>
-                            <div class="progress-line"></div>
-                            <div class="progress-step" data-step="3">
-                                <div class="step-circle">3</div>
-                                <div class="step-label">Role</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Alert Messages -->
-                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                        {
-                            <div class="modern-alert modern-alert-danger" data-aos="shake">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                                <div>
-                                    <strong>Error</strong>
-                                    <p>@Model.ErrorMessage</p>
-                                </div>
-                            </div>
-                        }
-
-                        <!-- Registration Form -->
-                        <form method="post" enctype="multipart/form-data" id="registerForm" class="modern-form">
-                            <!-- Step 1: Personal Information -->
-                            <div class="form-step active" id="step1">
-                                <h3 class="step-title">
-                                    <i class="bi bi-person-fill"></i> Personal Information
-                                </h3>
-                                
-                                <div class="modern-form-group">
-                                    <div class="modern-input-wrapper">
-                                        <i class="bi bi-person input-icon"></i>
-                                        <input asp-for="Input.FullName" type="text" class="modern-input" 
-                                               placeholder=" " required autocomplete="name" />
-                                        <label class="modern-label">Full Name</label>
-                                    </div>
-                                    <span asp-validation-for="Input.FullName" class="text-danger small"></span>
-                                </div>
-
-                                <div class="modern-form-group">
-                                    <div class="modern-input-wrapper">
-                                        <i class="bi bi-envelope input-icon"></i>
-                                        <input asp-for="Input.Email" type="email" class="modern-input" 
-                                               placeholder=" " required autocomplete="email" />
-                                        <label class="modern-label">Email Address</label>
-                                    </div>
-                                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
-                                </div>
-
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="modern-form-group">
-                                            <div class="modern-input-wrapper">
-                                                <i class="bi bi-phone input-icon"></i>
-                                                <input asp-for="Input.Phone" type="tel" class="modern-input" 
-                                                       placeholder=" " required autocomplete="tel" />
-                                                <label class="modern-label">Phone Number</label>
-                                            </div>
-                                            <span asp-validation-for="Input.Phone" class="text-danger small"></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="modern-form-group">
-                                            <div class="modern-input-wrapper">
-                                                <i class="bi bi-geo-alt input-icon"></i>
-                                                <input asp-for="Input.Address" type="text" class="modern-input" 
-                                                       placeholder=" " required autocomplete="street-address" />
-                                                <label class="modern-label">Address</label>
-                                            </div>
-                                            <span asp-validation-for="Input.Address" class="text-danger small"></span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button type="button" class="modern-btn modern-btn-primary next-step">
-                                    Continue <i class="bi bi-arrow-right ms-2"></i>
-                                </button>
-                            </div>
-
-                            <!-- Step 2: Security -->
-                            <div class="form-step" id="step2">
-                                <h3 class="step-title">
-                                    <i class="bi bi-shield-lock-fill"></i> Security
-                                </h3>
-                                
-                                <div class="modern-form-group">
-                                    <div class="modern-input-wrapper">
-                                        <i class="bi bi-lock input-icon"></i>
-                                        <input asp-for="Input.Password" type="password" class="modern-input" 
-                                               placeholder=" " required autocomplete="new-password" id="regPasswordInput" />
-                                        <label class="modern-label">Password</label>
-                                        <button type="button" class="password-toggle" id="toggleRegPassword">
-                                            <i class="bi bi-eye" id="toggleRegIcon"></i>
-                                        </button>
-                                    </div>
-                                    <div class="password-strength" id="passwordStrength">
-                                        <div class="strength-bar">
-                                            <div class="strength-fill"></div>
-                                        </div>
-                                        <span class="strength-text">Password strength</span>
-                                    </div>
-                                    <small class="form-text text-muted d-block mt-2">
-                                        <i class="bi bi-info-circle"></i> Min. 8 characters with uppercase, lowercase, & number
-                                    </small>
-                                    <span asp-validation-for="Input.Password" class="text-danger small"></span>
-                                </div>
-
-                                <div class="modern-form-group">
-                                    <div class="modern-input-wrapper">
-                                        <i class="bi bi-lock-fill input-icon"></i>
-                                        <input asp-for="Input.ConfirmPassword" type="password" class="modern-input" 
-                                               placeholder=" " required autocomplete="new-password" id="confirmPasswordInput" />
-                                        <label class="modern-label">Confirm Password</label>
-                                        <button type="button" class="password-toggle" id="toggleConfirmPassword">
-                                            <i class="bi bi-eye" id="toggleConfirmIcon"></i>
-                                        </button>
-                                    </div>
-                                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
-                                </div>
-
-                                <div class="step-buttons">
-                                    <button type="button" class="modern-btn modern-btn-outline prev-step">
-                                        <i class="bi bi-arrow-left me-2"></i> Back
-                                    </button>
-                                    <button type="button" class="modern-btn modern-btn-primary next-step">
-                                        Continue <i class="bi bi-arrow-right ms-2"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Step 3: Account Type & Verification -->
-                            <div class="form-step" id="step3">
-                                <h3 class="step-title">
-                                    <i class="bi bi-person-circle"></i> Choose Your Role
-                                </h3>
-                                <p class="text-muted mb-4">Select how you want to use Bike Ta Bai</p>
-                                
-                                <div class="modern-role-selector">
-                                    <!-- Renter Card -->
-                                    <div class="modern-role-card" id="renterCard" data-role="renter">
-                                        <input type="radio" name="UserRole" value="Renter" id="renterRadio" required />
-                                        <div class="role-check">
-                                            <i class="bi bi-check-circle-fill"></i>
-                                        </div>
-                                        <div class="role-icon">
-                                            <i class="bi bi-person"></i>
-                                        </div>
-                                        <h4 class="role-title">Renter</h4>
-                                        <p class="role-desc">Find and rent bikes for your daily commute</p>
-                                        <ul class="role-features">
-                                            <li><i class="bi bi-check2"></i> Browse available bikes</li>
-                                            <li><i class="bi bi-check2"></i> Easy booking process</li>
-                                            <li><i class="bi bi-check2"></i> Earn loyalty points</li>
-                                        </ul>
-                                    </div>
-
-                                    <!-- Owner Card -->
-                                    <div class="modern-role-card" id="ownerCard" data-role="owner">
-                                        <input type="radio" name="UserRole" value="Owner" id="ownerRadio" required />
-                                        <div class="role-check">
-                                            <i class="bi bi-check-circle-fill"></i>
-                                        </div>
-                                        <div class="role-icon">
-                                            <i class="bi bi-person-badge"></i>
-                                        </div>
-                                        <h4 class="role-title">Owner</h4>
-                                        <p class="role-desc">List your bikes and earn extra income</p>
-                                        <ul class="role-features">
-                                            <li><i class="bi bi-check2"></i> List multiple bikes</li>
-                                            <li><i class="bi bi-check2"></i> Set your own rates</li>
-                                            <li><i class="bi bi-check2"></i> Manage bookings easily</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                
-                                <!-- Hidden fields for model binding -->
-                                <input type="hidden" asp-for="Input.IsRenter" id="hiddenIsRenter" />
-                                <input type="hidden" asp-for="Input.IsOwner" id="hiddenIsOwner" />
-
-                                <!-- Owner Verification Section (Hidden by default) -->
-                                <div id="ownerVerificationSection" style="display: none;" class="modern-verification-section">
-                                    <div class="modern-alert modern-alert-info">
-                                        <i class="bi bi-shield-check"></i>
-                                        <div>
-                                            <strong>Owner Verification Required</strong>
-                                            <p>Upload a valid government-issued ID for verification. Your ID will be reviewed within 24-48 hours.</p>
-                                            <p><strong>Accepted:</strong> Driver's License, Passport, National ID</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="modern-file-upload" id="fileUploadArea">
-                                        <input type="file" name="IdDocument" accept="image/*" 
-                                               id="idDocumentInput" capture="environment" />
-                                        <div class="upload-icon">
-                                            <i class="bi bi-cloud-upload"></i>
-                                        </div>
-                                        <div class="upload-text">Click or drag to upload ID</div>
-                                        <div class="upload-hint">JPG, PNG up to 5MB</div>
-                                    </div>
-                                    
-                                    <div id="filePreview" style="display: none;" class="file-preview">
-                                        <div class="preview-content">
-                                            <i class="bi bi-file-earmark-image text-success"></i>
-                                            <div class="file-info">
-                                                <strong id="fileName"></strong>
-                                                <p id="fileSize"></p>
-                                            </div>
-                                            <button type="button" class="btn-remove" id="removeFile">
-                                                <i class="bi bi-x"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Terms & Conditions -->
-                                <div class="modern-terms">
-                                    <label class="modern-checkbox">
-                                        <input type="checkbox" id="termsCheck" required />
-                                        <span class="checkmark"></span>
-                                        <span class="checkbox-label">
-                                            I agree to the <a href="#" class="modern-link">Terms & Conditions</a> and 
-                                            <a href="#" class="modern-link">Privacy Policy</a>
-                                        </span>
-                                    </label>
-                                </div>
-
-                                <div class="step-buttons">
-                                    <button type="button" class="modern-btn modern-btn-outline prev-step">
-                                        <i class="bi bi-arrow-left me-2"></i> Back
-                                    </button>
-                                    <button type="submit" class="modern-btn modern-btn-primary">
-                                        <span class="btn-text">
-                                            <i class="bi bi-check-circle me-2"></i> Create My Account
-                                        </span>
-                                        <span class="btn-loading" style="display: none;">
-                                            <span class="spinner-border spinner-border-sm me-2"></span> Creating account...
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-
-                        <!-- Login Link -->
-                        <div class="modern-auth-footer">
-                            <p>Already have an account? <a href="/Account/Login" class="modern-link fw-bold">Sign In</a></p>
-                        </div>
+            <!-- Alert Messages -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="auth-alert-minimal error">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div class="alert-content">
+                        <strong>Error</strong>
+                        <p>@Model.ErrorMessage</p>
                     </div>
                 </div>
+            }
+            
+            <!-- Registration Form -->
+            <form method="post" enctype="multipart/form-data" id="registerForm">
+                <!-- Step 1: Personal Information -->
+                <div class="auth-form-step active" id="step1">
+                    <h3 class="auth-step-title">
+                        <i class="bi bi-person-fill"></i> Personal Information
+                    </h3>
+                    
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Full Name <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper required" id="fullNameWrapper">
+                            <input asp-for="Input.FullName" type="text" class="auth-input" 
+                                   placeholder="Enter your full name" required autocomplete="name" 
+                                   id="fullNameInput" minlength="3" />
+                            <i class="bi bi-person auth-input-icon"></i>
+                            <i class="bi bi-x-circle validation-icon error"></i>
+                            <i class="bi bi-check-circle validation-icon success"></i>
+                        </div>
+                        <div class="validation-message error" id="fullNameError" style="display: none;">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span>Full name is required (minimum 3 characters)</span>
+                        </div>
+                        <span asp-validation-for="Input.FullName" class="validation-message error"></span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Email Address <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper required" id="regEmailWrapper">
+                            <input asp-for="Input.Email" type="email" class="auth-input" 
+                                   placeholder="Enter your email" required autocomplete="email" 
+                                   id="regEmailInput" />
+                            <i class="bi bi-envelope auth-input-icon"></i>
+                            <i class="bi bi-x-circle validation-icon error"></i>
+                            <i class="bi bi-check-circle validation-icon success"></i>
+                        </div>
+                        <div class="validation-message error" id="regEmailError" style="display: none;">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span>Please enter a valid email address</span>
+                        </div>
+                        <span asp-validation-for="Input.Email" class="validation-message error"></span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="auth-form-group">
+                                <label class="auth-form-label">
+                                    Phone <span class="required">*</span>
+                                </label>
+                                <div class="auth-input-wrapper required" id="phoneWrapper">
+                                    <input asp-for="Input.Phone" type="tel" class="auth-input" 
+                                           placeholder="Phone number" required autocomplete="tel" 
+                                           id="phoneInput" />
+                                    <i class="bi bi-phone auth-input-icon"></i>
+                                    <i class="bi bi-x-circle validation-icon error"></i>
+                                    <i class="bi bi-check-circle validation-icon success"></i>
+                                </div>
+                                <div class="validation-message error" id="phoneError" style="display: none;">
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                    <span>Phone number is required</span>
+                                </div>
+                                <span asp-validation-for="Input.Phone" class="validation-message error"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="auth-form-group">
+                                <label class="auth-form-label">
+                                    Address <span class="required">*</span>
+                                </label>
+                                <div class="auth-input-wrapper required" id="addressWrapper">
+                                    <input asp-for="Input.Address" type="text" class="auth-input" 
+                                           placeholder="Your address" required autocomplete="street-address" 
+                                           id="addressInput" />
+                                    <i class="bi bi-geo-alt auth-input-icon"></i>
+                                    <i class="bi bi-x-circle validation-icon error"></i>
+                                    <i class="bi bi-check-circle validation-icon success"></i>
+                                </div>
+                                <div class="validation-message error" id="addressError" style="display: none;">
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                    <span>Address is required</span>
+                                </div>
+                                <span asp-validation-for="Input.Address" class="validation-message error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="auth-btn-minimal auth-btn-primary next-step" id="step1NextBtn">
+                        Continue <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Step 2: Security -->
+                <div class="auth-form-step" id="step2">
+                    <h3 class="auth-step-title">
+                        <i class="bi bi-shield-lock-fill"></i> Set Password
+                    </h3>
+                    
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Password <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper required" id="regPasswordWrapper">
+                            <input asp-for="Input.Password" type="password" class="auth-input" 
+                                   placeholder="Create a strong password" required autocomplete="new-password" 
+                                   id="regPasswordInput" minlength="8" />
+                            <i class="bi bi-lock auth-input-icon"></i>
+                            <button type="button" class="auth-password-toggle" id="toggleRegPassword">
+                                <i class="bi bi-eye" id="toggleRegIcon"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Password Strength Indicator -->
+                        <div class="auth-password-strength" id="passwordStrength">
+                            <div class="auth-strength-bar">
+                                <div class="auth-strength-fill"></div>
+                            </div>
+                            <span class="auth-strength-text">Enter password</span>
+                        </div>
+                        
+                        <!-- Password Requirements -->
+                        <div class="field-requirements" id="passwordRequirements">
+                            <div class="field-requirements-title">
+                                <i class="bi bi-shield-check"></i> Password must contain:
+                            </div>
+                            <div class="field-requirement" id="req-length">
+                                <i class="bi bi-circle"></i> At least 8 characters
+                            </div>
+                            <div class="field-requirement" id="req-uppercase">
+                                <i class="bi bi-circle"></i> One uppercase letter
+                            </div>
+                            <div class="field-requirement" id="req-lowercase">
+                                <i class="bi bi-circle"></i> One lowercase letter
+                            </div>
+                            <div class="field-requirement" id="req-number">
+                                <i class="bi bi-circle"></i> One number
+                            </div>
+                        </div>
+                        <span asp-validation-for="Input.Password" class="validation-message error"></span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Confirm Password <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper required" id="confirmPasswordWrapper">
+                            <input asp-for="Input.ConfirmPassword" type="password" class="auth-input" 
+                                   placeholder="Re-enter your password" required autocomplete="new-password" 
+                                   id="confirmPasswordInput" />
+                            <i class="bi bi-lock-fill auth-input-icon"></i>
+                            <button type="button" class="auth-password-toggle" id="toggleConfirmPassword">
+                                <i class="bi bi-eye" id="toggleConfirmIcon"></i>
+                            </button>
+                            <i class="bi bi-x-circle validation-icon error"></i>
+                            <i class="bi bi-check-circle validation-icon success"></i>
+                        </div>
+                        <div class="validation-message error" id="confirmPasswordError" style="display: none;">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span>Passwords do not match</span>
+                        </div>
+                        <span asp-validation-for="Input.ConfirmPassword" class="validation-message error"></span>
+                    </div>
+
+                    <div class="auth-step-buttons">
+                        <button type="button" class="auth-btn-minimal auth-btn-outline prev-step">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button type="button" class="auth-btn-minimal auth-btn-primary next-step" id="step2NextBtn">
+                            Continue <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Account Type -->
+                <div class="auth-form-step" id="step3">
+                    <h3 class="auth-step-title">
+                        <i class="bi bi-person-circle"></i> Choose Your Role
+                    </h3>
+                    <p class="text-muted mb-4" style="font-size: 0.875rem;">Select how you want to use Bike Ta Bai</p>
+                    
+                    <div class="auth-role-grid">
+                        <!-- Renter Card -->
+                        <div class="auth-role-card" id="renterCard">
+                            <input type="radio" name="UserRole" value="Renter" id="renterRadio" required />
+                            <div class="auth-role-check">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="auth-role-icon">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <h4 class="auth-role-title">Renter</h4>
+                            <p class="auth-role-desc">Find and rent bikes</p>
+                        </div>
+
+                        <!-- Owner Card -->
+                        <div class="auth-role-card" id="ownerCard">
+                            <input type="radio" name="UserRole" value="Owner" id="ownerRadio" required />
+                            <div class="auth-role-check">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="auth-role-icon">
+                                <i class="bi bi-person-badge"></i>
+                            </div>
+                            <h4 class="auth-role-title">Owner</h4>
+                            <p class="auth-role-desc">List bikes & earn</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden fields -->
+                    <input type="hidden" asp-for="Input.IsRenter" id="hiddenIsRenter" />
+                    <input type="hidden" asp-for="Input.IsOwner" id="hiddenIsOwner" />
+
+                    <!-- Owner Verification -->
+                    <div id="ownerVerificationSection" style="display: none;" class="mt-4">
+                        <div class="auth-alert-minimal" style="background: #E8F0E3; border: 1px solid #87A96B; color: #6B8E5F;">
+                            <i class="bi bi-shield-check"></i>
+                            <div class="alert-content">
+                                <strong>Verification Required</strong>
+                                <p style="margin-bottom: 0;">Upload a valid ID (Driver's License, Passport, or National ID)</p>
+                            </div>
+                        </div>
+
+                        <div class="auth-file-upload" id="fileUploadArea">
+                            <input type="file" name="IdDocument" accept="image/*" id="idDocumentInput" capture="environment" />
+                            <div class="auth-upload-icon">
+                                <i class="bi bi-cloud-upload"></i>
+                            </div>
+                            <div class="auth-upload-text">Click or drag to upload ID</div>
+                            <div class="auth-upload-hint">JPG, PNG up to 5MB</div>
+                        </div>
+                        
+                        <div id="filePreview" style="display: none; padding: 1rem; background: #E8F0E3; border-radius: 0.75rem; margin-top: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <i class="bi bi-file-earmark-image" style="font-size: 2rem; color: #87A96B;"></i>
+                                <div style="flex: 1;">
+                                    <strong id="fileName" style="color: #1a1a1a; font-size: 0.9375rem;"></strong>
+                                    <p id="fileSize" style="margin: 0; color: #6a6a6a; font-size: 0.875rem;"></p>
+                                </div>
+                                <button type="button" class="auth-password-toggle" id="removeFile" style="position: static; transform: none;">
+                                    <i class="bi bi-x" style="font-size: 1.5rem;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms -->
+                    <div class="mt-4">
+                        <div class="auth-checkbox-wrapper">
+                            <input type="checkbox" id="termsCheck" required />
+                            <label for="termsCheck" class="auth-checkbox-label">
+                                I agree to the <a href="#" class="auth-link">Terms & Conditions</a> and <a href="#" class="auth-link">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="auth-step-buttons">
+                        <button type="button" class="auth-btn-minimal auth-btn-outline prev-step">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button type="submit" class="auth-btn-minimal auth-btn-primary">
+                            <span class="btn-text">
+                                <i class="bi bi-check-circle"></i> Create Account
+                            </span>
+                            <span class="btn-loading" style="display: none;">
+                                <span class="spinner-border spinner-border-sm"></span> Creating...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <div class="auth-footer-minimal">
+                <p>Already have an account? <a href="/Account/Login" class="auth-link">Sign In</a></p>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
         $(document).ready(function() {
-            // Initialize AOS
-            AOS.init({
-                duration: 800,
-                once: true
-            });
-
             let currentStep = 1;
             const totalSteps = 3;
+
+            // Real-time Validation for Step 1
+            $('#fullNameInput').on('input blur', function() {
+                const value = $(this).val().trim();
+                const wrapper = $('#fullNameWrapper');
+                const errorMsg = $('#fullNameError');
+                
+                if (value.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (value.length >= 3) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
+            });
+
+            $('#regEmailInput').on('input blur', function() {
+                const email = $(this).val().trim();
+                const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                const wrapper = $('#regEmailWrapper');
+                const errorMsg = $('#regEmailError');
+                
+                if (email.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (emailRegex.test(email)) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
+            });
+
+            $('#phoneInput').on('input blur', function() {
+                const value = $(this).val().trim();
+                const wrapper = $('#phoneWrapper');
+                const errorMsg = $('#phoneError');
+                
+                if (value.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (value.length >= 10) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
+            });
+
+            $('#addressInput').on('input blur', function() {
+                const value = $(this).val().trim();
+                const wrapper = $('#addressWrapper');
+                const errorMsg = $('#addressError');
+                
+                if (value.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (value.length >= 5) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
+            });
 
             // Multi-step Navigation
             $('.next-step').click(function() {
                 if (validateStep(currentStep)) {
-                    // Hide current step
-                    $(`#step${currentStep}`).removeClass('active').fadeOut(300, function() {
+                    $(`#step${currentStep}`).removeClass('active').fadeOut(200, function() {
                         currentStep++;
-                        // Show next step
-                        $(`#step${currentStep}`).fadeIn(300).addClass('active');
-                        // Update progress indicator
+                        $(`#step${currentStep}`).fadeIn(200).addClass('active');
                         updateProgress();
-                        // Scroll to top
-                        $('.modern-auth-form-wrapper').animate({ scrollTop: 0 }, 300);
+                        $('.auth-card-minimal').scrollTop(0);
                     });
                 }
             });
 
             $('.prev-step').click(function() {
-                // Hide current step
-                $(`#step${currentStep}`).removeClass('active').fadeOut(300, function() {
+                $(`#step${currentStep}`).removeClass('active').fadeOut(200, function() {
                     currentStep--;
-                    // Show previous step
-                    $(`#step${currentStep}`).fadeIn(300).addClass('active');
-                    // Update progress indicator
+                    $(`#step${currentStep}`).fadeIn(200).addClass('active');
                     updateProgress();
-                    // Scroll to top
-                    $('.modern-auth-form-wrapper').animate({ scrollTop: 0 }, 300);
+                    $('.auth-card-minimal').scrollTop(0);
                 });
             });
 
             function updateProgress() {
-                $('.progress-step').each(function() {
+                $('.auth-step').each(function() {
                     const stepNum = parseInt($(this).data('step'));
                     if (stepNum < currentStep) {
                         $(this).addClass('completed').removeClass('active');
@@ -395,30 +470,84 @@
 
             function validateStep(step) {
                 let isValid = true;
-                const stepElement = $(`#step${step}`);
+                let firstError = null;
                 
-                stepElement.find('input[required], textarea[required]').each(function() {
-                    if (!$(this).val()) {
+                if (step === 1) {
+                    // Validate Full Name
+                    const fullName = $('#fullNameInput').val().trim();
+                    if (!fullName || fullName.length < 3) {
+                        $('#fullNameWrapper').addClass('has-error');
+                        $('#fullNameInput').addClass('error');
+                        $('#fullNameError').show();
                         isValid = false;
-                        $(this).addClass('error');
-                        $(this).focus();
-                        return false;
-                    } else {
-                        $(this).removeClass('error');
+                        if (!firstError) firstError = $('#fullNameInput');
                     }
-                });
-
-                if (!isValid) {
-                    alert('Please fill in all required fields before continuing.');
+                    
+                    // Validate Email
+                    const email = $('#regEmailInput').val().trim();
+                    const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                    if (!email || !emailRegex.test(email)) {
+                        $('#regEmailWrapper').addClass('has-error');
+                        $('#regEmailInput').addClass('error');
+                        $('#regEmailError').show();
+                        isValid = false;
+                        if (!firstError) firstError = $('#regEmailInput');
+                    }
+                    
+                    // Validate Phone
+                    const phone = $('#phoneInput').val().trim();
+                    if (!phone || phone.length < 10) {
+                        $('#phoneWrapper').addClass('has-error');
+                        $('#phoneInput').addClass('error');
+                        $('#phoneError').show();
+                        isValid = false;
+                        if (!firstError) firstError = $('#phoneInput');
+                    }
+                    
+                    // Validate Address
+                    const address = $('#addressInput').val().trim();
+                    if (!address || address.length < 5) {
+                        $('#addressWrapper').addClass('has-error');
+                        $('#addressInput').addClass('error');
+                        $('#addressError').show();
+                        isValid = false;
+                        if (!firstError) firstError = $('#addressInput');
+                    }
                 }
+                
+                if (step === 2) {
+                    // Validate Password
+                    const password = $('#regPasswordInput').val();
+                    if (!password || password.length < 8 || !password.match(/[a-z]/) || 
+                        !password.match(/[A-Z]/) || !password.match(/[0-9]/)) {
+                        isValid = false;
+                        if (!firstError) firstError = $('#regPasswordInput');
+                    }
+                    
+                    // Validate Confirm Password
+                    const confirmPassword = $('#confirmPasswordInput').val();
+                    if (password !== confirmPassword) {
+                        $('#confirmPasswordWrapper').addClass('has-error');
+                        $('#confirmPasswordInput').addClass('error');
+                        $('#confirmPasswordError').show();
+                        isValid = false;
+                        if (!firstError) firstError = $('#confirmPasswordInput');
+                    }
+                }
+                
+                if (!isValid && firstError) {
+                    firstError.focus();
+                }
+                
                 return isValid;
             }
 
             // Password Toggle
-            $('#toggleRegPassword').click(function(e) {
+            $('#toggleRegPassword, #toggleConfirmPassword').click(function(e) {
                 e.preventDefault();
-                const passwordInput = $('#regPasswordInput');
-                const toggleIcon = $('#toggleRegIcon');
+                const isReg = $(this).attr('id') === 'toggleRegPassword';
+                const passwordInput = isReg ? $('#regPasswordInput') : $('#confirmPasswordInput');
+                const toggleIcon = isReg ? $('#toggleRegIcon') : $('#toggleConfirmIcon');
                 
                 if (passwordInput.attr('type') === 'password') {
                     passwordInput.attr('type', 'text');
@@ -429,33 +558,44 @@
                 }
             });
 
-            $('#toggleConfirmPassword').click(function(e) {
-                e.preventDefault();
-                const passwordInput = $('#confirmPasswordInput');
-                const toggleIcon = $('#toggleConfirmIcon');
-                
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    toggleIcon.removeClass('bi-eye').addClass('bi-eye-slash');
-                } else {
-                    passwordInput.attr('type', 'password');
-                    toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
-                }
-            });
-
-            // Password Strength Indicator
+            // Password Strength & Requirements
             $('#regPasswordInput').on('input', function() {
                 const password = $(this).val();
                 let strength = 0;
                 
+                // Check requirements
+                const hasLength = password.length >= 8;
+                const hasUppercase = password.match(/[A-Z]/);
+                const hasLowercase = password.match(/[a-z]/);
+                const hasNumber = password.match(/[0-9]/);
+                
+                // Update requirement indicators
+                $('#req-length').toggleClass('met', hasLength).toggleClass('unmet', !hasLength);
+                $('#req-uppercase').toggleClass('met', hasUppercase).toggleClass('unmet', !hasUppercase);
+                $('#req-lowercase').toggleClass('met', hasLowercase).toggleClass('unmet', !hasLowercase);
+                $('#req-number').toggleClass('met', hasNumber).toggleClass('unmet', !hasNumber);
+                
+                $('#req-length i').removeClass('bi-circle bi-check-circle-fill');
+                $('#req-length i').addClass(hasLength ? 'bi-check-circle-fill' : 'bi-circle');
+                
+                $('#req-uppercase i').removeClass('bi-circle bi-check-circle-fill');
+                $('#req-uppercase i').addClass(hasUppercase ? 'bi-check-circle-fill' : 'bi-circle');
+                
+                $('#req-lowercase i').removeClass('bi-circle bi-check-circle-fill');
+                $('#req-lowercase i').addClass(hasLowercase ? 'bi-check-circle-fill' : 'bi-circle');
+                
+                $('#req-number i').removeClass('bi-circle bi-check-circle-fill');
+                $('#req-number i').addClass(hasNumber ? 'bi-check-circle-fill' : 'bi-circle');
+                
+                // Calculate strength
                 if (password.length >= 8) strength++;
                 if (password.match(/[a-z]/)) strength++;
                 if (password.match(/[A-Z]/)) strength++;
                 if (password.match(/[0-9]/)) strength++;
                 if (password.match(/[^a-zA-Z0-9]/)) strength++;
 
-                const strengthBar = $('.strength-fill');
-                const strengthText = $('.strength-text');
+                const strengthBar = $('.auth-strength-fill');
+                const strengthText = $('.auth-strength-text');
                 
                 strengthBar.removeClass('weak medium strong');
                 
@@ -470,30 +610,45 @@
                     strengthText.text('Strong password');
                 }
             });
-
-            // Role Card Selection
-            $('#renterCard').click(function() {
-                $('#renterRadio').prop('checked', true).trigger('change');
+            
+            // Confirm Password Validation
+            $('#confirmPasswordInput').on('input blur', function() {
+                const password = $('#regPasswordInput').val();
+                const confirmPassword = $(this).val();
+                const wrapper = $('#confirmPasswordWrapper');
+                const errorMsg = $('#confirmPasswordError');
+                
+                if (confirmPassword.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (password === confirmPassword) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
             });
 
-            $('#ownerCard').click(function() {
-                $('#ownerRadio').prop('checked', true).trigger('change');
+            // Role Selection
+            $('#renterCard, #ownerCard').click(function() {
+                const role = $(this).attr('id') === 'renterCard' ? 'Renter' : 'Owner';
+                $(`input[value="${role}"]`).prop('checked', true).trigger('change');
             });
 
-            // Handle radio button changes
             $('input[name="UserRole"]').change(function() {
                 const selectedRole = $(this).val();
+                $('.auth-role-card').removeClass('selected');
                 
-                // Remove selected class from all cards
-                $('.modern-role-card').removeClass('selected');
-                
-                // Add selected class to chosen card
                 if (selectedRole === 'Renter') {
                     $('#renterCard').addClass('selected');
                     $('#ownerVerificationSection').slideUp(300);
                     $('#hiddenIsRenter').val('true');
                     $('#hiddenIsOwner').val('false');
-                } else if (selectedRole === 'Owner') {
+                } else {
                     $('#ownerCard').addClass('selected');
                     $('#ownerVerificationSection').slideDown(300);
                     $('#hiddenIsRenter').val('false');
@@ -501,18 +656,20 @@
                 }
             });
 
-            // File Upload Handling
+            // File Upload
+            $('#fileUploadArea').click(function() {
+                $('#idDocumentInput').click();
+            });
+
             $('#idDocumentInput').change(function() {
                 const file = this.files[0];
                 if (file) {
-                    // Validate file size (5MB max)
                     if (file.size > 5 * 1024 * 1024) {
                         alert('File size must be less than 5MB');
                         $(this).val('');
                         return;
                     }
 
-                    // Validate file type
                     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
                     if (!validTypes.includes(file.type)) {
                         alert('Please upload a JPG or PNG image');
@@ -520,7 +677,6 @@
                         return;
                     }
 
-                    // Show preview
                     $('#fileName').text(file.name);
                     $('#fileSize').text((file.size / 1024 / 1024).toFixed(2) + ' MB');
                     $('#fileUploadArea').hide();
@@ -534,24 +690,19 @@
                 $('#fileUploadArea').fadeIn(300);
             });
 
-            // File Upload Area Click
-            $('#fileUploadArea').click(function() {
-                $('#idDocumentInput').click();
-            });
-
             // Form Submission
             $('#registerForm').submit(function(e) {
                 const selectedRole = $('input[name="UserRole"]:checked').val();
 
                 if (!selectedRole) {
                     e.preventDefault();
-                    alert('Please select your account type (Renter or Owner)');
+                    alert('Please select your account type');
                     return false;
                 }
 
                 if (selectedRole === 'Owner' && !$('#idDocumentInput')[0].files.length) {
                     e.preventDefault();
-                    alert('Please upload your ID document to become a bike owner');
+                    alert('Please upload your ID document');
                     return false;
                 }
 
@@ -561,28 +712,33 @@
                     return false;
                 }
 
-                // Show loading state
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.find('.btn-text').hide();
                 submitBtn.find('.btn-loading').show();
                 submitBtn.prop('disabled', true);
             });
 
-            // Add focus class for better visual feedback
-            $('.modern-input').on('focus', function() {
-                $(this).closest('.modern-input-wrapper').addClass('focused');
-            }).on('blur', function() {
-                $(this).closest('.modern-input-wrapper').removeClass('focused');
+            // Auto-hide error message
+            setTimeout(function() {
+                $('.auth-alert-minimal').fadeOut(500);
+            }, 5000);
+            
+            // Focus effect - remove error on focus
+            $('.auth-input').on('focus', function() {
+                $(this).closest('.auth-input-wrapper').removeClass('has-error');
+                $(this).removeClass('error');
+                // Hide corresponding error message
+                const inputId = $(this).attr('id');
+                if (inputId) {
+                    const errorId = inputId.replace('Input', 'Error').replace('reg', 'reg');
+                    $(`#${errorId}`).hide();
+                }
             });
-
-            // Initialize: Check if any radio is already selected
-            const selectedRole = $('input[name="UserRole"]:checked').val();
-            if (selectedRole === 'Renter') {
-                $('#renterCard').addClass('selected');
-            } else if (selectedRole === 'Owner') {
-                $('#ownerCard').addClass('selected');
-                $('#ownerVerificationSection').show();
-            }
         });
     </script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }
+</body>
+</html>
