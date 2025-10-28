@@ -2,191 +2,135 @@
 @model LoginModel
 @{
     ViewData["Title"] = "Sign In";
+    Layout = null;
 }
 
-<!-- Modern Split-Screen Login -->
-<div class="modern-auth-container">
-    <div class="container-fluid h-100">
-        <div class="row h-100 g-0">
-            <!-- Left Side - Visual/Branding -->
-            <div class="col-lg-6 d-none d-lg-flex modern-auth-visual">
-                <div class="modern-auth-visual-content">
-                    <div class="modern-auth-brand mb-5" data-aos="fade-right">
-                        <i class="bi bi-bicycle"></i>
-                        <h2>Bike Ta Bai</h2>
-                        <p>Your Eco-Friendly Ride Partner</p>
-                    </div>
-                    
-                    <div class="modern-auth-features" data-aos="fade-right" data-aos-delay="200">
-                        <div class="auth-feature-item">
-                            <div class="auth-feature-icon">
-                                <i class="bi bi-shield-check"></i>
-                            </div>
-                            <div class="auth-feature-text">
-                                <h4>Secure & Verified</h4>
-                                <p>All users and bikes are verified for your safety</p>
-                            </div>
-                        </div>
-                        
-                        <div class="auth-feature-item">
-                            <div class="auth-feature-icon">
-                                <i class="bi bi-lightning-charge"></i>
-                            </div>
-                            <div class="auth-feature-text">
-                                <h4>Quick & Easy</h4>
-                                <p>Book bikes in seconds with our streamlined process</p>
-                            </div>
-                        </div>
-                        
-                        <div class="auth-feature-item">
-                            <div class="auth-feature-icon">
-                                <i class="bi bi-graph-up-arrow"></i>
-                            </div>
-                            <div class="auth-feature-text">
-                                <h4>Earn & Save</h4>
-                                <p>Owners earn extra income, renters save on transport</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="modern-auth-stats" data-aos="fade-right" data-aos-delay="400">
-                        <div class="stat-item">
-                            <div class="stat-number">2,500+</div>
-                            <div class="stat-label">Active Users</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">850+</div>
-                            <div class="stat-label">Bikes Listed</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">15K+</div>
-                            <div class="stat-label">Successful Rentals</div>
-                        </div>
-                    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth-minimal.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Minimalist Login Container -->
+    <div class="auth-minimal-container">
+        <div class="auth-card-minimal">
+            <!-- Back to Home -->
+            <a href="/" class="auth-back-link">
+                <i class="bi bi-arrow-left"></i> Back to Home
+            </a>
+            
+            <!-- Header -->
+            <div class="auth-header-minimal">
+                <div class="auth-logo-minimal">
+                    <i class="bi bi-bicycle"></i>
                 </div>
+                <h1>Welcome Back</h1>
+                <p>Sign in to continue your journey</p>
             </div>
             
-            <!-- Right Side - Login Form -->
-            <div class="col-lg-6 modern-auth-form-side">
-                <div class="modern-auth-form-container">
-                    <div class="modern-auth-form-wrapper" data-aos="fade-left">
-                        <!-- Back to Home -->
-                        <a href="/" class="modern-back-link">
-                            <i class="bi bi-arrow-left"></i> Back to Home
-                        </a>
-                        
-                        <!-- Header -->
-                        <div class="modern-auth-header">
-                            <h1>Welcome Back</h1>
-                            <p>Sign in to continue your eco-friendly journey</p>
-                        </div>
-                        
-                        <!-- Alert Messages -->
-                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                        {
-                            <div class="modern-alert modern-alert-danger" data-aos="shake">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                                <div>
-                                    <strong>Error</strong>
-                                    <p>@Model.ErrorMessage</p>
-                                </div>
-                            </div>
-                        }
-                        
-                        <!-- Login Form -->
-                        <form method="post" id="loginForm" class="modern-form">
-                            <!-- Email -->
-                            <div class="modern-form-group">
-                                <div class="modern-input-wrapper">
-                                    <i class="bi bi-envelope input-icon"></i>
-                                    <input asp-for="Input.Email" type="email" class="modern-input" 
-                                           placeholder=" " required autofocus autocomplete="email" />
-                                    <label class="modern-label">Email Address</label>
-                                </div>
-                                <span asp-validation-for="Input.Email" class="text-danger small"></span>
-                            </div>
-
-                            <!-- Password -->
-                            <div class="modern-form-group">
-                                <div class="modern-input-wrapper">
-                                    <i class="bi bi-lock input-icon"></i>
-                                    <input asp-for="Input.Password" type="password" class="modern-input" 
-                                           placeholder=" " required autocomplete="current-password" id="passwordInput" />
-                                    <label class="modern-label">Password</label>
-                                    <button type="button" class="password-toggle" id="togglePassword">
-                                        <i class="bi bi-eye" id="toggleIcon"></i>
-                                    </button>
-                                </div>
-                                <span asp-validation-for="Input.Password" class="text-danger small"></span>
-                            </div>
-
-                            <!-- Remember Me & Forgot Password -->
-                            <div class="modern-form-options">
-                                <label class="modern-checkbox">
-                                    <input asp-for="Input.RememberMe" type="checkbox" />
-                                    <span class="checkmark"></span>
-                                    <span class="checkbox-label">Remember me</span>
-                                </label>
-                                <a href="/Account/ForgotPassword" class="modern-link">
-                                    Forgot password?
-                                </a>
-                            </div>
-
-                            <!-- Submit Button -->
-                            <button type="submit" class="modern-btn modern-btn-primary">
-                                <span class="btn-text">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
-                                </span>
-                                <span class="btn-loading" style="display: none;">
-                                    <span class="spinner-border spinner-border-sm me-2"></span> Signing in...
-                                </span>
-                            </button>
-
-                            <!-- Divider -->
-                            <div class="modern-divider">
-                                <span>New to Bike Ta Bai?</span>
-                            </div>
-
-                            <!-- Register Link -->
-                            <a href="/Account/Register" class="modern-btn modern-btn-outline">
-                                <i class="bi bi-person-plus me-2"></i> Create New Account
-                            </a>
-                        </form>
-                        
-                        <!-- Quick Features (Mobile Only) -->
-                        <div class="modern-quick-features d-lg-none">
-                            <div class="quick-feature">
-                                <i class="bi bi-bicycle"></i>
-                                <span>Rent Bikes</span>
-                            </div>
-                            <div class="quick-feature">
-                                <i class="bi bi-tree"></i>
-                                <span>Go Green</span>
-                            </div>
-                            <div class="quick-feature">
-                                <i class="bi bi-shield-check"></i>
-                                <span>Verified</span>
-                            </div>
-                        </div>
+            <!-- Alert Messages -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="auth-alert-minimal error">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div class="alert-content">
+                        <strong>Error</strong>
+                        <p>@Model.ErrorMessage</p>
                     </div>
                 </div>
+            }
+            
+            <!-- Login Form -->
+            <form method="post" id="loginForm" novalidate>
+                <!-- Email -->
+                <div class="auth-form-group">
+                    <label class="auth-form-label">
+                        Email Address <span class="required">*</span>
+                    </label>
+                    <div class="auth-input-wrapper required" id="emailWrapper">
+                        <input asp-for="Input.Email" type="email" class="auth-input" 
+                               placeholder="Enter your email" required autofocus autocomplete="email" 
+                               id="emailInput" data-validate="email" />
+                        <i class="bi bi-envelope auth-input-icon"></i>
+                        <i class="bi bi-x-circle validation-icon error"></i>
+                        <i class="bi bi-check-circle validation-icon success"></i>
+                    </div>
+                    <div class="validation-message error" id="emailError" style="display: none;">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span>Please enter a valid email address</span>
+                    </div>
+                    <span asp-validation-for="Input.Email" class="validation-message error"></span>
+                </div>
+
+                <!-- Password -->
+                <div class="auth-form-group">
+                    <label class="auth-form-label">
+                        Password <span class="required">*</span>
+                    </label>
+                    <div class="auth-input-wrapper required" id="passwordWrapper">
+                        <input asp-for="Input.Password" type="password" class="auth-input" 
+                               placeholder="Enter your password" required autocomplete="current-password" 
+                               id="passwordInput" data-validate="required" minlength="6" />
+                        <i class="bi bi-lock auth-input-icon"></i>
+                        <button type="button" class="auth-password-toggle" id="togglePassword">
+                            <i class="bi bi-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                    <div class="validation-message error" id="passwordError" style="display: none;">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span>Password is required (minimum 6 characters)</span>
+                    </div>
+                    <span asp-validation-for="Input.Password" class="validation-message error"></span>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="auth-form-options">
+                    <div class="auth-checkbox-wrapper">
+                        <input asp-for="Input.RememberMe" type="checkbox" id="rememberMe" />
+                        <label for="rememberMe" class="auth-checkbox-label">Remember me</label>
+                    </div>
+                    <a href="/Account/ForgotPassword" class="auth-link">Forgot password?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="auth-btn-minimal auth-btn-primary">
+                    <span class="btn-text">
+                        <i class="bi bi-box-arrow-in-right"></i> Sign In
+                    </span>
+                    <span class="btn-loading" style="display: none;">
+                        <span class="spinner-border spinner-border-sm"></span> Signing in...
+                    </span>
+                </button>
+
+                <!-- Divider -->
+                <div class="auth-divider">
+                    <span>New to Bike Ta Bai?</span>
+                </div>
+
+                <!-- Register Link -->
+                <a href="/Account/Register" class="auth-btn-minimal auth-btn-outline">
+                    <i class="bi bi-person-plus"></i> Create Account
+                </a>
+            </form>
+            
+            <!-- Footer -->
+            <div class="auth-footer-minimal">
+                <p>🌿 Ride Green, Live Clean</p>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
         $(document).ready(function() {
-            // Initialize AOS
-            AOS.init({
-                duration: 800,
-                once: true
-            });
-
             // Password Toggle
             $('#togglePassword').click(function(e) {
                 e.preventDefault();
@@ -202,8 +146,88 @@
                 }
             });
 
-            // Form Submit Loading State
-            $('#loginForm').submit(function() {
+            // Real-time Email Validation
+            $('#emailInput').on('input blur', function() {
+                const email = $(this).val();
+                const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                const wrapper = $('#emailWrapper');
+                const errorMsg = $('#emailError');
+                
+                if (email.length === 0) {
+                    // Empty field
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (emailRegex.test(email)) {
+                    // Valid email
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    // Invalid email
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
+            });
+
+            // Real-time Password Validation
+            $('#passwordInput').on('input blur', function() {
+                const password = $(this).val();
+                const wrapper = $('#passwordWrapper');
+                const errorMsg = $('#passwordError');
+                
+                if (password.length === 0) {
+                    // Empty field
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (password.length >= 6) {
+                    // Valid password
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
+                } else {
+                    // Invalid password
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
+                }
+            });
+
+            // Form Submit with Validation
+            $('#loginForm').submit(function(e) {
+                let isValid = true;
+                
+                // Validate Email
+                const email = $('#emailInput').val();
+                const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                if (!email || !emailRegex.test(email)) {
+                    $('#emailWrapper').addClass('has-error');
+                    $('#emailInput').addClass('error');
+                    $('#emailError').show();
+                    isValid = false;
+                }
+                
+                // Validate Password
+                const password = $('#passwordInput').val();
+                if (!password || password.length < 6) {
+                    $('#passwordWrapper').addClass('has-error');
+                    $('#passwordInput').addClass('error');
+                    $('#passwordError').show();
+                    isValid = false;
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    // Scroll to first error
+                    $('html, body').animate({
+                        scrollTop: $('.has-error').first().offset().top - 100
+                    }, 300);
+                    return false;
+                }
+                
+                // Show loading state
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.find('.btn-text').hide();
                 submitBtn.find('.btn-loading').show();
@@ -212,15 +236,19 @@
 
             // Auto-hide error message after 5 seconds
             setTimeout(function() {
-                $('.modern-alert-danger').fadeOut(500);
+                $('.auth-alert-minimal').fadeOut(500);
             }, 5000);
-
-            // Add focus class for better visual feedback
-            $('.modern-input').on('focus', function() {
-                $(this).closest('.modern-input-wrapper').addClass('focused');
-            }).on('blur', function() {
-                $(this).closest('.modern-input-wrapper').removeClass('focused');
+            
+            // Focus effect - remove error on focus
+            $('.auth-input').on('focus', function() {
+                $(this).closest('.auth-input-wrapper').removeClass('has-error');
+                $(this).removeClass('error');
             });
         });
     </script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }
+</body>
+</html>

@@ -4,6 +4,31 @@
    ============================================ */
 
 /* ============================================
+   CRITICAL FIXES - Load First
+   ============================================ */
+/* Remove any gaps above header */
+html {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+header {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Override Bootstrap container margins at top */
+.container:first-child,
+.container-fluid:first-child {
+    margin-top: 0 !important;
+}
+
+/* ============================================
    DESIGN TOKENS
    ============================================ */
 :root {
@@ -80,6 +105,13 @@
     box-sizing: border-box;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden;
+}
+
 body {
     font-family: var(--font-family-base);
     font-size: 1rem;
@@ -97,9 +129,12 @@ body {
 .header-minimal {
     background: var(--color-white);
     border-bottom: 1px solid var(--color-gray-200);
+    margin: 0;
     padding: 0;
     position: sticky;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.95);
@@ -107,6 +142,12 @@ body {
 
 .header-minimal .navbar {
     padding: 0.75rem 0;
+    margin: 0;
+}
+
+/* Remove Bootstrap navbar default margins */
+.navbar {
+    margin-bottom: 0 !important;
 }
 
 /* Brand */
