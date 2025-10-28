@@ -61,37 +61,48 @@
                     <span>Bike Ta Bai</span>
                 </a>
                 
-                <!-- Mobile Toggle -->
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <!-- Mobile: User Name Button (replaces burger) -->
+                    <button class="btn btn-minimal-account d-lg-none" type="button" id="openSidebarBtnMobile">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="ms-1">@User.Identity.Name</span>
+                    </button>
+                }
+                else
+                {
+                    <!-- Mobile Toggle (for non-authenticated users) -->
+                    <button class="navbar-toggler border-0 d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                }
                 
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <!-- Center Navigation -->
                     <ul class="navbar-nav mx-auto align-items-lg-center">
-                        <li class="nav-item">
+                        <li class="nav-item hide-on-mobile-nav">
                             <a class="nav-link-minimal" href="/">Home</a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item hide-on-mobile-nav">
                             <a class="nav-link-minimal" href="/Bikes/Browse">Browse</a>
                         </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             @if (AuthHelper.IsRenter(User))
                             {
-                                <li class="nav-item">
+                                <li class="nav-item hide-on-mobile-nav">
                                     <a class="nav-link-minimal" href="/Renter/RentalHistory">Rentals</a>
                                 </li>
                             }
                             @if (AuthHelper.IsOwner(User))
                             {
-                                <li class="nav-item">
+                                <li class="nav-item hide-on-mobile-nav">
                                     <a class="nav-link-minimal" href="/Owner/MyBikes">My Bikes</a>
                                 </li>
                             }
                             @if (AuthHelper.IsAdmin(User))
                             {
-                                <li class="nav-item">
+                                <li class="nav-item hide-on-mobile-nav">
                                     <a class="nav-link-minimal" href="/Dashboard/Admin">Admin</a>
                                 </li>
                             }
@@ -102,31 +113,12 @@
                     <ul class="navbar-nav align-items-lg-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item dropdown">
-                                <a class="btn btn-minimal-account dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <!-- Desktop: User Name Button - Opens Sidebar -->
+                            <li class="nav-item d-none d-lg-block">
+                                <button class="btn btn-minimal-account" type="button" id="openSidebarBtn">
                                     <i class="bi bi-person-circle"></i>
-                                    <span class="d-none d-lg-inline ms-1">Account</span>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end dropdown-minimal">
-                                    <li class="dropdown-header px-3 py-2">
-                                        <div class="d-flex align-items-center">
-                                            <div class="user-avatar-minimal">
-                                                <i class="bi bi-person-circle"></i>
-                                            </div>
-                                            <div class="ms-2">
-                                                <div class="fw-semibold small">@User.Identity.Name</div>
-                                                <div class="text-muted" style="font-size: 0.75rem;">Welcome back!</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li><hr class="dropdown-divider my-2"></li>
-                                    <li><a class="dropdown-item-minimal" href="/Account/Profile"><i class="bi bi-person"></i> Profile</a></li>
-                                    <li><a class="dropdown-item-minimal" href="/Wallet/Index"><i class="bi bi-wallet2"></i> Wallet <span class="badge-minimal-sage" id="walletBalanceDropdown">₱0</span></a></li>
-                                    <li><a class="dropdown-item-minimal" href="/Points/Index"><i class="bi bi-star"></i> Points <span class="badge-minimal-gold" id="pointsBalanceDropdown">0</span></a></li>
-                                    <li><a class="dropdown-item-minimal" href="/Notifications/Index"><i class="bi bi-bell"></i> Notifications <span class="badge-minimal-danger" id="notificationCountDropdown" style="display: none;">0</span></a></li>
-                                    <li><hr class="dropdown-divider my-2"></li>
-                                    <li><a class="dropdown-item-minimal text-danger" href="/Account/Logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                                </ul>
+                                    <span class="ms-1">@User.Identity.Name</span>
+                                </button>
                             </li>
                         }
                         else
@@ -143,6 +135,114 @@
             </div>
         </nav>
     </header>
+
+    <!-- Account Sidebar Navigation -->
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="account-sidebar" id="accountSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-user-info">
+                    <div class="sidebar-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="sidebar-user-details">
+                        <h3 class="sidebar-user-name">@User.Identity.Name</h3>
+                        <p class="sidebar-user-role">
+                            @if (AuthHelper.IsAdmin(User))
+                            {
+                                <span class="role-badge-sidebar admin">Admin</span>
+                            }
+                            @if (AuthHelper.IsOwner(User))
+                            {
+                                <span class="role-badge-sidebar owner">Owner</span>
+                            }
+                            @if (AuthHelper.IsRenter(User))
+                            {
+                                <span class="role-badge-sidebar renter">Renter</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+                <button class="sidebar-close-btn" id="closeSidebarBtn" aria-label="Close sidebar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <h4 class="sidebar-section-title">Account</h4>
+                    <a href="/Account/Profile" class="sidebar-link">
+                        <i class="bi bi-person"></i>
+                        <span>My Profile</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <h4 class="sidebar-section-title">Balance</h4>
+                    <a href="/Wallet/Index" class="sidebar-link">
+                        <i class="bi bi-wallet2"></i>
+                        <span>Wallet</span>
+                        <span class="sidebar-badge sage" id="walletBalanceSidebar">₱0</span>
+                    </a>
+                    <a href="/Points/Index" class="sidebar-link">
+                        <i class="bi bi-star"></i>
+                        <span>Points</span>
+                        <span class="sidebar-badge gold" id="pointsBalanceSidebar">0</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <h4 class="sidebar-section-title">Activity</h4>
+                    <a href="/Notifications/Index" class="sidebar-link">
+                        <i class="bi bi-bell"></i>
+                        <span>Notifications</span>
+                        <span class="sidebar-badge danger" id="notificationCountSidebar" style="display: none;">0</span>
+                    </a>
+                    @if (AuthHelper.IsRenter(User))
+                    {
+                        <a href="/Renter/RentalHistory" class="sidebar-link">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Rental History</span>
+                        </a>
+                    }
+                    @if (AuthHelper.IsOwner(User))
+                    {
+                        <a href="/Owner/MyBikes" class="sidebar-link">
+                            <i class="bi bi-bicycle"></i>
+                            <span>My Bikes</span>
+                        </a>
+                        <a href="/Owner/RentalRequests" class="sidebar-link">
+                            <i class="bi bi-inbox-fill"></i>
+                            <span>Rental Requests</span>
+                        </a>
+                    }
+                    @if (AuthHelper.IsAdmin(User))
+                    {
+                        <a href="/Dashboard/Admin" class="sidebar-link">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Admin Dashboard</span>
+                        </a>
+                        <a href="/Admin/ManageUsers" class="sidebar-link">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Manage Users</span>
+                        </a>
+                        <a href="/Admin/Reports" class="sidebar-link">
+                            <i class="bi bi-flag-fill"></i>
+                            <span>Reports</span>
+                        </a>
+                    }
+                </div>
+
+                <div class="sidebar-section sidebar-section-logout">
+                    <a href="/Account/Logout" class="sidebar-link sidebar-link-logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+    }
 
     <main role="main">
         @RenderBody()
@@ -239,38 +339,121 @@
             function loadWalletBalance() {
                 $.get('/api/wallet/balance', function(data) {
                     const balance = '₱' + Math.floor(data.balance);
-                    $('#walletBalanceDropdown').text(balance);
+                    $('#walletBalanceSidebar').text(balance);
                 }).fail(function() {
-                    $('#walletBalanceDropdown').text('₱0');
+                    $('#walletBalanceSidebar').text('₱0');
                 });
             }
 
             function loadPointsBalance() {
                 $.get('/api/points/balance', function(data) {
-                    $('#pointsBalanceDropdown').text(data.points);
+                    $('#pointsBalanceSidebar').text(data.points);
                 }).fail(function() {
-                    $('#pointsBalanceDropdown').text('0');
+                    $('#pointsBalanceSidebar').text('0');
                 });
             }
 
             function loadNotificationCount() {
                 $.get('/api/notifications/unread-count', function(data) {
                     if (data.count > 0) {
-                        $('#notificationCountDropdown').text(data.count > 9 ? '9+' : data.count).show();
+                        const countText = data.count > 9 ? '9+' : data.count;
+                        $('#notificationCountSidebar').text(countText).show();
                     } else {
-                        $('#notificationCountDropdown').hide();
+                        $('#notificationCountSidebar').hide();
                     }
                 }).fail(function() {
-                    $('#notificationCountDropdown').hide();
+                    $('#notificationCountSidebar').hide();
                 });
             }
         </script>
     }
     
     <script>
+        // Header scroll effect
+        $(window).on('scroll', function() {
+            if ($(window).scrollTop() > 50) {
+                $('.header-minimal').addClass('scrolled');
+            } else {
+                $('.header-minimal').removeClass('scrolled');
+            }
+        });
+        
         // Close mobile menu on link click
         $('.navbar-nav a').on('click', function() {
             $('.navbar-collapse').collapse('hide');
+        });
+        
+        // Close mobile menu when clicking outside
+        $(document).on('click', function(event) {
+            const $navbar = $('.navbar-collapse');
+            const $toggler = $('.navbar-toggler');
+            
+            if (!$navbar.is(event.target) && $navbar.has(event.target).length === 0 && 
+                !$toggler.is(event.target) && $toggler.has(event.target).length === 0) {
+                if ($navbar.hasClass('show')) {
+                    $('.navbar-collapse').collapse('hide');
+                }
+            }
+        });
+        
+        // Prevent body scroll when mobile menu is open (optional)
+        $('.navbar-toggler').on('click', function() {
+            setTimeout(function() {
+                if ($('.navbar-collapse').hasClass('show')) {
+                    $('body').css('overflow', 'hidden');
+                } else {
+                    $('body').css('overflow', 'auto');
+                }
+            }, 350); // Wait for animation
+        });
+        
+        // Re-enable scroll when menu closes
+        $('.navbar-collapse').on('hidden.bs.collapse', function() {
+            $('body').css('overflow', 'auto');
+        });
+        
+        // Account Sidebar Functionality
+        $(document).ready(function() {
+            const $sidebar = $('#accountSidebar');
+            const $overlay = $('#sidebarOverlay');
+            const $openBtnDesktop = $('#openSidebarBtn');
+            const $openBtnMobile = $('#openSidebarBtnMobile');
+            const $closeBtn = $('#closeSidebarBtn');
+            
+            // Open sidebar function
+            function openSidebar() {
+                $sidebar.addClass('open');
+                $overlay.addClass('active');
+                $('body').css('overflow', 'hidden');
+            }
+            
+            // Open sidebar - Desktop button
+            $openBtnDesktop.on('click', openSidebar);
+            
+            // Open sidebar - Mobile button
+            $openBtnMobile.on('click', openSidebar);
+            
+            // Close sidebar
+            function closeSidebar() {
+                $sidebar.removeClass('open');
+                $overlay.removeClass('active');
+                $('body').css('overflow', 'auto');
+            }
+            
+            $closeBtn.on('click', closeSidebar);
+            $overlay.on('click', closeSidebar);
+            
+            // Close sidebar when clicking on a link
+            $('.sidebar-link').on('click', function() {
+                setTimeout(closeSidebar, 200);
+            });
+            
+            // Close sidebar on ESC key
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape' && $sidebar.hasClass('open')) {
+                    closeSidebar();
+                }
+            });
         });
     </script>
     
@@ -295,7 +478,7 @@
                         <i class="bi bi-clock-history"></i>
                         <span>History</span>
                     </a>
-                    <a href="/Renter/Profile" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
+                    <a href="/Account/Profile" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
                         <i class="bi bi-person-fill"></i>
                         <span>Profile</span>
                     </a>
@@ -310,7 +493,7 @@
                         <i class="bi bi-inbox-fill"></i>
                         <span>Requests</span>
                     </a>
-                    <a href="/Owner/Profile" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
+                    <a href="/Account/Profile" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
                         <i class="bi bi-person-fill"></i>
                         <span>Profile</span>
                     </a>
