@@ -25,11 +25,11 @@ builder.Services.AddDbContext<BiketaBaiDbContext>(options =>
 // Configure Session
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("AppSettings:SessionTimeoutMinutes"));
+    options.IdleTimeout = TimeSpan.FromMinutes(60); // 60 minutes session
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+    options.Cookie.SameSite = SameSiteMode.Lax; // More permissive for better compatibility
 });
 
 // Configure Authentication
@@ -39,11 +39,11 @@ builder.Services.AddAuthentication("BiketaBaiAuth")
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("AppSettings:SessionTimeoutMinutes"));
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 60 minutes session
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+        options.Cookie.SameSite = SameSiteMode.Lax; // More permissive for better compatibility
     });
 
 builder.Services.AddAuthorization();

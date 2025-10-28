@@ -4,455 +4,448 @@
     ViewData["Title"] = "My Profile";
 }
 
-<div class="container my-5">
-    <!-- Header -->
-    <div class="dashboard-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h2 class="text-eco-green mb-2">
-                    <i class="bi bi-person-circle"></i> My Profile
-                </h2>
-                <p class="text-muted mb-0">Manage your account information and view your statistics</p>
-            </div>
-            <div class="col-md-4 text-md-end">
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/auth-minimal.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/profile-minimal.css" asp-append-version="true" />
+
+<div class="profile-minimal-container">
+    <div class="container">
+        <!-- Compact Header -->
+        <div class="profile-header-minimal">
+            <div class="profile-header-content">
+                <div class="profile-header-title">
+                    <i class="bi bi-person-circle"></i>
+                    <div>
+                        <h1>My Profile</h1>
+                        <p>Manage your account and view statistics</p>
+                    </div>
+                </div>
                 @if (Model.CurrentUser.IsOwner)
                 {
-                    <a href="/Dashboard/Owner" class="btn btn-outline-success">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    <a href="/Dashboard/Owner" class="btn-minimal-back">
+                        <i class="bi bi-arrow-left"></i> Dashboard
                     </a>
                 }
                 else if (Model.CurrentUser.IsRenter)
                 {
-                    <a href="/Dashboard/Renter" class="btn btn-outline-success">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    <a href="/Dashboard/Renter" class="btn-minimal-back">
+                        <i class="bi bi-arrow-left"></i> Dashboard
                     </a>
                 }
                 else if (Model.CurrentUser.IsAdmin)
                 {
-                    <a href="/Dashboard/Admin" class="btn btn-outline-success">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    <a href="/Dashboard/Admin" class="btn-minimal-back">
+                        <i class="bi bi-arrow-left"></i> Dashboard
                     </a>
                 }
             </div>
         </div>
-    </div>
 
-    <!-- Success/Error Messages -->
-    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+        <!-- Success/Error Messages -->
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="success-message mb-3">
+                <i class="bi bi-check-circle"></i>
+                <div>
+                    <strong>Success!</strong>
+                    <p>@Model.SuccessMessage</p>
+                </div>
+            </div>
+        }
 
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="error-summary mb-3">
+                <i class="bi bi-exclamation-triangle"></i>
+                <div>
+                    <strong>Error</strong>
+                    <p>@Model.ErrorMessage</p>
+                </div>
+            </div>
+        }
 
-    <!-- Profile Overview Card -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-3 text-center">
-                    <!-- Profile Photo -->
-                    <div class="profile-photo-container mb-3">
+        <!-- Profile Overview Card -->
+        <div class="profile-card-minimal">
+            <div class="profile-overview-grid">
+                <!-- Profile Photo & Info -->
+                <div class="profile-avatar-section">
+                    <div class="profile-avatar-minimal">
                         @if (!string.IsNullOrEmpty(Model.CurrentUser.ProfilePhotoUrl))
                         {
-                            <img src="@Model.CurrentUser.ProfilePhotoUrl" alt="Profile Photo" class="profile-avatar-large-img" />
+                            <img src="@Model.CurrentUser.ProfilePhotoUrl" alt="Profile Photo" />
                         }
                         else
                         {
-                            <div class="profile-avatar-large">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
+                            <i class="bi bi-person-fill"></i>
                         }
-                        
-                        <!-- Upload Photo Button -->
-                        <form method="post" enctype="multipart/form-data" asp-page-handler="UploadPhoto" class="mt-2">
-                            <label for="photoUpload" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-camera"></i> Change Photo
-                            </label>
-                            <input type="file" id="photoUpload" name="profilePhoto" accept="image/*" style="display:none;" 
-                                   onchange="this.form.submit()" />
-                        </form>
                     </div>
-
-                    <h4 class="mt-3 mb-1">@Model.CurrentUser.FullName</h4>
-                    <p class="text-muted mb-2">@Model.CurrentUser.Email</p>
                     
-                    <!-- Roles Badges -->
-                    <div class="mb-3">
-                        @if (Model.CurrentUser.IsAdmin)
-                        {
-                            <span class="badge bg-danger me-1">
-                                <i class="bi bi-shield-fill"></i> Admin
-                            </span>
-                        }
-                        @if (Model.CurrentUser.IsOwner)
-                        {
-                            <span class="badge bg-success me-1">
-                                <i class="bi bi-shop"></i> Owner
-                            </span>
-                        }
-                        @if (Model.CurrentUser.IsRenter)
-                        {
-                            <span class="badge bg-primary me-1">
-                                <i class="bi bi-bicycle"></i> Renter
-                            </span>
-                        }
-                    </div>
+                    <!-- Upload Photo Button -->
+                    <form method="post" enctype="multipart/form-data" asp-page-handler="UploadPhoto">
+                        <label for="photoUpload" class="btn-upload-photo">
+                            <i class="bi bi-camera"></i> Change
+                        </label>
+                        <input type="file" id="photoUpload" name="profilePhoto" accept="image/*" style="display:none;" 
+                               onchange="this.form.submit()" />
+                    </form>
 
-                    <!-- Verification Status -->
-                    <div class="mb-3">
-                        @if (Model.CurrentUser.IsEmailVerified)
-                        {
-                            <span class="badge bg-success">
-                                <i class="bi bi-patch-check-fill"></i> Email Verified
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-warning">
-                                <i class="bi bi-exclamation-circle"></i> Email Not Verified
-                            </span>
-                        }
+                    <div class="profile-user-info">
+                        <h3>@(Model.CurrentUser.FullName ?? "No Name")</h3>
+                        <p class="user-email">@(Model.CurrentUser.Email ?? "No Email")</p>
+                        
+                        <!-- Roles -->
+                        <div class="profile-roles">
+                            @if (Model.CurrentUser.IsAdmin)
+                            {
+                                <span class="role-badge admin">
+                                    <i class="bi bi-shield-fill"></i> Admin
+                                </span>
+                            }
+                            @if (Model.CurrentUser.IsOwner)
+                            {
+                                <span class="role-badge owner">
+                                    <i class="bi bi-shop"></i> Owner
+                                </span>
+                            }
+                            @if (Model.CurrentUser.IsRenter)
+                            {
+                                <span class="role-badge renter">
+                                    <i class="bi bi-bicycle"></i> Renter
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Verification Status -->
+                        <div class="profile-verification">
+                            @if (Model.CurrentUser.IsEmailVerified)
+                            {
+                                <span class="verified-badge">
+                                    <i class="bi bi-patch-check-fill"></i> Verified
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="unverified-badge">
+                                    <i class="bi bi-exclamation-circle"></i> Unverified
+                                </span>
+                            }
+                            
+                            @if (Model.CurrentUser.IsOwner)
+                            {
+                                @Html.Raw(Model.GetVerificationStatusBadge())
+                            }
+                        </div>
+                        
+                        <!-- Member Since -->
+                        <p class="member-since">
+                            <i class="bi bi-calendar"></i> Member since @Model.CurrentUser.CreatedAt.ToString("MMM yyyy")
+                        </p>
                     </div>
+                </div>
+                
+                <!-- Statistics Grid -->
+                <div class="profile-stats-section">
+                    @if (Model.CurrentUser.IsRenter)
+                    {
+                        <!-- Renter Statistics -->
+                        <div class="stats-grid-3">
+                            <div class="stat-card-minimal">
+                                <i class="bi bi-bicycle"></i>
+                                <div class="stat-content">
+                                    <h4>@Model.Statistics.TotalRentals</h4>
+                                    <p>Total Rentals</p>
+                                    <small>@Model.Statistics.CompletedRentals completed</small>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card-minimal">
+                                <i class="bi bi-wallet2"></i>
+                                <div class="stat-content">
+                                    <h4>₱@Model.Statistics.TotalSpent.ToString("N0")</h4>
+                                    <p>Total Spent</p>
+                                    <small>@Model.Statistics.ActiveRentals active</small>
+                                </div>
+                            </div>
+
+                            <div class="stat-card-minimal">
+                                <i class="bi bi-star-fill"></i>
+                                <div class="stat-content">
+                                    <h4>@Model.Statistics.AverageRating.ToString("F1")</h4>
+                                    <p>User Rating</p>
+                                    <small>@Model.Statistics.TotalReviews review(s)</small>
+                                </div>
+                            </div>
+                        </div>
+                    }
 
                     @if (Model.CurrentUser.IsOwner)
                     {
-                        <div class="mb-3">
-                            @Html.Raw(Model.GetVerificationStatusBadge())
+                        <!-- Owner Statistics -->
+                        <div class="stats-grid-4">
+                            <div class="stat-card-minimal">
+                                <i class="bi bi-bicycle"></i>
+                                <div class="stat-content">
+                                    <h4>@Model.Statistics.TotalBikes</h4>
+                                    <p>Total Bikes</p>
+                                    <small>Listed</small>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card-minimal">
+                                <i class="bi bi-calendar-check"></i>
+                                <div class="stat-content">
+                                    <h4>@Model.Statistics.TotalBookings</h4>
+                                    <p>Bookings</p>
+                                    <small>@Model.Statistics.CompletedBookings completed</small>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card-minimal">
+                                <i class="bi bi-star-fill"></i>
+                                <div class="stat-content">
+                                    <h4>@Model.Statistics.AverageRating.ToString("F1")</h4>
+                                    <p>Rating</p>
+                                    <small>@Model.Statistics.TotalReviews review(s)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card-minimal highlight">
+                                <i class="bi bi-wallet2"></i>
+                                <div class="stat-content">
+                                    <h4>₱@Model.Statistics.TotalEarnings.ToString("N0")</h4>
+                                    <p>Earnings</p>
+                                    <small>90% share</small>
+                                </div>
+                            </div>
                         </div>
                     }
                     
-                    <!-- Member Since -->
-                    <small class="text-muted">
-                        <i class="bi bi-calendar"></i> Member since @Model.CurrentUser.CreatedAt.ToString("MMM yyyy")
-                    </small>
+                    <!-- Wallet & Points -->
+                    <div class="wallet-points-grid">
+                        <div class="wallet-card-minimal">
+                            <i class="bi bi-wallet2"></i>
+                            <div>
+                                <p>Wallet Balance</p>
+                                <h5>₱@Model.Statistics.WalletBalance.ToString("N2")</h5>
+                            </div>
+                            <a href="/Wallet/Index" class="btn-minimal-action">Manage</a>
+                        </div>
+                        
+                        <div class="wallet-card-minimal points">
+                            <i class="bi bi-star-fill"></i>
+                            <div>
+                                <p>Loyalty Points</p>
+                                <h5>@Model.Statistics.LoyaltyPoints pts</h5>
+                            </div>
+                            <a href="/Points/Index" class="btn-minimal-action">View</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Form -->
+        <div class="profile-forms-grid">
+            <div class="profile-card-minimal edit-form">
+                <div class="card-header-minimal">
+                    <i class="bi bi-pencil-square"></i>
+                    <h5>Edit Profile</h5>
                 </div>
                 
-                <div class="col-md-9">
-                    <!-- User Statistics -->
-                    <div class="row mb-4">
-                        @if (Model.CurrentUser.IsRenter)
-                        {
-                            <!-- Renter Statistics -->
-                            <div class="col-md-4 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-primary-light">
-                                        <i class="bi bi-bicycle text-primary"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">@Model.Statistics.TotalRentals</h3>
-                                        <p class="text-muted mb-0">Total Rentals</p>
-                                        <small class="text-muted">@Model.Statistics.CompletedRentals completed</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-success-light">
-                                        <i class="bi bi-wallet2 text-success"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">₱@Model.Statistics.TotalSpent.ToString("N0")</h3>
-                                        <p class="text-muted mb-0">Total Spent</p>
-                                        <small class="text-muted">@Model.Statistics.ActiveRentals active now</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-warning-light">
-                                        <i class="bi bi-star-fill text-warning"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">@Model.Statistics.AverageRating.ToString("F1")</h3>
-                                        <p class="text-muted mb-0">User Rating</p>
-                                        <small class="text-muted">@Model.Statistics.TotalReviews review(s)</small>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-
-                        @if (Model.CurrentUser.IsOwner)
-                        {
-                            <!-- Owner Statistics -->
-                            <div class="col-md-3 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-success-light">
-                                        <i class="bi bi-bicycle text-success"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">@Model.Statistics.TotalBikes</h3>
-                                        <p class="text-muted mb-0">Total Bikes</p>
-                                        <small class="text-muted">Listed</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-primary-light">
-                                        <i class="bi bi-calendar-check text-primary"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">@Model.Statistics.TotalBookings</h3>
-                                        <p class="text-muted mb-0">Total Bookings</p>
-                                        <small class="text-muted">@Model.Statistics.CompletedBookings completed</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-warning-light">
-                                        <i class="bi bi-star-fill text-warning"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">@Model.Statistics.AverageRating.ToString("F1")</h3>
-                                        <p class="text-muted mb-0">Average Rating</p>
-                                        <small class="text-muted">@Model.Statistics.TotalReviews review(s)</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                <div class="profile-stat-box">
-                                    <div class="stat-icon-circle bg-info-light">
-                                        <i class="bi bi-wallet2 text-info"></i>
-                                    </div>
-                                    <div class="ms-3">
-                                        <h3 class="mb-0">₱@Model.Statistics.TotalEarnings.ToString("N0")</h3>
-                                        <p class="text-muted mb-0">Total Earnings</p>
-                                        <small class="text-muted">90% share</small>
-                                    </div>
-                                </div>
-                            </div>
-                        }
+                <form method="post" class="profile-form-minimal">
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Full Name <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper">
+                            <input asp-for="Input.FullName" class="auth-input" placeholder="Enter your full name" required />
+                            <i class="bi bi-person auth-input-icon"></i>
+                        </div>
+                        <span asp-validation-for="Input.FullName" class="validation-message error"></span>
                     </div>
                     
-                    <!-- Wallet & Points -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="wallet-display-card">
-                                <i class="bi bi-wallet2"></i>
-                                <div>
-                                    <small class="text-muted">Wallet Balance</small>
-                                    <h5 class="mb-0 text-success">₱@Model.Statistics.WalletBalance.ToString("N2")</h5>
-                                </div>
-                                <a href="/Wallet/Index" class="btn btn-sm btn-outline-success">Manage</a>
-                            </div>
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">Email Address</label>
+                        <div class="auth-input-wrapper">
+                            <input type="email" class="auth-input" value="@Model.CurrentUser.Email" disabled />
+                            <i class="bi bi-envelope auth-input-icon"></i>
                         </div>
-                        <div class="col-md-6">
-                            <div class="wallet-display-card">
-                                <i class="bi bi-star-fill text-warning"></i>
-                                <div>
-                                    <small class="text-muted">Loyalty Points</small>
-                                    <h5 class="mb-0 text-warning">@Model.Statistics.LoyaltyPoints pts</h5>
-                                </div>
-                                <a href="/Points/Index" class="btn btn-sm btn-outline-warning">View</a>
-                            </div>
-                        </div>
+                        <small class="helper-text">Email cannot be changed</small>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Two Column Layout -->
-    <div class="row">
-        <!-- Edit Profile Form -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0"><i class="bi bi-pencil-square text-success"></i> Edit Profile</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        <div class="mb-3">
-                            <label asp-for="Input.FullName" class="form-label">
-                                <i class="bi bi-person"></i> Full Name <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Input.FullName" class="form-control" required />
-                            <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                    
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Phone Number <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper">
+                            <input asp-for="Input.Phone" class="auth-input" placeholder="+63 XXX XXX XXXX" required />
+                            <i class="bi bi-telephone auth-input-icon"></i>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-envelope"></i> Email Address
-                            </label>
-                            <input type="email" class="form-control" value="@Model.CurrentUser.Email" disabled />
-                            <small class="text-muted">Email cannot be changed</small>
+                        <span asp-validation-for="Input.Phone" class="validation-message error"></span>
+                    </div>
+                    
+                    <div class="auth-form-group">
+                        <label class="auth-form-label">
+                            Address <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper">
+                            <textarea asp-for="Input.Address" class="auth-input textarea" rows="4" placeholder="Street, City, Province" required></textarea>
+                            <i class="bi bi-geo-alt auth-input-icon"></i>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label asp-for="Input.Phone" class="form-label">
-                                <i class="bi bi-telephone"></i> Phone Number <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Input.Phone" class="form-control" placeholder="+63 XXX XXX XXXX" required />
-                            <span asp-validation-for="Input.Phone" class="text-danger"></span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label asp-for="Input.Address" class="form-label">
-                                <i class="bi bi-geo-alt"></i> Address <span class="text-danger">*</span>
-                            </label>
-                            <textarea asp-for="Input.Address" class="form-control" rows="3" placeholder="Street, City, Province" required></textarea>
-                            <span asp-validation-for="Input.Address" class="text-danger"></span>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-check-circle"></i> Update Profile
+                        <span asp-validation-for="Input.Address" class="validation-message error"></span>
+                    </div>
+                    
+                    <button type="submit" class="auth-btn-minimal auth-btn-primary">
+                        <i class="bi bi-check-circle"></i> Update Profile
+                    </button>
+                </form>
+                
+                <div class="profile-divider"></div>
+                
+                <!-- Additional Actions -->
+                <div class="profile-actions">
+                    <a href="/Account/ChangePassword" class="auth-btn-minimal auth-btn-outline">
+                        <i class="bi bi-key"></i> Change Password
+                    </a>
+                    
+                    @if (Model.CurrentUser.IsOwner && string.IsNullOrEmpty(Model.CurrentUser.IdDocumentUrl))
+                    {
+                        <button type="button" class="auth-btn-minimal auth-btn-outline" data-bs-toggle="modal" data-bs-target="#uploadIdModal">
+                            <i class="bi bi-file-earmark-text"></i> Upload ID Document
                         </button>
-                    </form>
-                    
-                    <hr class="my-4" />
-                    
-                    <!-- Additional Actions -->
-                    <div class="d-grid gap-2">
-                        <a href="/Account/ChangePassword" class="btn btn-outline-secondary">
-                            <i class="bi bi-key"></i> Change Password
-                        </a>
-                        
-                        @if (Model.CurrentUser.IsOwner && string.IsNullOrEmpty(Model.CurrentUser.IdDocumentUrl))
-                        {
-                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#uploadIdModal">
-                                <i class="bi bi-file-earmark-text"></i> Upload ID Document
-                            </button>
-                        }
-                    </div>
+                    }
                 </div>
             </div>
-        </div>
 
-        <!-- Account Information & Recent Activity -->
-        <div class="col-lg-6 mb-4">
             <!-- Account Information -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0"><i class="bi bi-info-circle text-info"></i> Account Information</h5>
+            <div class="profile-card-minimal">
+                <div class="card-header-minimal">
+                    <i class="bi bi-info-circle"></i>
+                    <h5>Account Information</h5>
                 </div>
-                <div class="card-body">
-                    <table class="table table-borderless mb-0">
-                        <tr>
-                            <td class="text-muted"><i class="bi bi-shield-check"></i> Account Status</td>
-                            <td class="text-end">
-                                @if (Model.CurrentUser.IsSuspended)
-                                {
-                                    <span class="badge bg-danger">Suspended</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-success">Active</span>
-                                }
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted"><i class="bi bi-envelope-check"></i> Email Verification</td>
-                            <td class="text-end">
-                                @if (Model.CurrentUser.IsEmailVerified)
-                                {
-                                    <span class="badge bg-success">Verified</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-warning">Not Verified</span>
-                                }
-                            </td>
-                        </tr>
-                        @if (Model.CurrentUser.IsOwner)
-                        {
-                            <tr>
-                                <td class="text-muted"><i class="bi bi-patch-check"></i> Owner Verification</td>
-                                <td class="text-end">
-                                    @Html.Raw(Model.GetVerificationStatusBadge())
-                                </td>
-                            </tr>
-                        }
-                        <tr>
-                            <td class="text-muted"><i class="bi bi-calendar-plus"></i> Account Created</td>
-                            <td class="text-end">@Model.CurrentUser.CreatedAt.ToString("MMM dd, yyyy")</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted"><i class="bi bi-clock"></i> Last Updated</td>
-                            <td class="text-end">@Model.CurrentUser.UpdatedAt.ToString("MMM dd, yyyy")</td>
-                        </tr>
-                        @if (!string.IsNullOrEmpty(Model.CurrentUser.IdDocumentUrl))
-                        {
-                            <tr>
-                                <td class="text-muted"><i class="bi bi-file-earmark-text"></i> ID Document</td>
-                                <td class="text-end">
-                                    <a href="@Model.CurrentUser.IdDocumentUrl" target="_blank" class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </table>
+                
+                <div class="account-info-list">
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-shield-check"></i> Account Status
+                        </span>
+                        <span class="info-value">
+                            @if (Model.CurrentUser.IsSuspended)
+                            {
+                                <span class="status-badge suspended">Suspended</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge active">Active</span>
+                            }
+                        </span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-envelope-check"></i> Email Verification
+                        </span>
+                        <span class="info-value">
+                            @if (Model.CurrentUser.IsEmailVerified)
+                            {
+                                <span class="status-badge verified">Verified</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge unverified">Not Verified</span>
+                            }
+                        </span>
+                    </div>
+                    
+                    @if (Model.CurrentUser.IsOwner)
+                    {
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="bi bi-patch-check"></i> Owner Verification
+                            </span>
+                            <span class="info-value">
+                                @Html.Raw(Model.GetVerificationStatusBadge())
+                            </span>
+                        </div>
+                    }
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-calendar-plus"></i> Account Created
+                        </span>
+                        <span class="info-value">@Model.CurrentUser.CreatedAt.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-clock"></i> Last Updated
+                        </span>
+                        <span class="info-value">@Model.CurrentUser.UpdatedAt.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.CurrentUser.IdDocumentUrl))
+                    {
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="bi bi-file-earmark-text"></i> ID Document
+                            </span>
+                            <span class="info-value">
+                                <a href="@Model.CurrentUser.IdDocumentUrl" target="_blank" class="btn-view-doc">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </span>
+                        </div>
+                    }
                 </div>
             </div>
 
             <!-- Recent Activity -->
             @if (Model.RecentBookings.Any())
             {
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">
-                            <i class="bi bi-clock-history text-primary"></i> 
-                            Recent @(Model.CurrentUser.IsOwner ? "Bookings" : "Rentals")
-                        </h5>
+                <div class="profile-card-minimal recent-activity">
+                    <div class="card-header-minimal">
+                        <i class="bi bi-clock-history"></i>
+                        <h5>Recent @(Model.CurrentUser.IsOwner ? "Bookings" : "Rentals")</h5>
                     </div>
-                    <div class="card-body">
-                        <div class="list-group list-group-flush">
-                            @foreach (var booking in Model.RecentBookings.Take(3))
-                            {
-                                <div class="list-group-item px-0">
-                                    <div class="d-flex align-items-start">
-                                        @if (booking.Bike.BikeImages.Any())
-                                        {
-                                            <img src="@booking.Bike.BikeImages.First().ImageUrl" 
-                                                 class="recent-booking-thumb" 
-                                                 alt="@booking.Bike.Brand" />
-                                        }
-                                        else
-                                        {
-                                            <div class="recent-booking-thumb-placeholder">
-                                                <i class="bi bi-bicycle"></i>
-                                            </div>
-                                        }
-                                        
-                                        <div class="flex-grow-1 ms-3">
-                                            <h6 class="mb-1">@booking.Bike.Brand @booking.Bike.Model</h6>
-                                            @if (Model.CurrentUser.IsOwner)
-                                            {
-                                                <p class="mb-1 small text-muted">
-                                                    <i class="bi bi-person"></i> @booking.Renter.FullName
-                                                </p>
-                                            }
-                                            <p class="mb-1 small text-muted">
-                                                <i class="bi bi-calendar"></i> @booking.StartDate.ToString("MMM dd, yyyy")
-                                            </p>
-                                            <span class="badge bg-@(booking.BookingStatus.StatusName == "Completed" ? "success" : booking.BookingStatus.StatusName == "Active" ? "primary" : "warning")">
-                                                @booking.BookingStatus.StatusName
-                                            </span>
-                                        </div>
-                                        <div class="text-end">
-                                            <strong class="text-success">
-                                                ₱@((Model.CurrentUser.IsOwner ? booking.TotalAmount * 0.90m : booking.TotalAmount).ToString("N2"))
-                                            </strong>
-                                        </div>
+                    
+                    <div class="recent-bookings-list">
+                        @foreach (var booking in Model.RecentBookings.Take(3))
+                        {
+                            <div class="recent-booking-item">
+                                @if (booking.Bike.BikeImages.Any())
+                                {
+                                    <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                         class="booking-thumb" 
+                                         alt="@booking.Bike.Brand" />
+                                }
+                                else
+                                {
+                                    <div class="booking-thumb-placeholder">
+                                        <i class="bi bi-bicycle"></i>
                                     </div>
+                                }
+                                
+                                <div class="booking-details">
+                                    <h6>@booking.Bike.Brand @booking.Bike.Model</h6>
+                                    @if (Model.CurrentUser.IsOwner)
+                                    {
+                                        <p class="booking-info">
+                                            <i class="bi bi-person"></i> @booking.Renter.FullName
+                                        </p>
+                                    }
+                                    <p class="booking-info">
+                                        <i class="bi bi-calendar"></i> @booking.StartDate.ToString("MMM dd, yyyy")
+                                    </p>
+                                    <span class="status-badge @(booking.BookingStatus.StatusName.ToLower())">
+                                        @booking.BookingStatus.StatusName
+                                    </span>
                                 </div>
-                            }
-                        </div>
+                                
+                                <div class="booking-amount">
+                                    ₱@((Model.CurrentUser.IsOwner ? booking.TotalAmount * 0.90m : booking.TotalAmount).ToString("N2"))
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             }
@@ -464,28 +457,37 @@
 @if (Model.CurrentUser.IsOwner)
 {
     <div class="modal fade" id="uploadIdModal" tabindex="-1" aria-labelledby="uploadIdModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="uploadIdModalLabel">
-                        <i class="bi bi-file-earmark-text"></i> Upload ID Document
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-minimal">
+                <div class="modal-header-minimal">
+                    <div class="modal-title-minimal">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <h5>Upload ID Document</h5>
+                    </div>
+                    <button type="button" class="btn-close-minimal" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="bi bi-x"></i>
+                    </button>
                 </div>
                 <form method="post" enctype="multipart/form-data" asp-page-handler="UploadIdDocument">
-                    <div class="modal-body">
-                        <p class="text-muted mb-3">
+                    <div class="modal-body-minimal">
+                        <p class="helper-text mb-3">
                             Upload a valid government-issued ID for owner verification. Accepted formats: JPG, PNG, PDF (Max 5MB)
                         </p>
-                        <div class="mb-3">
-                            <label for="idDocument" class="form-label">Select Document</label>
-                            <input type="file" class="form-control" id="idDocument" name="idDocument" 
-                                   accept=".jpg,.jpeg,.png,.pdf" required />
+                        <div class="auth-form-group">
+                            <label class="auth-form-label">Select Document <span class="required">*</span></label>
+                            <div class="file-upload-minimal">
+                                <input type="file" class="file-input-minimal" id="idDocument" name="idDocument" 
+                                       accept=".jpg,.jpeg,.png,.pdf" required />
+                                <label for="idDocument" class="file-label-minimal">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <span>Choose file or drag here</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
+                    <div class="modal-footer-minimal">
+                        <button type="button" class="auth-btn-minimal auth-btn-outline" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="auth-btn-minimal auth-btn-primary">
                             <i class="bi bi-upload"></i> Upload
                         </button>
                     </div>
@@ -500,7 +502,7 @@
     <script>
         // Auto-dismiss alerts
         window.setTimeout(function() {
-            $(".alert").fadeTo(500, 0).slideUp(500, function(){
+            $(".success-message, .error-summary").fadeOut(500, function(){
                 $(this).remove(); 
             });
         }, 5000);

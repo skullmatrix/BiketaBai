@@ -10,6 +10,7 @@ public static class AuthHelper
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim("UserId", userId.ToString()), // Add custom UserId claim for Profile page
             new Claim(ClaimTypes.Email, email),
             new Claim(ClaimTypes.Name, fullName),
             new Claim("IsRenter", isRenter.ToString()),
@@ -21,7 +22,7 @@ public static class AuthHelper
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(20)
+            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(60) // Extended to 60 minutes
         };
 
         await httpContext.SignInAsync("BiketaBaiAuth", new ClaimsPrincipal(claimsIdentity), authProperties);

@@ -57,34 +57,59 @@ namespace BiketaBai.Pages.Account
             var userId = GetCurrentUserId();
             if (userId == null)
             {
+                TempData["ErrorMessage"] = "Please log in to view your profile.";
                 return RedirectToPage("/Account/Login");
             }
 
-            CurrentUser = await _profileService.GetUserByIdAsync(userId.Value);
-            if (CurrentUser == null)
+            try
             {
-                return RedirectToPage("/Account/Login");
+                CurrentUser = await _profileService.GetUserByIdAsync(userId.Value);
+                if (CurrentUser == null)
+                {
+                    TempData["ErrorMessage"] = "User account not found. Please log in again.";
+                    return RedirectToPage("/Account/Login");
+                }
+
+                // Load user statistics
+                Statistics = await _profileService.GetUserStatisticsAsync(userId.Value);
+
+                // Load recent bookings
+                if (CurrentUser.IsOwner || CurrentUser.IsRenter)
+                {
+                    RecentBookings = await _profileService.GetRecentBookingsAsync(
+                        userId.Value, 
+                        CurrentUser.IsOwner, 
+                        5
+                    ) ?? new List<Booking>();
+                }
+
+                // Populate input model with current values
+                Input.FullName = CurrentUser.FullName ?? string.Empty;
+                Input.Phone = CurrentUser.Phone ?? string.Empty;
+                Input.Address = CurrentUser.Address ?? string.Empty;
+
+                return Page();
             }
-
-            // Load user statistics
-            Statistics = await _profileService.GetUserStatisticsAsync(userId.Value);
-
-            // Load recent bookings
-            if (CurrentUser.IsOwner || CurrentUser.IsRenter)
+            catch (Exception ex)
             {
-                RecentBookings = await _profileService.GetRecentBookingsAsync(
-                    userId.Value, 
-                    CurrentUser.IsOwner, 
-                    5
-                );
+                ErrorMessage = "An error occurred while loading your profile. Please try again.";
+                // Log the error (assuming logging is set up)
+                Console.WriteLine($"Profile Load Error: {ex.Message}");
+                
+                // Set minimal defaults to prevent null reference errors
+                CurrentUser = new User 
+                { 
+                    FullName = "Unknown", 
+                    Email = User.Identity?.Name ?? "unknown@example.com",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                Statistics = new UserStatistics();
+                RecentBookings = new List<Booking>();
+                Input = new InputModel();
+                
+                return Page();
             }
-
-            // Populate input model with current values
-            Input.FullName = CurrentUser.FullName;
-            Input.Phone = CurrentUser.Phone ?? string.Empty;
-            Input.Address = CurrentUser.Address ?? string.Empty;
-
-            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -92,6 +117,7 @@ namespace BiketaBai.Pages.Account
             var userId = GetCurrentUserId();
             if (userId == null)
             {
+                TempData["ErrorMessage"] = "Please log in to update your profile.";
                 return RedirectToPage("/Account/Login");
             }
 
@@ -101,22 +127,31 @@ namespace BiketaBai.Pages.Account
                 return await OnGetAsync();
             }
 
-            // Update profile using service
-            var (success, message) = await _profileService.UpdateProfileAsync(
-                userId.Value,
-                Input.FullName,
-                Input.Phone,
-                Input.Address
-            );
+            try
+            {
+                // Update profile using service
+                var (success, message) = await _profileService.UpdateProfileAsync(
+                    userId.Value,
+                    Input.FullName,
+                    Input.Phone,
+                    Input.Address
+                );
 
-            if (success)
-            {
-                SuccessMessage = message;
-                return RedirectToPage();
+                if (success)
+                {
+                    SuccessMessage = message;
+                    return RedirectToPage();
+                }
+                else
+                {
+                    ErrorMessage = message;
+                    return await OnGetAsync();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                ErrorMessage = message;
+                ErrorMessage = "An error occurred while updating your profile. Please try again.";
+                Console.WriteLine($"Profile Update Error: {ex.Message}");
                 return await OnGetAsync();
             }
         }
@@ -126,6 +161,7 @@ namespace BiketaBai.Pages.Account
             var userId = GetCurrentUserId();
             if (userId == null)
             {
+                TempData["ErrorMessage"] = "Please log in to upload a photo.";
                 return RedirectToPage("/Account/Login");
             }
 
@@ -135,32 +171,40 @@ namespace BiketaBai.Pages.Account
                 return RedirectToPage();
             }
 
-            // Save uploaded photo
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-            var (success, filePath, message) = await _profileService.SaveUploadedFileAsync(
-                profilePhoto,
-                "uploads/profiles",
-                allowedExtensions,
-                5 * 1024 * 1024 // 5MB max
-            );
-
-            if (success && filePath != null)
+            try
             {
-                // Update profile photo in database
-                var (updateSuccess, updateMessage) = await _profileService.UpdateProfilePhotoAsync(userId.Value, filePath);
-                
-                if (updateSuccess)
+                // Save uploaded photo
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var (success, filePath, message) = await _profileService.SaveUploadedFileAsync(
+                    profilePhoto,
+                    "uploads/profiles",
+                    allowedExtensions,
+                    5 * 1024 * 1024 // 5MB max
+                );
+
+                if (success && filePath != null)
                 {
-                    SuccessMessage = "Profile photo updated successfully!";
+                    // Update profile photo in database
+                    var (updateSuccess, updateMessage) = await _profileService.UpdateProfilePhotoAsync(userId.Value, filePath);
+                    
+                    if (updateSuccess)
+                    {
+                        SuccessMessage = "Profile photo updated successfully!";
+                    }
+                    else
+                    {
+                        ErrorMessage = updateMessage;
+                    }
                 }
                 else
                 {
-                    ErrorMessage = updateMessage;
+                    ErrorMessage = message;
                 }
             }
-            else
+            catch (Exception ex)
             {
-                ErrorMessage = message;
+                ErrorMessage = "An error occurred while uploading your photo. Please try again.";
+                Console.WriteLine($"Photo Upload Error: {ex.Message}");
             }
 
             return RedirectToPage();
@@ -171,48 +215,57 @@ namespace BiketaBai.Pages.Account
             var userId = GetCurrentUserId();
             if (userId == null)
             {
+                TempData["ErrorMessage"] = "Please log in to upload a document.";
                 return RedirectToPage("/Account/Login");
             }
 
-            CurrentUser = await _profileService.GetUserByIdAsync(userId.Value);
-            if (CurrentUser == null || !CurrentUser.IsOwner)
+            try
             {
-                ErrorMessage = "Only owners can upload ID documents";
-                return RedirectToPage();
-            }
-
-            if (idDocument == null || idDocument.Length == 0)
-            {
-                ErrorMessage = "Please select a document to upload";
-                return RedirectToPage();
-            }
-
-            // Save uploaded ID document
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
-            var (success, filePath, message) = await _profileService.SaveUploadedFileAsync(
-                idDocument,
-                "uploads/documents",
-                allowedExtensions,
-                5 * 1024 * 1024 // 5MB max
-            );
-
-            if (success && filePath != null)
-            {
-                // Update ID document in database
-                var (updateSuccess, updateMessage) = await _profileService.UpdateIdDocumentAsync(userId.Value, filePath);
-                
-                if (updateSuccess)
+                CurrentUser = await _profileService.GetUserByIdAsync(userId.Value);
+                if (CurrentUser == null || !CurrentUser.IsOwner)
                 {
-                    SuccessMessage = updateMessage;
+                    ErrorMessage = "Only owners can upload ID documents";
+                    return RedirectToPage();
+                }
+
+                if (idDocument == null || idDocument.Length == 0)
+                {
+                    ErrorMessage = "Please select a document to upload";
+                    return RedirectToPage();
+                }
+
+                // Save uploaded ID document
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                var (success, filePath, message) = await _profileService.SaveUploadedFileAsync(
+                    idDocument,
+                    "uploads/documents",
+                    allowedExtensions,
+                    5 * 1024 * 1024 // 5MB max
+                );
+
+                if (success && filePath != null)
+                {
+                    // Update ID document in database
+                    var (updateSuccess, updateMessage) = await _profileService.UpdateIdDocumentAsync(userId.Value, filePath);
+                    
+                    if (updateSuccess)
+                    {
+                        SuccessMessage = updateMessage;
+                    }
+                    else
+                    {
+                        ErrorMessage = updateMessage;
+                    }
                 }
                 else
                 {
-                    ErrorMessage = updateMessage;
+                    ErrorMessage = message;
                 }
             }
-            else
+            catch (Exception ex)
             {
-                ErrorMessage = message;
+                ErrorMessage = "An error occurred while uploading your document. Please try again.";
+                Console.WriteLine($"Document Upload Error: {ex.Message}");
             }
 
             return RedirectToPage();
@@ -220,7 +273,10 @@ namespace BiketaBai.Pages.Account
 
         private int? GetCurrentUserId()
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
+            // Try the standard NameIdentifier claim first (for existing sessions)
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                ?? User.FindFirst("UserId")?.Value;
+            
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
             {
                 return null;
