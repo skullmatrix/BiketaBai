@@ -1,130 +1,265 @@
 @page
 @model BrowseModel
 @{
-    ViewData["Title"] = "Browse Bikes";
+    ViewData["Title"] = "Find Bikes Near You";
 }
 
-<div class="container my-5">
-    <h2 class="text-eco-green mb-4"><i class="bi bi-bicycle"></i> Browse Available Bikes</h2>
-    
-    <!-- Search and Filter Form -->
-    <div class="card shadow-eco mb-4">
-        <div class="card-body">
-            <form method="get">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Location</label>
-                        <input type="text" name="location" class="form-control" value="@Model.FilterLocation" placeholder="Enter location" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Bike Type</label>
-                        <select name="bikeTypeId" class="form-select">
-                            <option value="">All Types</option>
-                            @foreach (var type in Model.BikeTypes)
-                            {
-                                <option value="@type.BikeTypeId" selected="@(type.BikeTypeId == Model.FilterBikeTypeId)">@type.TypeName</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Min Price</label>
-                        <input type="number" name="minPrice" class="form-control" value="@Model.FilterMinPrice" placeholder="₱" step="0.01" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Max Price</label>
-                        <input type="number" name="maxPrice" class="form-control" value="@Model.FilterMaxPrice" placeholder="₱" step="0.01" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Sort By</label>
-                        <select name="sortBy" class="form-select">
-                            <option value="newest" selected="@(Model.SortBy == "newest")">Newest</option>
-                            <option value="price-low" selected="@(Model.SortBy == "price-low")">Price: Low to High</option>
-                            <option value="price-high" selected="@(Model.SortBy == "price-high")">Price: High to Low</option>
-                            <option value="rating" selected="@(Model.SortBy == "rating")">Highest Rated</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-eco-primary w-100"><i class="bi bi-search"></i></button>
-                    </div>
+<div class="browse-bikes-container">
+    <!-- Enhanced Search Hero -->
+    <div class="search-hero">
+        <div class="container">
+            <h2 class="mb-3"><i class="bi bi-geo-alt-fill text-success"></i> Find Bikes Near You</h2>
+            <p class="text-muted mb-4">Discover available bikes in your area • @Model.Bikes.Count bike(s) ready to ride</p>
+            
+            <!-- Quick Search Bar -->
+            <form method="get" class="search-bar-main">
+                <div class="input-group input-group-lg shadow">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-success"></i>
+                    </span>
+                    <input type="text" name="location" class="form-control form-control-lg border-start-0 border-end-0" 
+                           value="@Model.FilterLocation" placeholder="Search by location or area..." />
+                    <button type="submit" class="btn btn-success px-5">
+                        <i class="bi bi-search"></i> Search
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Results Count -->
-    <p class="text-muted">Found @Model.Bikes.Count bike(s)</p>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-md-3">
+                <div class="filters-sidebar card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-body">
+                        <h5 class="mb-4"><i class="bi bi-funnel-fill"></i> Filters</h5>
+                        <form method="get">
+                            <!-- Keep location from main search -->
+                            <input type="hidden" name="location" value="@Model.FilterLocation" />
+                            
+                            <!-- Bike Type Filter -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Bike Type</label>
+                                @foreach (var type in Model.BikeTypes)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="bikeTypeId" 
+                                               value="@type.BikeTypeId" id="type-@type.BikeTypeId"
+                                               checked="@(type.BikeTypeId == Model.FilterBikeTypeId)" />
+                                        <label class="form-check-label" for="type-@type.BikeTypeId">
+                                            @type.TypeName
+                                        </label>
+                                    </div>
+                                }
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="bikeTypeId" 
+                                           value="" id="type-all" checked="@(!Model.FilterBikeTypeId.HasValue)" />
+                                    <label class="form-check-label" for="type-all">
+                                        All Types
+                                    </label>
+                                </div>
+                            </div>
 
-    <!-- Bikes Grid -->
-    <div class="row">
-        @foreach (var bike in Model.Bikes)
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card bike-card h-100">
-                    @if (bike.BikeImages.Any())
+                            <!-- Price Range Filter -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Price Range (₱/hr)</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="number" name="minPrice" class="form-control" 
+                                               value="@Model.FilterMinPrice" placeholder="Min" step="10" />
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" name="maxPrice" class="form-control" 
+                                               value="@Model.FilterMaxPrice" placeholder="Max" step="10" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sort By -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Sort By</label>
+                                <select name="sortBy" class="form-select">
+                                    <option value="newest" selected="@(Model.SortBy == "newest")">Newest First</option>
+                                    <option value="price-low" selected="@(Model.SortBy == "price-low")">Price: Low to High</option>
+                                    <option value="price-high" selected="@(Model.SortBy == "price-high")">Price: High to Low</option>
+                                    <option value="rating" selected="@(Model.SortBy == "rating")">Highest Rated</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle"></i> Apply Filters
+                            </button>
+                            <a href="/Bikes/Browse" class="btn btn-outline-secondary w-100 mt-2">
+                                <i class="bi bi-x-circle"></i> Clear All
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="col-md-9">
+                <!-- View Toggle -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="mb-0">Available Bikes</h5>
+                        <small class="text-muted">@Model.Bikes.Count result(s) found</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-success active" id="listViewBtn">
+                            <i class="bi bi-grid-3x3-gap"></i> Grid
+                        </button>
+                        <button type="button" class="btn btn-outline-success" id="mapViewBtn">
+                            <i class="bi bi-map"></i> Map
+                        </button>
+                    </div>
+                </div>
+
+                <!-- List/Grid View -->
+                <div id="listView">
+                    @if (Model.Bikes.Any())
                     {
-                        <img src="@bike.BikeImages.First(img => img.IsPrimary || bike.BikeImages.First() == img).ImageUrl" 
-                             class="card-img-top" alt="@bike.Brand @bike.Model" />
+                        <div class="row">
+                            @foreach (var bike in Model.Bikes)
+                            {
+                                var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <div class="card bike-browse-card h-100 shadow-sm">
+                                        <div class="bike-image-wrapper">
+                                            @if (bike.BikeImages.Any())
+                                            {
+                                                <img src="@bike.BikeImages.First(img => img.IsPrimary || bike.BikeImages.First() == img).ImageUrl" 
+                                                     class="card-img-top bike-browse-image" alt="@bike.Brand @bike.Model" />
+                                            }
+                                            else
+                                            {
+                                                <div class="placeholder-bike-image">
+                                                    <i class="bi bi-bicycle"></i>
+                                                </div>
+                                            }
+                                            <div class="bike-badge-overlay">
+                                                <span class="badge bg-success">@bike.BikeType.TypeName</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <h6 class="card-title fw-bold mb-2">@bike.Brand @bike.Model</h6>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="rating-stars-small me-2">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= avgRating)
+                                                        {
+                                                            <i class="bi bi-star-fill text-warning"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-star text-warning"></i>
+                                                        }
+                                                    }
+                                                </div>
+                                                <small class="text-muted">@avgRating.ToString("F1")</small>
+                                            </div>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-geo-alt-fill text-success"></i> @bike.Location
+                                            </p>
+                                            <p class="text-muted small mb-3">
+                                                <i class="bi bi-speedometer text-primary"></i> @bike.Mileage km
+                                            </p>
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div class="price-tag-browse">
+                                                            <strong class="text-success">₱@bike.HourlyRate</strong>
+                                                            <small class="text-muted">/hr</small>
+                                                        </div>
+                                                        <small class="text-muted">₱@bike.DailyRate/day</small>
+                                                    </div>
+                                                    <a href="/Bikes/Details/@bike.BikeId" class="btn btn-success btn-sm">
+                                                        View <i class="bi bi-arrow-right"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
-                        <img src="/images/placeholder-bike.jpg" class="card-img-top" alt="Bike" />
+                        <div class="empty-state text-center py-5">
+                            <i class="bi bi-search" style="font-size: 4rem; color: #ddd;"></i>
+                            <h4 class="mt-3">No bikes found</h4>
+                            <p class="text-muted">Try adjusting your search filters or location</p>
+                            <a href="/Bikes/Browse" class="btn btn-success">
+                                <i class="bi bi-arrow-clockwise"></i> Reset Filters
+                            </a>
+                        </div>
                     }
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">@bike.Brand @bike.Model</h5>
-                            <span class="badge badge-bike-type">@bike.BikeType.TypeName</span>
-                        </div>
-                        <p class="text-muted mb-2">
-                            <i class="bi bi-geo-alt"></i> @bike.Location
-                        </p>
-                        <p class="text-muted mb-2">
-                            <i class="bi bi-speedometer"></i> @bike.Mileage km
-                        </p>
-                        <div class="rating-stars mb-2">
-                            @{
-                                var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
-                                for (int i = 1; i <= 5; i++)
-                                {
-                                    if (i <= avgRating)
-                                    {
-                                        <i class="bi bi-star-fill"></i>
-                                    }
-                                    else
-                                    {
-                                        <i class="bi bi-star"></i>
-                                    }
-                                }
-                            }
-                            <span class="text-muted">(@avgRating.ToString("F1"))</span>
-                        </div>
-                        @if (!string.IsNullOrEmpty(bike.Description))
-                        {
-                            <p class="card-text text-muted small mb-3">
-                                @(bike.Description.Length > 100 ? bike.Description.Substring(0, 100) + "..." : bike.Description)
-                            </p>
-                        }
-                        <div class="mt-auto">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="price-tag">₱@bike.HourlyRate<span class="fs-6 text-muted">/hr</span></div>
-                                    <div class="text-muted small">₱@bike.DailyRate/day</div>
+                </div>
+
+                <!-- Map View -->
+                <div id="mapView" style="display: none;">
+                    <div class="map-container shadow-sm">
+                        <div class="map-placeholder">
+                            <i class="bi bi-map text-success"></i>
+                            <h4 class="mt-3">Interactive Map View</h4>
+                            <p class="text-muted mb-4">Google Maps integration will display bikes in your area</p>
+                            <div class="map-features">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="map-feature-card">
+                                            <i class="bi bi-pin-map-fill text-success"></i>
+                                            <h6>Location Markers</h6>
+                                            <small>See all available bikes on the map</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="map-feature-card">
+                                            <i class="bi bi-bullseye text-primary"></i>
+                                            <h6>Distance Filter</h6>
+                                            <small>Find bikes within your radius</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="map-feature-card">
+                                            <i class="bi bi-geo-alt-fill text-danger"></i>
+                                            <h6>Current Location</h6>
+                                            <small>Auto-detect your position</small>
+                                        </div>
+                                    </div>
                                 </div>
-                                <a href="/Bikes/Details/@bike.BikeId" class="btn btn-eco-primary">View Details</a>
+                            </div>
+                            <div class="alert alert-info mt-4">
+                                <i class="bi bi-info-circle"></i> <strong>Note:</strong> Map functionality requires Google Maps API key configuration
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        }
-    </div>
-
-    @if (!Model.Bikes.Any())
-    {
-        <div class="text-center py-5">
-            <i class="bi bi-bicycle" style="font-size: 4rem; color: var(--eco-green);"></i>
-            <h3 class="text-muted mt-3">No bikes found</h3>
-            <p>Try adjusting your search filters</p>
         </div>
-    }
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // View Toggle Functionality
+            $('#listViewBtn').click(function() {
+                $(this).addClass('active');
+                $('#mapViewBtn').removeClass('active');
+                $('#listView').fadeIn();
+                $('#mapView').fadeOut();
+            });
+
+            $('#mapViewBtn').click(function() {
+                $(this).addClass('active');
+                $('#listViewBtn').removeClass('active');
+                $('#mapView').fadeIn();
+                $('#listView').fadeOut();
+            });
+        });
+    </script>
+}
 

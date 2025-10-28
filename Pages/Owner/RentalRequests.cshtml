@@ -1,0 +1,341 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model RentalRequestsModel
+@{
+    ViewData["Title"] = "Rental Requests";
+}
+
+<div class="container my-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-eco-green mb-1">
+                <i class="bi bi-inbox"></i> Rental Requests
+            </h2>
+            <p class="text-muted mb-0">Manage incoming rental requests for your bikes</p>
+        </div>
+        <div>
+            <span class="badge bg-primary fs-5">
+                @Model.PendingRequests.Count() Pending
+            </span>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <button class="nav-link active" data-filter="pending">
+                <i class="bi bi-clock-history"></i> Pending (@Model.PendingRequests.Count())
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-filter="accepted">
+                <i class="bi bi-check-circle"></i> Accepted (@Model.AcceptedRequests.Count())
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-filter="all">
+                <i class="bi bi-list-ul"></i> All Requests (@Model.AllRequests.Count())
+            </button>
+        </li>
+    </ul>
+
+    <!-- Pending Requests -->
+    <div class="request-section" data-section="pending">
+        @if (Model.PendingRequests.Any())
+        {
+            <div class="row">
+                @foreach (var booking in Model.PendingRequests)
+                {
+                    <div class="col-12 mb-3">
+                        <div class="card rental-request-card shadow-sm border-0">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <!-- Bike Image -->
+                                    <div class="col-md-2">
+                                        @if (booking.Bike.BikeImages.Any())
+                                        {
+                                            <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                                 class="img-fluid rounded request-bike-image" 
+                                                 alt="@booking.Bike.Brand @booking.Bike.Model" />
+                                        }
+                                        else
+                                        {
+                                            <div class="placeholder-request-image">
+                                                <i class="bi bi-bicycle"></i>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <!-- Bike & Renter Info -->
+                                    <div class="col-md-4">
+                                        <h5 class="mb-2">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                        <p class="mb-1">
+                                            <strong><i class="bi bi-person"></i> Renter:</strong> @booking.Renter.FullName
+                                        </p>
+                                        <p class="mb-1 small text-muted">
+                                            <i class="bi bi-envelope"></i> @booking.Renter.Email
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-telephone"></i> @booking.Renter.Phone
+                                        </p>
+                                    </div>
+
+                                    <!-- Rental Details -->
+                                    <div class="col-md-3">
+                                        <div class="rental-details">
+                                            <p class="mb-2">
+                                                <strong><i class="bi bi-calendar-check"></i> Start:</strong><br>
+                                                <span class="text-primary">@booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</span>
+                                            </p>
+                                            <p class="mb-2">
+                                                <strong><i class="bi bi-calendar-x"></i> End:</strong><br>
+                                                <span class="text-danger">@booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</span>
+                                            </p>
+                                            <p class="mb-0">
+                                                <strong><i class="bi bi-clock"></i> Duration:</strong>
+                                                @{
+                                                    var duration = booking.EndDate - booking.StartDate;
+                                                    var days = duration.Days;
+                                                    var hours = duration.Hours;
+                                                }
+                                                <span class="badge bg-info">
+                                                    @if (days > 0)
+                                                    {
+                                                        @($"{days}d {hours}h")
+                                                    }
+                                                    else
+                                                    {
+                                                        @($"{hours}h")
+                                                    }
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Earnings & Actions -->
+                                    <div class="col-md-3 text-end">
+                                        <div class="earnings-box mb-3">
+                                            <p class="mb-1 text-muted small">Total Amount</p>
+                                            <h4 class="text-success mb-0">₱@booking.TotalAmount.ToString("N2")</h4>
+                                            <small class="text-muted">You earn: ₱@((booking.TotalAmount * 0.9m).ToString("N2"))</small>
+                                        </div>
+
+                                        <div class="request-actions">
+                                            <form method="post" asp-page-handler="Accept" asp-route-id="@booking.BookingId" class="d-inline">
+                                                <button type="submit" class="btn btn-success w-100 mb-2">
+                                                    <i class="bi bi-check-circle"></i> Accept Request
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-outline-danger w-100" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#rejectModal@(booking.BookingId)">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Request Timestamp -->
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock-history"></i> Requested @booking.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reject Modal -->
+                    <div class="modal fade" id="rejectModal@(booking.BookingId)" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Reject Rental Request</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to reject this rental request from <strong>@booking.Renter.FullName</strong>?</p>
+                                    <p class="text-muted small">The renter will be notified of the rejection.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form method="post" asp-page-handler="Reject" asp-route-id="@booking.BookingId" class="d-inline">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-x-circle"></i> Reject Request
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-requests-state">
+                <i class="bi bi-inbox"></i>
+                <h4>No Pending Requests</h4>
+                <p>You're all caught up! New rental requests will appear here.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Accepted Requests -->
+    <div class="request-section" data-section="accepted" style="display: none;">
+        @if (Model.AcceptedRequests.Any())
+        {
+            <div class="row">
+                @foreach (var booking in Model.AcceptedRequests)
+                {
+                    <div class="col-12 mb-3">
+                        <div class="card border-success shadow-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-1">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                        <p class="mb-1"><i class="bi bi-person"></i> @booking.Renter.FullName</p>
+                                        <p class="mb-0 small text-muted">
+                                            @booking.StartDate.ToString("MMM dd") - @booking.EndDate.ToString("MMM dd, yyyy")
+                                        </p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Accepted</span>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <h5 class="text-success">₱@booking.TotalAmount.ToString("N2")</h5>
+                                        <a href="/Bookings/Details/@booking.BookingId" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-requests-state">
+                <i class="bi bi-check-circle"></i>
+                <h4>No Accepted Requests Yet</h4>
+                <p>Accepted rental requests will appear here.</p>
+            </div>
+        }
+    </div>
+
+    <!-- All Requests -->
+    <div class="request-section" data-section="all" style="display: none;">
+        @if (Model.AllRequests.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Bike</th>
+                            <th>Renter</th>
+                            <th>Dates</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.AllRequests)
+                        {
+                            <tr>
+                                <td>@booking.Bike.Brand @booking.Bike.Model</td>
+                                <td>@booking.Renter.FullName</td>
+                                <td>
+                                    <small>
+                                        @booking.StartDate.ToString("MMM dd")<br>
+                                        to @booking.EndDate.ToString("MMM dd")
+                                    </small>
+                                </td>
+                                <td>₱@booking.TotalAmount.ToString("N2")</td>
+                                <td>
+                                    @switch (booking.BookingStatusId)
+                                    {
+                                        case 1:
+                                            <span class="badge bg-warning">Pending</span>
+                                            break;
+                                        case 2:
+                                            <span class="badge bg-success">Accepted</span>
+                                            break;
+                                        case 4:
+                                            <span class="badge bg-danger">Rejected</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <a href="/Bookings/Details/@booking.BookingId" class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-requests-state">
+                <i class="bi bi-list-ul"></i>
+                <h4>No Requests Yet</h4>
+                <p>Rental requests will appear here.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButtons = document.querySelectorAll('.nav-link[data-filter]');
+            const sections = document.querySelectorAll('.request-section');
+            
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    
+                    // Update active nav
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show/hide sections
+                    sections.forEach(section => {
+                        if (section.dataset.section === filter) {
+                            section.style.display = 'block';
+                        } else {
+                            section.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+}
+

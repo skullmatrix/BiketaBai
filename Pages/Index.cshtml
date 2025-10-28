@@ -4,276 +4,388 @@
     ViewData["Title"] = "Bike Ta Bai - Eco-Friendly Bike Rental Platform";
 }
 
-<!-- Modern Hero Section -->
-<div class="hero-modern">
-    <div class="hero-overlay"></div>
-    <div class="container hero-content">
-        <div class="row align-items-center">
-            <div class="col-lg-6 text-white">
-                <div class="logo-section mb-4">
-                    <i class="bi bi-bicycle" style="font-size: 4rem;"></i>
-                    <h1 class="display-3 fw-bold mt-3">Bike Ta Bai</h1>
+<!-- Premium Minimalist Hero Section -->
+<div class="premium-hero" style="background: linear-gradient(135deg, rgba(232, 240, 227, 0.4) 0%, rgba(255, 255, 255, 0.8) 100%), url('https://images.unsplash.com/photo-1511994298241-608e28f14fde?w=1920&q=80') center/cover; background-attachment: fixed;">
+    <div class="container">
+        <div class="row align-items-center min-vh-90">
+            <div class="col-lg-6">
+                <div class="hero-content-minimal">
+                    <div class="hero-eyebrow">Eco-Friendly Bike Rental</div>
+                    <h1 class="hero-title-minimal">
+                        Ride Green,<br/>
+                        Live Clean
+                    </h1>
+                    <p class="hero-description-minimal">
+                        Your sustainable solution for urban commuting. Rent bikes from trusted 
+                        owners in your community and reduce your carbon footprint.
+                    </p>
+                    
+                    <!-- Minimal Stats -->
+                    <div class="stats-minimal">
+                        <div class="stat-minimal">
+                            <div class="stat-value-minimal">@Model.TotalBikes+</div>
+                            <div class="stat-label-minimal">Bikes</div>
+                        </div>
+                        <div class="stat-minimal">
+                            <div class="stat-value-minimal">@Model.TotalUsers+</div>
+                            <div class="stat-label-minimal">Users</div>
+                        </div>
+                        <div class="stat-minimal">
+                            <div class="stat-value-minimal">@Model.CO2Saved</div>
+                            <div class="stat-label-minimal">kg CO₂ Saved</div>
+                        </div>
+                    </div>
+                    
+                    @if (!User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="hero-actions-minimal">
+                            <a href="/Account/Register" class="btn-minimal btn-minimal-primary">
+                                Get Started
+                                <i class="bi bi-arrow-right ms-2"></i>
+                            </a>
+                            <a href="/Bikes/Browse" class="btn-minimal btn-minimal-ghost">
+                                Browse Bikes
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="hero-actions-minimal">
+                            <a href="/Bikes/Browse" class="btn-minimal btn-minimal-primary">
+                                Find a Bike
+                                <i class="bi bi-arrow-right ms-2"></i>
+                            </a>
+                            <a href="/Dashboard" class="btn-minimal btn-minimal-ghost">
+                                Dashboard
+                            </a>
+                        </div>
+                    }
                 </div>
-                <h2 class="tagline mb-4">Ride Green, Live Clean 🌱</h2>
-                <p class="lead mb-4">Your eco-friendly solution for sustainable urban commuting. Rent bikes from trusted owners in your community.</p>
-                
-                @if (!User.Identity?.IsAuthenticated == true)
-                {
-                    <div class="cta-buttons">
-                        <a href="/Account/Login" class="btn btn-light btn-lg me-3 shadow">
-                            <i class="bi bi-box-arrow-in-right"></i> Sign In
-                        </a>
-                        <a href="/Account/Register" class="btn btn-success btn-lg shadow">
-                            <i class="bi bi-person-plus"></i> Register Now
-                        </a>
-                    </div>
-                }
-                else
-                {
-                    <div class="cta-buttons">
-                        <a href="/Bikes/Browse" class="btn btn-light btn-lg me-3 shadow">
-                            <i class="bi bi-search"></i> Browse Bikes
-                        </a>
-                        <a href="/Dashboard" class="btn btn-success btn-lg shadow">
-                            <i class="bi bi-speedometer2"></i> My Dashboard
-                        </a>
-                    </div>
-                }
             </div>
-            <div class="col-lg-6 d-none d-lg-block">
-                <div class="hero-stats-card">
-                    <h4 class="text-center mb-4 text-eco-green">Platform Impact</h4>
-                    <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <div class="stat-number">@Model.TotalBikes</div>
-                            <div class="stat-label">Bikes Available</div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="stat-number">@Model.TotalUsers</div>
-                            <div class="stat-label">Active Users</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-number">@Model.TotalBookings</div>
-                            <div class="stat-label">Total Rentals</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-number text-success">@Model.CO2Saved kg</div>
-                            <div class="stat-label">CO₂ Saved</div>
-                        </div>
+            
+            <!-- Minimal Search Card -->
+            <div class="col-lg-5 offset-lg-1">
+                <div class="search-card-minimal">
+                    <div class="search-card-header">
+                        <h3>Find Your Ride</h3>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Search Bar -->
-        <div class="search-box-modern mt-5">
-            <form method="get" action="/Bikes/Browse">
-                <div class="row g-3">
-                    <div class="col-md-5">
-                        <input type="text" name="location" class="form-control form-control-lg" placeholder="📍 Where do you want to ride?" />
-                    </div>
-                    <div class="col-md-4">
-                        <select name="bikeTypeId" class="form-select form-control-lg">
-                            <option value="">🚴 All Bike Types</option>
-                            @foreach (var bikeType in Model.BikeTypes)
-                            {
-                                <option value="@bikeType.BikeTypeId">@bikeType.TypeName</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold">
-                            <i class="bi bi-search"></i> Find Bikes
+                    <form method="get" action="/Bikes/Browse">
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Location</label>
+                            <input type="text" name="location" class="input-minimal" placeholder="Where to?" />
+                        </div>
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Bike Type</label>
+                            <select name="bikeTypeId" class="input-minimal">
+                                <option value="">All Types</option>
+                                @foreach (var bikeType in Model.BikeTypes)
+                                {
+                                    <option value="@bikeType.BikeTypeId">@bikeType.TypeName</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-minimal btn-minimal-primary w-100">
+                            Search
                         </button>
+                    </form>
+                    
+                    <!-- Trust Indicators -->
+                    <div class="trust-indicators">
+                        <div class="trust-item">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                            <span>Instant</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Verified</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="bi bi-lock-fill"></i>
+                            <span>Secure</span>
+                        </div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- How It Works Section -->
-<section class="how-it-works py-5 bg-light">
+<!-- Features Section - Minimalist with Images -->
+<section class="features-minimal">
     <div class="container">
-        <h2 class="text-center mb-2 text-eco-green fw-bold">How It Works</h2>
-        <p class="text-center text-muted mb-5">Get started in 3 simple steps</p>
-        
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="how-it-works-card text-center">
-                    <div class="step-number">1</div>
-                    <div class="step-icon">
-                        <i class="bi bi-person-plus-fill"></i>
-                    </div>
-                    <h4>Create Account</h4>
-                    <p>Sign up in seconds as a Renter or Bike Owner. Verify your email and you're ready to go!</p>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="how-it-works-card text-center">
-                    <div class="step-number">2</div>
-                    <div class="step-icon">
-                        <i class="bi bi-bicycle"></i>
-                    </div>
-                    <h4>Find or List Bikes</h4>
-                    <p>Renters: Browse available bikes near you. Owners: List your bikes and start earning!</p>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="how-it-works-card text-center">
-                    <div class="step-number">3</div>
-                    <div class="step-icon">
-                        <i class="bi bi-check-circle-fill"></i>
-                    </div>
-                    <h4>Book & Ride</h4>
-                    <p>Select dates, make payment, and enjoy your eco-friendly ride. Earn loyalty points with every rental!</p>
-                </div>
-            </div>
+        <div class="section-header-minimal">
+            <h2>Why Choose Us</h2>
+            <p>Everything you need for a perfect ride</p>
         </div>
-    </div>
-</section>
-
-<!-- Why Choose Us Section -->
-<section class="why-choose-us py-5">
-    <div class="container">
-        <h2 class="text-center mb-2 text-eco-green fw-bold">Why Choose Bike Ta Bai?</h2>
-        <p class="text-center text-muted mb-5">Your trusted partner for eco-friendly commuting</p>
         
-        <div class="row text-center">
-            <div class="col-md-3 mb-4">
-                <div class="feature-card">
-                    <div class="feature-icon-modern">
+        <!-- Feature Row 1 with Image -->
+        <div class="row align-items-center mb-4 pb-4 border-bottom">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80" 
+                     alt="Bike Location" 
+                     class="img-fluid rounded-4 shadow-sm"
+                     style="object-fit: cover; height: 350px; width: 100%;">
+            </div>
+            <div class="col-lg-6">
+                <div class="ps-lg-4">
+                    <div class="feature-icon-minimal mb-3" style="margin-left: 0;">
                         <i class="bi bi-geo-alt-fill"></i>
                     </div>
-                    <h4>Find Nearby Bikes</h4>
-                    <p>Discover available bikes near your location instantly</p>
+                    <h3 class="mb-3" style="font-size: 2rem; font-weight: 700; color: var(--color-gray-900);">Find Bikes Nearby</h3>
+                    <p class="mb-4" style="font-size: 1.125rem; line-height: 1.7; color: var(--color-gray-600);">
+                        Discover available bikes in your area with our intelligent location-based search. 
+                        Filter by bike type, price range, and ratings to find the perfect ride for your journey.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Real-time availability</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Advanced filters</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Distance calculator</li>
+                    </ul>
                 </div>
             </div>
-            <div class="col-md-3 mb-4">
-                <div class="feature-card">
-                    <div class="feature-icon-modern">
-                        <i class="bi bi-shield-check"></i>
+        </div>
+        
+        <!-- Feature Row 2 with Image (Reversed) -->
+        <div class="row align-items-center mb-4 pb-4 border-bottom flex-lg-row-reverse">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <img src="https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80" 
+                     alt="Instant Booking" 
+                     class="img-fluid rounded-4 shadow-sm"
+                     style="object-fit: cover; height: 350px; width: 100%;">
+            </div>
+            <div class="col-lg-6">
+                <div class="pe-lg-4">
+                    <div class="feature-icon-minimal mb-3" style="margin-left: 0;">
+                        <i class="bi bi-lightning-charge-fill"></i>
                     </div>
-                    <h4>Safe & Secure</h4>
-                    <p>Verified owners and secure payment methods</p>
+                    <h3 class="mb-3" style="font-size: 2rem; font-weight: 700; color: var(--color-gray-900);">Instant Booking</h3>
+                    <p class="mb-4" style="font-size: 1.125rem; line-height: 1.7; color: var(--color-gray-600);">
+                        Book your ride in seconds with our streamlined booking process. Choose your dates, 
+                        confirm payment, and you're ready to ride with instant confirmation.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>One-click booking</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Instant confirmation</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Secure payments</li>
+                    </ul>
                 </div>
             </div>
-            <div class="col-md-3 mb-4">
-                <div class="feature-card">
-                    <div class="feature-icon-modern">
-                        <i class="bi bi-star-fill"></i>
-                    </div>
-                    <h4>Earn Rewards</h4>
-                    <p>Get loyalty points with every eco-friendly ride</p>
-                </div>
+        </div>
+        
+        <!-- Feature Row 3 with Image -->
+        <div class="row align-items-center mb-4">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800&q=80" 
+                     alt="Earn Money" 
+                     class="img-fluid rounded-4 shadow-sm"
+                     style="object-fit: cover; height: 350px; width: 100%;">
             </div>
-            <div class="col-md-3 mb-4">
-                <div class="feature-card">
-                    <div class="feature-icon-modern">
+            <div class="col-lg-6">
+                <div class="ps-lg-4">
+                    <div class="feature-icon-minimal mb-3" style="margin-left: 0;">
                         <i class="bi bi-wallet2"></i>
                     </div>
-                    <h4>Digital Wallet</h4>
-                    <p>Easy payments with multiple options</p>
+                    <h3 class="mb-3" style="font-size: 2rem; font-weight: 700; color: var(--color-gray-900);">Earn Money as an Owner</h3>
+                    <p class="mb-4" style="font-size: 1.125rem; line-height: 1.7; color: var(--color-gray-600);">
+                        Turn your idle bikes into income! List your bikes, set your own rates, 
+                        and earn money while helping others commute sustainably.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Set your own rates</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Flexible availability</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: var(--color-sage-primary);"></i>Owner protection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Features Grid -->
+        <div class="row mt-4 pt-4">
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="feature-icon-minimal mb-3 mx-auto">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h4 class="mb-3" style="font-weight: 600;">Verified & Secure</h4>
+                    <p style="color: var(--color-gray-600);">All owners are verified and payments are secure. Ride with confidence.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="feature-icon-minimal mb-3 mx-auto">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <h4 class="mb-3" style="font-weight: 600;">Ratings & Reviews</h4>
+                    <p style="color: var(--color-gray-600);">Read honest reviews from the community to find the perfect bike.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="feature-icon-minimal mb-3 mx-auto">
+                        <i class="bi bi-headset"></i>
+                    </div>
+                    <h4 class="mb-3" style="font-weight: 600;">24/7 Support</h4>
+                    <p style="color: var(--color-gray-600);">Our dedicated support team is always here to help you.</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Featured Bikes Section -->
-<section class="featured-bikes py-5 bg-light">
+<!-- How It Works - Minimalist -->
+<section class="how-it-works-minimal">
     <div class="container">
-        <h2 class="text-center mb-2 text-eco-green fw-bold">Featured Bikes</h2>
-        <p class="text-center text-muted mb-5">Top-rated bikes available for rent now</p>
+        <div class="section-header-minimal">
+            <h2>How It Works</h2>
+            <p>Get started in three simple steps</p>
+        </div>
         
-        <div class="row">
-            @foreach (var bike in Model.FeaturedBikes)
-            {
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card bike-card-modern h-100 shadow-sm">
-                        @if (bike.BikeImages.Any())
-                        {
-                            <img src="@bike.BikeImages.First().ImageUrl" class="card-img-top bike-image-featured" alt="@bike.Brand @bike.Model" />
-                        }
-                        else
-                        {
-                            <div class="placeholder-image-featured">
-                                <i class="bi bi-bicycle" style="font-size: 4rem; color: #ccc;"></i>
-                            </div>
-                        }
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title mb-0 fw-bold">@bike.Brand @bike.Model</h5>
-                                <span class="badge bg-success">@bike.BikeType.TypeName</span>
-                            </div>
-                            <p class="text-muted mb-2">
-                                <i class="bi bi-geo-alt-fill text-danger"></i> @bike.Location
-                            </p>
-                            <div class="rating-stars mb-3">
-                                @{
-                                    var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
-                                    for (int i = 1; i <= 5; i++)
-                                    {
-                                        if (i <= avgRating)
-                                        {
-                                            <i class="bi bi-star-fill text-warning"></i>
-                                        }
-                                        else
-                                        {
-                                            <i class="bi bi-star text-warning"></i>
-                                        }
-                                    }
-                                }
-                                <span class="text-muted ms-1">(@avgRating.ToString("F1"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-auto">
-                                <div class="price-display">
-                                    <span class="price-amount">₱@bike.HourlyRate</span>
-                                    <span class="price-unit">/hr</span>
+        <div class="steps-minimal">
+            <div class="step-minimal">
+                <div class="step-number-minimal">01</div>
+                <div class="step-content-minimal">
+                    <h3>Create Account</h3>
+                    <p>Sign up in seconds as a Renter or Bike Owner. Quick verification and you're ready to go.</p>
+                </div>
+            </div>
+            
+            <div class="step-minimal">
+                <div class="step-number-minimal">02</div>
+                <div class="step-content-minimal">
+                    <h3>Find or List Bikes</h3>
+                    <p>Renters browse nearby bikes. Owners list their bikes and set competitive rates.</p>
+                </div>
+            </div>
+            
+            <div class="step-minimal">
+                <div class="step-number-minimal">03</div>
+                <div class="step-content-minimal">
+                    <h3>Book & Ride</h3>
+                    <p>Book instantly, pay securely, and enjoy your eco-friendly ride. Earn loyalty points too!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Bikes - Minimalist -->
+<section class="featured-bikes-minimal">
+    <div class="container">
+        <div class="section-header-minimal">
+            <h2>Featured Bikes</h2>
+            <p>Discover top-rated bikes available now</p>
+        </div>
+        
+        @if (Model.FeaturedBikes.Any())
+        {
+            <div class="bikes-grid-minimal">
+                @foreach (var bike in Model.FeaturedBikes)
+                {
+                    var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                    <div class="bike-card-clean">
+                        <div class="bike-image-clean">
+                            @if (bike.BikeImages.Any())
+                            {
+                                <img src="@bike.BikeImages.First().ImageUrl" alt="@bike.Brand @bike.Model" />
+                            }
+                            else
+                            {
+                                <div class="bike-placeholder-clean">
+                                    <i class="bi bi-bicycle"></i>
                                 </div>
-                                <a href="/Bikes/Details/@bike.BikeId" class="btn btn-success btn-sm">
-                                    View Details <i class="bi bi-arrow-right"></i>
+                            }
+                            <div class="bike-type-label">@bike.BikeType.TypeName</div>
+                        </div>
+                        
+                        <div class="bike-info-clean">
+                            <div class="bike-header-clean">
+                                <h4>@bike.Brand @bike.Model</h4>
+                                @if (avgRating > 0)
+                                {
+                                    <div class="rating-clean">
+                                        <i class="bi bi-star-fill"></i>
+                                        <span>@avgRating.ToString("F1")</span>
+                                    </div>
+                                }
+                            </div>
+                            
+                            <div class="bike-location-clean">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>@bike.Location</span>
+                            </div>
+                            
+                            <div class="bike-footer-clean">
+                                <div class="price-clean">
+                                    <span class="price-amount-clean">₱@bike.HourlyRate</span>
+                                    <span class="price-unit-clean">/hour</span>
+                                </div>
+                                <a href="/Bikes/Details/@bike.BikeId" class="btn-view-clean">
+                                    View
+                                    <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-        
-        <div class="text-center mt-4">
-            <a href="/Bikes/Browse" class="btn btn-outline-success btn-lg">
-                <i class="bi bi-grid-3x3-gap"></i> Browse All Bikes
-            </a>
+                }
+            </div>
+            
+            <div class="text-center mt-5">
+                <a href="/Bikes/Browse" class="btn-minimal btn-minimal-ghost">
+                    View All Bikes
+                    <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state-minimal">
+                <i class="bi bi-bicycle"></i>
+                <p>No featured bikes available at the moment</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Impact Stats - Minimalist -->
+<section class="impact-minimal">
+    <div class="container">
+        <div class="impact-grid-minimal">
+            <div class="impact-item-minimal">
+                <div class="impact-number-minimal">@Model.TotalBikes+</div>
+                <div class="impact-label-minimal">Bikes Available</div>
+            </div>
+            <div class="impact-item-minimal">
+                <div class="impact-number-minimal">@Model.TotalUsers+</div>
+                <div class="impact-label-minimal">Active Users</div>
+            </div>
+            <div class="impact-item-minimal">
+                <div class="impact-number-minimal">@Model.TotalBookings+</div>
+                <div class="impact-label-minimal">Rentals Completed</div>
+            </div>
+            <div class="impact-item-minimal">
+                <div class="impact-number-minimal">@Model.CO2Saved</div>
+                <div class="impact-label-minimal">kg CO₂ Saved</div>
+            </div>
         </div>
     </div>
 </section>
 
+<!-- CTA Section - Minimalist -->
 @if (!User.Identity?.IsAuthenticated == true)
 {
-    <!-- Call to Action Section -->
-    <section class="cta-section py-5">
+    <section class="cta-minimal">
         <div class="container">
-            <div class="cta-card text-center">
-                <h2 class="mb-3 fw-bold">Ready to Start Your Eco-Friendly Journey?</h2>
-                <p class="lead mb-4">Join thousands of users who are making a difference, one ride at a time</p>
-                <div class="row justify-content-center">
-                    <div class="col-md-5 mb-3">
-                        <div class="user-type-card">
-                            <i class="bi bi-person-check" style="font-size: 3rem; color: #28a745;"></i>
-                            <h4 class="mt-3">I Want to Rent</h4>
-                            <p>Browse bikes and start riding eco-friendly</p>
-                            <a href="/Account/Register" class="btn btn-success btn-lg w-100">Register as Renter</a>
-                        </div>
-                    </div>
-                    <div class="col-md-5 mb-3">
-                        <div class="user-type-card">
-                            <i class="bi bi-bicycle" style="font-size: 3rem; color: #28a745;"></i>
-                            <h4 class="mt-3">I Have Bikes</h4>
-                            <p>List your bikes and start earning money</p>
-                            <a href="/Account/Register" class="btn btn-outline-success btn-lg w-100">Register as Owner</a>
-                        </div>
-                    </div>
+            <div class="cta-content-minimal">
+                <h2>Ready to Make a Difference?</h2>
+                <p>Join thousands of users who are reducing their carbon footprint while saving money.</p>
+                <div class="cta-actions-minimal">
+                    <a href="/Account/Register" class="btn-minimal btn-minimal-primary">
+                        Get Started
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </a>
+                    <a href="/Bikes/Browse" class="btn-minimal btn-minimal-ghost">
+                        Browse Bikes
+                    </a>
                 </div>
             </div>
         </div>
@@ -281,20 +393,23 @@
 }
 else
 {
-    <!-- Logged In CTA -->
-    <section class="cta-section-logged py-5">
-        <div class="container text-center">
-            <h3 class="text-eco-green mb-4">Continue Your Eco-Friendly Journey</h3>
-            <a href="/Bikes/Browse" class="btn btn-success btn-lg me-2">
-                <i class="bi bi-bicycle"></i> Find a Bike
-            </a>
-            @if (User.IsInRole("Owner"))
-            {
-                <a href="/Owner/AddBike" class="btn btn-outline-success btn-lg">
-                    <i class="bi bi-plus-circle"></i> List Your Bike
-                </a>
-            }
+    <section class="cta-minimal">
+        <div class="container">
+            <div class="cta-content-minimal">
+                <h2>Continue Your Eco-Friendly Journey</h2>
+                <div class="cta-actions-minimal">
+                    <a href="/Bikes/Browse" class="btn-minimal btn-minimal-primary">
+                        Find a Bike
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </a>
+                    @if (User.IsInRole("Owner"))
+                    {
+                        <a href="/Bikes/Add" class="btn-minimal btn-minimal-ghost">
+                            List Your Bike
+                        </a>
+                    }
+                </div>
+            </div>
         </div>
     </section>
 }
-

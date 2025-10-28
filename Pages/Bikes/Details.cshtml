@@ -54,100 +54,242 @@ else
                 }
 
                 <!-- Bike Details -->
-                <div class="card mt-4 shadow-eco">
+                <div class="card mt-4 shadow-sm border-0">
                     <div class="card-body">
-                        <h4 class="text-eco-green mb-3">Bike Details</h4>
-                        <table class="table">
-                            <tr>
-                                <th width="30%">Brand</th>
-                                <td>@Model.Bike.Brand</td>
-                            </tr>
-                            <tr>
-                                <th>Model</th>
-                                <td>@Model.Bike.Model</td>
-                            </tr>
-                            <tr>
-                                <th>Type</th>
-                                <td><span class="badge badge-bike-type">@Model.Bike.BikeType.TypeName</span></td>
-                            </tr>
-                            <tr>
-                                <th>Mileage</th>
-                                <td>@Model.Bike.Mileage km</td>
-                            </tr>
-                            <tr>
-                                <th>Location</th>
-                                <td><i class="bi bi-geo-alt text-eco-green"></i> @Model.Bike.Location</td>
-                            </tr>
-                            <tr>
-                                <th>Status</th>
-                                <td><span class="badge badge-available">@Model.Bike.AvailabilityStatus.StatusName</span></td>
-                            </tr>
-                        </table>
+                        <h4 class="mb-4"><i class="bi bi-info-circle text-success"></i> Bike Specifications</h4>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="spec-item">
+                                    <i class="bi bi-tag text-muted"></i>
+                                    <div class="spec-content">
+                                        <small class="text-muted">Brand</small>
+                                        <p class="mb-0 fw-bold">@Model.Bike.Brand</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="spec-item">
+                                    <i class="bi bi-gear text-muted"></i>
+                                    <div class="spec-content">
+                                        <small class="text-muted">Model</small>
+                                        <p class="mb-0 fw-bold">@Model.Bike.Model</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="spec-item">
+                                    <i class="bi bi-bicycle text-muted"></i>
+                                    <div class="spec-content">
+                                        <small class="text-muted">Type</small>
+                                        <p class="mb-0"><span class="badge bg-success">@Model.Bike.BikeType.TypeName</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="spec-item">
+                                    <i class="bi bi-speedometer text-muted"></i>
+                                    <div class="spec-content">
+                                        <small class="text-muted">Mileage</small>
+                                        <p class="mb-0 fw-bold">@Model.Bike.Mileage km</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="spec-item">
+                                    <i class="bi bi-geo-alt text-muted"></i>
+                                    <div class="spec-content">
+                                        <small class="text-muted">Location</small>
+                                        <p class="mb-0 fw-bold">@Model.Bike.Location</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="spec-item">
+                                    <i class="bi bi-check-circle text-muted"></i>
+                                    <div class="spec-content">
+                                        <small class="text-muted">Status</small>
+                                        <p class="mb-0"><span class="badge bg-success">@Model.Bike.AvailabilityStatus.StatusName</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         @if (!string.IsNullOrEmpty(Model.Bike.Description))
                         {
-                            <h5 class="mt-3">Description</h5>
-                            <p>@Model.Bike.Description</p>
+                            <hr class="my-4" />
+                            <h5 class="mb-3"><i class="bi bi-chat-left-text text-success"></i> Description</h5>
+                            <p class="text-muted">@Model.Bike.Description</p>
                         }
                     </div>
                 </div>
 
-                <!-- Ratings and Reviews -->
-                <div class="card mt-4 shadow-eco">
+                <!-- Rental Rules Section -->
+                <div class="card mt-4 shadow-sm border-0">
                     <div class="card-body">
-                        <h4 class="text-eco-green mb-3">Ratings & Reviews</h4>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="me-4">
-                                <h2 class="mb-0">@Model.AverageRating.ToString("F1")</h2>
-                                <div class="rating-stars">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        if (i <= Model.AverageRating)
-                                        {
-                                            <i class="bi bi-star-fill"></i>
-                                        }
-                                        else
-                                        {
-                                            <i class="bi bi-star"></i>
-                                        }
-                                    }
+                        <h4 class="mb-4"><i class="bi bi-shield-check text-warning"></i> Rental Rules & Guidelines</h4>
+                        
+                        <div class="rules-section">
+                            <div class="rule-item">
+                                <div class="rule-icon bg-success">
+                                    <i class="bi bi-check-lg"></i>
                                 </div>
-                                <p class="text-muted mb-0">@Model.RatingCount review(s)</p>
+                                <div class="rule-content">
+                                    <h6>Valid ID Required</h6>
+                                    <p class="text-muted small mb-0">Present a valid government-issued ID upon bike pickup</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rule-item">
+                                <div class="rule-icon bg-primary">
+                                    <i class="bi bi-clock"></i>
+                                </div>
+                                <div class="rule-content">
+                                    <h6>Return on Time</h6>
+                                    <p class="text-muted small mb-0">Late returns incur additional charges. Please respect the agreed return time</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rule-item">
+                                <div class="rule-icon bg-warning">
+                                    <i class="bi bi-shield-exclamation"></i>
+                                </div>
+                                <div class="rule-content">
+                                    <h6>Damage Responsibility</h6>
+                                    <p class="text-muted small mb-0">Renter is responsible for any damage beyond normal wear and tear</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rule-item">
+                                <div class="rule-icon bg-info">
+                                    <i class="bi bi-bicycle"></i>
+                                </div>
+                                <div class="rule-content">
+                                    <h6>Proper Use Only</h6>
+                                    <p class="text-muted small mb-0">Use bike for its intended purpose only. No racing or extreme conditions</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rule-item">
+                                <div class="rule-icon bg-danger">
+                                    <i class="bi bi-x-circle"></i>
+                                </div>
+                                <div class="rule-content">
+                                    <h6>No Subletting</h6>
+                                    <p class="text-muted small mb-0">Bike cannot be sublet or loaned to third parties</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rule-item">
+                                <div class="rule-icon bg-secondary">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </div>
+                                <div class="rule-content">
+                                    <h6>Return in Same Condition</h6>
+                                    <p class="text-muted small mb-0">Clean and return bike in the same condition as received</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-4 mb-0">
+                            <i class="bi bi-info-circle"></i> <strong>Cancellation Policy:</strong> Free cancellation up to 24 hours before rental start time. Cancellations within 24 hours may incur a 50% fee.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ratings and Reviews -->
+                <div class="card mt-4 shadow-sm border-0">
+                    <div class="card-body">
+                        <h4 class="mb-4"><i class="bi bi-star-fill text-warning"></i> Ratings & Reviews</h4>
+                        
+                        <!-- Rating Summary -->
+                        <div class="rating-summary-box">
+                            <div class="row align-items-center">
+                                <div class="col-md-4 text-center">
+                                    <div class="average-rating-display">
+                                        <h1 class="display-3 fw-bold mb-0">@Model.AverageRating.ToString("F1")</h1>
+                                        <div class="rating-stars mb-2">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= Model.AverageRating)
+                                                {
+                                                    <i class="bi bi-star-fill text-warning"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star text-warning"></i>
+                                                }
+                                            }
+                                        </div>
+                                        <p class="text-muted mb-0">Based on @Model.RatingCount review(s)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="rating-breakdown">
+                                        @for (int star = 5; star >= 1; star--)
+                                        {
+                                            var count = Model.Ratings.Count(r => r.RatingValue == star);
+                                            var percentage = Model.RatingCount > 0 ? (count * 100.0 / Model.RatingCount) : 0;
+                                            <div class="rating-bar-row">
+                                                <span class="rating-label">@star <i class="bi bi-star-fill text-warning small"></i></span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @percentage%"></div>
+                                                </div>
+                                                <span class="rating-count">@count</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         @if (Model.Ratings.Any())
                         {
-                            <hr />
-                            @foreach (var rating in Model.Ratings)
+                            <hr class="my-4" />
+                            <h5 class="mb-3">Customer Reviews</h5>
+                            @foreach (var rating in Model.Ratings.Take(10))
                             {
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <div class="d-flex justify-content-between">
-                                        <strong>@rating.Rater.FullName</strong>
-                                        <small class="text-muted">@rating.CreatedAt.ToString("MMM dd, yyyy")</small>
-                                    </div>
-                                    <div class="rating-stars">
-                                        @for (int i = 1; i <= 5; i++)
-                                        {
-                                            if (i <= rating.RatingValue)
+                                <div class="review-card">
+                                    <div class="d-flex align-items-start">
+                                        <div class="reviewer-avatar">
+                                            <i class="bi bi-person-circle"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="mb-1">@rating.Rater.FullName</h6>
+                                                    <div class="rating-stars">
+                                                        @for (int i = 1; i <= 5; i++)
+                                                        {
+                                                            if (i <= rating.RatingValue)
+                                                            {
+                                                                <i class="bi bi-star-fill text-warning"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="bi bi-star text-warning"></i>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock"></i> @rating.CreatedAt.ToString("MMM dd, yyyy")
+                                                </small>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(rating.Review))
                                             {
-                                                <i class="bi bi-star-fill"></i>
+                                                <p class="review-text mb-0">@rating.Review</p>
                                             }
-                                            else
-                                            {
-                                                <i class="bi bi-star"></i>
-                                            }
-                                        }
+                                        </div>
                                     </div>
-                                    @if (!string.IsNullOrEmpty(rating.Review))
-                                    {
-                                        <p class="mb-0 mt-2">@rating.Review</p>
-                                    }
                                 </div>
                             }
                         }
                         else
                         {
-                            <p class="text-muted">No reviews yet</p>
+                            <div class="text-center py-5">
+                                <i class="bi bi-chat-left-dots" style="font-size: 3rem; color: #ddd;"></i>
+                                <p class="text-muted mt-3 mb-0">No reviews yet. Be the first to review this bike!</p>
+                            </div>
                         }
                     </div>
                 </div>
@@ -190,38 +332,98 @@ else
                         @if (User.Identity?.IsAuthenticated == true && AuthHelper.IsRenter(User))
                         {
                             <form method="post">
-                                <div class="mb-3">
-                                    <label class="form-label">Start Date & Time</label>
-                                    <input type="datetime-local" asp-for="Input.StartDate" class="form-control" required />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">End Date & Time</label>
-                                    <input type="datetime-local" asp-for="Input.EndDate" class="form-control" required />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Distance to Save (km)</label>
-                                    <input type="number" asp-for="Input.DistanceSavedKm" class="form-control" step="0.1" placeholder="Optional" />
-                                </div>
-                                <div id="pricingPreview" class="card bg-eco-light mb-3" style="display: none;">
+                                <!-- Date & Time Selection -->
+                                <div class="card bg-light mb-3">
                                     <div class="card-body">
-                                        <h6>Pricing Breakdown</h6>
-                                        <div class="d-flex justify-content-between">
+                                        <h6 class="text-eco-green mb-3"><i class="bi bi-calendar-event"></i> Rental Period</h6>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="bi bi-play-circle"></i> Start Date & Time
+                                            </label>
+                                            <input type="datetime-local" asp-for="Input.StartDate" class="form-control form-control-lg" required min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                                            <small class="text-muted">When you'll pick up the bike</small>
+                                        </div>
+                                        <div class="mb-0">
+                                            <label class="form-label fw-bold">
+                                                <i class="bi bi-stop-circle"></i> End Date & Time
+                                            </label>
+                                            <input type="datetime-local" asp-for="Input.EndDate" class="form-control form-control-lg" required />
+                                            <small class="text-muted">When you'll return the bike</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Location Selection -->
+                                <div class="card bg-light mb-3">
+                                    <div class="card-body">
+                                        <h6 class="text-eco-green mb-3"><i class="bi bi-geo-alt"></i> Pickup & Return Locations</h6>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="bi bi-geo-alt-fill text-success"></i> Pickup Location
+                                            </label>
+                                            <input type="text" asp-for="Input.PickupLocation" class="form-control" placeholder="Enter pickup address or landmark" required />
+                                            <small class="text-muted">Where you'll collect the bike</small>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="sameAsPickup" />
+                                            <label class="form-check-label" for="sameAsPickup">
+                                                <small>Return to same location</small>
+                                            </label>
+                                        </div>
+                                        <div class="mb-0" id="returnLocationDiv">
+                                            <label class="form-label fw-bold">
+                                                <i class="bi bi-geo-alt-fill text-danger"></i> Return Location
+                                            </label>
+                                            <input type="text" asp-for="Input.ReturnLocation" class="form-control" placeholder="Enter return address or landmark" id="returnLocationInput" />
+                                            <small class="text-muted">Where you'll drop off the bike</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Optional Distance -->
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-speedometer2"></i> Estimated Distance (Optional)
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" asp-for="Input.DistanceSavedKm" class="form-control" step="0.1" placeholder="0.0" />
+                                        <span class="input-group-text">km</span>
+                                    </div>
+                                    <small class="text-muted">Help us track your eco-friendly impact!</small>
+                                </div>
+
+                                <!-- Pricing Preview -->
+                                <div id="pricingPreview" class="card border-success mb-3" style="display: none;">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0"><i class="bi bi-calculator"></i> Pricing Breakdown</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span><i class="bi bi-clock"></i> Rental Duration</span>
+                                            <strong id="rentalDuration">-</strong>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between mb-2">
                                             <span>Base Rate</span>
                                             <span id="baseRate">₱0.00</span>
                                         </div>
-                                        <div class="d-flex justify-content-between">
+                                        <div class="d-flex justify-content-between mb-2">
                                             <span>Service Fee (10%)</span>
                                             <span id="serviceFee">₱0.00</span>
                                         </div>
                                         <hr />
                                         <div class="d-flex justify-content-between">
-                                            <strong>Total</strong>
-                                            <strong id="totalAmount">₱0.00</strong>
+                                            <strong class="text-eco-green">Total Amount</strong>
+                                            <strong class="text-eco-green fs-5" id="totalAmount">₱0.00</strong>
+                                        </div>
+                                        <div class="alert alert-info mt-3 mb-0 small">
+                                            <i class="bi bi-info-circle"></i> Free cancellation up to 24 hours before start time
                                         </div>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-eco-primary w-100 btn-lg">
-                                    <i class="bi bi-calendar-check"></i> Book Now
+
+                                <button type="submit" class="btn btn-eco-primary w-100 btn-lg shadow">
+                                    <i class="bi bi-calendar-check"></i> Confirm Booking
                                 </button>
                             </form>
                         }
@@ -244,6 +446,37 @@ else
             const hourlyRate = @Model.Bike.HourlyRate;
             const dailyRate = @Model.Bike.DailyRate;
 
+            // Handle "Same as pickup" checkbox
+            $('#sameAsPickup').on('change', function() {
+                if ($(this).is(':checked')) {
+                    const pickupLocation = $('#Input_PickupLocation').val();
+                    $('#Input_ReturnLocation').val(pickupLocation);
+                    $('#returnLocationDiv').hide();
+                } else {
+                    $('#returnLocationDiv').show();
+                }
+            });
+
+            // Auto-fill return location when pickup changes and checkbox is checked
+            $('#Input_PickupLocation').on('input', function() {
+                if ($('#sameAsPickup').is(':checked')) {
+                    $('#Input_ReturnLocation').val($(this).val());
+                }
+            });
+
+            function formatDuration(hours) {
+                if (hours < 1) {
+                    return Math.round(hours * 60) + ' minutes';
+                } else if (hours < 24) {
+                    return hours.toFixed(1) + ' hours';
+                } else {
+                    const days = Math.floor(hours / 24);
+                    const remainingHours = Math.round(hours % 24);
+                    return days + (days === 1 ? ' day' : ' days') + 
+                           (remainingHours > 0 ? ' ' + remainingHours + ' hrs' : '');
+                }
+            }
+
             function calculatePricing() {
                 const startDate = new Date($('#Input_StartDate').val());
                 const endDate = new Date($('#Input_EndDate').val());
@@ -264,16 +497,37 @@ else
                     const serviceFee = baseRate * 0.1;
                     const total = baseRate + serviceFee;
 
+                    $('#rentalDuration').text(formatDuration(hours));
                     $('#baseRate').text('₱' + baseRate.toFixed(2));
                     $('#serviceFee').text('₱' + serviceFee.toFixed(2));
                     $('#totalAmount').text('₱' + total.toFixed(2));
-                    $('#pricingPreview').show();
+                    $('#pricingPreview').fadeIn();
                 } else {
-                    $('#pricingPreview').hide();
+                    $('#pricingPreview').fadeOut();
                 }
             }
 
+            // Calculate pricing when dates change
             $('#Input_StartDate, #Input_EndDate').on('change', calculatePricing);
+
+            // Validate that end date is after start date
+            $('#Input_EndDate').on('change', function() {
+                const startDate = new Date($('#Input_StartDate').val());
+                const endDate = new Date($(this).val());
+                
+                if (startDate && endDate && endDate <= startDate) {
+                    alert('End date must be after start date');
+                    $(this).val('');
+                }
+            });
+
+            // Set minimum end date based on start date
+            $('#Input_StartDate').on('change', function() {
+                const startDate = $(this).val();
+                if (startDate) {
+                    $('#Input_EndDate').attr('min', startDate);
+                }
+            });
         });
     </script>
 }

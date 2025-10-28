@@ -1,0 +1,351 @@
+@page
+@model BiketaBai.Pages.Admin.ReportsModel
+@{
+    ViewData["Title"] = "Reports & Issues";
+}
+
+<div class="container mt-4">
+    <!-- Page Header -->
+    <div class="dashboard-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-flag-fill text-danger"></i> Reports & Issues</h2>
+                <p class="text-muted mb-0">Manage user reports and resolve issues</p>
+            </div>
+            <a asp-page="/Admin/Profile" class="btn btn-outline-danger">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stat-mini bg-gradient-blue">
+                <i class="bi bi-inbox"></i>
+                <div>
+                    <h4>@Model.TotalReports</h4>
+                    <small>Total Reports</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stat-mini bg-gradient-orange">
+                <i class="bi bi-clock-history"></i>
+                <div>
+                    <h4>@Model.PendingReports</h4>
+                    <small>Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stat-mini bg-gradient-purple">
+                <i class="bi bi-gear-fill"></i>
+                <div>
+                    <h4>@Model.InProgressReports</h4>
+                    <small>In Progress</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stat-mini bg-gradient-green">
+                <i class="bi bi-check-circle"></i>
+                <div>
+                    <h4>@Model.ResolvedReports</h4>
+                    <small>Resolved</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-filter"></i> Filter Reports</h5>
+            <form method="get">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Search</label>
+                        <input type="text" name="searchQuery" value="@Model.SearchQuery" class="form-control" placeholder="Subject, description, reporter..." />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Type</label>
+                        <select name="typeFilter" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="Bike Issue" selected="@(Model.TypeFilter == "Bike Issue")">Bike Issue</option>
+                            <option value="Payment" selected="@(Model.TypeFilter == "Payment")">Payment</option>
+                            <option value="User Misconduct" selected="@(Model.TypeFilter == "User Misconduct")">User Misconduct</option>
+                            <option value="Other" selected="@(Model.TypeFilter == "Other")">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select name="statusFilter" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="Pending" selected="@(Model.StatusFilter == "Pending")">Pending</option>
+                            <option value="Assigned" selected="@(Model.StatusFilter == "Assigned")">Assigned</option>
+                            <option value="In Progress" selected="@(Model.StatusFilter == "In Progress")">In Progress</option>
+                            <option value="Resolved" selected="@(Model.StatusFilter == "Resolved")">Resolved</option>
+                            <option value="Closed" selected="@(Model.StatusFilter == "Closed")">Closed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Priority</label>
+                        <select name="priorityFilter" class="form-select">
+                            <option value="">All Priorities</option>
+                            <option value="Low" selected="@(Model.PriorityFilter == "Low")">Low</option>
+                            <option value="Medium" selected="@(Model.PriorityFilter == "Medium")">Medium</option>
+                            <option value="High" selected="@(Model.PriorityFilter == "High")">High</option>
+                            <option value="Critical" selected="@(Model.PriorityFilter == "Critical")">Critical</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    @if (Model.FilteredReports.Any())
+    {
+        <div class="row">
+            @foreach (var report in Model.FilteredReports)
+            {
+                <div class="col-12 mb-3">
+                    <div class="card report-card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge @GetTypeBadgeClass(report.ReportType)">
+                                            @report.ReportType
+                                        </span>
+                                        <span class="badge @GetPriorityBadgeClass(report.Priority)">
+                                            @report.Priority Priority
+                                        </span>
+                                        <span class="badge @GetStatusBadgeClass(report.Status)">
+                                            @report.Status
+                                        </span>
+                                    </div>
+                                    <h5 class="mb-1">@report.Subject</h5>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person"></i> Reported by <strong>@report.Reporter.FullName</strong> • 
+                                        <i class="bi bi-calendar"></i> @report.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted d-block">Report ID: #@report.ReportId</small>
+                                    @if (report.AssignedAdmin != null)
+                                    {
+                                        <small class="text-success">
+                                            <i class="bi bi-person-check"></i> @report.AssignedAdmin.FullName
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Unassigned</small>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="report-description mb-3">
+                                <strong>Description:</strong>
+                                <p class="mb-0 mt-1">@report.Description</p>
+                            </div>
+
+                            <!-- Related Info -->
+                            <div class="related-info mb-3">
+                                @if (report.ReportedUser != null)
+                                {
+                                    <div class="info-item">
+                                        <i class="bi bi-person-x text-danger"></i> 
+                                        <span>Reported User: <strong>@report.ReportedUser.FullName</strong></span>
+                                    </div>
+                                }
+                                @if (report.ReportedBike != null)
+                                {
+                                    <div class="info-item">
+                                        <i class="bi bi-bicycle text-primary"></i> 
+                                        <span>Reported Bike: <strong>@report.ReportedBike.Brand @report.ReportedBike.Model</strong></span>
+                                    </div>
+                                }
+                                @if (report.BookingId.HasValue)
+                                {
+                                    <div class="info-item">
+                                        <i class="bi bi-calendar-check text-success"></i> 
+                                        <span>Booking ID: <strong>#@report.BookingId</strong></span>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(report.AdminNotes))
+                            {
+                                <div class="alert alert-info mb-3">
+                                    <strong><i class="bi bi-sticky"></i> Admin Notes:</strong>
+                                    <p class="mb-0 mt-1">@report.AdminNotes</p>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(report.Resolution))
+                            {
+                                <div class="alert alert-success mb-3">
+                                    <strong><i class="bi bi-check-circle"></i> Resolution:</strong>
+                                    <p class="mb-0 mt-1">@report.Resolution</p>
+                                    @if (report.ResolvedAt.HasValue)
+                                    {
+                                        <small class="text-muted">Resolved on: @report.ResolvedAt.Value.ToString("MMM dd, yyyy")</small>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Actions -->
+                            <div class="report-actions d-flex gap-2 flex-wrap">
+                                @if (report.AssignedToAdminId == null)
+                                {
+                                    <form method="post" asp-page-handler="Assign" class="d-inline">
+                                        <input type="hidden" name="reportId" value="@report.ReportId" />
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-person-plus"></i> Assign to Me
+                                        </button>
+                                    </form>
+                                }
+                                
+                                @if (report.Status != "Resolved" && report.Status != "Closed")
+                                {
+                                    <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                        <input type="hidden" name="reportId" value="@report.ReportId" />
+                                        <input type="hidden" name="newStatus" value="In Progress" />
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-gear"></i> Mark In Progress
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                        <input type="hidden" name="reportId" value="@report.ReportId" />
+                                        <input type="hidden" name="newStatus" value="Resolved" />
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle"></i> Mark Resolved
+                                        </button>
+                                    </form>
+                                }
+                                
+                                @if (report.Status == "Resolved")
+                                {
+                                    <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                        <input type="hidden" name="reportId" value="@report.ReportId" />
+                                        <input type="hidden" name="newStatus" value="Closed" />
+                                        <button type="submit" class="btn btn-sm btn-secondary">
+                                            <i class="bi bi-x-circle"></i> Close Report
+                                        </button>
+                                    </form>
+                                }
+
+                                <div class="dropdown d-inline">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i> More
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <form method="post" asp-page-handler="UpdatePriority">
+                                                <input type="hidden" name="reportId" value="@report.ReportId" />
+                                                <input type="hidden" name="newPriority" value="Low" />
+                                                <button type="submit" class="dropdown-item">Set Priority: Low</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form method="post" asp-page-handler="UpdatePriority">
+                                                <input type="hidden" name="reportId" value="@report.ReportId" />
+                                                <input type="hidden" name="newPriority" value="Medium" />
+                                                <button type="submit" class="dropdown-item">Set Priority: Medium</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form method="post" asp-page-handler="UpdatePriority">
+                                                <input type="hidden" name="reportId" value="@report.ReportId" />
+                                                <input type="hidden" name="newPriority" value="High" />
+                                                <button type="submit" class="dropdown-item">Set Priority: High</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form method="post" asp-page-handler="UpdatePriority">
+                                                <input type="hidden" name="reportId" value="@report.ReportId" />
+                                                <input type="hidden" name="newPriority" value="Critical" />
+                                                <button type="submit" class="dropdown-item text-danger">Set Priority: Critical</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 4rem; color: #ddd;"></i>
+            <h4 class="mt-3">No Reports Found</h4>
+            <p class="text-muted">There are no reports matching your filters.</p>
+        </div>
+    }
+</div>
+
+@functions {
+    private string GetTypeBadgeClass(string type)
+    {
+        return type switch
+        {
+            "Bike Issue" => "bg-primary",
+            "Payment" => "bg-success",
+            "User Misconduct" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetPriorityBadgeClass(string priority)
+    {
+        return priority switch
+        {
+            "Critical" => "bg-danger",
+            "High" => "bg-warning",
+            "Medium" => "bg-info",
+            "Low" => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning",
+            "Assigned" => "bg-info",
+            "In Progress" => "bg-primary",
+            "Resolved" => "bg-success",
+            "Closed" => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+}
+

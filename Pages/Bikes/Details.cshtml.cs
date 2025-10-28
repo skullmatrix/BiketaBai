@@ -39,6 +39,15 @@ public class DetailsModel : PageModel
         [Display(Name = "End Date")]
         public DateTime EndDate { get; set; } = DateTime.Now.AddDays(1);
 
+        [Required]
+        [MaxLength(255)]
+        [Display(Name = "Pickup Location")]
+        public string PickupLocation { get; set; } = string.Empty;
+
+        [MaxLength(255)]
+        [Display(Name = "Return Location")]
+        public string? ReturnLocation { get; set; }
+
         [Display(Name = "Distance Saved (km)")]
         public decimal? DistanceSavedKm { get; set; }
     }
@@ -97,13 +106,20 @@ public class DetailsModel : PageModel
             return Page();
         }
 
+        // If return location is not provided, use pickup location
+        var returnLocation = string.IsNullOrWhiteSpace(Input.ReturnLocation) 
+            ? Input.PickupLocation 
+            : Input.ReturnLocation;
+
         // Create booking
         var result = await _bookingService.CreateBookingAsync(
             userId.Value,
             id,
             Input.StartDate,
             Input.EndDate,
-            Input.DistanceSavedKm
+            Input.DistanceSavedKm,
+            Input.PickupLocation,
+            returnLocation
         );
 
         if (result.success)

@@ -25,6 +25,7 @@ public class BiketaBaiDbContext : DbContext
     public DbSet<Points> Points { get; set; }
     public DbSet<PointsHistory> PointsHistory { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<Report> Reports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

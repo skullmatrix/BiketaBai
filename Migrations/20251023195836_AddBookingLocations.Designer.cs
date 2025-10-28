@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251023195836_AddBookingLocations")]
+    partial class AddBookingLocations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -715,97 +718,6 @@ namespace BiketaBai.Migrations
                     b.ToTable("ratings");
                 });
 
-            modelBuilder.Entity("BiketaBai.Models.Report", b =>
-                {
-                    b.Property<int>("ReportId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("report_id");
-
-                    b.Property<string>("AdminNotes")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("admin_notes");
-
-                    b.Property<int?>("AssignedToAdminId")
-                        .HasColumnType("int")
-                        .HasColumnName("assigned_to");
-
-                    b.Property<int?>("BookingId")
-                        .HasColumnType("int")
-                        .HasColumnName("booking_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("priority");
-
-                    b.Property<string>("ReportType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("report_type");
-
-                    b.Property<int?>("ReportedBikeId")
-                        .HasColumnType("int")
-                        .HasColumnName("reported_bike_id");
-
-                    b.Property<int?>("ReportedUserId")
-                        .HasColumnType("int")
-                        .HasColumnName("reported_user_id");
-
-                    b.Property<int>("ReporterId")
-                        .HasColumnType("int")
-                        .HasColumnName("reporter_id");
-
-                    b.Property<string>("Resolution")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("resolution");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("resolved_at");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("subject");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("ReportId");
-
-                    b.HasIndex("AssignedToAdminId");
-
-                    b.HasIndex("BookingId");
-
-                    b.HasIndex("ReportedBikeId");
-
-                    b.HasIndex("ReportedUserId");
-
-                    b.HasIndex("ReporterId");
-
-                    b.ToTable("reports");
-                });
-
             modelBuilder.Entity("BiketaBai.Models.TransactionType", b =>
                 {
                     b.Property<int>("TypeId")
@@ -1168,41 +1080,6 @@ namespace BiketaBai.Migrations
                     b.Navigation("RatedUser");
 
                     b.Navigation("Rater");
-                });
-
-            modelBuilder.Entity("BiketaBai.Models.Report", b =>
-                {
-                    b.HasOne("BiketaBai.Models.User", "AssignedAdmin")
-                        .WithMany()
-                        .HasForeignKey("AssignedToAdminId");
-
-                    b.HasOne("BiketaBai.Models.Booking", "Booking")
-                        .WithMany()
-                        .HasForeignKey("BookingId");
-
-                    b.HasOne("BiketaBai.Models.Bike", "ReportedBike")
-                        .WithMany()
-                        .HasForeignKey("ReportedBikeId");
-
-                    b.HasOne("BiketaBai.Models.User", "ReportedUser")
-                        .WithMany()
-                        .HasForeignKey("ReportedUserId");
-
-                    b.HasOne("BiketaBai.Models.User", "Reporter")
-                        .WithMany()
-                        .HasForeignKey("ReporterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AssignedAdmin");
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("ReportedBike");
-
-                    b.Navigation("ReportedUser");
-
-                    b.Navigation("Reporter");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Wallet", b =>

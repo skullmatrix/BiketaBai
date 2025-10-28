@@ -48,6 +48,14 @@ public class Booking
     [Column("distance_saved_km")]
     public decimal? DistanceSavedKm { get; set; }
 
+    [MaxLength(255)]
+    [Column("pickup_location")]
+    public string? PickupLocation { get; set; }
+
+    [MaxLength(255)]
+    [Column("return_location")]
+    public string? ReturnLocation { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

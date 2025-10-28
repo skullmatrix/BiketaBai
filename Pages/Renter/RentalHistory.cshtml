@@ -1,0 +1,341 @@
+@page
+@model RentalHistoryModel
+@{
+    ViewData["Title"] = "Rental History";
+}
+
+<div class="container my-5">
+    <!-- Header -->
+    <div class="dashboard-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="text-eco-green mb-2">
+                    <i class="bi bi-clock-history"></i> My Rental History
+                </h2>
+                <p class="text-muted mb-0">View all your past and current bike rentals</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="/Bikes/Browse" class="btn btn-success btn-lg">
+                    <i class="bi bi-bicycle"></i> Browse More Bikes
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-blue">
+                <div class="stat-icon">
+                    <i class="bi bi-card-list"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">@Model.TotalRentals</h3>
+                    <p class="stat-label">Total Rentals</p>
+                    <small class="text-white-50">All-time bookings</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-green">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">₱@Model.TotalSpent.ToString("N2")</h3>
+                    <p class="stat-label">Total Spent</p>
+                    <small class="text-white-50">On bike rentals</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-orange">
+                <div class="stat-icon">
+                    <i class="bi bi-bicycle"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">@Model.ActiveRentals</h3>
+                    <p class="stat-label">Active Rentals</p>
+                    <small class="text-white-50">Currently renting</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-stat-card bg-gradient-purple">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 class="stat-value">@Model.CompletedRentals</h3>
+                    <p class="stat-label">Completed</p>
+                    <small class="text-white-50">Successful rentals</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-pills mb-4" id="rentalHistoryTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="current-tab" data-bs-toggle="pill" data-bs-target="#current" type="button" role="tab">
+                <i class="bi bi-bicycle"></i> Current Rentals <span class="badge bg-primary ms-2">@Model.CurrentBookings.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab">
+                <i class="bi bi-check-circle"></i> Completed <span class="badge bg-success ms-2">@Model.PastBookings.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cancelled-tab" data-bs-toggle="pill" data-bs-target="#cancelled" type="button" role="tab">
+                <i class="bi bi-x-circle"></i> Cancelled <span class="badge bg-danger ms-2">@Model.CancelledBookings.Count</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="rentalHistoryTabContent">
+        <!-- Current Rentals Tab -->
+        <div class="tab-pane fade show active" id="current" role="tabpanel">
+            @if (Model.CurrentBookings.Any())
+            {
+                <div class="row">
+                    @foreach (var booking in Model.CurrentBookings)
+                    {
+                        <div class="col-lg-6 mb-4">
+                            <div class="rental-history-card">
+                                <div class="rental-status-banner @Model.GetStatusBadgeClass(booking.BookingStatus.StatusName)">
+                                    <i class="bi @Model.GetStatusIcon(booking.BookingStatus.StatusName)"></i>
+                                    @booking.BookingStatus.StatusName
+                                </div>
+                                
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            @if (booking.Bike.BikeImages.Any())
+                                            {
+                                                <img src="@booking.Bike.BikeImages.First().ImageUrl" class="rental-history-image" alt="@booking.Bike.Brand" />
+                                            }
+                                            else
+                                            {
+                                                <div class="placeholder-rental-image">
+                                                    <i class="bi bi-bicycle"></i>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h5 class="mb-2">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-tag"></i> @booking.Bike.BikeType.TypeName
+                                            </p>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-person"></i> Owner: @booking.Bike.Owner.FullName
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar-range text-success"></i>
+                                                <strong>@booking.StartDate.ToString("MMM dd, yyyy h:mm tt")</strong>
+                                                <br />
+                                                <i class="bi bi-arrow-down text-muted"></i>
+                                                <strong>@booking.EndDate.ToString("MMM dd, yyyy h:mm tt")</strong>
+                                            </p>
+                                            <div class="price-highlight">
+                                                <span class="price-label">Total:</span>
+                                                <span class="price-value">₱@booking.TotalAmount.ToString("N2")</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="rental-actions mt-3">
+                                        <a href="/Bikes/Details/@booking.BikeId" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-eye"></i> View Bike
+                                        </a>
+                                        @if (booking.BookingStatus.StatusName == "Completed")
+                                        {
+                                            <a href="/Rating/Create?bookingId=@booking.BookingId" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-star"></i> Rate Experience
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h4>No Current Rentals</h4>
+                    <p class="text-muted">You don't have any active or pending rentals at the moment.</p>
+                    <a href="/Bikes/Browse" class="btn btn-success">
+                        <i class="bi bi-bicycle"></i> Browse Available Bikes
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Completed Rentals Tab -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            @if (Model.PastBookings.Any())
+            {
+                <div class="row">
+                    @foreach (var booking in Model.PastBookings)
+                    {
+                        <div class="col-lg-6 mb-4">
+                            <div class="rental-history-card">
+                                <div class="rental-status-banner @Model.GetStatusBadgeClass(booking.BookingStatus.StatusName)">
+                                    <i class="bi @Model.GetStatusIcon(booking.BookingStatus.StatusName)"></i>
+                                    @booking.BookingStatus.StatusName
+                                </div>
+                                
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            @if (booking.Bike.BikeImages.Any())
+                                            {
+                                                <img src="@booking.Bike.BikeImages.First().ImageUrl" class="rental-history-image" alt="@booking.Bike.Brand" />
+                                            }
+                                            else
+                                            {
+                                                <div class="placeholder-rental-image">
+                                                    <i class="bi bi-bicycle"></i>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h5 class="mb-2">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-tag"></i> @booking.Bike.BikeType.TypeName
+                                            </p>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-person"></i> Owner: @booking.Bike.Owner.FullName
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar-check text-success"></i>
+                                                <strong>Completed on @booking.EndDate.ToString("MMM dd, yyyy")</strong>
+                                            </p>
+                                            <div class="price-highlight">
+                                                <span class="price-label">Total Paid:</span>
+                                                <span class="price-value">₱@booking.TotalAmount.ToString("N2")</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="rental-actions mt-3">
+                                        <a href="/Bikes/Details/@booking.BikeId" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-eye"></i> View Bike
+                                        </a>
+                                        <a href="/Bikes/Details/@booking.BikeId" class="btn btn-sm btn-success">
+                                            <i class="bi bi-arrow-repeat"></i> Rent Again
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-check-circle"></i>
+                    <h4>No Completed Rentals</h4>
+                    <p class="text-muted">You haven't completed any rentals yet.</p>
+                    <a href="/Bikes/Browse" class="btn btn-success">
+                        <i class="bi bi-bicycle"></i> Find Your First Bike
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Cancelled Rentals Tab -->
+        <div class="tab-pane fade" id="cancelled" role="tabpanel">
+            @if (Model.CancelledBookings.Any())
+            {
+                <div class="row">
+                    @foreach (var booking in Model.CancelledBookings)
+                    {
+                        <div class="col-lg-6 mb-4">
+                            <div class="rental-history-card">
+                                <div class="rental-status-banner @Model.GetStatusBadgeClass(booking.BookingStatus.StatusName)">
+                                    <i class="bi @Model.GetStatusIcon(booking.BookingStatus.StatusName)"></i>
+                                    @booking.BookingStatus.StatusName
+                                </div>
+                                
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            @if (booking.Bike.BikeImages.Any())
+                                            {
+                                                <img src="@booking.Bike.BikeImages.First().ImageUrl" class="rental-history-image" alt="@booking.Bike.Brand" />
+                                            }
+                                            else
+                                            {
+                                                <div class="placeholder-rental-image">
+                                                    <i class="bi bi-bicycle"></i>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h5 class="mb-2">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-tag"></i> @booking.Bike.BikeType.TypeName
+                                            </p>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-calendar-x text-danger"></i>
+                                                <strong>Cancelled</strong>
+                                            </p>
+                                            <div class="alert alert-info small mb-2">
+                                                <i class="bi bi-info-circle"></i> Refund processed to your wallet
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="rental-actions mt-3">
+                                        <a href="/Bikes/Details/@booking.BikeId" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-eye"></i> View Bike
+                                        </a>
+                                        <a href="/Bikes/Details/@booking.BikeId" class="btn btn-sm btn-success">
+                                            <i class="bi bi-arrow-repeat"></i> Book Again
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-x-circle"></i>
+                    <h4>No Cancelled Rentals</h4>
+                    <p class="text-muted">You haven't cancelled any bookings.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tab persistence
+        $(document).ready(function() {
+            // Save selected tab
+            $('button[data-bs-toggle="pill"]').on('shown.bs.tab', function(e) {
+                localStorage.setItem('rentalHistoryActiveTab', $(e.target).attr('id'));
+            });
+            
+            // Restore last selected tab
+            var activeTab = localStorage.getItem('rentalHistoryActiveTab');
+            if (activeTab) {
+                $('#' + activeTab).tab('show');
+            }
+        });
+    </script>
+}
+

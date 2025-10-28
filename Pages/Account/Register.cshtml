@@ -1,112 +1,334 @@
 @page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Create Account";
 }
 
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-eco">
-                <div class="card-body p-5">
-                    <h2 class="text-center text-eco-green mb-4">
-                        <i class="bi bi-person-plus"></i> Create Your Account
-                    </h2>
+<!-- Modern Registration Container -->
+<div class="modern-auth-container modern-register-container">
+    <div class="container-fluid h-100">
+        <div class="row h-100 g-0">
+            <!-- Left Side - Visual/Branding -->
+            <div class="col-lg-5 d-none d-lg-flex modern-auth-visual modern-register-visual">
+                <div class="modern-auth-visual-content">
+                    <div class="modern-auth-brand mb-4" data-aos="fade-right">
+                        <i class="bi bi-bicycle"></i>
+                        <h2>Join Bike Ta Bai</h2>
+                        <p>Be part of the eco-friendly revolution</p>
+                    </div>
                     
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="alert alert-danger">@Model.ErrorMessage</div>
-                    }
-
-                    <form method="post" enctype="multipart/form-data" class="form-eco">
-                        <div class="mb-3">
-                            <label asp-for="Input.FullName" class="form-label">Full Name</label>
-                            <input asp-for="Input.FullName" class="form-control" required />
-                            <span asp-validation-for="Input.FullName" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.Email" class="form-label">Email Address</label>
-                            <input asp-for="Input.Email" class="form-control" type="email" required />
-                            <span asp-validation-for="Input.Email" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.Phone" class="form-label">Phone Number</label>
-                            <input asp-for="Input.Phone" class="form-control" />
-                            <span asp-validation-for="Input.Phone" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.Address" class="form-label">Address</label>
-                            <textarea asp-for="Input.Address" class="form-control" rows="2"></textarea>
-                            <span asp-validation-for="Input.Address" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.Password" class="form-label">Password</label>
-                            <input asp-for="Input.Password" class="form-control" type="password" required />
-                            <small class="form-text text-muted">Minimum 8 characters with uppercase, lowercase, and number</small>
-                            <span asp-validation-for="Input.Password" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
-                            <input asp-for="Input.ConfirmPassword" class="form-control" type="password" required />
-                            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label d-block fw-bold">I want to:</label>
-                            <div class="form-check mb-2">
-                                <input asp-for="Input.IsRenter" class="form-check-input" type="checkbox" />
-                                <label asp-for="Input.IsRenter" class="form-check-label">
-                                    <i class="bi bi-bicycle text-success"></i> Rent bikes for commuting
-                                </label>
+                    <div class="register-benefits" data-aos="fade-right" data-aos-delay="200">
+                        <h3>What You Get</h3>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-patch-check-fill"></i>
                             </div>
-                            <div class="form-check">
-                                <input asp-for="Input.IsOwner" class="form-check-input" type="checkbox" id="ownerCheckbox" />
-                                <label asp-for="Input.IsOwner" class="form-check-label">
-                                    <i class="bi bi-shop text-success"></i> List my bikes for rent
-                                </label>
+                            <div class="benefit-text">
+                                <h5>Verified Platform</h5>
+                                <p>All bikes and owners are verified for your safety</p>
                             </div>
                         </div>
-
-                        <!-- Owner Verification Section (shown when IsOwner is checked) -->
-                        <div id="ownerVerificationSection" style="display: none;" class="mb-4">
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i> <strong>Bike Owner Verification Required</strong>
-                                <p class="mb-0 mt-2 small">To ensure platform safety, bike owners must upload a valid government-issued ID (Driver's License, Passport, or National ID). Your ID will be reviewed by our admin team within 24-48 hours.</p>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-wallet2"></i>
                             </div>
-                            
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="text-eco-green mb-3"><i class="bi bi-card-checklist"></i> Upload Your ID Document</h6>
-                                    
-                                    <div class="mb-3">
-                                        <label for="idDocument" class="form-label">Valid Government ID <span class="text-danger">*</span></label>
-                                        <input type="file" class="form-control" id="idDocument" name="idDocument" accept="image/*,.pdf" />
-                                        <small class="form-text text-muted">
-                                            Accepted: Driver's License, Passport, National ID (JPG, PNG, PDF - Max 5MB)
-                                        </small>
-                                    </div>
-                                    
-                                    <div class="alert alert-warning mb-0">
-                                        <small>
-                                            <i class="bi bi-shield-check"></i> <strong>Privacy Notice:</strong> Your ID is securely stored and only visible to admin staff for verification purposes. It will never be shared publicly.
-                                        </small>
-                                    </div>
+                            <div class="benefit-text">
+                                <h5>Flexible Payments</h5>
+                                <p>Multiple payment options including digital wallets</p>
+                            </div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <div class="benefit-text">
+                                <h5>Earn Rewards</h5>
+                                <p>Get loyalty points with every rental or listing</p>
+                            </div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-shield-lock-fill"></i>
+                            </div>
+                            <div class="benefit-text">
+                                <h5>Secure Transactions</h5>
+                                <p>Your data and payments are always protected</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Side - Registration Form -->
+            <div class="col-lg-7 modern-auth-form-side">
+                <div class="modern-auth-form-container">
+                    <div class="modern-auth-form-wrapper modern-register-wrapper" data-aos="fade-left">
+                        <!-- Back to Home -->
+                        <a href="/" class="modern-back-link">
+                            <i class="bi bi-arrow-left"></i> Back to Home
+                        </a>
+                        
+                        <!-- Header -->
+                        <div class="modern-auth-header">
+                            <h1>Create Your Account</h1>
+                            <p>Start your eco-friendly journey in minutes</p>
+                        </div>
+                        
+                        <!-- Progress Indicator -->
+                        <div class="modern-progress-indicator">
+                            <div class="progress-step active" data-step="1">
+                                <div class="step-circle">1</div>
+                                <div class="step-label">Personal</div>
+                            </div>
+                            <div class="progress-line"></div>
+                            <div class="progress-step" data-step="2">
+                                <div class="step-circle">2</div>
+                                <div class="step-label">Security</div>
+                            </div>
+                            <div class="progress-line"></div>
+                            <div class="progress-step" data-step="3">
+                                <div class="step-circle">3</div>
+                                <div class="step-label">Role</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Alert Messages -->
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="modern-alert modern-alert-danger" data-aos="shake">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <div>
+                                    <strong>Error</strong>
+                                    <p>@Model.ErrorMessage</p>
                                 </div>
                             </div>
+                        }
+
+                        <!-- Registration Form -->
+                        <form method="post" enctype="multipart/form-data" id="registerForm" class="modern-form">
+                            <!-- Step 1: Personal Information -->
+                            <div class="form-step active" id="step1">
+                                <h3 class="step-title">
+                                    <i class="bi bi-person-fill"></i> Personal Information
+                                </h3>
+                                
+                                <div class="modern-form-group">
+                                    <div class="modern-input-wrapper">
+                                        <i class="bi bi-person input-icon"></i>
+                                        <input asp-for="Input.FullName" type="text" class="modern-input" 
+                                               placeholder=" " required autocomplete="name" />
+                                        <label class="modern-label">Full Name</label>
+                                    </div>
+                                    <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+                                </div>
+
+                                <div class="modern-form-group">
+                                    <div class="modern-input-wrapper">
+                                        <i class="bi bi-envelope input-icon"></i>
+                                        <input asp-for="Input.Email" type="email" class="modern-input" 
+                                               placeholder=" " required autocomplete="email" />
+                                        <label class="modern-label">Email Address</label>
+                                    </div>
+                                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="modern-form-group">
+                                            <div class="modern-input-wrapper">
+                                                <i class="bi bi-phone input-icon"></i>
+                                                <input asp-for="Input.Phone" type="tel" class="modern-input" 
+                                                       placeholder=" " required autocomplete="tel" />
+                                                <label class="modern-label">Phone Number</label>
+                                            </div>
+                                            <span asp-validation-for="Input.Phone" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="modern-form-group">
+                                            <div class="modern-input-wrapper">
+                                                <i class="bi bi-geo-alt input-icon"></i>
+                                                <input asp-for="Input.Address" type="text" class="modern-input" 
+                                                       placeholder=" " required autocomplete="street-address" />
+                                                <label class="modern-label">Address</label>
+                                            </div>
+                                            <span asp-validation-for="Input.Address" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="modern-btn modern-btn-primary next-step">
+                                    Continue <i class="bi bi-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+
+                            <!-- Step 2: Security -->
+                            <div class="form-step" id="step2">
+                                <h3 class="step-title">
+                                    <i class="bi bi-shield-lock-fill"></i> Security
+                                </h3>
+                                
+                                <div class="modern-form-group">
+                                    <div class="modern-input-wrapper">
+                                        <i class="bi bi-lock input-icon"></i>
+                                        <input asp-for="Input.Password" type="password" class="modern-input" 
+                                               placeholder=" " required autocomplete="new-password" id="regPasswordInput" />
+                                        <label class="modern-label">Password</label>
+                                        <button type="button" class="password-toggle" id="toggleRegPassword">
+                                            <i class="bi bi-eye" id="toggleRegIcon"></i>
+                                        </button>
+                                    </div>
+                                    <div class="password-strength" id="passwordStrength">
+                                        <div class="strength-bar">
+                                            <div class="strength-fill"></div>
+                                        </div>
+                                        <span class="strength-text">Password strength</span>
+                                    </div>
+                                    <small class="form-text text-muted d-block mt-2">
+                                        <i class="bi bi-info-circle"></i> Min. 8 characters with uppercase, lowercase, & number
+                                    </small>
+                                    <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                                </div>
+
+                                <div class="modern-form-group">
+                                    <div class="modern-input-wrapper">
+                                        <i class="bi bi-lock-fill input-icon"></i>
+                                        <input asp-for="Input.ConfirmPassword" type="password" class="modern-input" 
+                                               placeholder=" " required autocomplete="new-password" id="confirmPasswordInput" />
+                                        <label class="modern-label">Confirm Password</label>
+                                        <button type="button" class="password-toggle" id="toggleConfirmPassword">
+                                            <i class="bi bi-eye" id="toggleConfirmIcon"></i>
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+                                </div>
+
+                                <div class="step-buttons">
+                                    <button type="button" class="modern-btn modern-btn-outline prev-step">
+                                        <i class="bi bi-arrow-left me-2"></i> Back
+                                    </button>
+                                    <button type="button" class="modern-btn modern-btn-primary next-step">
+                                        Continue <i class="bi bi-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Account Type & Verification -->
+                            <div class="form-step" id="step3">
+                                <h3 class="step-title">
+                                    <i class="bi bi-person-circle"></i> Choose Your Role
+                                </h3>
+                                <p class="text-muted mb-4">Select how you want to use Bike Ta Bai</p>
+                                
+                                <div class="modern-role-selector">
+                                    <!-- Renter Card -->
+                                    <div class="modern-role-card" id="renterCard" data-role="renter">
+                                        <input type="radio" name="UserRole" value="Renter" id="renterRadio" required />
+                                        <div class="role-check">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="role-icon">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <h4 class="role-title">Renter</h4>
+                                        <p class="role-desc">Find and rent bikes for your daily commute</p>
+                                        <ul class="role-features">
+                                            <li><i class="bi bi-check2"></i> Browse available bikes</li>
+                                            <li><i class="bi bi-check2"></i> Easy booking process</li>
+                                            <li><i class="bi bi-check2"></i> Earn loyalty points</li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Owner Card -->
+                                    <div class="modern-role-card" id="ownerCard" data-role="owner">
+                                        <input type="radio" name="UserRole" value="Owner" id="ownerRadio" required />
+                                        <div class="role-check">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="role-icon">
+                                            <i class="bi bi-person-badge"></i>
+                                        </div>
+                                        <h4 class="role-title">Owner</h4>
+                                        <p class="role-desc">List your bikes and earn extra income</p>
+                                        <ul class="role-features">
+                                            <li><i class="bi bi-check2"></i> List multiple bikes</li>
+                                            <li><i class="bi bi-check2"></i> Set your own rates</li>
+                                            <li><i class="bi bi-check2"></i> Manage bookings easily</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden fields for model binding -->
+                                <input type="hidden" asp-for="Input.IsRenter" id="hiddenIsRenter" />
+                                <input type="hidden" asp-for="Input.IsOwner" id="hiddenIsOwner" />
+
+                                <!-- Owner Verification Section (Hidden by default) -->
+                                <div id="ownerVerificationSection" style="display: none;" class="modern-verification-section">
+                                    <div class="modern-alert modern-alert-info">
+                                        <i class="bi bi-shield-check"></i>
+                                        <div>
+                                            <strong>Owner Verification Required</strong>
+                                            <p>Upload a valid government-issued ID for verification. Your ID will be reviewed within 24-48 hours.</p>
+                                            <p><strong>Accepted:</strong> Driver's License, Passport, National ID</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="modern-file-upload" id="fileUploadArea">
+                                        <input type="file" name="IdDocument" accept="image/*" 
+                                               id="idDocumentInput" capture="environment" />
+                                        <div class="upload-icon">
+                                            <i class="bi bi-cloud-upload"></i>
+                                        </div>
+                                        <div class="upload-text">Click or drag to upload ID</div>
+                                        <div class="upload-hint">JPG, PNG up to 5MB</div>
+                                    </div>
+                                    
+                                    <div id="filePreview" style="display: none;" class="file-preview">
+                                        <div class="preview-content">
+                                            <i class="bi bi-file-earmark-image text-success"></i>
+                                            <div class="file-info">
+                                                <strong id="fileName"></strong>
+                                                <p id="fileSize"></p>
+                                            </div>
+                                            <button type="button" class="btn-remove" id="removeFile">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Terms & Conditions -->
+                                <div class="modern-terms">
+                                    <label class="modern-checkbox">
+                                        <input type="checkbox" id="termsCheck" required />
+                                        <span class="checkmark"></span>
+                                        <span class="checkbox-label">
+                                            I agree to the <a href="#" class="modern-link">Terms & Conditions</a> and 
+                                            <a href="#" class="modern-link">Privacy Policy</a>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="step-buttons">
+                                    <button type="button" class="modern-btn modern-btn-outline prev-step">
+                                        <i class="bi bi-arrow-left me-2"></i> Back
+                                    </button>
+                                    <button type="submit" class="modern-btn modern-btn-primary">
+                                        <span class="btn-text">
+                                            <i class="bi bi-check-circle me-2"></i> Create My Account
+                                        </span>
+                                        <span class="btn-loading" style="display: none;">
+                                            <span class="spinner-border spinner-border-sm me-2"></span> Creating account...
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Login Link -->
+                        <div class="modern-auth-footer">
+                            <p>Already have an account? <a href="/Account/Login" class="modern-link fw-bold">Sign In</a></p>
                         </div>
-
-                        <button type="submit" class="btn btn-eco-primary w-100 btn-lg">
-                            <i class="bi bi-check-circle"></i> Create Account
-                        </button>
-                    </form>
-
-                    <div class="text-center mt-4">
-                        <p>Already have an account? <a href="/Account/Login" class="text-eco-green">Login here</a></p>
                     </div>
                 </div>
             </div>
@@ -116,42 +338,251 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
     <script>
-        // Toggle owner verification section when owner checkbox is checked
-        document.addEventListener('DOMContentLoaded', function() {
-            const ownerCheckbox = document.getElementById('ownerCheckbox');
-            const verificationSection = document.getElementById('ownerVerificationSection');
-            const idDocumentInput = document.getElementById('idDocument');
-            
-            ownerCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    verificationSection.style.display = 'block';
-                    verificationSection.classList.add('fade-in');
-                    idDocumentInput.required = true;
-                } else {
-                    verificationSection.style.display = 'none';
-                    idDocumentInput.required = false;
+        $(document).ready(function() {
+            // Initialize AOS
+            AOS.init({
+                duration: 800,
+                once: true
+            });
+
+            let currentStep = 1;
+            const totalSteps = 3;
+
+            // Multi-step Navigation
+            $('.next-step').click(function() {
+                if (validateStep(currentStep)) {
+                    // Hide current step
+                    $(`#step${currentStep}`).removeClass('active').fadeOut(300, function() {
+                        currentStep++;
+                        // Show next step
+                        $(`#step${currentStep}`).fadeIn(300).addClass('active');
+                        // Update progress indicator
+                        updateProgress();
+                        // Scroll to top
+                        $('.modern-auth-form-wrapper').animate({ scrollTop: 0 }, 300);
+                    });
                 }
             });
-            
-            // Check on page load in case checkbox is already checked
-            if (ownerCheckbox.checked) {
-                verificationSection.style.display = 'block';
-                idDocumentInput.required = true;
+
+            $('.prev-step').click(function() {
+                // Hide current step
+                $(`#step${currentStep}`).removeClass('active').fadeOut(300, function() {
+                    currentStep--;
+                    // Show previous step
+                    $(`#step${currentStep}`).fadeIn(300).addClass('active');
+                    // Update progress indicator
+                    updateProgress();
+                    // Scroll to top
+                    $('.modern-auth-form-wrapper').animate({ scrollTop: 0 }, 300);
+                });
+            });
+
+            function updateProgress() {
+                $('.progress-step').each(function() {
+                    const stepNum = parseInt($(this).data('step'));
+                    if (stepNum < currentStep) {
+                        $(this).addClass('completed').removeClass('active');
+                    } else if (stepNum === currentStep) {
+                        $(this).addClass('active').removeClass('completed');
+                    } else {
+                        $(this).removeClass('active completed');
+                    }
+                });
+            }
+
+            function validateStep(step) {
+                let isValid = true;
+                const stepElement = $(`#step${step}`);
+                
+                stepElement.find('input[required], textarea[required]').each(function() {
+                    if (!$(this).val()) {
+                        isValid = false;
+                        $(this).addClass('error');
+                        $(this).focus();
+                        return false;
+                    } else {
+                        $(this).removeClass('error');
+                    }
+                });
+
+                if (!isValid) {
+                    alert('Please fill in all required fields before continuing.');
+                }
+                return isValid;
+            }
+
+            // Password Toggle
+            $('#toggleRegPassword').click(function(e) {
+                e.preventDefault();
+                const passwordInput = $('#regPasswordInput');
+                const toggleIcon = $('#toggleRegIcon');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    toggleIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+                }
+            });
+
+            $('#toggleConfirmPassword').click(function(e) {
+                e.preventDefault();
+                const passwordInput = $('#confirmPasswordInput');
+                const toggleIcon = $('#toggleConfirmIcon');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    toggleIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+                }
+            });
+
+            // Password Strength Indicator
+            $('#regPasswordInput').on('input', function() {
+                const password = $(this).val();
+                let strength = 0;
+                
+                if (password.length >= 8) strength++;
+                if (password.match(/[a-z]/)) strength++;
+                if (password.match(/[A-Z]/)) strength++;
+                if (password.match(/[0-9]/)) strength++;
+                if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+                const strengthBar = $('.strength-fill');
+                const strengthText = $('.strength-text');
+                
+                strengthBar.removeClass('weak medium strong');
+                
+                if (strength <= 2) {
+                    strengthBar.addClass('weak').css('width', '33%');
+                    strengthText.text('Weak password');
+                } else if (strength === 3 || strength === 4) {
+                    strengthBar.addClass('medium').css('width', '66%');
+                    strengthText.text('Medium password');
+                } else {
+                    strengthBar.addClass('strong').css('width', '100%');
+                    strengthText.text('Strong password');
+                }
+            });
+
+            // Role Card Selection
+            $('#renterCard').click(function() {
+                $('#renterRadio').prop('checked', true).trigger('change');
+            });
+
+            $('#ownerCard').click(function() {
+                $('#ownerRadio').prop('checked', true).trigger('change');
+            });
+
+            // Handle radio button changes
+            $('input[name="UserRole"]').change(function() {
+                const selectedRole = $(this).val();
+                
+                // Remove selected class from all cards
+                $('.modern-role-card').removeClass('selected');
+                
+                // Add selected class to chosen card
+                if (selectedRole === 'Renter') {
+                    $('#renterCard').addClass('selected');
+                    $('#ownerVerificationSection').slideUp(300);
+                    $('#hiddenIsRenter').val('true');
+                    $('#hiddenIsOwner').val('false');
+                } else if (selectedRole === 'Owner') {
+                    $('#ownerCard').addClass('selected');
+                    $('#ownerVerificationSection').slideDown(300);
+                    $('#hiddenIsRenter').val('false');
+                    $('#hiddenIsOwner').val('true');
+                }
+            });
+
+            // File Upload Handling
+            $('#idDocumentInput').change(function() {
+                const file = this.files[0];
+                if (file) {
+                    // Validate file size (5MB max)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        $(this).val('');
+                        return;
+                    }
+
+                    // Validate file type
+                    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (!validTypes.includes(file.type)) {
+                        alert('Please upload a JPG or PNG image');
+                        $(this).val('');
+                        return;
+                    }
+
+                    // Show preview
+                    $('#fileName').text(file.name);
+                    $('#fileSize').text((file.size / 1024 / 1024).toFixed(2) + ' MB');
+                    $('#fileUploadArea').hide();
+                    $('#filePreview').fadeIn(300);
+                }
+            });
+
+            $('#removeFile').click(function() {
+                $('#idDocumentInput').val('');
+                $('#filePreview').hide();
+                $('#fileUploadArea').fadeIn(300);
+            });
+
+            // File Upload Area Click
+            $('#fileUploadArea').click(function() {
+                $('#idDocumentInput').click();
+            });
+
+            // Form Submission
+            $('#registerForm').submit(function(e) {
+                const selectedRole = $('input[name="UserRole"]:checked').val();
+
+                if (!selectedRole) {
+                    e.preventDefault();
+                    alert('Please select your account type (Renter or Owner)');
+                    return false;
+                }
+
+                if (selectedRole === 'Owner' && !$('#idDocumentInput')[0].files.length) {
+                    e.preventDefault();
+                    alert('Please upload your ID document to become a bike owner');
+                    return false;
+                }
+
+                if (!$('#termsCheck').is(':checked')) {
+                    e.preventDefault();
+                    alert('Please accept the Terms & Conditions');
+                    return false;
+                }
+
+                // Show loading state
+                const submitBtn = $(this).find('button[type="submit"]');
+                submitBtn.find('.btn-text').hide();
+                submitBtn.find('.btn-loading').show();
+                submitBtn.prop('disabled', true);
+            });
+
+            // Add focus class for better visual feedback
+            $('.modern-input').on('focus', function() {
+                $(this).closest('.modern-input-wrapper').addClass('focused');
+            }).on('blur', function() {
+                $(this).closest('.modern-input-wrapper').removeClass('focused');
+            });
+
+            // Initialize: Check if any radio is already selected
+            const selectedRole = $('input[name="UserRole"]:checked').val();
+            if (selectedRole === 'Renter') {
+                $('#renterCard').addClass('selected');
+            } else if (selectedRole === 'Owner') {
+                $('#ownerCard').addClass('selected');
+                $('#ownerVerificationSection').show();
             }
         });
     </script>
-    
-    <style>
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @@keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
 }
-

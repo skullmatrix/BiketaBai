@@ -60,7 +60,9 @@ public class BookingService
         int bikeId, 
         DateTime startDate, 
         DateTime endDate, 
-        decimal? distanceSavedKm = null)
+        decimal? distanceSavedKm = null,
+        string? pickupLocation = null,
+        string? returnLocation = null)
     {
         // Validate availability
         if (!await CheckBikeAvailabilityAsync(bikeId, startDate, endDate))
@@ -91,6 +93,8 @@ public class BookingService
             TotalAmount = totalAmount,
             BookingStatusId = 1, // Pending
             DistanceSavedKm = distanceSavedKm,
+            PickupLocation = pickupLocation,
+            ReturnLocation = returnLocation,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

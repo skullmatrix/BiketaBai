@@ -106,3 +106,6 @@ Desktop.ini
 appsettings.Development.json
 appsettings.Production.json
 
+# Documentation files
+*.md
+!README.md
