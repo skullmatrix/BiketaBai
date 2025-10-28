@@ -56,6 +56,9 @@ builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<UserProfileService>();
+builder.Services.AddScoped<BikeManagementService>();
+builder.Services.AddScoped<BookingManagementService>();
 
 // Add HttpContextAccessor for accessing HttpContext in services
 builder.Services.AddHttpContextAccessor();
