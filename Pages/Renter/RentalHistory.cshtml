@@ -152,6 +152,16 @@
                                         <a href="/Bikes/Details/@booking.BikeId" class="btn btn-sm btn-outline-success">
                                             <i class="bi bi-eye"></i> View Bike
                                         </a>
+                                        @if (booking.BookingStatus.StatusName == "Pending" || booking.BookingStatus.StatusName == "Confirmed")
+                                        {
+                                            <form method="post" asp-page-handler="CancelBooking" asp-route-bookingId="@booking.BookingId" 
+                                                  onsubmit="return confirm('Are you sure you want to cancel this booking? Cancellation policy applies.');" 
+                                                  class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="bi bi-x-circle"></i> Cancel Booking
+                                                </button>
+                                            </form>
+                                        }
                                         @if (booking.BookingStatus.StatusName == "Completed")
                                         {
                                             <a href="/Rating/Create?bookingId=@booking.BookingId" class="btn btn-sm btn-warning">

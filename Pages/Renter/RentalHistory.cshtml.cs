@@ -1,5 +1,7 @@
 using BiketaBai.Data;
 using BiketaBai.Models;
+using BiketaBai.Services;
+using BiketaBai.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,10 +13,12 @@ namespace BiketaBai.Pages.Renter
     public class RentalHistoryModel : PageModel
     {
         private readonly BiketaBaiDbContext _context;
+        private readonly BookingManagementService _bookingService;
 
-        public RentalHistoryModel(BiketaBaiDbContext context)
+        public RentalHistoryModel(BiketaBaiDbContext context, BookingManagementService bookingService)
         {
             _context = context;
+            _bookingService = bookingService;
         }
 
         public List<Booking> CurrentBookings { get; set; } = new List<Booking>();
@@ -70,6 +74,28 @@ namespace BiketaBai.Pages.Renter
             CompletedRentals = PastBookings.Count;
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnPostCancelBookingAsync(int bookingId)
+        {
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+            {
+                return RedirectToPage("/Account/Login");
+            }
+
+            var result = await _bookingService.CancelBookingAsync(bookingId, userId.Value);
+
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+            }
+
+            return RedirectToPage();
         }
 
         public string GetStatusBadgeClass(string statusName)

@@ -12,9 +12,9 @@ namespace BiketaBai.Pages.Bikes;
 public class DetailsModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
-    private readonly BookingService _bookingService;
+    private readonly BookingManagementService _bookingService;
 
-    public DetailsModel(BiketaBaiDbContext context, BookingService bookingService)
+    public DetailsModel(BiketaBaiDbContext context, BookingManagementService bookingService)
     {
         _context = context;
         _bookingService = bookingService;
@@ -111,24 +111,25 @@ public class DetailsModel : PageModel
             ? Input.PickupLocation 
             : Input.ReturnLocation;
 
-        // Create booking
+        // Create booking using BookingManagementService
         var result = await _bookingService.CreateBookingAsync(
             userId.Value,
             id,
             Input.StartDate,
             Input.EndDate,
-            Input.DistanceSavedKm,
             Input.PickupLocation,
-            returnLocation
+            returnLocation,
+            Input.DistanceSavedKm
         );
 
-        if (result.success)
+        if (result.Success)
         {
-            return RedirectToPage("/Bookings/Payment", new { bookingId = result.bookingId });
+            TempData["SuccessMessage"] = result.Message;
+            return RedirectToPage("/Renter/RentalHistory");
         }
         else
         {
-            TempData["ErrorMessage"] = result.message;
+            TempData["ErrorMessage"] = result.Message;
             await OnGetAsync(id);
             return Page();
         }

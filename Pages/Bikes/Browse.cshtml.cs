@@ -2,16 +2,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Models;
+using BiketaBai.Services;
 
 namespace BiketaBai.Pages.Bikes;
 
 public class BrowseModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
+    private readonly BookingManagementService _bookingService;
 
-    public BrowseModel(BiketaBaiDbContext context)
+    public BrowseModel(BiketaBaiDbContext context, BookingManagementService bookingService)
     {
         _context = context;
+        _bookingService = bookingService;
     }
 
     public List<Bike> Bikes { get; set; } = new();
@@ -73,15 +76,10 @@ public class BrowseModel : PageModel
 
         Bikes = await query.ToListAsync();
 
-        // Calculate ratings for bikes
+        // Calculate ratings for bikes using BookingManagementService
         foreach (var bike in Bikes)
         {
-            var ratings = await _context.Ratings
-                .Where(r => r.BikeId == bike.BikeId)
-                .Select(r => r.RatingValue)
-                .ToListAsync();
-
-            BikeRatings[bike.BikeId] = ratings.Any() ? ratings.Average() : 0;
+            BikeRatings[bike.BikeId] = await _bookingService.GetBikeAverageRatingAsync(bike.BikeId);
         }
 
         // Sort by rating if requested
