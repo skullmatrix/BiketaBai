@@ -27,35 +27,27 @@ public class AddBikeModel : PageModel
 
     public class InputModel
     {
-        [Required]
+        [Required(ErrorMessage = "Brand is required")]
         public string Brand { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Model is required")]
         public string Model { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Bike type is required")]
         [Display(Name = "Bike Type")]
         public int BikeTypeId { get; set; }
 
-        [Required]
-        public decimal Mileage { get; set; }
-
-        [Required]
-        public string Location { get; set; } = string.Empty;
-
-        public decimal? Latitude { get; set; }
-
-        public decimal? Longitude { get; set; }
-
         public string? Description { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Hourly rate is required")]
         [Display(Name = "Hourly Rate")]
-        public decimal HourlyRate { get; set; }
+        [Range(1, 10000, ErrorMessage = "Hourly rate must be between ₱1 and ₱10,000")]
+        public decimal? HourlyRate { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Daily rate is required")]
         [Display(Name = "Daily Rate")]
-        public decimal DailyRate { get; set; }
+        [Range(1, 50000, ErrorMessage = "Daily rate must be between ₱1 and ₱50,000")]
+        public decimal? DailyRate { get; set; }
 
         public List<IFormFile>? Images { get; set; }
     }
@@ -64,6 +56,21 @@ public class AddBikeModel : PageModel
     {
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
+
+        // Check if owner is verified
+        var userId = AuthHelper.GetCurrentUserId(User);
+        if (userId.HasValue)
+        {
+            var user = await _context.Users.FindAsync(userId.Value);
+            if (user != null && user.IsOwner)
+            {
+                if (!user.IsVerifiedOwner || user.VerificationStatus != "Approved")
+                {
+                    TempData["ErrorMessage"] = "⚠️ Your owner account must be verified by an admin before you can list bikes. Please wait for approval or contact support.";
+                    return RedirectToPage("/Account/Profile");
+                }
+            }
+        }
 
         BikeTypes = await _context.BikeTypes.ToListAsync();
         return Page();
@@ -80,70 +87,96 @@ public class AddBikeModel : PageModel
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
 
+        // Check if owner is verified before allowing bike listing
+        var user = await _context.Users.FindAsync(userId.Value);
+        if (user != null && user.IsOwner)
+        {
+            if (!user.IsVerifiedOwner || user.VerificationStatus != "Approved")
+            {
+                TempData["ErrorMessage"] = "⚠️ Your owner account must be verified by an admin before you can list bikes. Please wait for approval or contact support.";
+                return RedirectToPage("/Account/Profile");
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();
         }
 
-        // Create bike
-        var bike = new Bike
+        try
         {
-            OwnerId = userId.Value,
-            BikeTypeId = Input.BikeTypeId,
-            Brand = Input.Brand,
-            Model = Input.Model,
-            Mileage = Input.Mileage,
-            Location = Input.Location,
-            Latitude = Input.Latitude,
-            Longitude = Input.Longitude,
-            Description = Input.Description,
-            HourlyRate = Input.HourlyRate,
-            DailyRate = Input.DailyRate,
-            AvailabilityStatusId = 1, // Available
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Bikes.Add(bike);
-        await _context.SaveChangesAsync();
-
-        // Handle image uploads
-        if (Input.Images != null && Input.Images.Any())
-        {
-            var uploadPath = Path.Combine(_environment.WebRootPath, "uploads", "bikes");
-            Directory.CreateDirectory(uploadPath);
-
-            int imageIndex = 0;
-            foreach (var image in Input.Images.Take(5)) // Limit to 5 images
+            // Create bike with streamlined fields
+            var bike = new Bike
             {
-                if (image.Length > 0)
+                OwnerId = userId.Value,
+                BikeTypeId = Input.BikeTypeId,
+                Brand = Input.Brand,
+                Model = Input.Model,
+                Description = Input.Description ?? string.Empty,
+                HourlyRate = Input.HourlyRate ?? 0,
+                DailyRate = Input.DailyRate ?? 0,
+                AvailabilityStatusId = 1, // Available
+                ViewCount = 0,
+                BookingCount = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Bikes.Add(bike);
+            await _context.SaveChangesAsync();
+
+            // Handle image uploads
+            if (Input.Images != null && Input.Images.Any())
+            {
+                var uploadPath = Path.Combine(_environment.WebRootPath, "uploads", "bikes");
+                Directory.CreateDirectory(uploadPath);
+
+                int imageIndex = 0;
+                foreach (var image in Input.Images.Take(5)) // Limit to 5 images
                 {
-                    var fileName = $"{bike.BikeId}_{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
-                    var filePath = Path.Combine(uploadPath, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    if (image.Length > 0 && image.Length <= 10 * 1024 * 1024) // Max 10MB per image
                     {
-                        await image.CopyToAsync(stream);
+                        // Validate image type
+                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+                        
+                        if (!allowedExtensions.Contains(extension))
+                        {
+                            continue; // Skip invalid files
+                        }
+
+                        var fileName = $"{bike.BikeId}_{Guid.NewGuid()}{extension}";
+                        var filePath = Path.Combine(uploadPath, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await image.CopyToAsync(stream);
+                        }
+
+                        var bikeImage = new BikeImage
+                        {
+                            BikeId = bike.BikeId,
+                            ImageUrl = $"/uploads/bikes/{fileName}",
+                            IsPrimary = imageIndex == 0,
+                            UploadedAt = DateTime.UtcNow
+                        };
+
+                        _context.BikeImages.Add(bikeImage);
+                        imageIndex++;
                     }
-
-                    var bikeImage = new BikeImage
-                    {
-                        BikeId = bike.BikeId,
-                        ImageUrl = $"/uploads/bikes/{fileName}",
-                        IsPrimary = imageIndex == 0,
-                        UploadedAt = DateTime.UtcNow
-                    };
-
-                    _context.BikeImages.Add(bikeImage);
-                    imageIndex++;
                 }
+
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "🎉 Your bike has been listed successfully!";
+            return RedirectToPage("/Owner/MyBikes");
         }
-
-        TempData["SuccessMessage"] = "Bike listed successfully!";
-        return RedirectToPage("/Owner/MyBikes");
+        catch (Exception ex)
+        {
+            ErrorMessage = "An error occurred while listing your bike. Please try again.";
+            Console.WriteLine($"Error in AddBike: {ex.Message}");
+            return Page();
+        }
     }
 }
-

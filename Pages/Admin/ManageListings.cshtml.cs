@@ -70,7 +70,6 @@ namespace BiketaBai.Pages.Admin
                     .Where(b => 
                         b.Brand.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                         b.Model.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
-                        b.Location.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                         b.Owner.FullName.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }

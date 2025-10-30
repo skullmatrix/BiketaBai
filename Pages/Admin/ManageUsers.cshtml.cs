@@ -168,6 +168,62 @@ namespace BiketaBai.Pages.Admin
             return RedirectToPage();
         }
 
+        // Owner Verification Approval
+        public async Task<IActionResult> OnPostApproveOwnerAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                ErrorMessage = "User not found";
+                return RedirectToPage();
+            }
+
+            if (!user.IsOwner)
+            {
+                ErrorMessage = "User is not an owner";
+                return RedirectToPage();
+            }
+
+            if (user.IsVerifiedOwner)
+            {
+                ErrorMessage = "Owner is already verified";
+                return RedirectToPage();
+            }
+
+            user.IsVerifiedOwner = true;
+            user.VerificationStatus = "Approved";
+            user.VerificationDate = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            SuccessMessage = $"Owner '{user.FullName}' has been verified successfully";
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostRejectOwnerAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                ErrorMessage = "User not found";
+                return RedirectToPage();
+            }
+
+            if (!user.IsOwner)
+            {
+                ErrorMessage = "User is not an owner";
+                return RedirectToPage();
+            }
+
+            user.IsVerifiedOwner = false;
+            user.VerificationStatus = "Rejected";
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            SuccessMessage = $"Owner verification for '{user.FullName}' has been rejected";
+            return RedirectToPage();
+        }
+
         public string GetRoleBadges(User user)
         {
             var badges = new List<string>();

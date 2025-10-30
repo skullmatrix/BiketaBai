@@ -76,6 +76,11 @@ public class LoginModel : PageModel
             return Page();
         }
 
+        // Update login tracking
+        user.LastLoginAt = DateTime.UtcNow;
+        user.LoginCount++;
+        await _context.SaveChangesAsync();
+
         // Sign in user
         await AuthHelper.SignInUserAsync(HttpContext, user.UserId, user.Email, user.FullName, user.IsRenter, user.IsOwner, user.IsAdmin);
 

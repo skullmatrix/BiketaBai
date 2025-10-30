@@ -6,291 +6,463 @@
     ViewData["Title"] = "Edit Bike";
 }
 
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="text-eco-green mb-1">
-                        <i class="bi bi-pencil-square"></i> Edit Bike Listing
-                    </h2>
-                    <p class="text-muted mb-0">Update your bike information and pricing</p>
-                </div>
-                <a href="/Owner/MyBikes" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to My Bikes
-                </a>
+<!-- Link Minimal CSS -->
+<link rel="stylesheet" href="~/css/bikes-minimal.css" asp-append-version="true" />
+
+<div class="addbike-premium-container">
+    <div class="container">
+        <!-- Compact Header -->
+        <div class="addbike-premium-header">
+            <a href="/Owner/MyBikes" class="btn-back-premium">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div class="header-content">
+                <h1 class="page-title-premium">Edit Bike</h1>
+                <p class="page-subtitle-premium">Update your listing details</p>
             </div>
+        </div>
 
-            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-            {
-                <div class="alert alert-success alert-dismissible fade show">
-                    <i class="bi bi-check-circle"></i> @Model.SuccessMessage
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
+        <!-- Alerts -->
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert-premium success">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>@Model.SuccessMessage</span>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert-premium error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        }
 
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
+        <!-- Premium Form Card -->
+        <div class="form-card-premium">
+            <form method="post" enctype="multipart/form-data" id="editBikeForm">
+                
+                <!-- Step 1: Basic Details -->
+                <div class="step-section-premium">
+                    <div class="step-indicator">
+                        <span class="step-badge">1</span>
+                        <h3>Basic Details</h3>
+                    </div>
 
-            <div class="card shadow-eco border-0">
-                <div class="card-body p-4">
-                    <form method="post" enctype="multipart/form-data">
-                        <!-- Bike Details Section -->
-                        <h5 class="text-success mb-3">
-                            <i class="bi bi-bicycle"></i> Bike Details
-                        </h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Brand" class="form-label">
-                                    Brand <span class="text-danger">*</span>
-                                </label>
-                                <input asp-for="Input.Brand" class="form-control" required />
-                                <span asp-validation-for="Input.Brand" class="text-danger"></span>
+                    <div class="fields-grid">
+                        <div class="field-premium">
+                            <label>Brand<span class="req">*</span></label>
+                            <div class="input-wrapper-premium">
+                                <i class="bi bi-tag-fill"></i>
+                                <input asp-for="Input.Brand" 
+                                       placeholder="e.g., Trek, Giant" 
+                                       required />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Model" class="form-label">
-                                    Model <span class="text-danger">*</span>
-                                </label>
-                                <input asp-for="Input.Model" class="form-control" required />
-                                <span asp-validation-for="Input.Model" class="text-danger"></span>
-                            </div>
+                            <span asp-validation-for="Input.Brand" class="field-error"></span>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.BikeTypeId" class="form-label">
-                                    Bike Type <span class="text-danger">*</span>
-                                </label>
-                                <select asp-for="Input.BikeTypeId" class="form-select" required>
-                                    <option value="">Select Type</option>
+                        <div class="field-premium">
+                            <label>Model<span class="req">*</span></label>
+                            <div class="input-wrapper-premium">
+                                <i class="bi bi-bicycle"></i>
+                                <input asp-for="Input.Model" 
+                                       placeholder="e.g., Mountain X5" 
+                                       required />
+                            </div>
+                            <span asp-validation-for="Input.Model" class="field-error"></span>
+                        </div>
+
+                        <div class="field-premium field-full">
+                            <label>Type<span class="req">*</span></label>
+                            <div class="input-wrapper-premium">
+                                <i class="bi bi-list-ul"></i>
+                                <select asp-for="Input.BikeTypeId" required>
+                                    <option value="">Choose type...</option>
                                     @foreach (var type in Model.BikeTypes)
                                     {
                                         <option value="@type.BikeTypeId">@type.TypeName</option>
                                     }
                                 </select>
-                                <span asp-validation-for="Input.BikeTypeId" class="text-danger"></span>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Mileage" class="form-label">
-                                    Mileage (km) <span class="text-danger">*</span>
-                                </label>
-                                <input asp-for="Input.Mileage" class="form-control" type="number" step="0.01" required />
-                                <span asp-validation-for="Input.Mileage" class="text-danger"></span>
+                            <span asp-validation-for="Input.BikeTypeId" class="field-error"></span>
+                        </div>
+
+                        <div class="field-premium field-full">
+                            <label>Description<span class="opt">(Optional)</span></label>
+                            <div class="input-wrapper-premium">
+                                <i class="bi bi-card-text"></i>
+                                <textarea asp-for="Input.Description" 
+                                          rows="2"
+                                          placeholder="Special features or details..."></textarea>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.Description" class="form-label">
-                                Description
-                            </label>
-                            <textarea asp-for="Input.Description" class="form-control" rows="4" 
-                                      placeholder="Describe your bike's features, condition, and any special equipment..."></textarea>
-                            <small class="text-muted">Provide detailed information to attract renters</small>
-                        </div>
-
-                        <!-- Location Section -->
-                        <h5 class="text-success mb-3 mt-4">
-                            <i class="bi bi-geo-alt"></i> Location
-                        </h5>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.Location" class="form-label">
-                                Pickup Location <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Input.Location" class="form-control" required 
-                                   placeholder="Enter address or landmark" />
-                            <small class="text-muted">Where renters can pick up the bike</small>
-                            <span asp-validation-for="Input.Location" class="text-danger"></span>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Latitude" class="form-label">
-                                    Latitude (Optional)
-                                </label>
-                                <input asp-for="Input.Latitude" class="form-control" type="number" step="0.0000001" 
-                                       placeholder="e.g., 14.5995" />
-                                <small class="text-muted">For map display</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Longitude" class="form-label">
-                                    Longitude (Optional)
-                                </label>
-                                <input asp-for="Input.Longitude" class="form-control" type="number" step="0.0000001" 
-                                       placeholder="e.g., 120.9842" />
-                                <small class="text-muted">For map display</small>
-                            </div>
-                        </div>
-
-                        <!-- Pricing Section -->
-                        <h5 class="text-success mb-3 mt-4">
-                            <i class="bi bi-currency-dollar"></i> Pricing
-                        </h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.HourlyRate" class="form-label">
-                                    Hourly Rate (₱) <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₱</span>
-                                    <input asp-for="Input.HourlyRate" class="form-control" type="number" step="0.01" min="0" required />
-                                </div>
-                                <small class="text-muted">Recommended: ₱50 - ₱200/hour</small>
-                                <span asp-validation-for="Input.HourlyRate" class="text-danger"></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.DailyRate" class="form-label">
-                                    Daily Rate (₱) <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₱</span>
-                                    <input asp-for="Input.DailyRate" class="form-control" type="number" step="0.01" min="0" required />
-                                </div>
-                                <small class="text-muted">Recommended: ₱300 - ₱1,000/day</small>
-                                <span asp-validation-for="Input.DailyRate" class="text-danger"></span>
-                            </div>
-                        </div>
-
-                        <!-- Availability Section -->
-                        <h5 class="text-success mb-3 mt-4">
-                            <i class="bi bi-toggle-on"></i> Availability
-                        </h5>
-
-                        <div class="mb-3">
-                            <label asp-for="Input.AvailabilityStatusId" class="form-label">
-                                Status <span class="text-danger">*</span>
-                            </label>
-                            <select asp-for="Input.AvailabilityStatusId" class="form-select" required>
-                                <option value="1">🟢 Available - Ready for rent</option>
-                                <option value="3">🟡 Maintenance - Temporarily unavailable</option>
-                                <option value="4">⚫ Inactive - Not listed for rent</option>
-                            </select>
-                            <small class="text-muted">
-                                Note: "Rented" status is set automatically when booking is active
-                            </small>
-                        </div>
-
-                        <!-- Images Section -->
-                        <h5 class="text-success mb-3 mt-4">
-                            <i class="bi bi-images"></i> Images
-                        </h5>
-
-                        <!-- Current Images -->
-                        @if (Model.CurrentBike?.BikeImages.Any() == true)
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">Current Images</label>
-                                <div class="row g-2">
-                                    @foreach (var image in Model.CurrentBike.BikeImages)
-                                    {
-                                        <div class="col-6 col-md-3">
-                                            <div class="bike-image-preview position-relative">
-                                                <img src="@image.ImageUrl" class="img-fluid rounded" alt="Bike image" />
-                                                @if (image.IsPrimary)
-                                                {
-                                                    <span class="badge bg-success position-absolute top-0 start-0 m-2">
-                                                        Primary
-                                                    </span>
-                                                }
-                                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
-                                                        onclick="deleteImage(@image.ImageId)">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- Add New Images -->
-                        <div class="mb-4">
-                            <label asp-for="Input.NewImages" class="form-label">
-                                Add New Images (Optional)
-                            </label>
-                            <input asp-for="Input.NewImages" class="form-control" type="file" multiple accept="image/*" />
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle"></i> You can upload up to 5 images. Max size: 5MB each. Formats: JPG, PNG, GIF
-                            </small>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <hr class="my-4" />
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
-                            <a href="/Owner/MyBikes" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-check-circle"></i> Save Changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Bike Preview Card -->
-            <div class="card shadow-sm border-0 mt-4 bg-light">
-                <div class="card-body">
-                    <h6 class="text-muted mb-3">
-                        <i class="bi bi-eye"></i> Current Listing Information
-                    </h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="mb-2">
-                                <strong>Listed:</strong> 
-                                @Model.CurrentBike?.CreatedAt.ToString("MMM dd, yyyy")
-                            </p>
-                            <p class="mb-2">
-                                <strong>Last Updated:</strong> 
-                                @Model.CurrentBike?.UpdatedAt.ToString("MMM dd, yyyy")
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="mb-2">
-                                <strong>Total Bookings:</strong> @Model.TotalBookings
-                            </p>
-                            <p class="mb-2">
-                                <strong>Average Rating:</strong> 
-                                @Model.AverageRating.ToString("F1") ⭐
-                            </p>
                         </div>
                     </div>
                 </div>
+
+                <!-- Divider -->
+                <div class="section-divider"></div>
+
+                <!-- Step 2: Pricing -->
+                <div class="step-section-premium">
+                    <div class="step-indicator">
+                        <span class="step-badge">2</span>
+                        <h3>Set Your Rates</h3>
+                    </div>
+
+                    <div class="fields-grid">
+                        <div class="field-premium">
+                            <label>Hourly Rate<span class="req">*</span></label>
+                            <div class="input-wrapper-premium input-price">
+                                <span class="currency">₱</span>
+                                <input asp-for="Input.HourlyRate" 
+                                       type="number" 
+                                       step="0.01" 
+                                       min="1"
+                                       placeholder="50" 
+                                       required />
+                                <span class="unit">/hr</span>
+                            </div>
+                            <small class="field-hint">Recommended: ₱30-100</small>
+                            <span asp-validation-for="Input.HourlyRate" class="field-error"></span>
+                        </div>
+
+                        <div class="field-premium">
+                            <label>Daily Rate<span class="req">*</span></label>
+                            <div class="input-wrapper-premium input-price">
+                                <span class="currency">₱</span>
+                                <input asp-for="Input.DailyRate" 
+                                       type="number" 
+                                       step="0.01" 
+                                       min="1"
+                                       placeholder="300" 
+                                       required />
+                                <span class="unit">/day</span>
+                            </div>
+                            <small class="field-hint">Recommended: ₱200-800</small>
+                            <span asp-validation-for="Input.DailyRate" class="field-error"></span>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Tip -->
+                    <div class="tip-premium">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        <span>Daily rates are typically 8x hourly (full day rental)</span>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="section-divider"></div>
+
+                <!-- Step 3: Availability -->
+                <div class="step-section-premium">
+                    <div class="step-indicator">
+                        <span class="step-badge">3</span>
+                        <h3>Availability Status</h3>
+                    </div>
+
+                    <div class="fields-grid">
+                        <div class="field-premium field-full">
+                            <label>Status<span class="req">*</span></label>
+                            <div class="input-wrapper-premium">
+                                <i class="bi bi-toggle-on"></i>
+                                <select asp-for="Input.AvailabilityStatusId" required class="status-select-premium">
+                                    <option value="1" data-status="available">Available</option>
+                                    <option value="3" data-status="maintenance">Maintenance</option>
+                                    <option value="4" data-status="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            <small class="field-hint">"Rented" status is set automatically when booked</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="section-divider"></div>
+
+                <!-- Step 4: Photos -->
+                <div class="step-section-premium">
+                    <div class="step-indicator">
+                        <span class="step-badge">4</span>
+                        <h3>Manage Photos</h3>
+                    </div>
+
+                    <!-- Current Images -->
+                    @if (Model.CurrentBike?.BikeImages.Any() == true)
+                    {
+                        <div class="current-photos-section">
+                            <label class="current-photos-label">Current Photos</label>
+                            <div class="current-photos-grid" id="currentPhotosGrid">
+                                @foreach (var image in Model.CurrentBike.BikeImages)
+                                {
+                                    <div class="current-photo-card" data-image-id="@image.ImageId">
+                                        <img src="@image.ImageUrl" alt="Bike photo" />
+                                        @if (image.IsPrimary)
+                                        {
+                                            <span class="main-badge">Main</span>
+                                        }
+                                        <button type="button" 
+                                                class="btn-remove-current" 
+                                                onclick="confirmDeleteImage(@image.ImageId, @Model.CurrentBike.BikeId)"
+                                                title="Delete photo">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Upload Zone for New Images -->
+                    <div class="upload-zone-premium" id="uploadZone">
+                        <input asp-for="Input.NewImages" 
+                               type="file" 
+                               id="bikeImages" 
+                               class="file-input-hidden" 
+                               multiple 
+                               accept="image/*" />
+                        
+                        <!-- Upload Prompt -->
+                        <div class="upload-prompt" id="uploadPrompt">
+                            <div class="upload-icon-circle">
+                                <i class="bi bi-images"></i>
+                            </div>
+                            <p class="upload-text">Add new photos (optional)</p>
+                            <div class="upload-actions-improved">
+                                <button type="button" class="btn-upload-improved gallery" id="galleryBtn">
+                                    <i class="bi bi-folder2-open"></i>
+                                    <span>Choose Photos</span>
+                                </button>
+                                <button type="button" class="btn-upload-improved camera" id="cameraBtn">
+                                    <i class="bi bi-camera-fill"></i>
+                                    <span>Take Photo</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Photo Grid -->
+                        <div class="photos-grid-premium" id="photosGrid" style="display: none;"></div>
+
+                        <!-- Add More -->
+                        <button type="button" class="btn-add-photo" id="addMoreBtn" style="display: none;">
+                            <i class="bi bi-plus-lg"></i> Add More
+                        </button>
+                    </div>
+
+                    <div class="upload-note">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>JPG, PNG • Max 5 photos total • First photo is main</span>
+                    </div>
+                </div>
+
+                <!-- Stats Info Box -->
+                <div class="info-box-premium">
+                    <div class="info-item-inline">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>Listed: @Model.CurrentBike?.CreatedAt.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="info-item-inline">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Total Bookings: @Model.TotalBookings</span>
+                    </div>
+                    <div class="info-item-inline">
+                        <i class="bi bi-star-fill"></i>
+                        <span>Rating: @Model.AverageRating.ToString("F1")</span>
+                    </div>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="submit-section-premium">
+                    <button type="submit" class="btn-submit-premium" id="submitBtn">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Save Changes</span>
+                    </button>
+                    <a href="/Owner/MyBikes" class="btn-cancel-premium">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Image Modal -->
+<div class="modal fade" id="deleteImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header-premium">
+                <div class="modal-icon-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h5>Delete Photo?</h5>
+                <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body-premium">
+                <p>Are you sure you want to delete this photo? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer-premium">
+                <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="deleteImageForm" asp-page-handler="DeleteImage" style="display: inline;">
+                    <input type="hidden" name="id" value="@Model.CurrentBike?.BikeId" />
+                    <input type="hidden" name="imageId" id="deleteImageId" />
+                    <button type="submit" class="btn-modal-danger">
+                        <i class="bi bi-trash3-fill"></i> Delete Photo
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Image Form (hidden) -->
-<form id="deleteImageForm" method="post" asp-page-handler="DeleteImage" style="display: none;">
-    <input type="hidden" id="deleteImageId" name="imageId" />
-</form>
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    
     <script>
-        function deleteImage(imageId) {
-            if (confirm('Are you sure you want to delete this image?')) {
-                document.getElementById('deleteImageId').value = imageId;
-                document.getElementById('deleteImageForm').submit();
-            }
-        }
-
-        // Auto-dismiss alerts
-        window.setTimeout(function() {
-            $(".alert").fadeTo(500, 0).slideUp(500, function(){
-                $(this).remove(); 
+        $(document).ready(function() {
+            let newPhotos = [];
+            const maxPhotos = 5;
+            const currentPhotosCount = @(Model.CurrentBike?.BikeImages.Count ?? 0);
+            const fileInput = $('#bikeImages');
+            
+            // Upload buttons
+            $('#galleryBtn').click(function() {
+                // Remove capture attribute to open file picker
+                fileInput.removeAttr('capture');
+                fileInput.click();
             });
-        }, 5000);
+            
+            $('#cameraBtn').click(function() {
+                // Add capture attribute to open camera directly
+                fileInput.attr('capture', 'environment');
+                fileInput.click();
+            });
+            
+            $('#addMoreBtn').click(function() {
+                fileInput.click();
+            });
+            
+            // Handle file selection
+            fileInput.change(function(e) {
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+                
+                const totalPhotos = currentPhotosCount + newPhotos.length;
+                const availableSlots = maxPhotos - totalPhotos;
+                
+                if (availableSlots <= 0) {
+                    alert('Maximum 5 photos allowed. Please delete existing photos first.');
+                    return;
+                }
+                
+                files.forEach(file => {
+                    if (newPhotos.length < availableSlots) {
+                        newPhotos.push(file);
+                    }
+                });
+                
+                updatePhotosDisplay();
+            });
+            
+            // Update photos display
+            function updatePhotosDisplay() {
+                if (newPhotos.length === 0) {
+                    $('#uploadPrompt').show();
+                    $('#photosGrid').hide();
+                    $('#addMoreBtn').hide();
+                    return;
+                }
+                
+                $('#uploadPrompt').hide();
+                $('#photosGrid').show().empty();
+                
+                newPhotos.forEach((file, idx) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const photoCard = $(`
+                            <div class="photo-card-premium">
+                                <img src="${e.target.result}" alt="Photo ${idx + 1}">
+                                ${idx === 0 && currentPhotosCount === 0 ? '<span class="main-badge">Main</span>' : ''}
+                                <button type="button" class="btn-remove-photo" data-idx="${idx}">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        `);
+                        $('#photosGrid').append(photoCard);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                const totalPhotos = currentPhotosCount + newPhotos.length;
+                if (totalPhotos < maxPhotos) {
+                    $('#addMoreBtn').show();
+                } else {
+                    $('#addMoreBtn').hide();
+                }
+            }
+            
+            // Remove new photo
+            $('#photosGrid').on('click', '.btn-remove-photo', function() {
+                const idx = $(this).data('idx');
+                newPhotos.splice(idx, 1);
+                updatePhotosDisplay();
+            });
+            
+            // Form submission
+            $('#editBikeForm').submit(function(e) {
+                // Check HTML5 validation
+                const form = this;
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                    return false;
+                }
+                
+                // Prepare files for submission
+                const dataTransfer = new DataTransfer();
+                newPhotos.forEach(file => dataTransfer.items.add(file));
+                fileInput[0].files = dataTransfer.files;
+                
+                // Only disable button if form is valid
+                $('#submitBtn').prop('disabled', true)
+                    .html('<i class="bi bi-hourglass-split"></i> <span>Saving...</span>');
+                
+                return true;
+            });
+            
+            // Auto-dismiss alerts
+            setTimeout(() => {
+                $('.alert-premium').fadeOut(300, function() { $(this).remove(); });
+            }, 5000);
+            
+            // Auto-calculate daily rate (8 hours = standard day)
+            let calcTimeout;
+            $('#Input_HourlyRate').on('input', function() {
+                const hourlyInput = $(this);
+                clearTimeout(calcTimeout);
+                
+                // Wait 500ms after user stops typing
+                calcTimeout = setTimeout(function() {
+                    const hourly = parseFloat(hourlyInput.val());
+                    const dailyInput = $('#Input_DailyRate');
+                    const dailyValue = dailyInput.val();
+                    
+                    // Auto-calculate if hourly is valid and daily is empty or invalid
+                    if (hourly > 0 && (!dailyValue || dailyValue === '' || parseFloat(dailyValue) === 0 || isNaN(parseFloat(dailyValue)))) {
+                        dailyInput.val(Math.round(hourly * 8));
+                    }
+                }, 500);
+            });
+        });
+        
+        // Delete image confirmation
+        function confirmDeleteImage(imageId, bikeId) {
+            $('#deleteImageId').val(imageId);
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteImageModal'));
+            deleteModal.show();
+        }
+        
+        // Loading state on delete
+        $('#deleteImageForm').submit(function() {
+            $(this).find('.btn-modal-danger').html('<span class="spinner-border spinner-border-sm me-2"></span>Deleting...').prop('disabled', true);
+        });
     </script>
 }
-

@@ -57,7 +57,6 @@ builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserProfileService>();
-builder.Services.AddScoped<BikeManagementService>();
 builder.Services.AddScoped<BookingManagementService>();
 
 // Add HttpContextAccessor for accessing HttpContext in services
@@ -100,12 +99,19 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<BiketaBaiDbContext>();
+        
+        // Apply migrations
         await context.Database.MigrateAsync();
         Log.Information("Database migration completed successfully");
+        
+        // Seed database with initial data
+        var seeder = new BiketaBai.Data.DatabaseSeeder(context);
+        await seeder.SeedAsync();
+        Log.Information("Database seeding completed successfully");
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "An error occurred while migrating the database");
+        Log.Error(ex, "An error occurred while migrating or seeding the database");
     }
 }
 

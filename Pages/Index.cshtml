@@ -71,10 +71,6 @@
                     </div>
                     <form method="get" action="/Bikes/Browse">
                         <div class="form-group-minimal">
-                            <label class="label-minimal">Location</label>
-                            <input type="text" name="location" class="input-minimal" placeholder="Where to?" />
-                        </div>
-                        <div class="form-group-minimal">
                             <label class="label-minimal">Bike Type</label>
                             <select name="bikeTypeId" class="input-minimal">
                                 <option value="">All Types</option>
@@ -307,11 +303,6 @@
                                         <span>@avgRating.ToString("F1")</span>
                                     </div>
                                 }
-                            </div>
-                            
-                            <div class="bike-location-clean">
-                                <i class="bi bi-geo-alt"></i>
-                                <span>@bike.Location</span>
                             </div>
                             
                             <div class="bike-footer-clean">

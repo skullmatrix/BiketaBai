@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    [Migration("20251023200145_AddReportsSystem")]
-    partial class AddReportsSystem
+    [Migration("20251029073438_CleanOptimizedDatabase")]
+    partial class CleanOptimizedDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -77,6 +77,10 @@ namespace BiketaBai.Migrations
                         .HasColumnType("int")
                         .HasColumnName("bike_type_id");
 
+                    b.Property<int>("BookingCount")
+                        .HasColumnType("int")
+                        .HasColumnName("booking_count");
+
                     b.Property<string>("Brand")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -92,6 +96,15 @@ namespace BiketaBai.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("daily_rate");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("deleted_by");
+
                     b.Property<string>("Description")
                         .HasColumnType("text")
                         .HasColumnName("description");
@@ -101,26 +114,9 @@ namespace BiketaBai.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("hourly_rate");
 
-                    b.Property<decimal?>("Latitude")
-                        .HasPrecision(10, 7)
-                        .HasColumnType("decimal(10,7)")
-                        .HasColumnName("latitude");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("location");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasPrecision(10, 7)
-                        .HasColumnType("decimal(10,7)")
-                        .HasColumnName("longitude");
-
-                    b.Property<decimal>("Mileage")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)")
-                        .HasColumnName("mileage");
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -136,13 +132,25 @@ namespace BiketaBai.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
 
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int")
+                        .HasColumnName("view_count");
+
                     b.HasKey("BikeId");
 
                     b.HasIndex("AvailabilityStatusId");
 
                     b.HasIndex("BikeTypeId");
 
+                    b.HasIndex("BookingCount");
+
+                    b.HasIndex("IsDeleted");
+
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("ViewCount");
+
+                    b.HasIndex("HourlyRate", "DailyRate");
 
                     b.ToTable("bikes");
                 });
@@ -283,6 +291,10 @@ namespace BiketaBai.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("deleted_at");
+
                     b.Property<decimal?>("DistanceSavedKm")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)")
@@ -291,6 +303,14 @@ namespace BiketaBai.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("end_date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<DateTime?>("OwnerConfirmedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("owner_confirmed_at");
 
                     b.Property<string>("PickupLocation")
                         .HasMaxLength(255)
@@ -301,6 +321,14 @@ namespace BiketaBai.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("rental_hours");
+
+                    b.Property<DateTime?>("RenterConfirmedPickupAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("renter_confirmed_pickup_at");
+
+                    b.Property<DateTime?>("RenterConfirmedReturnAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("renter_confirmed_return_at");
 
                     b.Property<int>("RenterId")
                         .HasColumnType("int")
@@ -315,6 +343,11 @@ namespace BiketaBai.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("service_fee");
+
+                    b.Property<string>("SpecialInstructions")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("special_instructions");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime(6)")
@@ -334,6 +367,8 @@ namespace BiketaBai.Migrations
                     b.HasIndex("BikeId");
 
                     b.HasIndex("BookingStatusId");
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("RenterId");
 
@@ -711,9 +746,13 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("BookingId");
 
+                    b.HasIndex("IsFlagged");
+
                     b.HasIndex("RatedUserId");
 
                     b.HasIndex("RaterId");
+
+                    b.HasIndex("RatingValue");
 
                     b.ToTable("ratings");
                 });
@@ -875,6 +914,10 @@ namespace BiketaBai.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("deleted_at");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -905,6 +948,10 @@ namespace BiketaBai.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_admin");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_deleted");
+
                     b.Property<bool>("IsEmailVerified")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_email_verified");
@@ -924,6 +971,14 @@ namespace BiketaBai.Migrations
                     b.Property<bool>("IsVerifiedOwner")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_verified_owner");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("last_login_at");
+
+                    b.Property<int>("LoginCount")
+                        .HasColumnType("int")
+                        .HasColumnName("login_count");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -968,6 +1023,12 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("IsEmailVerified");
+
+                    b.HasIndex("LastLoginAt");
 
                     b.ToTable("users");
                 });

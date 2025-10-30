@@ -58,32 +58,78 @@ public class MyBikesModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
-        var userId = AuthHelper.GetCurrentUserId(User);
-        if (!userId.HasValue)
-            return RedirectToPage("/Account/Login");
-
-        var bike = await _context.Bikes
-            .Include(b => b.BikeImages)
-            .FirstOrDefaultAsync(b => b.BikeId == id && b.OwnerId == userId.Value);
-
-        if (bike == null)
-            return NotFound();
-
-        // Check if bike has active bookings
-        var hasActiveBookings = await _context.Bookings
-            .AnyAsync(b => b.BikeId == id && (b.BookingStatusId == 1 || b.BookingStatusId == 2)); // Pending or Active
-
-        if (hasActiveBookings)
+        try
         {
-            TempData["ErrorMessage"] = "Cannot delete bike with active bookings";
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "You must be logged in to delete bikes";
+                return RedirectToPage("/Account/Login");
+            }
+
+            // Fetch bike with all related data
+            var bike = await _context.Bikes
+                .Include(b => b.BikeImages)
+                .Include(b => b.Bookings)
+                .Include(b => b.Ratings)
+                .FirstOrDefaultAsync(b => b.BikeId == id && b.OwnerId == userId.Value);
+
+            if (bike == null)
+            {
+                TempData["ErrorMessage"] = "Bike not found or you don't have permission to delete it";
+                return RedirectToPage();
+            }
+
+            // Check for active or pending bookings
+            var activeBookings = bike.Bookings
+                .Where(b => b.BookingStatusId == 1 || b.BookingStatusId == 2)
+                .ToList();
+
+            if (activeBookings.Any())
+            {
+                TempData["ErrorMessage"] = $"Cannot delete: This bike has {activeBookings.Count} active rental(s). Please wait until all rentals are completed.";
+                return RedirectToPage();
+            }
+
+            // Check for upcoming bookings
+            var upcomingBookings = bike.Bookings
+                .Where(b => b.StartDate > DateTime.Now && b.BookingStatusId != 3) // Not cancelled
+                .ToList();
+
+            if (upcomingBookings.Any())
+            {
+                TempData["ErrorMessage"] = $"Cannot delete: This bike has {upcomingBookings.Count} upcoming booking(s). Please cancel them first.";
+                return RedirectToPage();
+            }
+
+            // Soft delete: Mark as deleted instead of removing from database
+            bike.IsDeleted = true;
+            bike.DeletedAt = DateTime.UtcNow;
+            bike.DeletedBy = AuthHelper.GetUserEmail(User);
+            bike.AvailabilityStatusId = 4; // Set to Inactive
+            bike.UpdatedAt = DateTime.UtcNow;
+            
+            // Soft delete completed/cancelled bookings related to this bike
+            var oldBookings = bike.Bookings
+                .Where(b => b.BookingStatusId == 3 || b.BookingStatusId == 4)
+                .ToList();
+            
+            foreach (var booking in oldBookings)
+            {
+                booking.IsDeleted = true;
+                booking.DeletedAt = DateTime.UtcNow;
+            }
+            
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"✓ Successfully deleted {bike.Brand} {bike.Model}";
             return RedirectToPage();
         }
-
-        _context.Bikes.Remove(bike);
-        await _context.SaveChangesAsync();
-
-        TempData["SuccessMessage"] = "Bike deleted successfully";
-        return RedirectToPage();
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Error deleting bike: {ex.Message}";
+            return RedirectToPage();
+        }
     }
 }
 

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BiketaBai.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class CleanOptimizedDatabase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -115,10 +115,26 @@ namespace BiketaBai.Migrations
                     is_admin = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     profile_photo_url = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    id_document_url = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    is_verified_owner = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    verification_date = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    verification_status = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     is_email_verified = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    email_verification_token = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    email_verification_token_expires = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    password_reset_token = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    password_reset_token_expires = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     is_suspended = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    updated_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    is_deleted = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    deleted_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    last_login_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    login_count = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -138,18 +154,19 @@ namespace BiketaBai.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     model = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    mileage = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
-                    location = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    latitude = table.Column<decimal>(type: "decimal(10,7)", precision: 10, scale: 7, nullable: true),
-                    longitude = table.Column<decimal>(type: "decimal(10,7)", precision: 10, scale: 7, nullable: true),
+                    view_count = table.Column<int>(type: "int", nullable: false),
+                    booking_count = table.Column<int>(type: "int", nullable: false),
                     description = table.Column<string>(type: "text", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     hourly_rate = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
                     daily_rate = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
                     availability_status_id = table.Column<int>(type: "int", nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    updated_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    is_deleted = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    deleted_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    deleted_by = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -292,11 +309,22 @@ namespace BiketaBai.Migrations
                     total_amount = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
                     booking_status_id = table.Column<int>(type: "int", nullable: false),
                     distance_saved_km = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
+                    pickup_location = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    return_location = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     updated_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     cancellation_reason = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    cancelled_at = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                    cancelled_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    is_deleted = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    deleted_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    owner_confirmed_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    renter_confirmed_pickup_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    renter_confirmed_return_at = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    special_instructions = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -470,6 +498,67 @@ namespace BiketaBai.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
+            migrationBuilder.CreateTable(
+                name: "reports",
+                columns: table => new
+                {
+                    report_id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    reporter_id = table.Column<int>(type: "int", nullable: false),
+                    report_type = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    subject = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    description = table.Column<string>(type: "TEXT", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    reported_user_id = table.Column<int>(type: "int", nullable: true),
+                    reported_bike_id = table.Column<int>(type: "int", nullable: true),
+                    booking_id = table.Column<int>(type: "int", nullable: true),
+                    status = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    assigned_to = table.Column<int>(type: "int", nullable: true),
+                    priority = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    admin_notes = table.Column<string>(type: "TEXT", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    resolution = table.Column<string>(type: "TEXT", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    resolved_at = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_reports", x => x.report_id);
+                    table.ForeignKey(
+                        name: "FK_reports_bikes_reported_bike_id",
+                        column: x => x.reported_bike_id,
+                        principalTable: "bikes",
+                        principalColumn: "bike_id");
+                    table.ForeignKey(
+                        name: "FK_reports_bookings_booking_id",
+                        column: x => x.booking_id,
+                        principalTable: "bookings",
+                        principalColumn: "booking_id");
+                    table.ForeignKey(
+                        name: "FK_reports_users_assigned_to",
+                        column: x => x.assigned_to,
+                        principalTable: "users",
+                        principalColumn: "user_id");
+                    table.ForeignKey(
+                        name: "FK_reports_users_reported_user_id",
+                        column: x => x.reported_user_id,
+                        principalTable: "users",
+                        principalColumn: "user_id");
+                    table.ForeignKey(
+                        name: "FK_reports_users_reporter_id",
+                        column: x => x.reporter_id,
+                        principalTable: "users",
+                        principalColumn: "user_id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
             migrationBuilder.InsertData(
                 table: "availability_statuses",
                 columns: new[] { "status_id", "status_name" },
@@ -546,9 +635,29 @@ namespace BiketaBai.Migrations
                 column: "bike_type_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_bikes_booking_count",
+                table: "bikes",
+                column: "booking_count");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_bikes_hourly_rate_daily_rate",
+                table: "bikes",
+                columns: new[] { "hourly_rate", "daily_rate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_bikes_is_deleted",
+                table: "bikes",
+                column: "is_deleted");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_bikes_owner_id",
                 table: "bikes",
                 column: "owner_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_bikes_view_count",
+                table: "bikes",
+                column: "view_count");
 
             migrationBuilder.CreateIndex(
                 name: "IX_bookings_bike_id",
@@ -559,6 +668,11 @@ namespace BiketaBai.Migrations
                 name: "IX_bookings_booking_status_id",
                 table: "bookings",
                 column: "booking_status_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_bookings_is_deleted",
+                table: "bookings",
+                column: "is_deleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_bookings_renter_id",
@@ -617,6 +731,11 @@ namespace BiketaBai.Migrations
                 column: "booking_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ratings_is_flagged",
+                table: "ratings",
+                column: "is_flagged");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ratings_rated_user_id",
                 table: "ratings",
                 column: "rated_user_id");
@@ -627,10 +746,55 @@ namespace BiketaBai.Migrations
                 column: "rater_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ratings_rating_value",
+                table: "ratings",
+                column: "rating_value");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_reports_assigned_to",
+                table: "reports",
+                column: "assigned_to");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_reports_booking_id",
+                table: "reports",
+                column: "booking_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_reports_reported_bike_id",
+                table: "reports",
+                column: "reported_bike_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_reports_reported_user_id",
+                table: "reports",
+                column: "reported_user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_reports_reporter_id",
+                table: "reports",
+                column: "reporter_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_users_email",
                 table: "users",
                 column: "email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_users_is_deleted",
+                table: "users",
+                column: "is_deleted");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_users_is_email_verified",
+                table: "users",
+                column: "is_email_verified");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_users_last_login_at",
+                table: "users",
+                column: "last_login_at");
 
             migrationBuilder.CreateIndex(
                 name: "IX_wallets_user_id",
@@ -659,6 +823,9 @@ namespace BiketaBai.Migrations
 
             migrationBuilder.DropTable(
                 name: "ratings");
+
+            migrationBuilder.DropTable(
+                name: "reports");
 
             migrationBuilder.DropTable(
                 name: "transaction_types");

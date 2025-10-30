@@ -103,7 +103,7 @@
                             @if (AuthHelper.IsAdmin(User))
                             {
                                 <li class="nav-item hide-on-mobile-nav">
-                                    <a class="nav-link-minimal" href="/Dashboard/Admin">Admin</a>
+                                    <a class="nav-link-minimal" href="/Admin/Dashboard">Admin</a>
                                 </li>
                             }
                         }
@@ -219,9 +219,13 @@
                     }
                     @if (AuthHelper.IsAdmin(User))
                     {
-                        <a href="/Dashboard/Admin" class="sidebar-link">
+                        <a href="/Admin/Dashboard" class="sidebar-link">
                             <i class="bi bi-speedometer2"></i>
                             <span>Admin Dashboard</span>
+                        </a>
+                        <a href="/Admin/VerifyOwners" class="sidebar-link">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Verify Owners</span>
                         </a>
                         <a href="/Admin/ManageUsers" class="sidebar-link">
                             <i class="bi bi-people-fill"></i>
@@ -500,7 +504,7 @@
                 }
                 @if (AuthHelper.IsAdmin(User))
                 {
-                    <a href="/Dashboard/Admin" class="mobile-nav-item">
+                    <a href="/Admin/Dashboard" class="mobile-nav-item">
                         <i class="bi bi-speedometer2"></i>
                         <span>Dashboard</span>
                     </a>

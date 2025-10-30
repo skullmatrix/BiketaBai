@@ -1,0 +1,335 @@
+@page
+@model BiketaBai.Pages.Legal.PrivacyModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy - BiketaBai</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/premium-minimal.css" />
+    <style>
+        .legal-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .legal-header {
+            text-align: center;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #87A96B;
+            margin-bottom: 2rem;
+        }
+        .legal-section {
+            margin-bottom: 2rem;
+        }
+        .legal-section h2 {
+            color: #87A96B;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .legal-section h3 {
+            color: #6B8E5F;
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .effective-date {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
+        .highlight-box {
+            background: #E8F0E3;
+            border-left: 4px solid #87A96B;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .data-table th {
+            background: #87A96B;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="legal-container">
+        <div class="legal-header">
+            <h1><i class="bi bi-shield-check"></i> BiketaBai Privacy Policy</h1>
+            <p class="effective-date">Effective Date: January 1, 2024 | Last Updated: @DateTime.Now.ToString("MMMM dd, yyyy")</p>
+        </div>
+
+        <div class="legal-section">
+            <h2>1. Introduction</h2>
+            <p>
+                BiketaBai ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains
+                how we collect, use, disclose, and safeguard your information when you use our platform.
+            </p>
+            <div class="highlight-box">
+                <strong><i class="bi bi-info-circle"></i> Your Privacy Matters:</strong>
+                We collect only the information necessary to provide our bike rental marketplace services.
+                Your data is never sold to third parties.
+            </div>
+        </div>
+
+        <div class="legal-section">
+            <h2>2. Information We Collect</h2>
+            
+            <h3>2.1 Information You Provide</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data Type</th>
+                        <th>Purpose</th>
+                        <th>Required?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Account Information</strong></td>
+                        <td>Name, email, phone, address</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Identity Verification</strong></td>
+                        <td>Government-issued ID (owners only)</td>
+                        <td>For owners</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payment Information</strong></td>
+                        <td>Wallet balance, transaction history</td>
+                        <td>For transactions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Profile Information</strong></td>
+                        <td>Profile photo, bio</td>
+                        <td>Optional</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bike Listings</strong></td>
+                        <td>Photos, descriptions, pricing</td>
+                        <td>For owners</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Communications</strong></td>
+                        <td>Messages, reviews, ratings</td>
+                        <td>When using features</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 Automatically Collected Information</h3>
+            <ul>
+                <li><strong>Usage Data:</strong> Pages visited, features used, time spent</li>
+                <li><strong>Device Information:</strong> IP address, browser type, device type</li>
+                <li><strong>Cookies:</strong> Session management, preferences</li>
+                <li><strong>Location Data:</strong> General location for bike availability</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>3. How We Use Your Information</h2>
+            <p>We use your information to:</p>
+            <ul>
+                <li><i class="bi bi-check-circle text-success"></i> Provide and maintain our services</li>
+                <li><i class="bi bi-check-circle text-success"></i> Process transactions and payments</li>
+                <li><i class="bi bi-check-circle text-success"></i> Verify user identity (especially bike owners)</li>
+                <li><i class="bi bi-check-circle text-success"></i> Facilitate communication between users</li>
+                <li><i class="bi bi-check-circle text-success"></i> Send notifications about bookings and updates</li>
+                <li><i class="bi bi-check-circle text-success"></i> Improve our platform and user experience</li>
+                <li><i class="bi bi-check-circle text-success"></i> Prevent fraud and ensure platform safety</li>
+                <li><i class="bi bi-check-circle text-success"></i> Comply with legal obligations</li>
+                <li><i class="bi bi-check-circle text-success"></i> Resolve disputes and enforce our terms</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>4. Information Sharing</h2>
+            
+            <h3>4.1 With Other Users</h3>
+            <div class="highlight-box">
+                <strong>What's Shared:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Name, profile photo</li>
+                    <li>User ratings and reviews</li>
+                    <li>Bike listings (for owners)</li>
+                    <li>General location (city/area)</li>
+                </ul>
+            </div>
+
+            <h3>4.2 With Service Providers</h3>
+            <p>We may share information with:</p>
+            <ul>
+                <li>Payment processors (for transactions)</li>
+                <li>Email service providers (for notifications)</li>
+                <li>Cloud hosting providers (for data storage)</li>
+                <li>Analytics providers (for platform improvement)</li>
+            </ul>
+
+            <h3>4.3 Legal Requirements</h3>
+            <p>We may disclose information when required by law or to:</p>
+            <ul>
+                <li>Comply with legal obligations</li>
+                <li>Protect our rights and property</li>
+                <li>Prevent fraud or illegal activity</li>
+                <li>Protect user safety</li>
+            </ul>
+
+            <h3>4.4 Business Transfers</h3>
+            <p>
+                In the event of a merger, acquisition, or sale of assets, your information may be transferred.
+                You will be notified of any such change.
+            </p>
+        </div>
+
+        <div class="legal-section">
+            <h2>5. Data Security</h2>
+            <p>We implement security measures to protect your information:</p>
+            <ul>
+                <li><strong>Encryption:</strong> Passwords are encrypted using bcrypt</li>
+                <li><strong>Secure Storage:</strong> Data stored in secure databases</li>
+                <li><strong>Access Controls:</strong> Limited employee access</li>
+                <li><strong>Regular Audits:</strong> Security reviews and updates</li>
+            </ul>
+            <div class="highlight-box">
+                <strong><i class="bi bi-exclamation-triangle"></i> Important:</strong>
+                No method of transmission over the internet is 100% secure. While we strive to protect your data,
+                we cannot guarantee absolute security.
+            </div>
+        </div>
+
+        <div class="legal-section">
+            <h2>6. Your Rights and Choices</h2>
+            
+            <h3>6.1 Access and Update</h3>
+            <ul>
+                <li>View and update your account information</li>
+                <li>Update profile and preferences</li>
+                <li>Download your data (upon request)</li>
+            </ul>
+
+            <h3>6.2 Delete Your Account</h3>
+            <ul>
+                <li>Request account deletion at any time</li>
+                <li>Data retained for legal/fraud prevention (anonymized)</li>
+                <li>Reviews and ratings may remain (anonymized)</li>
+            </ul>
+
+            <h3>6.3 Communication Preferences</h3>
+            <ul>
+                <li>Opt-out of marketing emails</li>
+                <li>Manage notification settings</li>
+                <li>Cannot opt-out of service-related communications</li>
+            </ul>
+
+            <h3>6.4 Cookie Management</h3>
+            <ul>
+                <li>Control cookies through browser settings</li>
+                <li>Some features may not work without cookies</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>7. Data Retention</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data Type</th>
+                        <th>Retention Period</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Account Information</td>
+                        <td>Until account deletion + 90 days</td>
+                    </tr>
+                    <tr>
+                        <td>Transaction Records</td>
+                        <td>7 years (tax/legal requirements)</td>
+                    </tr>
+                    <tr>
+                        <td>ID Documents</td>
+                        <td>Until account deletion + 1 year</td>
+                    </tr>
+                    <tr>
+                        <td>Communications</td>
+                        <td>Until account deletion</td>
+                    </tr>
+                    <tr>
+                        <td>Reviews/Ratings</td>
+                        <td>Indefinitely (anonymized after deletion)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legal-section">
+            <h2>8. Children's Privacy</h2>
+            <p>
+                BiketaBai is not intended for users under 18 years of age. We do not knowingly collect
+                information from children. If you believe a child has provided information, please contact us
+                immediately.
+            </p>
+        </div>
+
+        <div class="legal-section">
+            <h2>9. International Users</h2>
+            <p>
+                BiketaBai operates primarily in Cebu City, Philippines. If you access our platform from another
+                location, please be aware that your information may be transferred to and processed in Cebu City,
+                Philippines, where our servers and headquarters are located.
+            </p>
+        </div>
+
+        <div class="legal-section">
+            <h2>10. Changes to Privacy Policy</h2>
+            <p>
+                We may update this Privacy Policy from time to time. Changes will be posted on this page
+                with an updated "Last Updated" date. Significant changes will be communicated via email
+                or platform notification.
+            </p>
+        </div>
+
+        <div class="legal-section">
+            <h2>11. Contact Us</h2>
+            <p>
+                For questions or concerns about this Privacy Policy or your data, please contact us at:<br>
+                <strong>Email:</strong> privacy@@biketabai.org<br>
+                <strong>Data Protection Officer:</strong> dpo@@biketabai.org<br>
+                <strong>Address:</strong> BiketaBai Headquarters, Cebu City, Philippines<br>
+                <strong>Phone:</strong> +639163436964
+            </p>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Go Back
+            </a>
+            <a href="/Account/Register" class="btn" style="background: #87A96B; color: white;">
+                <i class="bi bi-check-circle"></i> Accept & Register
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

@@ -6,306 +6,291 @@
     ViewData["Title"] = "My Bikes";
 }
 
-<div class="container my-5">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-eco-green mb-1"><i class="bi bi-grid-3x3-gap"></i> Manage Listings</h2>
-            <p class="text-muted mb-0">View, edit, and manage all your bike listings</p>
-        </div>
-        <a href="/Owner/AddBike" class="btn btn-success btn-lg">
-            <i class="bi bi-plus-circle"></i> Add New Bike
-        </a>
-    </div>
+<!-- Link Minimal CSS -->
+<link rel="stylesheet" href="~/css/bikes-minimal.css" asp-append-version="true" />
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    <!-- Summary Stats -->
-    @if (Model.Bikes.Any())
-    {
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="stats-badge bg-success">
-                    <div class="stats-icon"><i class="bi bi-check-circle"></i></div>
-                    <div class="stats-info">
-                        <h4>@Model.Bikes.Count(b => b.AvailabilityStatusId == 1)</h4>
-                        <p>Available</p>
-                    </div>
-                </div>
+<div class="mybikes-premium-container">
+    <div class="container">
+        <!-- Compact Header -->
+        <div class="mybikes-header-premium">
+            <div class="header-info">
+                <h2>My Bikes</h2>
+                <p>@Model.Bikes.Count listings</p>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-badge bg-primary">
-                    <div class="stats-icon"><i class="bi bi-bicycle"></i></div>
-                    <div class="stats-info">
-                        <h4>@Model.Bikes.Count(b => b.AvailabilityStatusId == 2)</h4>
-                        <p>Currently Rented</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-badge bg-warning">
-                    <div class="stats-icon"><i class="bi bi-tools"></i></div>
-                    <div class="stats-info">
-                        <h4>@Model.Bikes.Count(b => b.AvailabilityStatusId == 3)</h4>
-                        <p>Maintenance</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-badge bg-secondary">
-                    <div class="stats-icon"><i class="bi bi-pause-circle"></i></div>
-                    <div class="stats-info">
-                        <h4>@Model.Bikes.Count(b => b.AvailabilityStatusId == 4)</h4>
-                        <p>Inactive</p>
-                    </div>
-                </div>
-            </div>
+            <a href="/Owner/AddBike" class="btn-add-premium">
+                <i class="bi bi-plus-lg"></i> Add Bike
+            </a>
         </div>
 
-        <!-- Filter Options -->
-        <div class="card mb-4 border-0 shadow-sm">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Filter by Status</label>
-                        <select class="form-select" id="statusFilter">
-                            <option value="all">All Bikes</option>
-                            <option value="1">Available</option>
-                            <option value="2">Rented</option>
-                            <option value="3">Maintenance</option>
-                            <option value="4">Inactive</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Search Bikes</label>
-                        <input type="text" class="form-control" id="bikeSearch" placeholder="Search by brand or model...">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Sort By</label>
-                        <select class="form-select" id="sortBy">
-                            <option value="recent">Recently Added</option>
-                            <option value="name">Name (A-Z)</option>
-                            <option value="price">Price (Low to High)</option>
-                            <option value="rating">Rating (High to Low)</option>
-                        </select>
-                    </div>
-                </div>
+        <!-- Alerts -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert-premium success" id="successAlert">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>@TempData["SuccessMessage"]</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
-        </div>
-    }
+        }
+        
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert-premium error" id="errorAlert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@TempData["ErrorMessage"]</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+        }
 
-    <div class="row" id="bikesContainer">
         @if (Model.Bikes.Any())
         {
-            @foreach (var bike in Model.Bikes)
-            {
-                <div class="col-md-6 col-lg-4 mb-4 bike-item" 
-                     data-status="@bike.AvailabilityStatusId" 
-                     data-name="@bike.Brand @bike.Model" 
-                     data-price="@bike.HourlyRate"
-                     data-rating="@(Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0)">
-                    <div class="card bike-listing-card h-100 shadow-sm border-0">
-                        <!-- Status Badge Overlay -->
-                        <div class="status-badge-overlay">
-                            @switch (bike.AvailabilityStatusId)
-                            {
-                                case 1:
-                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Available</span>
-                                    break;
-                                case 2:
-                                    <span class="badge bg-primary"><i class="bi bi-bicycle"></i> Rented</span>
-                                    break;
-                                case 3:
-                                    <span class="badge bg-warning"><i class="bi bi-tools"></i> Maintenance</span>
-                                    break;
-                                case 4:
-                                    <span class="badge bg-secondary"><i class="bi bi-pause-circle"></i> Inactive</span>
-                                    break;
-                            }
-                        </div>
+            <!-- Compact Stats -->
+            <div class="stats-bar-premium">
+                <div class="stat-mini available">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 1)</span>
+                    <label>Available</label>
+                </div>
+                <div class="stat-mini rented">
+                    <i class="bi bi-bicycle"></i>
+                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 2)</span>
+                    <label>Rented</label>
+                </div>
+                <div class="stat-mini maintenance">
+                    <i class="bi bi-tools"></i>
+                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 3)</span>
+                    <label>Maintenance</label>
+                </div>
+                <div class="stat-mini inactive">
+                    <i class="bi bi-pause-circle-fill"></i>
+                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 4)</span>
+                    <label>Inactive</label>
+                </div>
+            </div>
 
-                        @if (bike.BikeImages.Any())
-                        {
-                            <img src="@bike.BikeImages.First(img => img.IsPrimary || bike.BikeImages.First() == img).ImageUrl" 
-                                 class="card-img-top bike-listing-image" alt="@bike.Brand @bike.Model" />
-                        }
-                        else
-                        {
-                            <div class="placeholder-bike-image">
-                                <i class="bi bi-bicycle" style="font-size: 4rem; color: #ccc;"></i>
-                            </div>
-                        }
+            <!-- Streamlined Filters -->
+            <div class="filters-bar-premium">
+                <div class="search-group-premium">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search bikes..." />
+                </div>
+                
+                <select class="select-premium" id="statusFilter">
+                    <option value="all">All Status</option>
+                    <option value="1">Available</option>
+                    <option value="2">Rented</option>
+                    <option value="3">Maintenance</option>
+                    <option value="4">Inactive</option>
+                </select>
+                
+                <select class="select-premium" id="sortSelect">
+                    <option value="recent">Recent</option>
+                    <option value="name">Name</option>
+                    <option value="price">Price</option>
+                    <option value="rating">Rating</option>
+                </select>
+            </div>
+
+            <!-- Compact Bikes Grid -->
+            <div class="bikes-grid-premium" id="bikesGrid">
+                @foreach (var bike in Model.Bikes)
+                {
+                    var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                    var statusClass = bike.AvailabilityStatusId switch { 1 => "available", 2 => "rented", 3 => "maintenance", 4 => "inactive", _ => "inactive" };
+                    var statusText = bike.AvailabilityStatusId switch { 1 => "Available", 2 => "Rented", 3 => "Maintenance", 4 => "Inactive", _ => "Unknown" };
+                    var activeRentals = Model.ActiveBookings.Count(b => b.BikeId == bike.BikeId);
+                    var hasActiveBookings = activeRentals > 0;
+                    
+                    <div class="bike-card-premium" 
+                         data-id="@bike.BikeId"
+                         data-status="@bike.AvailabilityStatusId" 
+                         data-name="@bike.Brand @bike.Model" 
+                         data-price="@bike.HourlyRate"
+                         data-rating="@avgRating">
                         
-                        <div class="card-body d-flex flex-column">
-                            <div class="mb-2">
-                                <h5 class="card-title mb-1 fw-bold">@bike.Brand @bike.Model</h5>
-                                <span class="badge bg-light text-dark border">@bike.BikeType.TypeName</span>
+                        <!-- Compact Image -->
+                        <div class="bike-img-premium">
+                            @if (bike.BikeImages.Any())
+                            {
+                                <img src="@bike.BikeImages.First(img => img.IsPrimary || bike.BikeImages.First() == img).ImageUrl" alt="@bike.Brand @bike.Model" />
+                            }
+                            else
+                            {
+                                <div class="img-placeholder">
+                                    <i class="bi bi-bicycle"></i>
+                                </div>
+                            }
+                            <span class="status-badge-premium @statusClass">@statusText</span>
+                        </div>
+                        
+                        <!-- Compact Content -->
+                        <div class="bike-content-premium">
+                            <div class="bike-title-row">
+                                <h6>@bike.Brand @bike.Model</h6>
+                                <span class="type-badge">@bike.BikeType.TypeName</span>
                             </div>
                             
-                            <p class="text-muted mb-2 small">
-                                <i class="bi bi-geo-alt-fill text-danger"></i> @bike.Location
-                            </p>
-                            
-                            <div class="rating-stars mb-2">
-                                @{
-                                    var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
-                                    for (int i = 1; i <= 5; i++)
-                                    {
-                                        if (i <= avgRating)
-                                        {
-                                            <i class="bi bi-star-fill text-warning"></i>
-                                        }
-                                        else
-                                        {
-                                            <i class="bi bi-star text-warning"></i>
-                                        }
-                                    }
-                                }
-                                <span class="text-muted small ms-1">(@avgRating.ToString("F1"))</span>
-                            </div>
-                            
-                            <div class="pricing-info mb-2">
-                                <span class="h5 text-success mb-0">₱@bike.HourlyRate</span><small class="text-muted">/hr</small>
-                                <span class="text-muted mx-2">·</span>
-                                <span class="fw-bold">₱@bike.DailyRate</span><small class="text-muted">/day</small>
-                            </div>
-                            
-                            <div class="rental-info mb-3 p-2 bg-light rounded">
-                                <small class="text-muted d-flex justify-content-between">
-                                    <span><i class="bi bi-clock-history"></i> Active Rentals:</span>
-                                    <strong class="text-primary">@Model.ActiveBookings.Count(b => b.BikeId == bike.BikeId)</strong>
-                                </small>
-                            </div>
-                            
-                            <div class="mt-auto">
-                                <div class="d-grid gap-2">
-                                    <a href="/Owner/EditBike/@bike.BikeId" class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-pencil-square"></i> Edit Details
-                                    </a>
-                                    <div class="btn-group">
-                                        <a href="/Bikes/Details/@bike.BikeId" class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal@(bike.BikeId)">
-                                            <i class="bi bi-trash3"></i> Delete
-                                        </button>
-                                    </div>
+                            <div class="bike-meta-row">
+                                <div class="rating-compact">
+                                    <i class="bi bi-star-fill"></i>
+                                    <span>@avgRating.ToString("F1")</span>
                                 </div>
                             </div>
+                            
+                            <div class="bike-price-row">
+                                <div class="price-premium">
+                                    <span class="hourly">₱@bike.HourlyRate<small>/hr</small></span>
+                                    <span class="daily">₱@bike.DailyRate/day</span>
+                                </div>
+                                @if (activeRentals > 0)
+                                {
+                                    <div class="rental-badge">
+                                        <i class="bi bi-clock-fill"></i> @activeRentals active
+                                    </div>
+                                }
+                            </div>
+                            
+                            <!-- Compact Actions -->
+                            <div class="bike-actions-premium">
+                                <a href="/Owner/EditBike/@bike.BikeId" class="btn-action-premium edit">
+                                    <i class="bi bi-pencil-fill"></i> Edit
+                                </a>
+                                <a href="/Bikes/Details/@bike.BikeId" class="btn-action-premium view">
+                                    <i class="bi bi-eye-fill"></i> View
+                                </a>
+                                <button type="button" 
+                                        class="btn-action-premium delete @(hasActiveBookings ? "disabled" : "")"
+                                        @(hasActiveBookings ? "disabled" : "")
+                                        @(hasActiveBookings ? "title='Cannot delete: Has active rentals'" : "")
+                                        onclick="confirmDelete(@bike.BikeId, '@bike.Brand @bike.Model', @hasActiveBookings.ToString().ToLower())">
+                                    <i class="bi bi-trash3-fill"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Delete Confirmation Modal -->
-                <div class="modal fade" id="deleteModal@(bike.BikeId)" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Delete Bike</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                Are you sure you want to delete <strong>@bike.Brand @bike.Model</strong>?
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form method="post" asp-page-handler="Delete" asp-route-id="@bike.BikeId" class="d-inline">
-                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
+                }
+            </div>
         }
         else
         {
-            <div class="col-12">
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="bi bi-bicycle"></i>
-                    </div>
-                    <h3 class="empty-state-title">No Bikes Listed Yet</h3>
-                    <p class="empty-state-message">Start earning passive income by listing your bikes for rent on our platform</p>
-                    <a href="/Owner/AddBike" class="btn btn-success btn-lg">
-                        <i class="bi bi-plus-circle"></i> Add Your First Bike
-                    </a>
-                    <div class="mt-4">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle"></i> List your bikes in minutes and start accepting rental requests
-                        </small>
-                    </div>
+            <!-- Compact Empty State -->
+            <div class="empty-state-premium">
+                <div class="empty-icon">
+                    <i class="bi bi-bicycle"></i>
                 </div>
+                <h3>No Bikes Yet</h3>
+                <p>Start earning by listing your bikes</p>
+                <a href="/Owner/AddBike" class="btn-add-premium">
+                    <i class="bi bi-plus-lg"></i> Add Your First Bike
+                </a>
             </div>
         }
     </div>
 </div>
 
+<!-- Improved Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header-premium">
+                <div class="modal-icon-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h5>Delete Bike?</h5>
+                <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body-premium">
+                <p id="deleteMessage"></p>
+                <div class="warning-box" id="activeBookingWarning" style="display: none;">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>This bike has active rentals and cannot be deleted.</span>
+                </div>
+            </div>
+            <div class="modal-footer-premium">
+                <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="deleteForm" asp-page-handler="Delete" style="display: inline;">
+                    <input type="hidden" name="id" id="deleteId" />
+                    <button type="submit" class="btn-modal-danger" id="confirmDeleteBtn">
+                        <i class="bi bi-trash3-fill"></i> Delete Bike
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        // Filter and Search functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const statusFilter = document.getElementById('statusFilter');
-            const bikeSearch = document.getElementById('bikeSearch');
-            const sortBy = document.getElementById('sortBy');
-            const bikesContainer = document.getElementById('bikesContainer');
+        $(document).ready(function() {
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             
-            if (!statusFilter || !bikeSearch || !sortBy) return;
-            
-            function filterAndSortBikes() {
-                const filterValue = statusFilter.value;
-                const searchValue = bikeSearch.value.toLowerCase();
-                const sortValue = sortBy.value;
+            // Filter and Search
+            function filterBikes() {
+                const search = $('#searchInput').val().toLowerCase();
+                const status = $('#statusFilter').val();
+                const sort = $('#sortSelect').val();
                 
-                let bikeItems = Array.from(document.querySelectorAll('.bike-item'));
+                let bikes = $('.bike-card-premium').toArray();
                 
-                // Filter bikes
-                bikeItems.forEach(item => {
-                    const status = item.dataset.status;
-                    const name = item.dataset.name.toLowerCase();
+                // Filter
+                bikes.forEach(bike => {
+                    const $bike = $(bike);
+                    const name = $bike.data('name').toLowerCase();
+                    const bikeStatus = $bike.data('status').toString();
                     
-                    const statusMatch = filterValue === 'all' || status === filterValue;
-                    const searchMatch = name.includes(searchValue);
+                    const matchSearch = name.includes(search);
+                    const matchStatus = status === 'all' || bikeStatus === status;
                     
-                    if (statusMatch && searchMatch) {
-                        item.style.display = 'block';
-                    } else {
-                        item.style.display = 'none';
-                    }
+                    $bike.toggle(matchSearch && matchStatus);
                 });
                 
-                // Get visible bikes for sorting
-                bikeItems = bikeItems.filter(item => item.style.display !== 'none');
-                
-                // Sort bikes
-                bikeItems.sort((a, b) => {
-                    switch(sortValue) {
+                // Sort visible bikes
+                bikes = bikes.filter(b => $(b).is(':visible'));
+                bikes.sort((a, b) => {
+                    const $a = $(a), $b = $(b);
+                    switch(sort) {
                         case 'name':
-                            return a.dataset.name.localeCompare(b.dataset.name);
+                            return $a.data('name').localeCompare($b.data('name'));
                         case 'price':
-                            return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                            return $a.data('price') - $b.data('price');
                         case 'rating':
-                            return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
-                        default: // recent
-                            return 0; // Keep original order
+                            return $b.data('rating') - $a.data('rating');
+                        default:
+                            return 0;
                     }
                 });
                 
-                // Reorder in DOM
-                bikeItems.forEach(item => bikesContainer.appendChild(item));
+                bikes.forEach(bike => $('#bikesGrid').append(bike));
             }
             
-            // Event listeners
-            statusFilter.addEventListener('change', filterAndSortBikes);
-            bikeSearch.addEventListener('input', filterAndSortBikes);
-            sortBy.addEventListener('change', filterAndSortBikes);
+            $('#searchInput, #statusFilter, #sortSelect').on('input change', filterBikes);
+            
+            // Auto-dismiss alerts
+            setTimeout(() => {
+                $('.alert-premium').fadeOut(300, function() { $(this).remove(); });
+            }, 5000);
+        });
+        
+        // Improved Delete Confirmation
+        function confirmDelete(bikeId, bikeName, hasActive) {
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            
+            $('#deleteId').val(bikeId);
+            $('#deleteMessage').text(`Are you sure you want to delete "${bikeName}"? This action cannot be undone.`);
+            
+            if (hasActive) {
+                $('#activeBookingWarning').show();
+                $('#confirmDeleteBtn').prop('disabled', true).addClass('disabled');
+            } else {
+                $('#activeBookingWarning').hide();
+                $('#confirmDeleteBtn').prop('disabled', false).removeClass('disabled');
+            }
+            
+            deleteModal.show();
+        }
+        
+        // Loading state on delete
+        $('#deleteForm').submit(function() {
+            $('#confirmDeleteBtn').html('<span class="spinner-border spinner-border-sm me-2"></span>Deleting...').prop('disabled', true);
         });
     </script>
 }
-

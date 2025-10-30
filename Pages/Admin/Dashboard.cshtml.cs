@@ -16,22 +16,40 @@ public class AdminDashboardModel : PageModel
         _context = context;
     }
 
+    // User Statistics
     public int TotalUsers { get; set; }
     public int RentersCount { get; set; }
     public int OwnersCount { get; set; }
+    public int SuspendedUsers { get; set; }
+    
+    // Bike Statistics
     public int TotalBikes { get; set; }
     public int AvailableBikes { get; set; }
+    
+    // Booking Statistics
     public int TotalBookings { get; set; }
     public int ActiveBookings { get; set; }
     public int CompletedBookings { get; set; }
     public int TodayBookings { get; set; }
     public int WeekBookings { get; set; }
+    
+    // Financial Statistics
     public decimal TotalRevenue { get; set; }
     public decimal TotalWalletBalance { get; set; }
+    
+    // Environmental Impact
     public decimal TotalCO2Saved { get; set; }
-
+    
+    // Verification & Admin Actions
+    public int PendingOwnerVerifications { get; set; }
+    public List<User> PendingVerifications { get; set; } = new();
+    
+    // Recent Activity
     public List<User> RecentUsers { get; set; } = new();
     public List<Booking> RecentBookings { get; set; } = new();
+    public List<Bike> RecentBikes { get; set; } = new();
+    
+    // Top Performers
     public List<Bike> TopBikes { get; set; } = new();
     public Dictionary<int, decimal> BikeEarnings { get; set; } = new();
     public List<BikeTypeStat> BikeTypeStats { get; set; } = new();
@@ -42,15 +60,36 @@ public class AdminDashboardModel : PageModel
         public int Count { get; set; }
     }
 
+    public string GetRoleBadge(User user)
+    {
+        var badges = new List<string>();
+        
+        if (user.IsAdmin) badges.Add("<span class='admin-badge red'>Admin</span>");
+        if (user.IsOwner) badges.Add("<span class='admin-badge amber'>Owner</span>");
+        if (user.IsRenter) badges.Add("<span class='admin-badge blue'>Renter</span>");
+        
+        return string.Join(" ", badges);
+    }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!AuthHelper.IsAdmin(User))
             return RedirectToPage("/Account/AccessDenied");
 
         // User statistics
-        TotalUsers = await _context.Users.CountAsync();
-        RentersCount = await _context.Users.Where(u => u.IsRenter).CountAsync();
-        OwnersCount = await _context.Users.Where(u => u.IsOwner).CountAsync();
+        var allUsers = await _context.Users.ToListAsync();
+        TotalUsers = allUsers.Count;
+        RentersCount = allUsers.Count(u => u.IsRenter);
+        OwnersCount = allUsers.Count(u => u.IsOwner);
+        SuspendedUsers = allUsers.Count(u => u.IsSuspended);
+
+        // Pending owner verifications
+        PendingOwnerVerifications = allUsers.Count(u => u.IsOwner && u.VerificationStatus == "Pending");
+        PendingVerifications = allUsers
+            .Where(u => u.IsOwner && u.VerificationStatus == "Pending")
+            .OrderByDescending(u => u.CreatedAt)
+            .Take(5)
+            .ToList();
 
         // Bike statistics
         TotalBikes = await _context.Bikes.CountAsync();
@@ -86,18 +125,26 @@ public class AdminDashboardModel : PageModel
         TotalCO2Saved = totalKmSaved * 0.2m;
 
         // Recent users
-        RecentUsers = await _context.Users
+        RecentUsers = allUsers
             .OrderByDescending(u => u.CreatedAt)
             .Take(10)
-            .ToListAsync();
+            .ToList();
 
         // Recent bookings
         RecentBookings = await _context.Bookings
             .Include(b => b.Renter)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
+            .Include(b => b.BookingStatus)
             .OrderByDescending(b => b.CreatedAt)
             .Take(10)
+            .ToListAsync();
+
+        // Recent bikes
+        RecentBikes = await _context.Bikes
+            .Include(b => b.Owner)
+            .OrderByDescending(b => b.CreatedAt)
+            .Take(5)
             .ToListAsync();
 
         // Top bikes by earnings

@@ -1,0 +1,832 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model VerifyOwnersModel
+@{
+    ViewData["Title"] = "Verify Owners";
+}
+
+<link rel="stylesheet" href="~/css/admin-dashboard.css" />
+
+<div class="admin-dashboard-wrapper">
+    <div class="admin-dashboard-container" style="max-width: 1400px;">
+        
+        <!-- Ultra Compact Header -->
+        <div class="verify-header">
+            <div class="verify-header-left">
+                <h1><i class="bi bi-shield-check"></i> Owner Verification</h1>
+                <span class="verify-count">@Model.TotalPending pending</span>
+            </div>
+            <div class="verify-header-right">
+                <!-- Quick Stats -->
+                <div class="verify-quick-stats">
+                    <span class="stat-item pending" title="Pending Verifications">
+                        <i class="bi bi-hourglass-split"></i> @Model.TotalPending
+                    </span>
+                    <span class="stat-item approved" title="Approved">
+                        <i class="bi bi-check-circle-fill"></i> @Model.TotalApproved
+                    </span>
+                    <span class="stat-item rejected" title="Rejected">
+                        <i class="bi bi-x-circle-fill"></i> @Model.TotalRejected
+                    </span>
+                </div>
+                <a href="/Admin/Dashboard" class="verify-btn-icon" title="Back to Dashboard">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="verify-alert success">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>@Model.SuccessMessage</span>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="verify-alert error">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        }
+
+        <!-- Compact Verifications List -->
+        @if (Model.PendingOwners.Any())
+        {
+            <div class="verify-owners-compact">
+                @foreach (var owner in Model.PendingOwners)
+                {
+                    <div class="owner-row" data-owner-id="@owner.UserId">
+                        <!-- Left: Owner Info + ID Document -->
+                        <div class="owner-info-section">
+                            <div class="owner-main-info">
+                                <div class="owner-avatar">
+                                    @owner.FullName.Substring(0, 1).ToUpper()
+                                </div>
+                                <div class="owner-details">
+                                    <div class="owner-name">
+                                        @owner.FullName
+                                        <span class="owner-id">#@owner.UserId</span>
+                                    </div>
+                                    <div class="owner-contact">
+                                        <span title="Email">@owner.Email</span>
+                                        @if (!string.IsNullOrEmpty(owner.Phone))
+                                        {
+                                            <span class="owner-phone" title="Phone">@owner.Phone</span>
+                                        }
+                                        <span class="owner-date" title="Registered">@owner.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(owner.Address))
+                                    {
+                                        <div class="owner-address" title="Address">
+                                            <i class="bi bi-geo-alt"></i> @owner.Address
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <!-- ID Document Thumbnail -->
+                            <div class="owner-document">
+                                @if (!string.IsNullOrEmpty(owner.IdDocumentUrl))
+                                {
+                                    <div class="doc-thumbnail" onclick="openImageModal('@owner.IdDocumentUrl', '@owner.FullName')" title="Click to view full size">
+                                        <img src="@owner.IdDocumentUrl" alt="ID Document" />
+                                        <div class="doc-overlay">
+                                            <i class="bi bi-zoom-in"></i>
+                                        </div>
+                                    </div>
+                                    <div class="doc-actions">
+                                        <button type="button" 
+                                                onclick="openImageModal('@owner.IdDocumentUrl', '@owner.FullName')" 
+                                                class="doc-btn"
+                                                title="View full size">
+                                            <i class="bi bi-arrows-fullscreen"></i>
+                                        </button>
+                                        <a href="@owner.IdDocumentUrl" 
+                                           target="_blank" 
+                                           class="doc-btn"
+                                           title="Open in new tab">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="doc-missing">
+                                        <i class="bi bi-file-earmark-x"></i>
+                                        <span>No ID</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Right: Quick Actions -->
+                        <div class="owner-actions">
+                            <form method="post" asp-page-handler="Reject" asp-route-userId="@owner.UserId" class="inline-form">
+                                <button type="submit" 
+                                        class="action-btn reject" 
+                                        title="Reject Verification"
+                                        onclick="return confirm('Reject verification for @owner.FullName?')">
+                                    <i class="bi bi-x-circle"></i>
+                                    <span>Reject</span>
+                                </button>
+                            </form>
+                            
+                            <form method="post" asp-page-handler="Approve" asp-route-userId="@owner.UserId" class="inline-form">
+                                <button type="submit" 
+                                        class="action-btn approve" 
+                                        title="Approve Owner"
+                                        onclick="return confirm('Approve @owner.FullName as verified owner?')">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span>Approve</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="verify-empty">
+                <div class="verify-empty-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h3>All Caught Up!</h3>
+                <p>No pending owner verifications</p>
+                <a href="/Admin/Dashboard" class="verify-btn-compact primary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        }
+
+    </div>
+</div>
+
+<!-- Premium Image Modal -->
+<div id="imageModal" class="verify-modal">
+    <div class="verify-modal-overlay" onclick="closeImageModal()"></div>
+    <div class="verify-modal-content">
+        <div class="verify-modal-header">
+            <h3 id="modalTitle">ID Document</h3>
+            <button onclick="closeImageModal()" class="verify-modal-close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="verify-modal-body">
+            <img id="modalImage" src="" alt="ID Document" />
+        </div>
+    </div>
+</div>
+
+<style>
+/* ============================================
+   ULTRA COMPACT VERIFY OWNERS
+   ============================================ */
+
+/* Header */
+.verify-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--admin-gray-200);
+}
+
+.verify-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.verify-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--admin-gray-900);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.verify-count {
+    font-size: 0.875rem;
+    color: var(--admin-gray-600);
+    font-weight: 500;
+}
+
+.verify-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Quick Stats in Header */
+.verify-quick-stats {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--admin-gray-50);
+    border-radius: 6px;
+    border: 1px solid var(--admin-gray-200);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--admin-gray-700);
+}
+
+.stat-item i {
+    font-size: 0.875rem;
+}
+
+.stat-item.pending i { color: #D97706; }
+.stat-item.approved i { color: var(--admin-sage-primary); }
+.stat-item.rejected i { color: #DC2626; }
+
+/* Alerts */
+.verify-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    margin-bottom: 0.875rem;
+}
+
+.verify-alert.success {
+    background: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #059669;
+}
+
+.verify-alert.error {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #DC2626;
+}
+
+.verify-alert i {
+    font-size: 1rem;
+}
+
+/* Compact Owners List */
+.verify-owners-compact {
+    display: grid;
+    gap: 0.625rem;
+}
+
+/* Owner Row */
+.owner-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: white;
+    border: 1px solid var(--admin-gray-200);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.owner-row:hover {
+    border-color: var(--admin-sage-primary);
+    box-shadow: 0 2px 8px rgba(135, 169, 107, 0.15);
+}
+
+/* Owner Info Section */
+.owner-info-section {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.owner-main-info {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.owner-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--admin-sage-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.owner-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.owner-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--admin-gray-900);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.owner-id {
+    font-size: 0.75rem;
+    color: var(--admin-gray-500);
+    font-weight: 500;
+}
+
+.owner-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--admin-gray-600);
+    margin-bottom: 0.25rem;
+}
+
+.owner-contact span {
+    white-space: nowrap;
+}
+
+.owner-phone::before,
+.owner-date::before {
+    content: "•";
+    margin: 0 0.375rem;
+    color: var(--admin-gray-400);
+}
+
+.owner-address {
+    font-size: 0.75rem;
+    color: var(--admin-gray-600);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.owner-address i {
+    font-size: 0.75rem;
+    color: var(--admin-gray-500);
+}
+
+/* ID Document Section */
+.owner-document {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    align-items: center;
+}
+
+.doc-thumbnail {
+    position: relative;
+    width: 120px;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid var(--admin-gray-200);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.doc-thumbnail:hover {
+    border-color: var(--admin-sage-primary);
+    transform: scale(1.02);
+}
+
+.doc-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.doc-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(135, 169, 107, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.doc-thumbnail:hover .doc-overlay {
+    opacity: 1;
+}
+
+.doc-overlay i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.doc-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.doc-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid var(--admin-gray-300);
+    background: white;
+    color: var(--admin-gray-700);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.doc-btn:hover {
+    background: var(--admin-sage-subtle);
+    border-color: var(--admin-sage-primary);
+    color: var(--admin-sage-dark);
+    transform: translateY(-2px);
+}
+
+.doc-btn i {
+    font-size: 0.75rem;
+}
+
+.doc-missing {
+    width: 120px;
+    height: 80px;
+    border-radius: 6px;
+    border: 2px dashed var(--admin-gray-300);
+    background: var(--admin-gray-50);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: var(--admin-gray-500);
+}
+
+.doc-missing i {
+    font-size: 1.5rem;
+}
+
+.doc-missing span {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Owner Actions */
+.owner-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.inline-form {
+    margin: 0;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.action-btn i {
+    font-size: 1rem;
+}
+
+.action-btn.approve {
+    background: var(--admin-sage-primary);
+    color: white;
+    border-color: var(--admin-sage-primary);
+}
+
+.action-btn.approve:hover {
+    background: var(--admin-sage-dark);
+    border-color: var(--admin-sage-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(135, 169, 107, 0.3);
+}
+
+.action-btn.reject {
+    background: white;
+    color: #DC2626;
+    border-color: #DC2626;
+}
+
+.action-btn.reject:hover {
+    background: #DC2626;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+/* Empty State */
+.verify-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--admin-gray-200);
+}
+
+.verify-empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: var(--admin-sage-subtle);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.verify-empty-icon i {
+    font-size: 3rem;
+    color: var(--admin-sage-primary);
+}
+
+.verify-empty h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--admin-gray-900);
+    margin: 0 0 0.5rem 0;
+}
+
+.verify-empty p {
+    font-size: 1rem;
+    color: var(--admin-gray-600);
+    margin: 0 0 1.5rem 0;
+}
+
+.verify-btn-compact {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.verify-btn-compact.primary {
+    background: var(--admin-sage-primary);
+    color: white;
+    border-color: var(--admin-sage-primary);
+}
+
+.verify-btn-compact.primary:hover {
+    background: var(--admin-sage-dark);
+    border-color: var(--admin-sage-dark);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.verify-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid var(--admin-gray-300);
+    color: var(--admin-gray-700);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.verify-btn-icon:hover {
+    background: var(--admin-gray-50);
+    border-color: var(--admin-sage-primary);
+    color: var(--admin-sage-dark);
+}
+
+/* Image Modal */
+.verify-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.verify-modal.active {
+    display: flex;
+}
+
+.verify-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(8px);
+}
+
+.verify-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    z-index: 1;
+}
+
+.verify-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--admin-gray-200);
+}
+
+.verify-modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--admin-gray-900);
+}
+
+.verify-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--admin-gray-100);
+    color: var(--admin-gray-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.verify-modal-close:hover {
+    background: #DC2626;
+    color: white;
+    transform: scale(1.1);
+}
+
+.verify-modal-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow: auto;
+    background: var(--admin-gray-50);
+}
+
+.verify-modal-body img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@@media (max-width: 1024px) {
+    .owner-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .owner-actions {
+        width: 100%;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--admin-gray-200);
+    }
+    
+    .action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+@@media (max-width: 768px) {
+    .verify-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .verify-header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .verify-quick-stats {
+        flex: 1;
+        justify-content: space-around;
+    }
+    
+    .owner-info-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .owner-document {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    
+    .doc-thumbnail {
+        width: 100px;
+        height: 70px;
+    }
+}
+</style>
+
+<script>
+(function() {
+    'use strict';
+    
+    function openImageModal(imageUrl, ownerName) {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalTitle = document.getElementById('modalTitle');
+        
+        modalImage.src = imageUrl;
+        modalTitle.textContent = ownerName + ' - ID Document';
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeImageModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+        document.body.style.overflow = 'auto';
+    }
+    
+    // Make functions global
+    window.openImageModal = openImageModal;
+    window.closeImageModal = closeImageModal;
+    
+    // Close on ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImageModal();
+        }
+    });
+    
+    // Auto-dismiss success
+    setTimeout(function() {
+        const alert = document.querySelector('.verify-alert.success');
+        if (alert) {
+            alert.style.transition = 'opacity 0.5s, transform 0.5s';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-10px)';
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 5000);
+    
+    console.log('✅ Compact Owner Verification loaded -', @Model.TotalPending, 'pending verifications');
+})();
+</script>

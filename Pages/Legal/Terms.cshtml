@@ -1,0 +1,290 @@
+@page
+@model BiketaBai.Pages.Legal.TermsModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terms and Conditions - BiketaBai</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/premium-minimal.css" />
+    <style>
+        .legal-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .legal-header {
+            text-align: center;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #87A96B;
+            margin-bottom: 2rem;
+        }
+        .legal-section {
+            margin-bottom: 2rem;
+        }
+        .legal-section h2 {
+            color: #87A96B;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .legal-section h3 {
+            color: #6B8E5F;
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .effective-date {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
+        .highlight-box {
+            background: #E8F0E3;
+            border-left: 4px solid #87A96B;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="legal-container">
+        <div class="legal-header">
+            <h1><i class="bi bi-bicycle"></i> BiketaBai Terms and Conditions</h1>
+            <p class="effective-date">Effective Date: January 1, 2024 | Last Updated: @DateTime.Now.ToString("MMMM dd, yyyy")</p>
+        </div>
+
+        <div class="legal-section">
+            <h2>1. Agreement to Terms</h2>
+            <p>
+                By accessing or using BiketaBai ("Platform", "Service", "We", "Us"), you agree to be bound by these Terms and Conditions.
+                If you do not agree to these terms, please do not use our services.
+            </p>
+            <div class="highlight-box">
+                <strong><i class="bi bi-info-circle"></i> Important:</strong> BiketaBai is a peer-to-peer bike rental marketplace.
+                We connect bike owners with renters but are not a party to rental transactions.
+            </div>
+        </div>
+
+        <div class="legal-section">
+            <h2>2. User Accounts</h2>
+            <h3>2.1 Registration</h3>
+            <ul>
+                <li>You must be at least <strong>18 years old</strong> to use BiketaBai</li>
+                <li>You must provide accurate and complete information</li>
+                <li>You are responsible for maintaining account security</li>
+                <li>One person may not maintain more than one account</li>
+            </ul>
+
+            <h3>2.2 Account Verification</h3>
+            <ul>
+                <li><strong>All Users:</strong> Email verification required</li>
+                <li><strong>Bike Owners:</strong> Government-issued ID verification required</li>
+                <li>We reserve the right to verify identity at any time</li>
+            </ul>
+
+            <h3>2.3 Account Suspension/Termination</h3>
+            <p>We may suspend or terminate accounts for:</p>
+            <ul>
+                <li>Violation of these terms</li>
+                <li>Fraudulent activity</li>
+                <li>Harassment or inappropriate behavior</li>
+                <li>Damage to bikes without compensation</li>
+                <li>Multiple failed payments</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>3. For Bike Owners</h2>
+            <h3>3.1 Listing Requirements</h3>
+            <ul>
+                <li>You must own or have legal authority to rent the bike</li>
+                <li>Bikes must be in safe, working condition</li>
+                <li>Photos must accurately represent the bike</li>
+                <li>Descriptions must be truthful and complete</li>
+            </ul>
+
+            <h3>3.2 Owner Responsibilities</h3>
+            <ul>
+                <li>Maintain bikes in safe, rideable condition</li>
+                <li>Respond to rental requests within 24 hours</li>
+                <li>Be available for bike pickup/return</li>
+                <li>Report any damage or issues immediately</li>
+            </ul>
+
+            <h3>3.3 Prohibited Items</h3>
+            <p>You may not list:</p>
+            <ul>
+                <li>Stolen bikes</li>
+                <li>Bikes with known safety defects</li>
+                <li>Bikes that don't belong to you</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>4. For Renters</h2>
+            <h3>4.1 Rental Obligations</h3>
+            <ul>
+                <li>Inspect bike before accepting</li>
+                <li>Use bike responsibly and legally</li>
+                <li>Return bike on time and in same condition</li>
+                <li>Report any damage immediately</li>
+            </ul>
+
+            <h3>4.2 Prohibited Uses</h3>
+            <p>Renters may not:</p>
+            <ul>
+                <li>Sub-rent bikes to others</li>
+                <li>Use bikes for illegal activities</li>
+                <li>Modify or alter bikes</li>
+                <li>Use bikes for commercial purposes (unless agreed)</li>
+                <li>Exceed reasonable wear and tear</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>5. Payments and Fees</h2>
+            <h3>5.1 Platform Fees</h3>
+            <ul>
+                <li><strong>Service Fee:</strong> BiketaBai charges 20% of rental earnings from bike owners</li>
+                <li>Renters pay the full rental amount displayed</li>
+                <li>Owners receive 80% of rental earnings after the service fee</li>
+                <li>Fees are clearly displayed before booking</li>
+                <li>All prices are in Philippine Pesos (₱)</li>
+            </ul>
+
+            <h3>5.2 Payment Processing</h3>
+            <ul>
+                <li>Payments are processed through our wallet system</li>
+                <li>Funds are held until rental completion</li>
+                <li>Refunds processed within 5-7 business days</li>
+            </ul>
+
+            <h3>5.3 Cancellation Policy</h3>
+            <ul>
+                <li><strong>More than 24 hours before:</strong> Full refund</li>
+                <li><strong>Less than 24 hours:</strong> 50% refund</li>
+                <li><strong>No-show:</strong> No refund</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>6. Liability and Insurance</h2>
+            <div class="highlight-box">
+                <strong><i class="bi bi-exclamation-triangle"></i> Important Disclaimer:</strong>
+                BiketaBai is a marketplace platform. We are NOT responsible for:
+                <ul class="mt-2 mb-0">
+                    <li>Bike condition or safety</li>
+                    <li>Accidents or injuries during rentals</li>
+                    <li>Theft or damage to bikes</li>
+                    <li>Disputes between owners and renters</li>
+                </ul>
+            </div>
+
+            <h3>6.1 Renter Liability</h3>
+            <p>Renters are liable for:</p>
+            <ul>
+                <li>Any damage beyond normal wear and tear</li>
+                <li>Theft while bike is in their possession</li>
+                <li>Traffic violations or fines</li>
+                <li>Personal injuries (recommend personal insurance)</li>
+            </ul>
+
+            <h3>6.2 Owner Liability</h3>
+            <p>Owners are responsible for:</p>
+            <ul>
+                <li>Ensuring bikes are safe and roadworthy</li>
+                <li>Accurate bike descriptions</li>
+                <li>Obtaining their own insurance coverage (if desired)</li>
+            </ul>
+            
+            <h3>6.3 No Insurance Provided</h3>
+            <div class="highlight-box">
+                <strong><i class="bi bi-exclamation-triangle"></i> Important Notice:</strong>
+                BiketaBai does NOT provide insurance coverage for bikes, theft, damage, or injuries.
+                Both owners and renters are strongly encouraged to obtain their own insurance coverage.
+            </div>
+        </div>
+
+        <div class="legal-section">
+            <h2>7. Prohibited Conduct</h2>
+            <p>Users may not:</p>
+            <ul>
+                <li>Harass, threaten, or abuse other users</li>
+                <li>Post false or misleading information</li>
+                <li>Manipulate ratings or reviews</li>
+                <li>Attempt to bypass platform fees</li>
+                <li>Share contact information to avoid platform</li>
+                <li>Use automated systems to scrape data</li>
+                <li>Violate any laws or regulations</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>8. Intellectual Property</h2>
+            <ul>
+                <li>BiketaBai name, logo, and content are our property</li>
+                <li>Users retain rights to their photos and content</li>
+                <li>By uploading content, you grant us license to use it</li>
+                <li>Do not use copyrighted material without permission</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>9. Dispute Resolution</h2>
+            <h3>9.1 Between Users</h3>
+            <ul>
+                <li>Users should attempt to resolve disputes directly</li>
+                <li>BiketaBai may provide mediation support</li>
+                <li>Platform decision on disputes is final</li>
+            </ul>
+
+            <h3>9.2 With BiketaBai</h3>
+            <ul>
+                <li>Disputes governed by Philippine law</li>
+                <li>Venue: Courts of Cebu City, Philippines</li>
+                <li>Arbitration may be required for certain disputes</li>
+            </ul>
+        </div>
+
+        <div class="legal-section">
+            <h2>10. Modifications to Terms</h2>
+            <p>
+                We reserve the right to modify these terms at any time. Changes will be posted on this page
+                with an updated "Last Updated" date. Continued use after changes constitutes acceptance.
+            </p>
+        </div>
+
+        <div class="legal-section">
+            <h2>11. Contact Information</h2>
+            <p>
+                For questions about these Terms and Conditions, please contact us at:<br>
+                <strong>Email:</strong> legal@@biketabai.org<br>
+                <strong>Address:</strong> BiketaBai Headquarters, Cebu City, Philippines<br>
+                <strong>Phone:</strong> +639163436964
+            </p>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Go Back
+            </a>
+            <a href="/Account/Register" class="btn" style="background: #87A96B; color: white;">
+                <i class="bi bi-check-circle"></i> Accept & Register
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

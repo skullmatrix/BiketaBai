@@ -87,6 +87,18 @@ public class User
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("last_login_at")]
+    public DateTime? LastLoginAt { get; set; }
+
+    [Column("login_count")]
+    public int LoginCount { get; set; } = 0;
+
     // Navigation properties
     public virtual ICollection<Bike> Bikes { get; set; } = new List<Bike>();
     public virtual ICollection<Booking> BookingsAsRenter { get; set; } = new List<Booking>();

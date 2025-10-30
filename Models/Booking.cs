@@ -69,6 +69,25 @@ public class Booking
     [Column("cancelled_at")]
     public DateTime? CancelledAt { get; set; }
 
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("owner_confirmed_at")]
+    public DateTime? OwnerConfirmedAt { get; set; }
+
+    [Column("renter_confirmed_pickup_at")]
+    public DateTime? RenterConfirmedPickupAt { get; set; }
+
+    [Column("renter_confirmed_return_at")]
+    public DateTime? RenterConfirmedReturnAt { get; set; }
+
+    [MaxLength(500)]
+    [Column("special_instructions")]
+    public string? SpecialInstructions { get; set; }
+
     // Navigation properties
     [ForeignKey("RenterId")]
     public virtual User Renter { get; set; } = null!;

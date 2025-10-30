@@ -171,7 +171,7 @@
 
 .auth-input {
     width: 100%;
-    padding: 0.875rem 1rem 0.875rem 3.25rem;
+    padding: 0.875rem 1rem 0.875rem 3.5rem !important;
     border: 1.5px solid #e8e8e8;
     border-radius: 0.75rem;
     font-size: 0.9375rem;
@@ -203,16 +203,16 @@
 
 .auth-input-icon {
     position: absolute;
-    left: 1.125rem;
+    left: 1.25rem !important;
     top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.125rem;
+    transform: translateY(-50%) !important;
+    font-size: 1rem !important;
     color: #6a6a6a;
     transition: color 0.3s ease;
     pointer-events: none;
     z-index: 1;
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 1rem;
+    height: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -236,7 +236,7 @@
 /* Password Toggle */
 .auth-password-toggle {
     position: absolute;
-    right: 1rem;
+    right: 1rem !important;
     top: 50%;
     transform: translateY(-50%);
     background: none;
@@ -245,11 +245,21 @@
     font-size: 1.125rem;
     cursor: pointer;
     padding: 0.25rem;
-    transition: color 0.3s ease;
+    transition: color 0.2s ease;
+    z-index: 10;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .auth-password-toggle:hover {
     color: #87A96B;
+}
+
+.auth-password-toggle i {
+    transition: none;
 }
 
 /* Checkbox */
@@ -581,9 +591,21 @@
     border-radius: 0.75rem;
     padding: 2rem;
     text-align: center;
-    cursor: pointer;
+    cursor: pointer !important;
     transition: all 0.3s ease;
     margin-bottom: 1rem;
+    position: relative;
+    user-select: none;
+    pointer-events: auto !important;
+}
+
+.auth-file-upload * {
+    pointer-events: none !important;
+    cursor: pointer !important;
+}
+
+.auth-file-upload:active {
+    transform: scale(0.98);
 }
 
 .auth-file-upload:hover {
@@ -591,14 +613,40 @@
     background: #E8F0E3;
 }
 
-.auth-file-upload input {
-    display: none;
+.auth-file-upload.drag-over {
+    border-color: #87A96B;
+    background: linear-gradient(135deg, #E8F0E3 0%, #A4C49A 100%);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.3);
+}
+
+.auth-file-upload.drag-over .auth-upload-icon {
+    animation: bounce 0.6s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.auth-file-upload input[type="file"] {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
 }
 
 .auth-upload-icon {
     font-size: 3rem;
     color: #87A96B;
     margin-bottom: 1rem;
+    transition: all 0.3s ease;
 }
 
 .auth-upload-text {
@@ -1021,6 +1069,13 @@
     font-size: 1.125rem;
     opacity: 0;
     transition: opacity 0.3s ease;
+    z-index: 5;
+}
+
+/* Adjust validation icon position when password toggle is present */
+.auth-input-wrapper:has(.auth-password-toggle) .validation-icon,
+.auth-input-wrapper.has-toggle .validation-icon {
+    right: 3.5rem !important; /* Move left to avoid password toggle button */
 }
 
 .auth-input-wrapper.has-error .validation-icon.error {
@@ -1031,6 +1086,32 @@
 .auth-input-wrapper.has-success .validation-icon.success {
     opacity: 1;
     color: #87A96B;
+}
+
+/* Checking State (Email validation loading) */
+.auth-input-wrapper.checking::after {
+    content: '';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid #87A96B;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.6s linear infinite;
+    z-index: 2;
+}
+
+@keyframes spin {
+    to {
+        transform: translateY(-50%) rotate(360deg);
+    }
+}
+
+.auth-input-wrapper.checking .validation-icon {
+    opacity: 0;
 }
 
 /* Character Counter */
@@ -1044,5 +1125,154 @@
 .character-counter.limit-reached {
     color: #EF4444;
     font-weight: 600;
+}
+
+/* ID Upload Container */
+.id-upload-container {
+    padding: 2rem 1.5rem;
+    background: linear-gradient(135deg, #f8faf7 0%, #ffffff 100%);
+    border: 2px dashed #C5D9B8;
+    border-radius: 1rem;
+    text-align: center;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+}
+
+.id-upload-container:hover {
+    border-color: #87A96B;
+    background: linear-gradient(135deg, #f0f5ec 0%, #fafbf9 100%);
+}
+
+.id-upload-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #87A96B 0%, #6B8E5F 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.2);
+}
+
+.id-upload-icon i {
+    font-size: 2rem;
+    color: white;
+}
+
+.id-upload-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.id-upload-subtitle {
+    font-size: 0.875rem;
+    color: #6a6a6a;
+    margin-bottom: 1.5rem;
+}
+
+.id-upload-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.id-upload-btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 1rem 1.5rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.75rem;
+    background: white;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.id-upload-btn i {
+    font-size: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.id-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.id-upload-btn:active {
+    transform: translateY(0);
+}
+
+.id-upload-btn.gallery-btn {
+    border-color: #87A96B;
+    color: #6B8E5F;
+}
+
+.id-upload-btn.gallery-btn:hover {
+    background: linear-gradient(135deg, #87A96B 0%, #6B8E5F 100%);
+    color: white;
+    border-color: #87A96B;
+    box-shadow: 0 6px 16px rgba(135, 169, 107, 0.3);
+}
+
+.id-upload-btn.gallery-btn:hover i {
+    transform: scale(1.1);
+}
+
+.id-upload-btn.camera-btn {
+    border-color: #3B82F6;
+    color: #1E40AF;
+}
+
+.id-upload-btn.camera-btn:hover {
+    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+    color: white;
+    border-color: #3B82F6;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.id-upload-btn.camera-btn:hover i {
+    transform: scale(1.1);
+}
+
+.id-upload-hint {
+    font-size: 0.8125rem;
+    color: #6a6a6a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.id-upload-hint i {
+    color: #87A96B;
+}
+
+/* Responsive ID Upload */
+@media (max-width: 576px) {
+    .id-upload-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .id-upload-btn {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .id-upload-container {
+        padding: 1.5rem 1rem;
+    }
 }
 

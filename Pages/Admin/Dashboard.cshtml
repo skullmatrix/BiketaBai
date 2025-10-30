@@ -6,249 +6,730 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<div class="container-fluid my-5">
-    <h2 class="text-eco-green mb-4"><i class="bi bi-speedometer"></i> Admin Dashboard</h2>
+<link rel="stylesheet" href="~/css/admin-dashboard.css" />
 
-    <!-- Key Metrics -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="stat-card green">
-                <h3>@Model.TotalUsers</h3>
-                <p>Total Users</p>
-                <small>@Model.RentersCount Renters | @Model.OwnersCount Owners</small>
+<div class="admin-dashboard-wrapper">
+    <div class="admin-dashboard-container">
+        
+        <!-- Dashboard Header -->
+        <div class="admin-dashboard-header">
+            <div class="admin-dashboard-title">
+                <i class="bi bi-speedometer2"></i>
+                <h1>Admin Dashboard</h1>
+            </div>
+            <div class="admin-dashboard-actions">
+                <button class="admin-refresh-btn" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <span>Refresh</span>
+                </button>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card blue">
-                <h3>@Model.TotalBikes</h3>
-                <p>Total Bikes Listed</p>
-                <small>@Model.AvailableBikes Available</small>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card orange">
-                <h3>@Model.TotalBookings</h3>
-                <p>Total Bookings</p>
-                <small>@Model.ActiveBookings Active | @Model.CompletedBookings Completed</small>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card">
-                <h3>₱@Model.TotalRevenue.ToString("F2")</h3>
-                <p>Platform Revenue</p>
-                <small>Service Fees Collected</small>
-            </div>
-        </div>
-    </div>
 
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-eco">
-                <div class="card-body text-center">
-                    <h5>Total Wallet Balance</h5>
-                    <h3 class="text-eco-green">₱@Model.TotalWalletBalance.ToString("F2")</h3>
+        <!-- Primary Stats Grid -->
+        <div class="admin-stats-grid">
+            <!-- Total Users -->
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalUsers</div>
+                        <div class="admin-stat-label">Total Users</div>
+                    </div>
+                    <div class="admin-stat-icon sage">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    @Model.RentersCount Renters • @Model.OwnersCount Owners
+                </div>
+            </div>
+
+            <!-- Total Bikes -->
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalBikes</div>
+                        <div class="admin-stat-label">Total Bikes</div>
+                    </div>
+                    <div class="admin-stat-icon blue">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    @Model.AvailableBikes Available • @(Model.TotalBikes - Model.AvailableBikes) Rented
+                </div>
+            </div>
+
+            <!-- Total Bookings -->
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalBookings</div>
+                        <div class="admin-stat-label">Total Bookings</div>
+                    </div>
+                    <div class="admin-stat-icon amber">
+                        <i class="bi bi-calendar-check-fill"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    @Model.ActiveBookings Active • @Model.CompletedBookings Completed
+                </div>
+            </div>
+
+            <!-- Platform Revenue -->
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">₱@Model.TotalRevenue.ToString("N0")</div>
+                        <div class="admin-stat-label">Platform Revenue</div>
+                    </div>
+                    <div class="admin-stat-icon emerald">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    Service Fees Collected
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-eco">
-                <div class="card-body text-center">
-                    <h5>Today's Bookings</h5>
-                    <h3 class="text-eco-green">@Model.TodayBookings</h3>
+
+        <!-- Secondary Stats - Compact Row -->
+        <div class="admin-secondary-stats">
+            <!-- Wallet Balance -->
+            <div class="admin-mini-stat">
+                <div class="admin-mini-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="admin-mini-content">
+                    <h4>₱@Model.TotalWalletBalance.ToString("N0")</h4>
+                    <p>Total Wallet Balance</p>
+                </div>
+            </div>
+
+            <!-- Today's Bookings -->
+            <div class="admin-mini-stat">
+                <div class="admin-mini-icon">
+                    <i class="bi bi-calendar-day"></i>
+                </div>
+                <div class="admin-mini-content">
+                    <h4>@Model.TodayBookings</h4>
+                    <p>Today's Bookings</p>
+                </div>
+            </div>
+
+            <!-- Week Bookings -->
+            <div class="admin-mini-stat">
+                <div class="admin-mini-icon">
+                    <i class="bi bi-calendar-week"></i>
+                </div>
+                <div class="admin-mini-content">
+                    <h4>@Model.WeekBookings</h4>
+                    <p>This Week</p>
+                </div>
+            </div>
+
+            <!-- CO2 Saved -->
+            <div class="admin-mini-stat">
+                <div class="admin-mini-icon">
+                    <i class="bi bi-tree"></i>
+                </div>
+                <div class="admin-mini-content">
+                    <h4>@Model.TotalCO2Saved.ToString("F1") kg</h4>
+                    <p>CO₂ Saved</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-eco">
-                <div class="card-body text-center">
-                    <h5>This Week</h5>
-                    <h3 class="text-eco-green">@Model.WeekBookings</h3>
+
+        <!-- Quick Actions Panel -->
+        <div class="admin-section" style="margin-bottom: var(--admin-space-xl);">
+            <div class="admin-section-header">
+                <div class="admin-section-title">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <h2>Quick Actions</h2>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="eco-impact">
-                <h5>CO₂ Saved</h5>
-                <h3>@Model.TotalCO2Saved.ToString("F1") kg</h3>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Users -->
-    <div class="card shadow-eco mb-4">
-        <div class="card-header bg-eco-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-people"></i> Recent Users</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Type</th>
-                            <th>Joined</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var user in Model.RecentUsers)
-                        {
-                            <tr>
-                                <td>@user.UserId</td>
-                                <td>@user.FullName</td>
-                                <td>@user.Email</td>
-                                <td>
-                                    @if (user.IsRenter)
-                                    {
-                                        <span class="badge bg-primary">Renter</span>
-                                    }
-                                    @if (user.IsOwner)
-                                    {
-                                        <span class="badge bg-success">Owner</span>
-                                    }
-                                    @if (user.IsAdmin)
-                                    {
-                                        <span class="badge bg-danger">Admin</span>
-                                    }
-                                </td>
-                                <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
-                                <td>
-                                    @if (user.IsSuspended)
-                                    {
-                                        <span class="badge bg-danger">Suspended</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">Active</span>
-                                    }
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-secondary">View</button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Bookings -->
-    <div class="card shadow-eco mb-4">
-        <div class="card-header bg-eco-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Recent Bookings</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Renter</th>
-                            <th>Bike</th>
-                            <th>Owner</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var booking in Model.RecentBookings)
-                        {
-                            <tr>
-                                <td>@booking.BookingId</td>
-                                <td>@booking.Renter.FullName</td>
-                                <td>@booking.Bike.Brand @booking.Bike.Model</td>
-                                <td>@booking.Bike.Owner.FullName</td>
-                                <td>₱@booking.TotalAmount.ToString("F2")</td>
-                                <td>
-                                    @switch (booking.BookingStatusId)
-                                    {
-                                        case 1:
-                                            <span class="badge bg-warning">Pending</span>
-                                            break;
-                                        case 2:
-                                            <span class="badge bg-primary">Active</span>
-                                            break;
-                                        case 3:
-                                            <span class="badge bg-success">Completed</span>
-                                            break;
-                                        case 4:
-                                            <span class="badge bg-danger">Cancelled</span>
-                                            break;
-                                    }
-                                </td>
-                                <td>@booking.CreatedAt.ToString("MMM dd, yyyy")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top Bikes -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-eco mb-4">
-                <div class="card-header bg-eco-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Earning Bikes</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Bike</th>
-                                <th>Owner</th>
-                                <th class="text-end">Earnings</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var bike in Model.TopBikes.Take(5))
+            <div class="admin-section-body" style="padding: var(--admin-space-xl);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--admin-space-md);">
+                    
+                    <!-- Manage Users -->
+                    <a href="/Admin/ManageUsers" class="admin-quick-action">
+                        <div class="admin-quick-action-inner">
+                            <div class="admin-quick-action-icon" style="background: var(--admin-sage-subtle);">
+                                <i class="bi bi-people" style="font-size: 1.75rem; color: var(--admin-sage-dark);"></i>
+                            </div>
+                            <div class="admin-quick-action-title">Manage Users</div>
+                            <small class="admin-quick-action-meta">@Model.TotalUsers users</small>
+                        </div>
+                    </a>
+                    
+                    <!-- Manage Listings -->
+                    <a href="/Admin/ManageListings" class="admin-quick-action">
+                        <div class="admin-quick-action-inner">
+                            <div class="admin-quick-action-icon" style="background: #DBEAFE;">
+                                <i class="bi bi-bicycle" style="font-size: 1.75rem; color: #1E40AF;"></i>
+                            </div>
+                            <div class="admin-quick-action-title">Manage Listings</div>
+                            <small class="admin-quick-action-meta">@Model.TotalBikes bikes</small>
+                        </div>
+                    </a>
+                    
+                    <!-- Verify Owners -->
+                    <a href="/Admin/VerifyOwners" class="admin-quick-action" style="position: relative;">
+                        <div class="admin-quick-action-inner">
+                            @if (Model.PendingOwnerVerifications > 0)
                             {
-                                <tr>
-                                    <td>@bike.Brand @bike.Model</td>
-                                    <td>@bike.Owner.FullName</td>
-                                    <td class="text-end text-success">₱@(Model.BikeEarnings.ContainsKey(bike.BikeId) ? Model.BikeEarnings[bike.BikeId].ToString("F2") : "0.00")</td>
-                                </tr>
+                                <span class="admin-quick-action-badge">
+                                    @Model.PendingOwnerVerifications
+                                </span>
                             }
-                        </tbody>
-                    </table>
+                            <div class="admin-quick-action-icon" style="background: #FEF3C7;">
+                                <i class="bi bi-shield-check" style="font-size: 1.75rem; color: #D97706;"></i>
+                            </div>
+                            <div class="admin-quick-action-title">Verify Owners</div>
+                            <small class="admin-quick-action-meta">@Model.PendingOwnerVerifications pending</small>
+                        </div>
+                    </a>
+                    
+                    <!-- Reports -->
+                    <a href="/Admin/Reports" class="admin-quick-action">
+                        <div class="admin-quick-action-inner">
+                            <div class="admin-quick-action-icon" style="background: #FEE2E2;">
+                                <i class="bi bi-flag" style="font-size: 1.75rem; color: #DC2626;"></i>
+                            </div>
+                            <div class="admin-quick-action-title">Reports</div>
+                            <small class="admin-quick-action-meta">View all</small>
+                        </div>
+                    </a>
+                    
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card shadow-eco mb-4">
-                <div class="card-header bg-eco-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-bicycle"></i> Bike Type Distribution</h5>
+        <!-- Pending Verifications Alert (if any) -->
+        @if (Model.PendingVerifications.Any())
+        {
+            <div class="admin-section" style="margin-bottom: var(--admin-space-xl); border: 2px solid var(--admin-warning);">
+                <div class="admin-section-header" style="background: var(--admin-warning); color: white;">
+                    <div class="admin-section-title" style="color: white;">
+                        <i class="bi bi-exclamation-triangle" style="color: white;"></i>
+                        <h2 style="color: white; margin: 0;">Pending Owner Verifications</h2>
+                    </div>
+                    <span class="admin-badge" style="background: white; color: var(--admin-warning);">@Model.PendingOwnerVerifications</span>
                 </div>
-                <div class="card-body">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th class="text-end">Count</th>
-                                <th class="text-end">Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var stat in Model.BikeTypeStats)
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    @foreach (var user in Model.PendingVerifications)
+                    {
+                        <div style="padding: var(--admin-space-md) 0; border-bottom: 1px solid var(--admin-gray-200); display: flex; justify-content: space-between; align-items: center; gap: var(--admin-space-md);">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">@user.FullName</div>
+                                <div style="font-size: 0.8125rem; color: var(--admin-gray-600);">@user.Email</div>
+                                <div style="font-size: 0.75rem; color: var(--admin-gray-600); margin-top: 0.25rem;">
+                                    <i class="bi bi-clock"></i> Registered @user.CreatedAt.ToString("MMM dd, yyyy")
+                                </div>
+                            </div>
+                                    <a href="/Admin/VerifyOwners" class="admin-btn admin-btn-primary admin-btn-sm" style="flex-shrink: 0;">
+                                        <i class="bi bi-eye"></i> Review
+                                    </a>
+                        </div>
+                    }
+                            @if (Model.PendingOwnerVerifications > 5)
                             {
-                                <tr>
-                                    <td>@stat.TypeName</td>
-                                    <td class="text-end">@stat.Count</td>
-                                    <td class="text-end">@(((decimal)stat.Count / Model.TotalBikes * 100).ToString("F1"))%</td>
-                                </tr>
+                                <div style="text-align: center; margin-top: var(--admin-space-md);">
+                                    <a href="/Admin/VerifyOwners" class="admin-btn admin-btn-outline">
+                                        View All (@Model.PendingOwnerVerifications)
+                                    </a>
+                                </div>
                             }
-                        </tbody>
-                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Three Column Grid: Recent Activity -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: var(--admin-space-xl); margin-bottom: var(--admin-space-xl);">
+            
+            <!-- Recent Users -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-person-plus"></i>
+                        <h2>Recent Users</h2>
+                    </div>
+                    <a href="/Admin/ManageUsers" class="admin-section-action">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.RecentUsers.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <tbody>
+                                    @foreach (var user in Model.RecentUsers.Take(5))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="admin-user-cell">
+                                                    <div class="admin-user-avatar">
+                                                        @user.FullName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div class="admin-user-info">
+                                                        <div class="admin-user-name">
+                                                            @user.FullName
+                                                            @if (user.IsEmailVerified)
+                                                            {
+                                                                <i class="bi bi-patch-check-fill" style="color: var(--admin-success); font-size: 0.75rem;"></i>
+                                                            }
+                                                        </div>
+                                                        <div class="admin-user-email">@user.Email</div>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top: 0.375rem; display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                                    @Html.Raw(Model.GetRoleBadge(user))
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No users found</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Recent Bookings -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-calendar-check"></i>
+                        <h2>Recent Bookings</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.RecentBookings.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <tbody>
+                                    @foreach (var booking in Model.RecentBookings.Take(5))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div style="margin-bottom: 0.25rem;">
+                                                    <strong>@booking.Bike.Brand @booking.Bike.Model</strong>
+                                                </div>
+                                                <div style="font-size: 0.8125rem; color: var(--admin-gray-600); margin-bottom: 0.375rem;">
+                                                    <i class="bi bi-person"></i> @booking.Renter.FullName
+                                                </div>
+                                                <div style="display: flex; gap: var(--admin-space-sm); align-items: center; flex-wrap: wrap;">
+                                                    <span class="admin-badge @(booking.BookingStatus.StatusName == "Completed" ? "emerald" : booking.BookingStatus.StatusName == "Active" ? "blue" : booking.BookingStatus.StatusName == "Cancelled" ? "red" : "amber")">
+                                                        @booking.BookingStatus.StatusName
+                                                    </span>
+                                                    <strong style="color: var(--admin-sage-dark);">₱@booking.TotalAmount.ToString("N2")</strong>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No bookings found</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Recent Bikes -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-bicycle"></i>
+                        <h2>Recent Bikes</h2>
+                    </div>
+                    <a href="/Admin/ManageListings" class="admin-section-action">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.RecentBikes.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <tbody>
+                                    @foreach (var bike in Model.RecentBikes)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div style="margin-bottom: 0.25rem;">
+                                                    <strong>@bike.Brand @bike.Model</strong>
+                                                </div>
+                                                <div style="font-size: 0.8125rem; color: var(--admin-gray-600); margin-bottom: 0.375rem;">
+                                                    <i class="bi bi-person"></i> @bike.Owner.FullName
+                                                </div>
+                                                <strong style="color: var(--admin-sage-dark);">₱@bike.HourlyRate/hr</strong>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No bikes found</p>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
+
+        <!-- Two Column Layout: Top Bikes & Bike Distribution -->
+        <div class="admin-grid-2col">
+            <!-- Top Earning Bikes -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-trophy"></i>
+                        <h2>Top Earning Bikes</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.TopBikes.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Bike</th>
+                                        <th>Owner</th>
+                                        <th class="text-end">Earnings</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int rank = 1;
+                                    }
+                                    @foreach (var bike in Model.TopBikes.Take(5))
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (rank == 1)
+                                                {
+                                                    <span class="admin-badge amber">🥇 @rank</span>
+                                                }
+                                                else if (rank == 2)
+                                                {
+                                                    <span class="admin-badge gray">🥈 @rank</span>
+                                                }
+                                                else if (rank == 3)
+                                                {
+                                                    <span class="admin-badge amber" style="background: #D4A574; color: white;">🥉 @rank</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="admin-badge gray">@rank</span>
+                                                }
+                                            </td>
+                                            <td><strong>@bike.Brand @bike.Model</strong></td>
+                                            <td>@bike.Owner.FullName</td>
+                                            <td class="text-end">
+                                                <strong style="color: var(--admin-sage-dark);">
+                                                    ₱@(Model.BikeEarnings.ContainsKey(bike.BikeId) ? Model.BikeEarnings[bike.BikeId].ToString("N2") : "0.00")
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                        rank++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No earnings data available</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Bike Type Distribution -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-pie-chart"></i>
+                        <h2>Bike Type Distribution</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.BikeTypeStats.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th class="text-end">Count</th>
+                                        <th class="text-end">Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var stat in Model.BikeTypeStats)
+                                    {
+                                        var percentage = Model.TotalBikes > 0 ? ((decimal)stat.Count / Model.TotalBikes * 100) : 0;
+                                        <tr>
+                                            <td><strong>@stat.TypeName</strong></td>
+                                            <td class="text-end">@stat.Count</td>
+                                            <td class="text-end">
+                                                <span class="admin-badge sage">@percentage.ToString("F1")%</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No bike types available</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Health Summary -->
+        <div class="admin-section">
+            <div class="admin-section-header">
+                <div class="admin-section-title">
+                    <i class="bi bi-heart-pulse"></i>
+                    <h2>Platform Health</h2>
+                </div>
+            </div>
+            <div class="admin-section-body" style="padding: var(--admin-space-xl);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--admin-space-xl); text-align: center;">
+                    <div>
+                        <i class="bi bi-check-circle-fill" style="font-size: 2.5rem; color: var(--admin-success);"></i>
+                        <h3 style="margin: var(--admin-space-md) 0 var(--admin-space-xs) 0; font-size: 1.75rem; font-weight: 700;">
+                            @((Model.ActiveBookings * 100.0 / Math.Max(Model.TotalBikes, 1)).ToString("F1"))%
+                        </h3>
+                        <p style="color: var(--admin-gray-600); margin: 0;">Bike Utilization Rate</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-graph-up-arrow" style="font-size: 2.5rem; color: var(--admin-info);"></i>
+                        <h3 style="margin: var(--admin-space-md) 0 var(--admin-space-xs) 0; font-size: 1.75rem; font-weight: 700;">
+                            @((Model.CompletedBookings * 100.0 / Math.Max(Model.TotalUsers, 1)).ToString("F1"))%
+                        </h3>
+                        <p style="color: var(--admin-gray-600); margin: 0;">User Engagement</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-currency-dollar" style="font-size: 2.5rem; color: var(--admin-sage-primary);"></i>
+                        <h3 style="margin: var(--admin-space-md) 0 var(--admin-space-xs) 0; font-size: 1.75rem; font-weight: 700;">
+                            ₱@(Model.CompletedBookings > 0 ? (Model.TotalRevenue / Model.CompletedBookings).ToString("N2") : "0.00")
+                        </h3>
+                        <p style="color: var(--admin-gray-600); margin: 0;">Avg. Revenue per Booking</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
+<style>
+    .text-end {
+        text-align: right;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Admin Dashboard Enhanced Functionality
+        (function() {
+            'use strict';
+            
+            // Smooth fade-in animations on load
+            document.addEventListener('DOMContentLoaded', function() {
+                const elements = document.querySelectorAll('.admin-stat-card, .admin-mini-stat, .admin-section');
+                elements.forEach(function(el, index) {
+                    el.style.opacity = '0';
+                    setTimeout(function() {
+                        el.style.transition = 'opacity 0.5s ease-in-out';
+                        el.style.opacity = '1';
+                    }, index * 50);
+                });
+            });
+            
+            // Enhanced Refresh Button
+            const refreshBtn = document.querySelector('.admin-refresh-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const icon = this.querySelector('i');
+                    
+                    // Add spinning animation
+                    icon.style.transition = 'transform 0.6s ease-in-out';
+                    icon.style.transform = 'rotate(360deg)';
+                    
+                    // Show loading state
+                    this.disabled = true;
+                    this.style.opacity = '0.7';
+                    
+                    // Reload after animation
+                    setTimeout(function() {
+                        location.reload();
+                    }, 600);
+                });
+            }
+            
+            // Add hover effect to stat cards
+            const statCards = document.querySelectorAll('.admin-stat-card');
+            statCards.forEach(function(card) {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+            
+            // Add click animation to action buttons
+            const actionButtons = document.querySelectorAll('.admin-btn');
+            actionButtons.forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    // Create ripple effect
+                    const ripple = document.createElement('span');
+                    ripple.classList.add('ripple-effect');
+                    this.appendChild(ripple);
+                    
+                    setTimeout(function() {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+            
+            // Auto-update timestamp (if you want to show last updated time)
+            function updateLastRefreshTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                });
+                
+                // You can add a timestamp element to show when data was last refreshed
+                const timestampEl = document.querySelector('.last-refresh-time');
+                if (timestampEl) {
+                    timestampEl.textContent = 'Last updated: ' + timeString;
+                }
+            }
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + R to refresh (in addition to default)
+                if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                    e.preventDefault();
+                    if (refreshBtn) {
+                        refreshBtn.click();
+                    }
+                }
+                
+                // Escape key to clear any active modals or alerts
+                if (e.key === 'Escape') {
+                    // Close any open modals if you add them later
+                }
+            });
+            
+            // Smooth scroll for internal links
+            document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Add loading state for page navigation
+            document.querySelectorAll('.admin-quick-action, .admin-section-action').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    // Add loading indicator (optional)
+                    const icon = this.querySelector('i');
+                    if (icon && !this.hasAttribute('data-no-loading')) {
+                        icon.style.animation = 'spin 0.5s linear';
+                    }
+                });
+            });
+            
+            // Enhanced table row interactions
+            const tableRows = document.querySelectorAll('.admin-table tbody tr');
+            tableRows.forEach(function(row) {
+                row.style.cursor = 'pointer';
+                
+                row.addEventListener('click', function(e) {
+                    // Don't trigger if clicking a button or link
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
+                        e.target.closest('a') || e.target.closest('button')) {
+                        return;
+                    }
+                    
+                    // Add highlight effect
+                    this.style.background = 'var(--admin-sage-subtle)';
+                    setTimeout(() => {
+                        this.style.background = '';
+                    }, 300);
+                });
+            });
+            
+            // Console log for debugging (remove in production)
+            console.log('✅ Admin Dashboard initialized successfully');
+            console.log('📊 Total Users: @Model.TotalUsers');
+            console.log('🚲 Total Bikes: @Model.TotalBikes');
+            console.log('📅 Total Bookings: @Model.TotalBookings');
+            console.log('⚠️ Pending Verifications: @Model.PendingOwnerVerifications');
+            
+        })();
+    </script>
+    
+    <style>
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .ripple-effect {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(135, 169, 107, 0.3);
+            transform: scale(0);
+            animation: ripple-animation 0.6s ease-out;
+            pointer-events: none;
+        }
+        
+        @@keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+}

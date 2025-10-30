@@ -45,11 +45,6 @@ public class BrowseModel : PageModel
             .AsQueryable();
 
         // Apply filters
-        if (!string.IsNullOrEmpty(location))
-        {
-            query = query.Where(b => b.Location.Contains(location));
-        }
-
         if (bikeTypeId.HasValue)
         {
             query = query.Where(b => b.BikeTypeId == bikeTypeId.Value);

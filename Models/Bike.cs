@@ -28,19 +28,11 @@ public class Bike
     [Column("model")]
     public string Model { get; set; } = string.Empty;
 
-    [Column("mileage")]
-    public decimal Mileage { get; set; } = 0;
+    [Column("view_count")]
+    public int ViewCount { get; set; } = 0;
 
-    [Required]
-    [MaxLength(255)]
-    [Column("location")]
-    public string Location { get; set; } = string.Empty;
-
-    [Column("latitude")]
-    public decimal? Latitude { get; set; }
-
-    [Column("longitude")]
-    public decimal? Longitude { get; set; }
+    [Column("booking_count")]
+    public int BookingCount { get; set; } = 0;
 
     [Column("description", TypeName = "text")]
     public string? Description { get; set; }
@@ -60,6 +52,16 @@ public class Bike
 
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [MaxLength(100)]
+    [Column("deleted_by")]
+    public string? DeletedBy { get; set; }
 
     // Navigation properties
     [ForeignKey("OwnerId")]

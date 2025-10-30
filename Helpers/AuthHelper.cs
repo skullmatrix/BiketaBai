@@ -18,6 +18,20 @@ public static class AuthHelper
             new Claim("IsAdmin", isAdmin.ToString())
         };
 
+        // Add role claims for ASP.NET Core authorization
+        if (isAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
+        if (isOwner)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Owner"));
+        }
+        if (isRenter)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Renter"));
+        }
+
         var claimsIdentity = new ClaimsIdentity(claims, "BiketaBaiAuth");
         var authProperties = new AuthenticationProperties
         {
@@ -59,6 +73,21 @@ public static class AuthHelper
     {
         var claim = user.FindFirst("IsAdmin");
         return claim != null && bool.TryParse(claim.Value, out bool isAdmin) && isAdmin;
+    }
+
+    public static string? GetUserEmail(ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.Email)?.Value;
+    }
+
+    public static string? GetUserName(ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.Name)?.Value;
+    }
+
+    public static string? GetUserAddress(ClaimsPrincipal user)
+    {
+        return user.FindFirst("Address")?.Value;
     }
 }
 

@@ -149,7 +149,7 @@ public class RegisterModel : PageModel
         // Generate verification token
         var verificationToken = Guid.NewGuid().ToString("N");
         
-        // Create user (NOT verified yet)
+        // Create user (requires email verification)
         var user = new User
         {
             FullName = Input.FullName,
@@ -159,12 +159,12 @@ public class RegisterModel : PageModel
             PasswordHash = PasswordHelper.HashPassword(Input.Password),
             IsRenter = Input.IsRenter,
             IsOwner = Input.IsOwner,
-            IsAdmin = false,
-            IsEmailVerified = false, // Not verified yet
+            IsAdmin = false, // Regular users are not admin
+            IsEmailVerified = false, // Requires email verification
             EmailVerificationToken = verificationToken,
-            EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24), // 24 hour expiry
+            EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24),
             IdDocumentUrl = idDocumentPath,
-            IsVerifiedOwner = false, // Owner verification pending
+            IsVerifiedOwner = !Input.IsOwner, // Non-owners auto-verified, owners need verification
             VerificationStatus = Input.IsOwner ? "Pending" : "N/A",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

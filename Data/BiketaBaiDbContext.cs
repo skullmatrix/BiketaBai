@@ -40,18 +40,6 @@ public class BiketaBaiDbContext : DbContext
             .Property(b => b.DailyRate)
             .HasPrecision(10, 2);
 
-        modelBuilder.Entity<Bike>()
-            .Property(b => b.Mileage)
-            .HasPrecision(10, 2);
-
-        modelBuilder.Entity<Bike>()
-            .Property(b => b.Latitude)
-            .HasPrecision(10, 7);
-
-        modelBuilder.Entity<Bike>()
-            .Property(b => b.Longitude)
-            .HasPrecision(10, 7);
-
         modelBuilder.Entity<Booking>()
             .Property(b => b.RentalHours)
             .HasPrecision(10, 2);
@@ -187,6 +175,48 @@ public class BiketaBaiDbContext : DbContext
 
         modelBuilder.Entity<Notification>()
             .HasIndex(n => new { n.UserId, n.IsRead });
+
+        // Add indexes for soft delete fields
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.IsDeleted);
+
+        modelBuilder.Entity<Bike>()
+            .HasIndex(b => b.IsDeleted);
+
+        modelBuilder.Entity<Booking>()
+            .HasIndex(b => b.IsDeleted);
+
+        // Add performance indexes (non-conflicting only)
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.IsEmailVerified);
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.LastLoginAt);
+
+        modelBuilder.Entity<Bike>()
+            .HasIndex(b => b.ViewCount);
+
+        modelBuilder.Entity<Bike>()
+            .HasIndex(b => b.BookingCount);
+
+        modelBuilder.Entity<Bike>()
+            .HasIndex(b => new { b.HourlyRate, b.DailyRate });
+
+        modelBuilder.Entity<Rating>()
+            .HasIndex(r => r.RatingValue);
+
+        modelBuilder.Entity<Rating>()
+            .HasIndex(r => r.IsFlagged);
+
+        // Global query filters for soft delete
+        modelBuilder.Entity<User>()
+            .HasQueryFilter(u => !u.IsDeleted);
+
+        modelBuilder.Entity<Bike>()
+            .HasQueryFilter(b => !b.IsDeleted);
+
+        modelBuilder.Entity<Booking>()
+            .HasQueryFilter(b => !b.IsDeleted);
     }
 }
 

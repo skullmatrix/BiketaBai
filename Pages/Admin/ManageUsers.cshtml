@@ -4,275 +4,1160 @@
     ViewData["Title"] = "Manage Users";
 }
 
-<div class="container my-5">
-    <!-- Header -->
-    <div class="dashboard-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h2 class="text-eco-green mb-2">
-                    <i class="bi bi-people"></i> Manage Users
-                </h2>
-                <p class="text-muted mb-0">Search, verify, suspend, and manage all platform users</p>
-            </div>
-            <div class="col-md-4 text-md-end">
-                <a href="/Dashboard/Admin" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
-        </div>
-    </div>
+<link rel="stylesheet" href="~/css/admin-dashboard.css" />
 
-    <!-- Success/Error Messages -->
-    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    <!-- Statistics Row -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-primary">
-                <i class="bi bi-people"></i>
-                <div>
-                    <h3>@Model.TotalUsers</h3>
-                    <p>Total Users</p>
-                </div>
-            </div>
-        </div>
+<div class="premium-admin-wrapper">
+    <div class="premium-admin-container">
         
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-success">
-                <i class="bi bi-check-circle"></i>
-                <div>
-                    <h3>@Model.ActiveUsers</h3>
-                    <p>Active Users</p>
+        <!-- Premium Header -->
+        <div class="premium-header">
+            <div class="premium-header-content">
+                <div class="premium-title-group">
+                    <div class="premium-icon-badge">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div>
+                        <h1 class="premium-title">Users</h1>
+                        <p class="premium-subtitle">@Model.FilteredUsers.Count of @Model.TotalUsers users</p>
+                    </div>
+                </div>
+                <div class="premium-stats-row">
+                    <div class="premium-stat-pill active">
+                        <i class="bi bi-circle-fill"></i>
+                        <span>@Model.ActiveUsers Active</span>
+                    </div>
+                    <div class="premium-stat-pill suspended">
+                        <i class="bi bi-circle-fill"></i>
+                        <span>@Model.SuspendedUsers Suspended</span>
+                    </div>
+                    <div class="premium-stat-pill verified">
+                        <i class="bi bi-circle-fill"></i>
+                        <span>@Model.VerifiedEmails Verified</span>
+                    </div>
                 </div>
             </div>
+            <a href="/Admin/Dashboard" class="premium-btn-back">
+                <i class="bi bi-arrow-left"></i>
+            </a>
         </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-danger">
-                <i class="bi bi-ban"></i>
-                <div>
-                    <h3>@Model.SuspendedUsers</h3>
-                    <p>Suspended</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-warning">
-                <i class="bi bi-envelope-check"></i>
-                <div>
-                    <h3>@Model.VerifiedEmails</h3>
-                    <p>Verified Emails</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Search and Filters -->
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body">
-            <form method="get">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label"><i class="bi bi-search"></i> Search Users</label>
-                        <input type="text" name="searchQuery" value="@Model.SearchQuery" class="form-control" placeholder="Name, email, or phone..." />
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label"><i class="bi bi-filter"></i> Filter by Role</label>
-                        <select name="roleFilter" class="form-select">
-                            <option value="">All Roles</option>
-                            <option value="Renter" selected="@(Model.RoleFilter == "Renter")">Renters</option>
-                            <option value="Owner" selected="@(Model.RoleFilter == "Owner")">Owners</option>
-                            <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Admins</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label"><i class="bi bi-funnel"></i> Filter by Status</label>
-                        <select name="statusFilter" class="form-select">
-                            <option value="">All Statuses</option>
-                            <option value="Active" selected="@(Model.StatusFilter == "Active")">Active</option>
-                            <option value="Suspended" selected="@(Model.StatusFilter == "Suspended")">Suspended</option>
-                            <option value="EmailVerified" selected="@(Model.StatusFilter == "EmailVerified")">Email Verified</option>
-                            <option value="EmailNotVerified" selected="@(Model.StatusFilter == "EmailNotVerified")">Email Not Verified</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-search"></i> Search
-                        </button>
-                    </div>
+        <!-- Messages -->
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="premium-alert success">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>@Model.SuccessMessage</span>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="premium-alert error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        }
+
+        <!-- Premium Search & Filter -->
+        <div class="premium-toolbar">
+            <form method="get" class="premium-toolbar-form">
+                <div class="premium-search-group">
+                    <i class="bi bi-search"></i>
+                    <input type="text" 
+                           name="searchQuery" 
+                           value="@Model.SearchQuery" 
+                           placeholder="Search by name, email, or phone..." 
+                           class="premium-search-input" />
+                </div>
+                <div class="premium-filters">
+                    <select name="roleFilter" class="premium-select">
+                        <option value="">All Roles</option>
+                        <option value="Renter" selected="@(Model.RoleFilter == "Renter")">Renters</option>
+                        <option value="Owner" selected="@(Model.RoleFilter == "Owner")">Owners</option>
+                        <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Admins</option>
+                    </select>
+                    <select name="statusFilter" class="premium-select">
+                        <option value="">All Status</option>
+                        <option value="Active" selected="@(Model.StatusFilter == "Active")">Active</option>
+                        <option value="Suspended" selected="@(Model.StatusFilter == "Suspended")">Suspended</option>
+                        <option value="EmailVerified" selected="@(Model.StatusFilter == "EmailVerified")">Verified</option>
+                        <option value="EmailNotVerified" selected="@(Model.StatusFilter == "EmailNotVerified")">Unverified</option>
+                    </select>
+                    <button type="submit" class="premium-btn-filter">
+                        <i class="bi bi-funnel"></i>
+                        Filter
+                    </button>
+                    <a href="/Admin/ManageUsers" class="premium-btn-reset">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
                 </div>
             </form>
         </div>
-    </div>
 
-    <!-- Users Table -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-list-ul"></i> User List (@Model.FilteredUsers.Count)</h5>
-                <div>
-                    <a href="/Admin/ManageUsers" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise"></i> Reset Filters
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            @if (Model.FilteredUsers.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>User</th>
-                                <th>Contact</th>
-                                <th>Roles</th>
-                                <th>Status</th>
-                                <th>Joined</th>
-                                <th class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var user in Model.FilteredUsers)
-                            {
-                                <tr class="@(user.IsSuspended ? "table-danger" : "")">
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="user-avatar-circle">
-                                                <i class="bi bi-person-fill"></i>
-                                            </div>
-                                            <div class="ms-2">
-                                                <h6 class="mb-0">@user.FullName</h6>
-                                                @if (user.IsEmailVerified)
-                                                {
-                                                    <small class="text-success">
-                                                        <i class="bi bi-patch-check-fill"></i> Verified
-                                                    </small>
-                                                }
-                                                else
-                                                {
-                                                    <small class="text-warning">
-                                                        <i class="bi bi-exclamation-circle"></i> Unverified
-                                                    </small>
-                                                }
-                                            </div>
+        <!-- Premium Users List -->
+        @if (Model.FilteredUsers.Any())
+        {
+            <div class="premium-users-list">
+                @foreach (var user in Model.FilteredUsers)
+                {
+                    <div class="premium-user-card @(user.IsSuspended ? "suspended" : "")">
+                        <div class="premium-user-main">
+                            <div class="premium-user-left">
+                                <div class="premium-avatar @(user.IsEmailVerified ? "verified" : "")">
+                                    <span>@user.FullName.Substring(0, 1).ToUpper()</span>
+                                    @if (user.IsEmailVerified)
+                                    {
+                                        <div class="premium-avatar-badge">
+                                            <i class="bi bi-check-lg"></i>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            <div><i class="bi bi-envelope"></i> @user.Email</div>
-                                            <div><i class="bi bi-telephone"></i> @user.Phone</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @Html.Raw(Model.GetRoleBadges(user))
-                                    </td>
-                                    <td>
-                                        @Html.Raw(Model.GetStatusBadge(user))
-                                    </td>
-                                    <td>
-                                        <small>@user.CreatedAt.ToString("MMM dd, yyyy")</small>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="btn-group" role="group">
-                                            <button type="button" class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
-                                                <i class="bi bi-gear"></i>
+                                    }
+                                </div>
+                                <div class="premium-user-info">
+                                    <div class="premium-user-name-row">
+                                        <h3 class="premium-user-name">@user.FullName</h3>
+                                        <span class="premium-user-id">#@user.UserId</span>
+                                    </div>
+                                    <div class="premium-user-meta">
+                                        <span class="premium-meta-item">
+                                            <i class="bi bi-envelope"></i>
+                                            @user.Email
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(user.Phone))
+                                        {
+                                            <span class="premium-meta-item">
+                                                <i class="bi bi-telephone"></i>
+                                                @user.Phone
+                                            </span>
+                                        }
+                                        <span class="premium-meta-item">
+                                            <i class="bi bi-calendar"></i>
+                                            @user.CreatedAt.ToString("MMM dd, yyyy")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="premium-user-badges">
+                                @if (user.IsAdmin)
+                                {
+                                    <span class="premium-badge admin">
+                                        <i class="bi bi-shield-fill-check"></i>
+                                        Admin
+                                    </span>
+                                }
+                                @if (user.IsOwner)
+                                {
+                                    <span class="premium-badge owner">
+                                        <i class="bi bi-house-fill"></i>
+                                        Owner
+                                        @if (user.VerificationStatus == "Approved")
+                                        {
+                                            <i class="bi bi-patch-check-fill verified-mark"></i>
+                                        }
+                                    </span>
+                                }
+                                @if (user.IsRenter)
+                                {
+                                    <span class="premium-badge renter">
+                                        <i class="bi bi-bicycle"></i>
+                                        Renter
+                                    </span>
+                                }
+                            </div>
+                            
+                            <div class="premium-user-status">
+                                @if (user.IsSuspended)
+                                {
+                                    <span class="premium-status-badge suspended">
+                                        <i class="bi bi-ban"></i>
+                                        Suspended
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="premium-status-badge active">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        Active
+                                    </span>
+                                }
+                            </div>
+                            
+                            <!-- Inline Actions -->
+                            <div class="premium-quick-actions">
+                                @if (user.IsAdmin)
+                                {
+                                    <div class="premium-protected-inline">
+                                        <i class="bi bi-shield-lock-fill"></i>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @if (user.IsSuspended)
+                                    {
+                                        <form method="post" asp-page-handler="Unsuspend" asp-route-userId="@user.UserId" class="premium-form-inline">
+                                            <button type="submit" 
+                                                    class="premium-btn-compact success"
+                                                    title="Reactivate"
+                                                    onclick="return confirm('Reactivate @user.FullName?')">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
                                             </button>
-                                            <ul class="dropdown-menu">
-                                                <li>
-                                                    <a class="dropdown-item" href="/Admin/UserDetails/@user.UserId">
-                                                        <i class="bi bi-eye"></i> View Details
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                @if (!user.IsAdmin)
-                                                {
-                                                    @if (user.IsSuspended)
-                                                    {
-                                                        <li>
-                                                            <form method="post" asp-page-handler="Unsuspend" asp-route-userId="@user.UserId" class="d-inline">
-                                                                <button type="submit" class="dropdown-item text-success" onclick="return confirm('Reactivate this user?')">
-                                                                    <i class="bi bi-check-circle"></i> Reactivate
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                    }
-                                                    else
-                                                    {
-                                                        <li>
-                                                            <form method="post" asp-page-handler="Suspend" asp-route-userId="@user.UserId" class="d-inline">
-                                                                <button type="submit" class="dropdown-item text-warning" onclick="return confirm('Suspend this user?')">
-                                                                    <i class="bi bi-ban"></i> Suspend
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                    }
-                                                    <li>
-                                                        <form method="post" asp-page-handler="Delete" asp-route-userId="@user.UserId" class="d-inline">
-                                                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Permanently delete this user? This action cannot be undone!')">
-                                                                <i class="bi bi-trash"></i> Delete
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                }
-                                                else
-                                                {
-                                                    <li>
-                                                        <span class="dropdown-item text-muted disabled">
-                                                            <i class="bi bi-shield-lock"></i> Protected Admin
-                                                        </span>
-                                                    </li>
-                                                }
-                                            </ul>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="Suspend" asp-route-userId="@user.UserId" class="premium-form-inline">
+                                            <button type="submit" 
+                                                    class="premium-btn-compact warning"
+                                                    title="Suspend"
+                                                    onclick="return confirm('Suspend @user.FullName?')">
+                                                <i class="bi bi-ban"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    
+                                    <div class="premium-dropdown">
+                                        <button type="button" class="premium-btn-compact secondary" onclick="toggleDropdown(this)" title="More actions">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <div class="premium-dropdown-menu">
+                                            @if (user.IsOwner && user.VerificationStatus != "Approved")
+                                            {
+                                                <form method="post" asp-page-handler="ApproveOwner" asp-route-userId="@user.UserId" class="premium-form-inline">
+                                                    <button type="submit" 
+                                                            class="premium-dropdown-item"
+                                                            onclick="return confirm('Approve @user.FullName as verified owner?')">
+                                                        <i class="bi bi-check-circle-fill"></i>
+                                                        Approve Owner
+                                                    </button>
+                                                </form>
+                                            }
+                                            @if (user.IsOwner && user.VerificationStatus != "Rejected")
+                                            {
+                                                <form method="post" asp-page-handler="RejectOwner" asp-route-userId="@user.UserId" class="premium-form-inline">
+                                                    <button type="submit" 
+                                                            class="premium-dropdown-item danger"
+                                                            onclick="return confirm('Reject owner verification?')">
+                                                        <i class="bi bi-x-circle"></i>
+                                                        Reject Owner Verification
+                                                    </button>
+                                                </form>
+                                            }
+                                            <form method="post" asp-page-handler="Delete" asp-route-userId="@user.UserId" class="premium-form-inline">
+                                                <button type="submit" 
+                                                        class="premium-dropdown-item danger"
+                                                        onclick="return confirm('Permanently delete @user.FullName? This cannot be undone!')">
+                                                    <i class="bi bi-trash"></i>
+                                                    Delete User
+                                                </button>
+                                            </form>
                                         </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="empty-state">
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @if (user.IsOwner && user.VerificationStatus == "Pending" && !string.IsNullOrEmpty(user.IdDocumentUrl))
+                        {
+                            <div class="premium-owner-alert">
+                                <i class="bi bi-exclamation-circle-fill"></i>
+                                <span>Owner verification pending</span>
+                                <a href="@user.IdDocumentUrl" target="_blank" class="premium-link">
+                                    View ID Document
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="premium-empty-state">
+                <div class="premium-empty-icon">
                     <i class="bi bi-people"></i>
-                    <h4>No Users Found</h4>
-                    <p class="text-muted">Try adjusting your search or filter criteria</p>
-                    <a href="/Admin/ManageUsers" class="btn btn-outline-success">
-                        <i class="bi bi-arrow-clockwise"></i> Reset Filters
-                    </a>
                 </div>
-            }
-        </div>
+                <h3>No Users Found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+                <a href="/Admin/ManageUsers" class="premium-btn primary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Reset Filters
+                </a>
+            </div>
+        }
+
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        // Auto-dismiss alerts
-        window.setTimeout(function() {
-            $(".alert").fadeTo(500, 0).slideUp(500, function(){
-                $(this).remove(); 
-            });
-        }, 5000);
-    </script>
+<style>
+/* ============================================
+   PREMIUM MINIMALIST DESIGN
+   ============================================ */
+
+:root {
+    --premium-sage: #87A96B;
+    --premium-sage-dark: #6B8E4D;
+    --premium-sage-light: #A5C389;
+    --premium-sage-subtle: #F0F5ED;
+    --premium-success: #10B981;
+    --premium-warning: #F59E0B;
+    --premium-danger: #EF4444;
+    --premium-info: #3B82F6;
+    --premium-gray-50: #FAFAFA;
+    --premium-gray-100: #F5F5F5;
+    --premium-gray-200: #E5E5E5;
+    --premium-gray-300: #D4D4D4;
+    --premium-gray-400: #A3A3A3;
+    --premium-gray-500: #737373;
+    --premium-gray-600: #525252;
+    --premium-gray-700: #404040;
+    --premium-gray-800: #262626;
+    --premium-gray-900: #171717;
 }
 
+.premium-admin-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+    padding: 2rem 1.5rem;
+}
+
+.premium-admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header */
+.premium-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 2rem;
+}
+
+.premium-header-content {
+    flex: 1;
+}
+
+.premium-title-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.premium-icon-badge {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--premium-sage) 0%, var(--premium-sage-dark) 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.25);
+}
+
+.premium-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--premium-gray-900);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.premium-subtitle {
+    font-size: 0.875rem;
+    color: var(--premium-gray-500);
+    margin: 0.25rem 0 0 0;
+    font-weight: 500;
+}
+
+.premium-stats-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.premium-stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 100px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--premium-gray-200);
+}
+
+.premium-stat-pill i {
+    font-size: 0.5rem;
+}
+
+.premium-stat-pill.active { color: var(--premium-sage); border-color: var(--premium-sage-subtle); background: var(--premium-sage-subtle); }
+.premium-stat-pill.active i { color: var(--premium-sage); }
+.premium-stat-pill.suspended { color: var(--premium-danger); border-color: #FEE2E2; background: #FEF2F2; }
+.premium-stat-pill.suspended i { color: var(--premium-danger); }
+.premium-stat-pill.verified { color: var(--premium-warning); border-color: #FEF3C7; background: #FFFBEB; }
+.premium-stat-pill.verified i { color: var(--premium-warning); }
+
+.premium-btn-back {
+    width: 44px;
+    height: 44px;
+    background: white;
+    border: 1px solid var(--premium-gray-200);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--premium-gray-700);
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-btn-back:hover {
+    background: var(--premium-gray-50);
+    border-color: var(--premium-sage);
+    color: var(--premium-sage);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Alerts */
+.premium-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-alert.success {
+    background: #ECFDF5;
+    color: #047857;
+    border: 1px solid #A7F3D0;
+}
+
+.premium-alert.error {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+.premium-alert i {
+    font-size: 1.125rem;
+}
+
+/* Toolbar */
+.premium-toolbar {
+    background: white;
+    border: 1px solid var(--premium-gray-200);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-toolbar-form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.premium-search-group {
+    position: relative;
+    flex: 1;
+    min-width: 280px;
+}
+
+.premium-search-group i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--premium-gray-400);
+    font-size: 1rem;
+}
+
+.premium-search-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 1rem 0 2.75rem;
+    border: 1.5px solid var(--premium-gray-200);
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    color: var(--premium-gray-900);
+    background: var(--premium-gray-50);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-search-input:focus {
+    outline: none;
+    border-color: var(--premium-sage);
+    background: white;
+    box-shadow: 0 0 0 4px var(--premium-sage-subtle);
+}
+
+.premium-search-input::placeholder {
+    color: var(--premium-gray-400);
+}
+
+.premium-filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.premium-select {
+    height: 44px;
+    padding: 0 1rem;
+    border: 1.5px solid var(--premium-gray-200);
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--premium-gray-700);
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-select:focus {
+    outline: none;
+    border-color: var(--premium-sage);
+    box-shadow: 0 0 0 4px var(--premium-sage-subtle);
+}
+
+.premium-btn-filter,
+.premium-btn-reset {
+    height: 44px;
+    padding: 0 1.25rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.premium-btn-filter {
+    background: linear-gradient(135deg, var(--premium-sage) 0%, var(--premium-sage-dark) 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(135, 169, 107, 0.25);
+}
+
+.premium-btn-filter:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.35);
+}
+
+.premium-btn-reset {
+    background: var(--premium-gray-100);
+    color: var(--premium-gray-700);
+    border: 1.5px solid var(--premium-gray-200);
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+}
+
+.premium-btn-reset:hover {
+    background: white;
+    border-color: var(--premium-sage);
+    color: var(--premium-sage);
+}
+
+/* Users List */
+.premium-users-list {
+    display: grid;
+    gap: 1rem;
+}
+
+/* User Card */
+.premium-user-card {
+    background: white;
+    border: 1px solid var(--premium-gray-200);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-user-card:hover {
+    border-color: var(--premium-sage);
+    box-shadow: 0 8px 24px rgba(135, 169, 107, 0.12);
+    transform: translateY(-2px);
+}
+
+.premium-user-card.suspended {
+    background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 100%);
+    border-color: #FECACA;
+}
+
+.premium-user-main {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 1rem;
+    align-items: center;
+}
+
+.premium-user-left {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.premium-avatar {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--premium-gray-200) 0%, var(--premium-gray-300) 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.premium-avatar.verified {
+    background: linear-gradient(135deg, var(--premium-sage) 0%, var(--premium-sage-dark) 100%);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.25);
+}
+
+.premium-avatar-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--premium-sage);
+    font-size: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.premium-user-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.premium-user-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.375rem;
+}
+
+.premium-user-name {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--premium-gray-900);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.premium-user-id {
+    font-size: 0.75rem;
+    color: var(--premium-gray-400);
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    background: var(--premium-gray-100);
+    border-radius: 6px;
+}
+
+.premium-user-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.premium-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--premium-gray-600);
+}
+
+.premium-meta-item i {
+    font-size: 0.875rem;
+    color: var(--premium-gray-400);
+}
+
+.premium-user-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.premium-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.premium-badge i {
+    font-size: 0.875rem;
+}
+
+.premium-badge.admin {
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+    color: #DC2626;
+}
+
+.premium-badge.owner {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    color: #D97706;
+}
+
+.premium-badge.renter {
+    background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+    color: #2563EB;
+}
+
+.verified-mark {
+    color: var(--premium-success);
+    margin-left: 0.25rem;
+}
+
+.premium-user-status {
+    display: flex;
+}
+
+.premium-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.premium-status-badge i {
+    font-size: 0.875rem;
+}
+
+.premium-status-badge.active {
+    background: var(--premium-sage-subtle);
+    color: var(--premium-sage-dark);
+}
+
+.premium-status-badge.suspended {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+/* Owner Alert */
+.premium-owner-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 100%);
+    border: 1px solid #FDE68A;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #D97706;
+}
+
+.premium-owner-alert i {
+    font-size: 1rem;
+}
+
+.premium-link {
+    color: var(--premium-sage-dark);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: auto;
+    transition: all 0.2s;
+}
+
+.premium-link:hover {
+    color: var(--premium-sage);
+    text-decoration: underline;
+}
+
+/* Quick Actions Inline */
+.premium-quick-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.premium-protected-inline {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #B45309;
+    font-size: 1rem;
+}
+
+.premium-form-inline {
+    margin: 0;
+}
+
+.premium-btn-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.premium-btn-compact i {
+    font-size: 1.125rem;
+}
+
+.premium-btn-compact.success {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.premium-btn-compact.success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.premium-btn-compact.warning {
+    background: white;
+    color: #F59E0B;
+    border: 1.5px solid #FDE68A;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-btn-compact.warning:hover {
+    background: #FFFBEB;
+    border-color: #F59E0B;
+    transform: translateY(-2px);
+}
+
+.premium-btn-compact.secondary {
+    background: white;
+    color: var(--premium-gray-700);
+    border: 1.5px solid var(--premium-gray-200);
+}
+
+.premium-btn-compact.secondary:hover {
+    background: var(--premium-gray-50);
+    border-color: var(--premium-sage);
+    color: var(--premium-sage);
+}
+
+.premium-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.premium-btn i {
+    font-size: 1rem;
+}
+
+.premium-btn.primary {
+    background: linear-gradient(135deg, var(--premium-sage) 0%, var(--premium-sage-dark) 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(135, 169, 107, 0.25);
+}
+
+.premium-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.35);
+}
+
+.premium-btn.success {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.premium-btn.success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.premium-btn.warning {
+    background: white;
+    color: #F59E0B;
+    border: 1.5px solid #FDE68A;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-btn.warning:hover {
+    background: #FFFBEB;
+    border-color: #F59E0B;
+    transform: translateY(-2px);
+}
+
+.premium-btn.secondary {
+    background: white;
+    color: var(--premium-gray-700);
+    border: 1.5px solid var(--premium-gray-200);
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+}
+
+.premium-btn.secondary:hover {
+    background: var(--premium-gray-50);
+    border-color: var(--premium-sage);
+    color: var(--premium-sage);
+}
+
+/* Dropdown */
+.premium-dropdown {
+    position: relative;
+}
+
+.premium-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    min-width: 220px;
+    background: white;
+    border: 1px solid var(--premium-gray-200);
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+}
+
+.premium-dropdown.active .premium-dropdown-menu {
+    display: block;
+    animation: dropdownSlide 0.2s ease-out;
+}
+
+@@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.premium-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--premium-gray-700);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.premium-dropdown-item:hover {
+    background: var(--premium-gray-50);
+}
+
+.premium-dropdown-item.danger {
+    color: #DC2626;
+}
+
+.premium-dropdown-item.danger:hover {
+    background: #FEF2F2;
+}
+
+/* Empty State */
+.premium-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border: 1px solid var(--premium-gray-200);
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.premium-empty-icon {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, var(--premium-sage-subtle) 0%, #E8F2E1 100%);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.premium-empty-icon i {
+    font-size: 3rem;
+    color: var(--premium-sage);
+}
+
+.premium-empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--premium-gray-900);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.01em;
+}
+
+.premium-empty-state p {
+    font-size: 1rem;
+    color: var(--premium-gray-500);
+    margin: 0 0 2rem 0;
+}
+
+/* Responsive */
+@@media (max-width: 1200px) {
+    .premium-user-main {
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem;
+    }
+    
+    .premium-user-badges {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    
+    .premium-user-status {
+        grid-column: 1;
+        grid-row: 2;
+        margin-left: auto;
+    }
+    
+    .premium-quick-actions {
+        grid-column: 2;
+        grid-row: 1 / 3;
+        align-self: center;
+    }
+}
+
+@@media (max-width: 768px) {
+    .premium-admin-wrapper {
+        padding: 1.5rem 1rem;
+    }
+    
+    .premium-header {
+        flex-direction: column;
+    }
+    
+    .premium-title {
+        font-size: 1.5rem;
+    }
+    
+    .premium-toolbar-form {
+        flex-direction: column;
+    }
+    
+    .premium-search-group {
+        width: 100%;
+    }
+    
+    .premium-filters {
+        width: 100%;
+    }
+    
+    .premium-select {
+        flex: 1;
+    }
+    
+    .premium-user-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .premium-user-main {
+        grid-template-columns: 1fr auto;
+    }
+    
+    .premium-quick-actions {
+        grid-column: 2;
+        grid-row: 1;
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+(function() {
+    'use strict';
+    
+    window.toggleDropdown = function(button) {
+        const dropdown = button.closest('.premium-dropdown');
+        const allDropdowns = document.querySelectorAll('.premium-dropdown');
+        
+        allDropdowns.forEach(d => {
+            if (d !== dropdown) d.classList.remove('active');
+        });
+        
+        dropdown.classList.toggle('active');
+    };
+    
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.premium-dropdown')) {
+            document.querySelectorAll('.premium-dropdown').forEach(d => {
+                d.classList.remove('active');
+            });
+        }
+    });
+    
+    setTimeout(function() {
+        const alert = document.querySelector('.premium-alert.success');
+        if (alert) {
+            alert.style.transition = 'opacity 0.3s, transform 0.3s';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-10px)';
+            setTimeout(() => alert.remove(), 300);
+        }
+    }, 5000);
+    
+    console.log('✨ Premium Manage Users loaded');
+})();
+</script>

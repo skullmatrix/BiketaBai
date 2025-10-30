@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
-using BiketaBai.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace BiketaBai.Pages.Owner;
@@ -12,12 +11,12 @@ namespace BiketaBai.Pages.Owner;
 public class EditBikeModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
-    private readonly BikeManagementService _bikeService;
+    private readonly IWebHostEnvironment _environment;
 
-    public EditBikeModel(BiketaBaiDbContext context, BikeManagementService bikeService)
+    public EditBikeModel(BiketaBaiDbContext context, IWebHostEnvironment environment)
     {
         _context = context;
-        _bikeService = bikeService;
+        _environment = environment;
     }
 
     [BindProperty]
@@ -37,49 +36,30 @@ public class EditBikeModel : PageModel
     public class InputModel
     {
         [Required(ErrorMessage = "Brand is required")]
-        [StringLength(100, ErrorMessage = "Brand cannot exceed 100 characters")]
+        [StringLength(100)]
         public string Brand { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Model is required")]
-        [StringLength(100, ErrorMessage = "Model cannot exceed 100 characters")]
+        [StringLength(100)]
         public string Model { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Bike type is required")]
-        [Display(Name = "Bike Type")]
         public int BikeTypeId { get; set; }
 
-        [Required(ErrorMessage = "Mileage is required")]
-        [Range(0, 1000000, ErrorMessage = "Mileage must be between 0 and 1,000,000")]
-        public decimal Mileage { get; set; }
-
-        [Required(ErrorMessage = "Location is required")]
-        [StringLength(255, ErrorMessage = "Location cannot exceed 255 characters")]
-        public string Location { get; set; } = string.Empty;
-
-        [Range(-90, 90, ErrorMessage = "Latitude must be between -90 and 90")]
-        public decimal? Latitude { get; set; }
-
-        [Range(-180, 180, ErrorMessage = "Longitude must be between -180 and 180")]
-        public decimal? Longitude { get; set; }
-
-        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+        [StringLength(1000)]
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "Hourly rate is required")]
-        [Range(0.01, 10000, ErrorMessage = "Hourly rate must be between ₱0.01 and ₱10,000")]
-        [Display(Name = "Hourly Rate")]
-        public decimal HourlyRate { get; set; }
+        [Range(0.01, 10000)]
+        public decimal? HourlyRate { get; set; }
 
         [Required(ErrorMessage = "Daily rate is required")]
-        [Range(0.01, 50000, ErrorMessage = "Daily rate must be between ₱0.01 and ₱50,000")]
-        [Display(Name = "Daily Rate")]
-        public decimal DailyRate { get; set; }
+        [Range(0.01, 50000)]
+        public decimal? DailyRate { get; set; }
 
         [Required(ErrorMessage = "Availability status is required")]
-        [Display(Name = "Availability Status")]
         public int AvailabilityStatusId { get; set; }
 
-        [Display(Name = "New Images")]
         public List<IFormFile>? NewImages { get; set; }
     }
 
@@ -96,7 +76,11 @@ public class EditBikeModel : PageModel
         BikeTypes = await _context.BikeTypes.ToListAsync();
 
         // Load bike details
-        CurrentBike = await _bikeService.GetBikeByIdAsync(id, userId.Value);
+        CurrentBike = await _context.Bikes
+            .Include(b => b.BikeType)
+            .Include(b => b.BikeImages)
+            .Include(b => b.AvailabilityStatus)
+            .FirstOrDefaultAsync(b => b.BikeId == id && b.OwnerId == userId.Value);
         
         if (CurrentBike == null)
         {
@@ -105,7 +89,12 @@ public class EditBikeModel : PageModel
         }
 
         // Get bike statistics
-        AverageRating = await _bikeService.GetBikeAverageRatingAsync(id);
+        var ratings = await _context.Ratings
+            .Where(r => r.BikeId == id)
+            .Select(r => r.RatingValue)
+            .ToListAsync();
+        AverageRating = ratings.Any() ? ratings.Average() : 0;
+        
         TotalBookings = await _context.Bookings
             .CountAsync(b => b.BikeId == id);
 
@@ -113,10 +102,6 @@ public class EditBikeModel : PageModel
         Input.Brand = CurrentBike.Brand;
         Input.Model = CurrentBike.Model;
         Input.BikeTypeId = CurrentBike.BikeTypeId;
-        Input.Mileage = CurrentBike.Mileage;
-        Input.Location = CurrentBike.Location;
-        Input.Latitude = CurrentBike.Latitude;
-        Input.Longitude = CurrentBike.Longitude;
         Input.Description = CurrentBike.Description;
         Input.HourlyRate = CurrentBike.HourlyRate;
         Input.DailyRate = CurrentBike.DailyRate;
@@ -127,93 +112,180 @@ public class EditBikeModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
-        var userId = AuthHelper.GetCurrentUserId(User);
-        if (!userId.HasValue)
-            return RedirectToPage("/Account/Login");
-
-        if (!AuthHelper.IsOwner(User))
-            return RedirectToPage("/Account/AccessDenied");
-
-        // Load bike types for form
-        BikeTypes = await _context.BikeTypes.ToListAsync();
-
-        // Load current bike
-        CurrentBike = await _bikeService.GetBikeByIdAsync(id, userId.Value);
-        if (CurrentBike == null)
+        try
         {
-            ErrorMessage = "Bike not found";
-            return RedirectToPage("/Owner/MyBikes");
-        }
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+                return RedirectToPage("/Account/Login");
 
-        if (!ModelState.IsValid)
-        {
-            ErrorMessage = "Please correct the errors in the form";
-            return Page();
-        }
+            if (!AuthHelper.IsOwner(User))
+                return RedirectToPage("/Account/AccessDenied");
 
-        // Update bike using service
-        var (success, message) = await _bikeService.UpdateBikeAsync(
-            id,
-            userId.Value,
-            Input.BikeTypeId,
-            Input.Brand,
-            Input.Model,
-            Input.Mileage,
-            Input.Location,
-            Input.Latitude,
-            Input.Longitude,
-            Input.Description,
-            Input.HourlyRate,
-            Input.DailyRate,
-            Input.NewImages
-        );
+            // Load bike types for form
+            BikeTypes = await _context.BikeTypes.ToListAsync();
 
-        if (success)
-        {
-            // Update availability if changed
-            if (Input.AvailabilityStatusId != CurrentBike.AvailabilityStatusId)
+            // Load current bike
+            CurrentBike = await _context.Bikes
+                .Include(b => b.BikeImages)
+                .FirstOrDefaultAsync(b => b.BikeId == id && b.OwnerId == userId.Value);
+                
+            if (CurrentBike == null)
             {
-                var (availSuccess, availMessage) = await _bikeService.SetBikeAvailabilityAsync(
-                    id,
-                    userId.Value,
-                    Input.AvailabilityStatusId
-                );
+                ErrorMessage = "Bike not found";
+                return RedirectToPage("/Owner/MyBikes");
+            }
 
-                if (!availSuccess)
+            // Note: We're not validating ModelState because we removed some fields from the form
+            // but they still exist in the model (Location, Mileage, etc.)
+            // Only validate the fields we're actually updating
+            if (string.IsNullOrWhiteSpace(Input.Brand) || string.IsNullOrWhiteSpace(Input.Model) ||
+                Input.BikeTypeId <= 0 || !Input.HourlyRate.HasValue || Input.HourlyRate <= 0 || 
+                !Input.DailyRate.HasValue || Input.DailyRate <= 0)
+            {
+                ErrorMessage = "Please fill in all required fields correctly";
+                return Page();
+            }
+
+            // Update bike details (keep Location, Mileage, Lat/Long unchanged)
+            CurrentBike.Brand = Input.Brand;
+            CurrentBike.Model = Input.Model;
+            CurrentBike.BikeTypeId = Input.BikeTypeId;
+            CurrentBike.Description = Input.Description;
+            CurrentBike.HourlyRate = Input.HourlyRate.Value;
+            CurrentBike.DailyRate = Input.DailyRate.Value;
+            CurrentBike.AvailabilityStatusId = Input.AvailabilityStatusId;
+            CurrentBike.UpdatedAt = DateTime.Now;
+            // Location, Mileage, Latitude, Longitude remain unchanged
+
+            // Handle new image uploads
+            if (Input.NewImages != null && Input.NewImages.Any())
+            {
+                var totalImages = CurrentBike.BikeImages.Count + Input.NewImages.Count;
+                if (totalImages > 5)
                 {
-                    ErrorMessage = availMessage;
+                    ErrorMessage = "Maximum 5 photos allowed. Please delete existing photos first.";
                     return Page();
+                }
+
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "bikes");
+                Directory.CreateDirectory(uploadsFolder);
+
+                foreach (var image in Input.NewImages)
+                {
+                    if (image.Length > 5 * 1024 * 1024) // 5MB limit
+                    {
+                        ErrorMessage = "Image size cannot exceed 5MB";
+                        return Page();
+                    }
+
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                    var extension = Path.GetExtension(image.FileName).ToLower();
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        ErrorMessage = "Only JPG, PNG, and GIF images are allowed";
+                        return Page();
+                    }
+
+                    var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(fileStream);
+                    }
+
+                    var bikeImage = new BikeImage
+                    {
+                        BikeId = CurrentBike.BikeId,
+                        ImageUrl = $"/uploads/bikes/{uniqueFileName}",
+                        IsPrimary = CurrentBike.BikeImages.Count == 0, // First image is primary
+                        UploadedAt = DateTime.Now
+                    };
+
+                    _context.BikeImages.Add(bikeImage);
                 }
             }
 
-            SuccessMessage = message;
-            return RedirectToPage(new { id = id });
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"✓ Successfully updated {CurrentBike.Brand} {CurrentBike.Model}";
+            return RedirectToPage("/Owner/MyBikes");
         }
-        else
+        catch (Exception ex)
         {
-            ErrorMessage = message;
+            ErrorMessage = $"Error updating bike: {ex.Message}";
             return Page();
         }
     }
 
     public async Task<IActionResult> OnPostDeleteImageAsync(int id, int imageId)
     {
-        var userId = AuthHelper.GetCurrentUserId(User);
-        if (!userId.HasValue)
-            return RedirectToPage("/Account/Login");
-
-        var (success, message) = await _bikeService.DeleteBikeImageAsync(imageId, userId.Value);
-
-        if (success)
+        try
         {
-            SuccessMessage = message;
-        }
-        else
-        {
-            ErrorMessage = message;
-        }
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+                return RedirectToPage("/Account/Login");
 
-        return RedirectToPage(new { id = id });
+            // Load the image with bike ownership check
+            var image = await _context.BikeImages
+                .Include(bi => bi.Bike)
+                .FirstOrDefaultAsync(bi => bi.ImageId == imageId && bi.Bike.OwnerId == userId.Value);
+
+            if (image == null)
+            {
+                ErrorMessage = "Image not found or you don't have permission to delete it";
+                return RedirectToPage(new { id = id });
+            }
+
+            // Check if this is the only image
+            var imageCount = await _context.BikeImages
+                .CountAsync(bi => bi.BikeId == image.BikeId);
+
+            if (imageCount == 1)
+            {
+                ErrorMessage = "Cannot delete the last photo. A bike must have at least one photo.";
+                return RedirectToPage(new { id = id });
+            }
+
+            // Delete the file from filesystem
+            try
+            {
+                var filePath = Path.Combine(_environment.WebRootPath, image.ImageUrl.TrimStart('/'));
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to delete file {image.ImageUrl}: {ex.Message}");
+            }
+
+            // If this was the primary image, set another as primary
+            if (image.IsPrimary)
+            {
+                var newPrimary = await _context.BikeImages
+                    .Where(bi => bi.BikeId == image.BikeId && bi.ImageId != imageId)
+                    .FirstOrDefaultAsync();
+
+                if (newPrimary != null)
+                {
+                    newPrimary.IsPrimary = true;
+                }
+            }
+
+            // Remove the image from database
+            _context.BikeImages.Remove(image);
+            await _context.SaveChangesAsync();
+
+            SuccessMessage = "✓ Photo deleted successfully";
+            return RedirectToPage(new { id = id });
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error deleting photo: {ex.Message}";
+            return RedirectToPage(new { id = id });
+        }
     }
 }
 
