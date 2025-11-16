@@ -22,8 +22,15 @@ COPY --from=build /app/out .
 # Expose port (Railway will override this with PORT env var)
 EXPOSE 8080
 
-# Set environment variable
+# Create necessary directories
+RUN mkdir -p /app/logs && \
+    mkdir -p /app/wwwroot/uploads/bikes && \
+    mkdir -p /app/wwwroot/uploads/id-documents && \
+    mkdir -p /app/wwwroot/uploads/profiles
+
+# Set environment variable (Railway will override PORT)
 ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Run the application
 ENTRYPOINT ["dotnet", "BiketaBai.dll"]

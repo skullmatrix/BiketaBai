@@ -2,14 +2,27 @@ using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Services;
 using Serilog;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Create logs directory if it doesn't exist
+var isDevelopment = builder.Environment.IsDevelopment();
+var logsPath = Path.Combine(Directory.GetCurrentDirectory(), "logs");
+Directory.CreateDirectory(logsPath);
+
+// Create uploads directories if they don't exist
+var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+var uploadsPath = Path.Combine(wwwrootPath, "uploads");
+Directory.CreateDirectory(Path.Combine(uploadsPath, "bikes"));
+Directory.CreateDirectory(Path.Combine(uploadsPath, "id-documents"));
+Directory.CreateDirectory(Path.Combine(uploadsPath, "profiles"));
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .WriteTo.Console()
-    .WriteTo.File("logs/biketabai-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(Path.Combine(logsPath, "biketabai-.txt"), rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -19,8 +32,22 @@ builder.Services.AddRazorPages();
 
 // Configure MySQL Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<BiketaBaiDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+if (!string.IsNullOrEmpty(connectionString))
+{
+    // Use explicit MySQL version for production (more reliable than AutoDetect)
+    var serverVersion = ServerVersion.Create(new Version(8, 0, 0), ServerType.MySql);
+    
+    builder.Services.AddDbContext<BiketaBaiDbContext>(options =>
+    {
+        options.UseMySql(connectionString, serverVersion, mysqlOptions =>
+        {
+            mysqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
+    });
+}
 
 // Configure Session
 builder.Services.AddSession(options =>
@@ -28,7 +55,7 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(60); // 60 minutes session
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+    options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.None : CookieSecurePolicy.Always; // HTTPS in production
     options.Cookie.SameSite = SameSiteMode.Lax; // More permissive for better compatibility
 });
 
@@ -42,7 +69,7 @@ builder.Services.AddAuthentication("BiketaBaiAuth")
         options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 60 minutes session
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+        options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.None : CookieSecurePolicy.Always; // HTTPS in production
         options.Cookie.SameSite = SameSiteMode.Lax; // More permissive for better compatibility
     });
 
@@ -81,7 +108,13 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection - only in development (Railway handles HTTPS at proxy level)
+// In production, Railway terminates HTTPS, so we don't need to redirect
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -116,6 +149,16 @@ using (var scope = app.Services.CreateScope())
 }
 
 Log.Information("Starting Bike Ta Bai application");
+
+// Railway provides PORT environment variable, but if ASPNETCORE_URLS is set, use that
+// Otherwise, configure based on PORT env var
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+{
+    // Set ASPNETCORE_URLS if PORT is provided but ASPNETCORE_URLS is not set
+    Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://0.0.0.0:{port}");
+    Log.Information($"Configured ASPNETCORE_URLS from PORT environment variable: http://0.0.0.0:{port}");
+}
 
 app.Run();
 
