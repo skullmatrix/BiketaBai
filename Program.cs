@@ -100,7 +100,28 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    // In production, log errors and show user-friendly page
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "text/html";
+
+            var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+            var exception = exceptionHandlerPathFeature?.Error;
+
+            // Log the error with details
+            if (exception != null)
+            {
+                Log.Error(exception, "Unhandled exception: {Message}. Path: {Path}", 
+                    exception.Message, exceptionHandlerPathFeature?.Path ?? "Unknown");
+            }
+
+            // Redirect to error page
+            context.Response.Redirect("/Error");
+        });
+    });
     app.UseHsts();
 }
 else
