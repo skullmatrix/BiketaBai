@@ -6,6 +6,7 @@ using BiketaBai.Models;
 using BiketaBai.Helpers;
 using BiketaBai.Services;
 using System.ComponentModel.DataAnnotations;
+using Serilog;
 
 namespace BiketaBai.Pages.Account;
 
@@ -187,8 +188,27 @@ public class RegisterModel : PageModel
         }
         catch (Exception ex)
         {
-            // Log error but don't fail registration
-            TempData["ErrorMessage"] = "Account created but failed to send verification email. Please contact support.";
+            // Log error with details for debugging
+            Log.Error(ex, "Failed to send verification email to {Email}. Error: {ErrorMessage}", user.Email, ex.Message);
+            Console.WriteLine($"Email sending error: {ex.GetType().Name} - {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            
+            // Log inner exception if exists
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                Log.Error(ex.InnerException, "Inner exception details");
+            }
+            
+            // Show more helpful error message in development, generic in production
+            if (_environment.IsDevelopment())
+            {
+                TempData["ErrorMessage"] = $"Account created but failed to send verification email. Error: {ex.Message}. Check console/logs for details.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Account created but failed to send verification email. Please contact support.";
+            }
         }
 
         return RedirectToPage("/Account/RegistrationSuccess");

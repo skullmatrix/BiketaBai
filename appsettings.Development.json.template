@@ -1,0 +1,21 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Information"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Port=3306;Database=biketabai;User=root;Password=;"
+  },
+  "EmailSettings": {
+    "SenderName": "BikeTaBai",
+    "SenderEmail": "biketabai@icloud.com",
+    "SmtpServer": "smtp.mail.me.com",
+    "SmtpPort": "587",
+    "SmtpPassword": "YOUR_APP_PASSWORD_HERE",
+    "SmtpAuthEmail": "biketabai@icloud.com"
+  }
+}
+

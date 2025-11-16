@@ -2,6 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace BiketaBai.Services;
 
@@ -18,10 +19,61 @@ public class EmailService
     {
         var emailSettings = _configuration.GetSection("EmailSettings");
         
+        // Get email settings and trim whitespace (important for passwords!)
+        var senderName = emailSettings["SenderName"]?.Trim();
+        var senderEmail = emailSettings["SenderEmail"]?.Trim();
+        var smtpServer = emailSettings["SmtpServer"]?.Trim();
+        var smtpPort = emailSettings["SmtpPort"]?.Trim();
+        var smtpPassword = emailSettings["SmtpPassword"]?.Trim(); // CRITICAL: Trim password to remove any whitespace
+        // Optional: For iCloud custom domain, you might need separate auth email
+        var smtpAuthEmail = emailSettings["SmtpAuthEmail"]?.Trim(); // Optional - defaults to SenderEmail
+
+        // Validate configuration
+        if (string.IsNullOrEmpty(senderEmail) || senderEmail == "your-email@gmail.com" || senderEmail.Contains("REPLACE"))
+        {
+            var errorMsg = $"Email sender address is not configured properly. Current value: '{senderEmail}'. Please set EmailSettings:SenderEmail in appsettings.json or appsettings.Development.json";
+            Log.Error(errorMsg);
+            throw new InvalidOperationException(errorMsg);
+        }
+
+        if (string.IsNullOrEmpty(smtpPassword) || smtpPassword == "your-app-password-here" || smtpPassword.Contains("REPLACE"))
+        {
+            var errorMsg = $"Email SMTP password is not configured properly. Current value: '{smtpPassword?.Substring(0, Math.Min(10, smtpPassword?.Length ?? 0))}...'. Please set EmailSettings:SmtpPassword in appsettings.json or appsettings.Development.json";
+            Log.Error(errorMsg);
+            throw new InvalidOperationException(errorMsg);
+        }
+
+        if (string.IsNullOrEmpty(smtpServer))
+        {
+            // Auto-detect based on email domain
+            if (senderEmail?.Contains("@icloud.com") == true || senderEmail?.Contains("@me.com") == true || senderEmail?.Contains("@mac.com") == true)
+            {
+                smtpServer = "smtp.mail.me.com"; // iCloud SMTP
+            }
+            else
+            {
+                smtpServer = "smtp.gmail.com"; // Default to Gmail
+            }
+        }
+
+        if (string.IsNullOrEmpty(smtpPort))
+        {
+            smtpPort = "587"; // Default port
+        }
+
+        Log.Information("Attempting to send email to {ToEmail} from {SenderEmail} via {SmtpServer}:{SmtpPort}", 
+            toEmail, senderEmail, smtpServer, smtpPort);
+        Log.Information("Email password length: {PasswordLength}, Starts with: {PasswordStart}, Ends with: {PasswordEnd}", 
+            smtpPassword?.Length ?? 0, 
+            smtpPassword?.Substring(0, Math.Min(4, smtpPassword?.Length ?? 0)) ?? "null",
+            smtpPassword?.Substring(Math.Max(0, (smtpPassword?.Length ?? 0) - 4)) ?? "null");
+        Log.Information("Auth email: {AuthEmail}, Sender email: {SenderEmail}", 
+            !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail, senderEmail);
+        
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(
-            emailSettings["SenderName"], 
-            emailSettings["SenderEmail"]
+            senderName ?? "Bike Ta Bai", 
+            senderEmail
         ));
         message.To.Add(new MailboxAddress("", toEmail));
         message.Subject = subject;
@@ -35,23 +87,42 @@ public class EmailService
         using var client = new SmtpClient();
         try
         {
+            Log.Information("Connecting to SMTP server {SmtpServer}:{SmtpPort} with STARTTLS", smtpServer, smtpPort);
+            
+            // Connect with STARTTLS (port 587)
             await client.ConnectAsync(
-                emailSettings["SmtpServer"], 
-                int.Parse(emailSettings["SmtpPort"]!), 
+                smtpServer, 
+                int.Parse(smtpPort), 
                 SecureSocketOptions.StartTls
             );
 
-            await client.AuthenticateAsync(
-                emailSettings["SenderEmail"], 
-                emailSettings["SmtpPassword"]
-            );
+            Log.Information("Connected to SMTP server successfully. Server capabilities: {Capabilities}", client.Capabilities);
 
+            // For iCloud custom domain, use auth email if provided, otherwise use sender email
+            var authEmail = !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail;
+            
+            // Ensure password is trimmed (critical for Apple app passwords with dashes)
+            var trimmedPassword = smtpPassword?.Trim() ?? string.Empty;
+            
+            Log.Information("Authenticating with email: {AuthEmail} (sending from: {SenderEmail}). Password length: {PasswordLength}", 
+                authEmail, senderEmail, trimmedPassword.Length);
+            
+            // Authenticate with credentials (ensure password is trimmed)
+            await client.AuthenticateAsync(
+                authEmail, 
+                trimmedPassword
+            );
+            
+            Log.Information("Authentication successful!");
+
+            Log.Information("Sending email to {ToEmail}", toEmail);
             await client.SendAsync(message);
+            Log.Information("Email sent successfully to {ToEmail}", toEmail);
         }
         catch (Exception ex)
         {
-            // Log the error
-            Console.WriteLine($"Email sending failed: {ex.Message}");
+            Log.Error(ex, "Email sending failed. To: {ToEmail}, From: {SenderEmail}, SMTP: {SmtpServer}:{SmtpPort}. Error: {ErrorMessage}", 
+                toEmail, senderEmail, smtpServer, smtpPort, ex.Message);
             throw;
         }
         finally
