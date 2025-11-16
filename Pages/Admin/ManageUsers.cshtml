@@ -15,32 +15,32 @@
                 <div class="premium-title-group">
                     <div class="premium-icon-badge">
                         <i class="bi bi-people-fill"></i>
-                    </div>
+            </div>
                     <div>
                         <h1 class="premium-title">Users</h1>
                         <p class="premium-subtitle">@Model.FilteredUsers.Count of @Model.TotalUsers users</p>
-                    </div>
-                </div>
+            </div>
+        </div>
                 <div class="premium-stats-row">
                     <div class="premium-stat-pill active">
                         <i class="bi bi-circle-fill"></i>
                         <span>@Model.ActiveUsers Active</span>
-                    </div>
+    </div>
                     <div class="premium-stat-pill suspended">
                         <i class="bi bi-circle-fill"></i>
                         <span>@Model.SuspendedUsers Suspended</span>
-                    </div>
+        </div>
                     <div class="premium-stat-pill verified">
                         <i class="bi bi-circle-fill"></i>
                         <span>@Model.VerifiedEmails Verified</span>
-                    </div>
+        </div>
                 </div>
             </div>
             <a href="/Admin/Dashboard" class="premium-btn-back">
                 <i class="bi bi-arrow-left"></i>
             </a>
         </div>
-
+        
         <!-- Messages -->
         @if (!string.IsNullOrEmpty(Model.SuccessMessage))
         {
@@ -71,22 +71,22 @@
                 </div>
                 <div class="premium-filters">
                     <select name="roleFilter" class="premium-select">
-                        <option value="">All Roles</option>
-                        <option value="Renter" selected="@(Model.RoleFilter == "Renter")">Renters</option>
-                        <option value="Owner" selected="@(Model.RoleFilter == "Owner")">Owners</option>
-                        <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Admins</option>
-                    </select>
+                            <option value="">All Roles</option>
+                            <option value="Renter" selected="@(Model.RoleFilter == "Renter")">Renters</option>
+                            <option value="Owner" selected="@(Model.RoleFilter == "Owner")">Owners</option>
+                            <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Admins</option>
+                        </select>
                     <select name="statusFilter" class="premium-select">
                         <option value="">All Status</option>
-                        <option value="Active" selected="@(Model.StatusFilter == "Active")">Active</option>
-                        <option value="Suspended" selected="@(Model.StatusFilter == "Suspended")">Suspended</option>
+                            <option value="Active" selected="@(Model.StatusFilter == "Active")">Active</option>
+                            <option value="Suspended" selected="@(Model.StatusFilter == "Suspended")">Suspended</option>
                         <option value="EmailVerified" selected="@(Model.StatusFilter == "EmailVerified")">Verified</option>
                         <option value="EmailNotVerified" selected="@(Model.StatusFilter == "EmailNotVerified")">Unverified</option>
-                    </select>
+                        </select>
                     <button type="submit" class="premium-btn-filter">
                         <i class="bi bi-funnel"></i>
                         Filter
-                    </button>
+                        </button>
                     <a href="/Admin/ManageUsers" class="premium-btn-reset">
                         <i class="bi bi-arrow-clockwise"></i>
                     </a>
@@ -116,7 +116,7 @@
                                     <div class="premium-user-name-row">
                                         <h3 class="premium-user-name">@user.FullName</h3>
                                         <span class="premium-user-id">#@user.UserId</span>
-                                    </div>
+    </div>
                                     <div class="premium-user-meta">
                                         <span class="premium-meta-item">
                                             <i class="bi bi-envelope"></i>
@@ -133,9 +133,13 @@
                                             <i class="bi bi-calendar"></i>
                                             @user.CreatedAt.ToString("MMM dd, yyyy")
                                         </span>
-                                    </div>
-                                </div>
-                            </div>
+                                        <span class="premium-meta-item wallet-balance">
+                                            <i class="bi bi-wallet2"></i>
+                                            Balance: ₱@(Model.UserBalances.ContainsKey(user.UserId) ? Model.UserBalances[user.UserId].ToString("N2") : "0.00")
+                                        </span>
+                </div>
+            </div>
+        </div>
                             
                             <div class="premium-user-badges">
                                 @if (user.IsAdmin)
@@ -163,7 +167,7 @@
                                         Renter
                                     </span>
                                 }
-                            </div>
+                                            </div>
                             
                             <div class="premium-user-status">
                                 @if (user.IsSuspended)
@@ -172,15 +176,15 @@
                                         <i class="bi bi-ban"></i>
                                         Suspended
                                     </span>
-                                }
-                                else
-                                {
+                                                }
+                                                else
+                                                {
                                     <span class="premium-status-badge active">
                                         <i class="bi bi-check-circle-fill"></i>
                                         Active
                                     </span>
-                                }
-                            </div>
+                                                }
+                                            </div>
                             
                             <!-- Inline Actions -->
                             <div class="premium-quick-actions">
@@ -188,31 +192,31 @@
                                 {
                                     <div class="premium-protected-inline">
                                         <i class="bi bi-shield-lock-fill"></i>
-                                    </div>
+                                        </div>
                                 }
                                 else
-                                {
-                                    @if (user.IsSuspended)
-                                    {
+                                                {
+                                                    @if (user.IsSuspended)
+                                                    {
                                         <form method="post" asp-page-handler="Unsuspend" asp-route-userId="@user.UserId" class="premium-form-inline">
                                             <button type="submit" 
                                                     class="premium-btn-compact success"
                                                     title="Reactivate"
                                                     onclick="return confirm('Reactivate @user.FullName?')">
                                                 <i class="bi bi-arrow-counterclockwise"></i>
-                                            </button>
-                                        </form>
-                                    }
-                                    else
-                                    {
+                                                                </button>
+                                                            </form>
+                                                    }
+                                                    else
+                                                    {
                                         <form method="post" asp-page-handler="Suspend" asp-route-userId="@user.UserId" class="premium-form-inline">
                                             <button type="submit" 
                                                     class="premium-btn-compact warning"
                                                     title="Suspend"
                                                     onclick="return confirm('Suspend @user.FullName?')">
                                                 <i class="bi bi-ban"></i>
-                                            </button>
-                                        </form>
+                                                                </button>
+                                                            </form>
                                     }
                                     
                                     <div class="premium-dropdown">
@@ -220,6 +224,12 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <div class="premium-dropdown-menu">
+                                            <button type="button" 
+                                                    class="premium-dropdown-item"
+                                                    onclick="openAddBalanceModal(@user.UserId, '@user.FullName', @(Model.UserBalances.ContainsKey(user.UserId) ? Model.UserBalances[user.UserId] : 0))">
+                                                <i class="bi bi-wallet2"></i>
+                                                Add Balance
+                                            </button>
                                             @if (user.IsOwner && user.VerificationStatus != "Approved")
                                             {
                                                 <form method="post" asp-page-handler="ApproveOwner" asp-route-userId="@user.UserId" class="premium-form-inline">
@@ -228,8 +238,8 @@
                                                             onclick="return confirm('Approve @user.FullName as verified owner?')">
                                                         <i class="bi bi-check-circle-fill"></i>
                                                         Approve Owner
-                                                    </button>
-                                                </form>
+                                                            </button>
+                                                        </form>
                                             }
                                             @if (user.IsOwner && user.VerificationStatus != "Rejected")
                                             {
@@ -239,8 +249,8 @@
                                                             onclick="return confirm('Reject owner verification?')">
                                                         <i class="bi bi-x-circle"></i>
                                                         Reject Owner Verification
-                                                    </button>
-                                                </form>
+                                                                    </button>
+                                                                </form>
                                             }
                                             <form method="post" asp-page-handler="Delete" asp-route-userId="@user.UserId" class="premium-form-inline">
                                                 <button type="submit" 
@@ -248,8 +258,8 @@
                                                         onclick="return confirm('Permanently delete @user.FullName? This cannot be undone!')">
                                                     <i class="bi bi-trash"></i>
                                                     Delete User
-                                                </button>
-                                            </form>
+                                                                    </button>
+                                                                </form>
                                         </div>
                                     </div>
                                 }
@@ -266,12 +276,12 @@
                                 </a>
                             </div>
                         }
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
+                                        </div>
+                            }
+                </div>
+            }
+            else
+            {
             <div class="premium-empty-state">
                 <div class="premium-empty-icon">
                     <i class="bi bi-people"></i>
@@ -282,8 +292,8 @@
                     <i class="bi bi-arrow-clockwise"></i>
                     Reset Filters
                 </a>
-            </div>
-        }
+                </div>
+            }
 
     </div>
 </div>
@@ -1125,7 +1135,7 @@
 }
 </style>
 
-<script>
+    <script>
 (function() {
     'use strict';
     
@@ -1160,4 +1170,229 @@
     
     console.log('✨ Premium Manage Users loaded');
 })();
+
+// Add Balance Modal
+function openAddBalanceModal(userId, userName, currentBalance) {
+    document.getElementById('addBalanceUserId').value = userId;
+    document.getElementById('addBalanceUserName').textContent = userName;
+    document.getElementById('addBalanceCurrentBalance').textContent = '₱' + currentBalance.toFixed(2);
+    document.getElementById('addBalanceAmount').value = '';
+    document.getElementById('addBalanceDescription').value = '';
+    document.getElementById('addBalanceModal').style.display = 'flex';
+}
+
+function closeAddBalanceModal() {
+    document.getElementById('addBalanceModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.getElementById('addBalanceModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAddBalanceModal();
+    }
+});
 </script>
+
+<!-- Add Balance Modal -->
+<div id="addBalanceModal" class="premium-modal" style="display: none;">
+    <div class="premium-modal-content">
+        <div class="premium-modal-header">
+            <h2><i class="bi bi-wallet2"></i> Add Balance</h2>
+            <button type="button" class="premium-modal-close" onclick="closeAddBalanceModal()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <form method="post" asp-page-handler="AddBalance">
+            <input type="hidden" id="addBalanceUserId" name="userId" />
+            <div class="premium-modal-body">
+                <div class="premium-form-group">
+                    <label>User</label>
+                    <div class="premium-form-value" id="addBalanceUserName"></div>
+                </div>
+                <div class="premium-form-group">
+                    <label>Current Balance</label>
+                    <div class="premium-form-value" id="addBalanceCurrentBalance"></div>
+                </div>
+                <div class="premium-form-group">
+                    <label for="addBalanceAmount">Amount to Add <span class="text-danger">*</span></label>
+                    <input type="number" 
+                           id="addBalanceAmount" 
+                           name="amount" 
+                           class="premium-form-input" 
+                           step="0.01" 
+                           min="0.01" 
+                           max="100000" 
+                           required 
+                           placeholder="0.00" />
+                    <small class="premium-form-hint">Maximum: ₱100,000</small>
+                </div>
+                <div class="premium-form-group">
+                    <label for="addBalanceDescription">Description (Optional)</label>
+                    <textarea id="addBalanceDescription" 
+                              name="description" 
+                              class="premium-form-input" 
+                              rows="3" 
+                              placeholder="e.g., Testing balance for rental"></textarea>
+                </div>
+            </div>
+            <div class="premium-modal-footer">
+                <button type="button" class="premium-btn secondary" onclick="closeAddBalanceModal()">Cancel</button>
+                <button type="submit" class="premium-btn success">
+                    <i class="bi bi-check-lg"></i>
+                    Add Balance
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.wallet-balance {
+    color: var(--premium-sage-dark) !important;
+    font-weight: 600 !important;
+}
+
+.wallet-balance i {
+    color: var(--premium-sage) !important;
+}
+
+/* Modal Styles */
+.premium-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.premium-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.premium-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--premium-gray-200);
+}
+
+.premium-modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--premium-gray-900);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.premium-modal-header i {
+    color: var(--premium-sage);
+}
+
+.premium-modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--premium-gray-100);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--premium-gray-600);
+    transition: all 0.2s;
+}
+
+.premium-modal-close:hover {
+    background: var(--premium-gray-200);
+    color: var(--premium-gray-900);
+}
+
+.premium-modal-body {
+    padding: 1.5rem;
+}
+
+.premium-form-group {
+    margin-bottom: 1.25rem;
+}
+
+.premium-form-group:last-child {
+    margin-bottom: 0;
+}
+
+.premium-form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--premium-gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.premium-form-value {
+    padding: 0.75rem;
+    background: var(--premium-gray-50);
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    color: var(--premium-gray-900);
+    font-weight: 500;
+}
+
+.premium-form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1.5px solid var(--premium-gray-200);
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    color: var(--premium-gray-900);
+    background: white;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.premium-form-input:focus {
+    outline: none;
+    border-color: var(--premium-sage);
+    box-shadow: 0 0 0 4px var(--premium-sage-subtle);
+}
+
+.premium-form-hint {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--premium-gray-500);
+    margin-top: 0.375rem;
+}
+
+.premium-modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 1px solid var(--premium-gray-200);
+}
+</style>

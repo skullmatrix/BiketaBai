@@ -76,10 +76,7 @@ public class BookingManagementService
         int renterId,
         int bikeId,
         DateTime startDate,
-        DateTime endDate,
-        string pickupLocation,
-        string returnLocation,
-        decimal? distanceSavedKm = null)
+        DateTime endDate)
     {
         try
         {
@@ -126,20 +123,20 @@ public class BookingManagementService
             var hours = (decimal)(endDate - startDate).TotalHours;
             var days = hours / 24;
             
-            decimal baseAmount = 0;
+            decimal baseRate = 0;
             if (days >= 1)
             {
                 var fullDays = (int)Math.Floor(days);
                 var remainingHours = hours - (fullDays * 24);
-                baseAmount = (fullDays * bike.DailyRate) + (remainingHours * bike.HourlyRate);
+                baseRate = (fullDays * bike.DailyRate) + (remainingHours * bike.HourlyRate);
             }
             else
             {
-                baseAmount = hours * bike.HourlyRate;
+                baseRate = hours * bike.HourlyRate;
             }
 
-            var serviceFee = baseAmount * 0.10m; // 10% service fee
-            var totalAmount = baseAmount + serviceFee;
+            var serviceFee = baseRate * 0.10m; // 10% service fee
+            var totalAmount = baseRate + serviceFee;
 
             // Check wallet balance
             var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == renterId);
@@ -171,10 +168,10 @@ public class BookingManagementService
                 BookingStatusId = 1, // Pending
                 StartDate = startDate,
                 EndDate = endDate,
+                RentalHours = hours,
+                BaseRate = baseRate,
+                ServiceFee = serviceFee,
                 TotalAmount = totalAmount,
-                PickupLocation = pickupLocation,
-                ReturnLocation = returnLocation,
-                DistanceSavedKm = distanceSavedKm,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

@@ -33,26 +33,14 @@ public class DetailsModel : PageModel
     {
         [Required]
         [Display(Name = "Start Date")]
-        public DateTime StartDate { get; set; } = DateTime.Now.AddHours(1);
+        public DateTime? StartDate { get; set; }
 
         [Required]
         [Display(Name = "End Date")]
-        public DateTime EndDate { get; set; } = DateTime.Now.AddDays(1);
-
-        [Required]
-        [MaxLength(255)]
-        [Display(Name = "Pickup Location")]
-        public string PickupLocation { get; set; } = string.Empty;
-
-        [MaxLength(255)]
-        [Display(Name = "Return Location")]
-        public string? ReturnLocation { get; set; }
-
-        [Display(Name = "Distance Saved (km)")]
-        public decimal? DistanceSavedKm { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(int id)
+    private async Task LoadBikeDataAsync(int id)
     {
         Bike = await _context.Bikes
             .Include(b => b.BikeType)
@@ -62,7 +50,7 @@ public class DetailsModel : PageModel
             .FirstOrDefaultAsync(b => b.BikeId == id);
 
         if (Bike == null)
-            return NotFound();
+            return;
 
         // Get ratings
         var ratingValues = await _context.Ratings
@@ -87,6 +75,20 @@ public class DetailsModel : PageModel
             .ToListAsync();
 
         OwnerRating = ownerRatingValues.Any() ? ownerRatingValues.Average() : 0;
+    }
+
+    public async Task<IActionResult> OnGetAsync(int id)
+    {
+        await LoadBikeDataAsync(id);
+
+        if (Bike == null)
+            return NotFound();
+
+        // Initialize default rental dates only if not already set
+        if (!Input.StartDate.HasValue)
+            Input.StartDate = DateTime.Now.AddHours(1);
+        if (!Input.EndDate.HasValue)
+            Input.EndDate = DateTime.Now.AddDays(1);
 
         return Page();
     }
@@ -94,43 +96,68 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!User.Identity?.IsAuthenticated == true)
-            return RedirectToPage("/Account/Login");
+            return RedirectToPage("/Account/Login", new { returnUrl = $"/Bikes/Details/{id}" });
 
         var userId = AuthHelper.GetCurrentUserId(User);
         if (!userId.HasValue)
-            return RedirectToPage("/Account/Login");
+            return RedirectToPage("/Account/Login", new { returnUrl = $"/Bikes/Details/{id}" });
 
-        if (!ModelState.IsValid)
+        // Load bike data first (preserves Input dates)
+        await LoadBikeDataAsync(id);
+        
+        if (Bike == null)
+            return NotFound();
+
+        // Ensure user is a renter
+        if (!AuthHelper.IsRenter(User))
         {
-            await OnGetAsync(id);
+            TempData["ErrorMessage"] = "You need to be registered as a renter to book bikes. Please update your profile.";
             return Page();
         }
 
-        // If return location is not provided, use pickup location
-        var returnLocation = string.IsNullOrWhiteSpace(Input.ReturnLocation) 
-            ? Input.PickupLocation 
-            : Input.ReturnLocation;
+        // Validate dates
+        if (!Input.StartDate.HasValue || !Input.EndDate.HasValue)
+        {
+            TempData["ErrorMessage"] = "Please select both start and end dates";
+            return Page();
+        }
+
+        // Validate that end date is after start date
+        if (Input.EndDate.Value <= Input.StartDate.Value)
+        {
+            TempData["ErrorMessage"] = "End date must be after start date";
+            return Page();
+        }
+
+        // Validate that start date is in the future
+        if (Input.StartDate.Value < DateTime.Now)
+        {
+            TempData["ErrorMessage"] = "Start date cannot be in the past";
+            return Page();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
 
         // Create booking using BookingManagementService
         var result = await _bookingService.CreateBookingAsync(
             userId.Value,
             id,
-            Input.StartDate,
-            Input.EndDate,
-            Input.PickupLocation,
-            returnLocation,
-            Input.DistanceSavedKm
+            Input.StartDate.Value,
+            Input.EndDate.Value
         );
 
         if (result.Success)
         {
             TempData["SuccessMessage"] = result.Message;
-            return RedirectToPage("/Renter/RentalHistory");
+            return RedirectToPage("/Dashboard/Home");
         }
         else
         {
             TempData["ErrorMessage"] = result.Message;
-            await OnGetAsync(id);
+            // Dates are preserved in Input model, no need to reload
             return Page();
         }
     }

@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/bike-management.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/booking-module.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <!-- Loading Animation -->
@@ -63,8 +64,8 @@
                 
                 @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <!-- Mobile: User Name Button (replaces burger) -->
-                    <button class="btn btn-minimal-account d-lg-none" type="button" id="openSidebarBtnMobile">
+                    <!-- Mobile: User Name Button (replaces burger) - Hidden, use bottom nav Profile button instead -->
+                    <button class="btn btn-minimal-account d-none" type="button" id="openSidebarBtnMobile" style="display: none;">
                         <i class="bi bi-person-circle"></i>
                         <span class="ms-1">@User.Identity.Name</span>
                     </button>
@@ -97,6 +98,9 @@
                             @if (AuthHelper.IsOwner(User))
                             {
                                 <li class="nav-item hide-on-mobile-nav">
+                                    <a class="nav-link-minimal" href="/Dashboard/Owner">Dashboard</a>
+                                </li>
+                                <li class="nav-item hide-on-mobile-nav">
                                     <a class="nav-link-minimal" href="/Owner/MyBikes">My Bikes</a>
                                 </li>
                             }
@@ -115,7 +119,7 @@
                         {
                             <!-- Desktop: User Name Button - Opens Sidebar -->
                             <li class="nav-item d-none d-lg-block">
-                                <button class="btn btn-minimal-account" type="button" id="openSidebarBtn">
+                                <button class="btn btn-minimal-account d-none d-lg-block" type="button" id="openSidebarBtn">
                                     <i class="bi bi-person-circle"></i>
                                     <span class="ms-1">@User.Identity.Name</span>
                                 </button>
@@ -208,6 +212,10 @@
                     }
                     @if (AuthHelper.IsOwner(User))
                     {
+                        <a href="/Dashboard/Owner" class="sidebar-link">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Owner Dashboard</span>
+                        </a>
                         <a href="/Owner/MyBikes" class="sidebar-link">
                             <i class="bi bi-bicycle"></i>
                             <span>My Bikes</span>
@@ -230,6 +238,10 @@
                         <a href="/Admin/ManageUsers" class="sidebar-link">
                             <i class="bi bi-people-fill"></i>
                             <span>Manage Users</span>
+                        </a>
+                        <a href="/Admin/Reviews" class="sidebar-link">
+                            <i class="bi bi-star-fill"></i>
+                            <span>Reviews</span>
                         </a>
                         <a href="/Admin/Reports" class="sidebar-link">
                             <i class="bi bi-flag-fill"></i>
@@ -458,6 +470,12 @@
                     closeSidebar();
                 }
             });
+            
+            // Mobile Profile Buttons - Open sidebar on mobile
+            $('#mobileProfileBtnRenter, #mobileProfileBtnOwner').on('click', function(e) {
+                e.preventDefault();
+                openSidebar();
+            });
         });
     </script>
     
@@ -482,22 +500,26 @@
                         <i class="bi bi-clock-history"></i>
                         <span>History</span>
                     </a>
-                    <a href="/Account/Profile" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
+                    <a href="#" id="mobileProfileBtnRenter" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
                         <i class="bi bi-person-fill"></i>
                         <span>Profile</span>
                     </a>
                 }
                 @if (AuthHelper.IsOwner(User))
                 {
-                    <a href="/Owner/MyBikes" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("MyBikes") == true ? "active" : "")">
-                        <i class="bi bi-bicycle"></i>
-                        <span>My Bikes</span>
+                    <a href="/" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString() == "/Index" ? "active" : "")">
+                        <i class="bi bi-house-fill"></i>
+                        <span>Home</span>
                     </a>
-                    <a href="/Owner/RentalRequests" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("RentalRequests") == true ? "active" : "")">
-                        <i class="bi bi-inbox-fill"></i>
-                        <span>Requests</span>
+                    <a href="/Bikes/Browse" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Browse") == true ? "active" : "")">
+                        <i class="bi bi-search"></i>
+                        <span>Browse</span>
                     </a>
-                    <a href="/Account/Profile" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
+                    <a href="/Dashboard/Owner" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Dashboard/Owner") == true ? "active" : "")">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" id="mobileProfileBtnOwner" class="mobile-nav-item @(ViewContext.RouteData.Values["Page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
                         <i class="bi bi-person-fill"></i>
                         <span>Profile</span>
                     </a>
@@ -511,6 +533,10 @@
                     <a href="/Admin/ManageUsers" class="mobile-nav-item">
                         <i class="bi bi-people-fill"></i>
                         <span>Users</span>
+                    </a>
+                    <a href="/Admin/Reviews" class="mobile-nav-item">
+                        <i class="bi bi-star-fill"></i>
+                        <span>Reviews</span>
                     </a>
                     <a href="/Admin/Reports" class="mobile-nav-item">
                         <i class="bi bi-flag-fill"></i>

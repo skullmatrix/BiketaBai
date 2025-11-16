@@ -1,0 +1,187 @@
+@page "{bookingId:int}"
+@model ReviewModel
+@{
+    ViewData["Title"] = "Leave a Review";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/review.css" asp-append-version="true" />
+}
+
+@if (Model.Booking == null)
+{
+    <div class="review-page">
+        <div class="container">
+            <div class="review-not-found">
+                <i class="bi bi-exclamation-circle"></i>
+                <h2>Booking Not Found</h2>
+                <p>The booking you're looking for doesn't exist or you don't have permission to review it.</p>
+                <a href="/Renter/RentalHistory" class="btn-sage-primary">Back to Rental History</a>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.HasRated)
+{
+    <div class="review-page">
+        <div class="container">
+            <div class="review-already-submitted">
+                <i class="bi bi-check-circle"></i>
+                <h2>Review Already Submitted</h2>
+                <p>You have already submitted a review for this booking.</p>
+                <a href="/Renter/RentalHistory" class="btn-sage-primary">Back to Rental History</a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="review-page">
+        <div class="container">
+            <div class="review-container">
+                <!-- Header -->
+                <div class="review-header">
+                    <a href="/Renter/RentalHistory" class="back-link">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>Back</span>
+                    </a>
+                    <h1><i class="bi bi-star-fill"></i> Leave a Review</h1>
+                </div>
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-error">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>@TempData["ErrorMessage"]</span>
+                    </div>
+                }
+
+                <!-- Booking Info -->
+                <div class="booking-preview">
+                    <div class="booking-image">
+                        @if (Model.Booking.Bike.BikeImages.Any())
+                        {
+                            <img src="@Model.Booking.Bike.BikeImages.First().ImageUrl" alt="@Model.Booking.Bike.Brand @Model.Booking.Bike.Model" />
+                        }
+                        else
+                        {
+                            <div class="image-placeholder">
+                                <i class="bi bi-bicycle"></i>
+                            </div>
+                        }
+                    </div>
+                    <div class="booking-info">
+                        <h3>@Model.Booking.Bike.Brand @Model.Booking.Bike.Model</h3>
+                        <div class="booking-meta">
+                            <span><i class="bi bi-tag"></i> @Model.Booking.Bike.BikeType.TypeName</span>
+                            <span><i class="bi bi-person"></i> @Model.Booking.Bike.Owner.FullName</span>
+                        </div>
+                        <div class="booking-date">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Completed on @Model.Booking.EndDate.ToString("MMM dd, yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Form -->
+                <form method="post" class="review-form">
+                    <div class="form-section">
+                        <label class="form-label">
+                            <i class="bi bi-star"></i>
+                            <span>Your Rating <span class="required">*</span></span>
+                        </label>
+                        <div class="rating-input">
+                            @for (int i = 5; i >= 1; i--)
+                            {
+                                <input type="radio" 
+                                       id="rating@i" 
+                                       name="Input.RatingValue" 
+                                       value="@i" 
+                                       asp-for="Input.RatingValue" 
+                                       required />
+                                <label for="rating@i" class="star-label">
+                                    <i class="bi bi-star-fill"></i>
+                                </label>
+                            }
+                        </div>
+                        <span asp-validation-for="Input.RatingValue" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="Input_Review">
+                            <i class="bi bi-chat-left-text"></i>
+                            <span>Your Review (Optional)</span>
+                        </label>
+                        <textarea asp-for="Input.Review" 
+                                  class="form-textarea" 
+                                  rows="6" 
+                                  placeholder="Share your experience with this bike and owner..."></textarea>
+                        <span asp-validation-for="Input.Review" class="text-danger"></span>
+                        <small class="form-hint">Maximum 1000 characters</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="/Renter/RentalHistory" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-sage-primary">
+                            <i class="bi bi-check-lg"></i>
+                            <span>Submit Review</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            // Star rating interaction
+            $('.star-label').on('click', function() {
+                const rating = $(this).prev('input').val();
+                updateStarDisplay(rating);
+            });
+
+            // Update stars on hover
+            $('.star-label').on('mouseenter', function() {
+                const rating = $(this).prev('input').val();
+                highlightStars(rating);
+            });
+
+            $('.rating-input').on('mouseleave', function() {
+                const selectedRating = $('input[name="Input.RatingValue"]:checked').val();
+                if (selectedRating) {
+                    highlightStars(selectedRating);
+                } else {
+                    $('.star-label').removeClass('active');
+                }
+            });
+
+            function updateStarDisplay(rating) {
+                $('.star-label').removeClass('active');
+                $('.star-label').each(function() {
+                    if ($(this).prev('input').val() <= rating) {
+                        $(this).addClass('active');
+                    }
+                });
+            }
+
+            function highlightStars(rating) {
+                $('.star-label').removeClass('active');
+                $('.star-label').each(function() {
+                    if ($(this).prev('input').val() <= rating) {
+                        $(this).addClass('active');
+                    }
+                });
+            }
+
+            // Initialize display if rating is already selected
+            const selectedRating = $('input[name="Input.RatingValue"]:checked').val();
+            if (selectedRating) {
+                updateStarDisplay(selectedRating);
+            }
+        });
+    </script>
+}
+

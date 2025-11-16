@@ -14,16 +14,21 @@ namespace BiketaBai.Pages.Renter
     {
         private readonly BiketaBaiDbContext _context;
         private readonly BookingManagementService _bookingService;
+        private readonly RatingService _ratingService;
 
-        public RentalHistoryModel(BiketaBaiDbContext context, BookingManagementService bookingService)
+        public RentalHistoryModel(BiketaBaiDbContext context, BookingManagementService bookingService, RatingService ratingService)
         {
             _context = context;
             _bookingService = bookingService;
+            _ratingService = ratingService;
         }
 
         public List<Booking> CurrentBookings { get; set; } = new List<Booking>();
         public List<Booking> PastBookings { get; set; } = new List<Booking>();
         public List<Booking> CancelledBookings { get; set; } = new List<Booking>();
+
+        // Dictionary to track which bookings have been rated
+        public Dictionary<int, bool> BookingRatedStatus { get; set; } = new Dictionary<int, bool>();
 
         // Statistics
         public int TotalRentals { get; set; }
@@ -72,6 +77,13 @@ namespace BiketaBai.Pages.Renter
                 .Sum(b => b.TotalAmount);
             ActiveRentals = CurrentBookings.Count;
             CompletedRentals = PastBookings.Count;
+
+            // Pre-load rating status for all bookings
+            foreach (var booking in allBookings)
+            {
+                var hasRated = await _ratingService.HasRatedBookingAsync(booking.BookingId, userId);
+                BookingRatedStatus[booking.BookingId] = hasRated;
+            }
 
             return Page();
         }
@@ -122,6 +134,11 @@ namespace BiketaBai.Pages.Renter
                 "Cancelled" => "bi-x-circle-fill",
                 _ => "bi-question-circle"
             };
+        }
+
+        public bool HasRatedBooking(int bookingId)
+        {
+            return BookingRatedStatus.ContainsKey(bookingId) && BookingRatedStatus[bookingId];
         }
     }
 }

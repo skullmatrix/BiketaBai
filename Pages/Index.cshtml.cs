@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
@@ -22,8 +23,13 @@ public class IndexModel : PageModel
     public int TotalBookings { get; set; }
     public decimal CO2Saved { get; set; }
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
+        // Redirect authenticated users to personalized home page
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToPage("/Dashboard/Home");
+        }
         BikeTypes = await _context.BikeTypes.ToListAsync();
         
         FeaturedBikes = await _context.Bikes
@@ -55,6 +61,8 @@ public class IndexModel : PageModel
             .Where(b => b.DistanceSavedKm.HasValue)
             .SumAsync(b => b.DistanceSavedKm ?? 0);
         CO2Saved = totalKmSaved * 0.2m;
+        
+        return Page();
     }
 }
 

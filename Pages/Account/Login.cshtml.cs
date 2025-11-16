@@ -95,7 +95,7 @@ public class LoginModel : PageModel
         else if (user.IsOwner)
             return RedirectToPage("/Dashboard/Owner");
         else
-            return RedirectToPage("/Dashboard/Renter");
+            return RedirectToPage("/Dashboard/Home");
     }
 }
 

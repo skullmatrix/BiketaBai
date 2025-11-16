@@ -1,0 +1,339 @@
+@page
+@using BiketaBai.Helpers
+@model HomeModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<link rel="stylesheet" href="~/css/dashboard-home.css" asp-append-version="true" />
+
+<div class="dashboard-home-wrapper">
+    <div class="dashboard-home-container">
+        
+        <!-- Welcome Header -->
+        <div class="home-welcome-section">
+            <div class="home-welcome-content">
+                <h1 class="home-welcome-title">
+                    Welcome back, @Model.CurrentUser.FullName! 👋
+                </h1>
+                <p class="home-welcome-subtitle">
+                    @if (AuthHelper.IsRenter(User) && AuthHelper.IsOwner(User))
+                    {
+                        <span>Here's your dashboard overview</span>
+                    }
+                    else if (AuthHelper.IsRenter(User))
+                    {
+                        <span>Ready for your next adventure?</span>
+                    }
+                    else if (AuthHelper.IsOwner(User))
+                    {
+                        <span>Manage your bikes and track your earnings</span>
+                    }
+                </p>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="home-quick-stats">
+                <div class="home-stat-card wallet">
+                    <i class="bi bi-wallet2"></i>
+                    <div>
+                        <div class="home-stat-value">₱@Model.WalletBalance.ToString("N2")</div>
+                        <div class="home-stat-label">Wallet</div>
+                    </div>
+                </div>
+                <div class="home-stat-card points">
+                    <i class="bi bi-star-fill"></i>
+                    <div>
+                        <div class="home-stat-value">@Model.PointsBalance</div>
+                        <div class="home-stat-label">Points</div>
+                    </div>
+                </div>
+                @if (Model.UnreadNotifications > 0)
+                {
+                    <div class="home-stat-card notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        <div>
+                            <div class="home-stat-value">@Model.UnreadNotifications</div>
+                            <div class="home-stat-label">New</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Owner Specific Section -->
+        @if (AuthHelper.IsOwner(User))
+        {
+            <div class="home-section">
+                <div class="home-section-header">
+                    <h2><i class="bi bi-speedometer2"></i> Your Business</h2>
+                    <a href="/Dashboard/Owner" class="home-link-more">View Dashboard →</a>
+                </div>
+                
+                <div class="home-owner-stats">
+                    <div class="home-mini-stat">
+                        <div class="home-mini-icon earnings">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div>
+                            <div class="home-mini-value">₱@Model.TotalEarnings</div>
+                            <div class="home-mini-label">Total Earnings</div>
+                        </div>
+                    </div>
+                    <div class="home-mini-stat">
+                        <div class="home-mini-icon listings">
+                            <i class="bi bi-bicycle"></i>
+                        </div>
+                        <div>
+                            <div class="home-mini-value">@Model.ActiveListings</div>
+                            <div class="home-mini-label">Active Listings</div>
+                        </div>
+                    </div>
+                    <div class="home-mini-stat">
+                        <div class="home-mini-icon requests">
+                            <i class="bi bi-inbox"></i>
+                        </div>
+                        <div>
+                            <div class="home-mini-value">@Model.PendingRequests.Count</div>
+                            <div class="home-mini-label">Pending Requests</div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.PendingRequests.Any())
+                {
+                    <div class="home-pending-requests">
+                        <h3>Pending Rental Requests</h3>
+                        <div class="home-requests-list">
+                            @foreach (var request in Model.PendingRequests)
+                            {
+                                <div class="home-request-item">
+                                    <div class="home-request-info">
+                                        <strong>@request.Renter.FullName</strong>
+                                        <span>wants to rent <strong>@request.Bike.Brand @request.Bike.Model</strong></span>
+                                        <small>@request.StartDate.ToString("MMM dd") - @request.EndDate.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                    <a href="/Owner/RentalRequests" class="home-btn-small">Review</a>
+                                </div>
+                            }
+                        </div>
+                        @if (Model.PendingRequests.Count >= 5)
+                        {
+                            <a href="/Owner/RentalRequests" class="home-link-view-all">View all requests →</a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Renter Specific Section -->
+        @if (AuthHelper.IsRenter(User))
+        {
+            @if (Model.ActiveRentals.Any())
+            {
+                <div class="home-section">
+                    <div class="home-section-header">
+                        <h2><i class="bi bi-bicycle"></i> Active Rentals</h2>
+                        <a href="/Renter/RentalHistory" class="home-link-more">View All →</a>
+                    </div>
+                    
+                    <div class="home-rentals-grid">
+                        @foreach (var rental in Model.ActiveRentals)
+                        {
+                            <div class="home-rental-card active">
+                                @if (rental.Bike.BikeImages.Any())
+                                {
+                                    <div class="home-rental-image">
+                                        <img src="@rental.Bike.BikeImages.FirstOrDefault()?.ImageUrl" alt="@rental.Bike.Brand @rental.Bike.Model" />
+                                        <span class="home-rental-badge active">@rental.BookingStatus.StatusName</span>
+                                    </div>
+                                }
+                                <div class="home-rental-info">
+                                    <h4>@rental.Bike.Brand @rental.Bike.Model</h4>
+                                    <div class="home-rental-dates">
+                                        <i class="bi bi-calendar"></i>
+                                        @rental.StartDate.ToString("MMM dd") - @rental.EndDate.ToString("MMM dd")
+                                    </div>
+                                    <div class="home-rental-price">₱@rental.TotalAmount.ToString("N2")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="home-section">
+                <div class="home-section-header">
+                    <h2><i class="bi bi-clock-history"></i> Recent Rentals</h2>
+                    @if (Model.RecentRentals.Any())
+                    {
+                        <a href="/Renter/RentalHistory" class="home-link-more">View All →</a>
+                    }
+                </div>
+                
+                @if (Model.RecentRentals.Any())
+                {
+                    <div class="home-rentals-grid">
+                        @foreach (var rental in Model.RecentRentals)
+                        {
+                            <div class="home-rental-card completed">
+                                @if (rental.Bike.BikeImages.Any())
+                                {
+                                    <div class="home-rental-image">
+                                        <img src="@rental.Bike.BikeImages.FirstOrDefault()?.ImageUrl" alt="@rental.Bike.Brand @rental.Bike.Model" />
+                                        <span class="home-rental-badge completed">@rental.BookingStatus.StatusName</span>
+                                    </div>
+                                }
+                                <div class="home-rental-info">
+                                    <h4>@rental.Bike.Brand @rental.Bike.Model</h4>
+                                    <div class="home-rental-dates">
+                                        <i class="bi bi-calendar"></i>
+                                        @rental.StartDate.ToString("MMM dd") - @rental.EndDate.ToString("MMM dd")
+                                    </div>
+                                    <div class="home-rental-price">₱@rental.TotalAmount.ToString("N2")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="home-empty-state-inline">
+                        <div class="home-empty-icon">
+                            <i class="bi bi-bicycle"></i>
+                        </div>
+                        <div class="home-empty-content">
+                            <h3>Start Your Biking Journey Now! 🚴</h3>
+                            <p>You haven't rented any bikes yet. Explore our collection and find your perfect ride!</p>
+                            <a href="/Bikes/Browse" class="home-btn-primary">
+                                <i class="bi bi-search"></i>
+                                Browse Available Bikes
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="home-section">
+                <div class="home-section-header">
+                    <h2><i class="bi bi-graph-up"></i> Your Stats</h2>
+                </div>
+                <div class="home-renter-stats">
+                    <div class="home-stat-box">
+                        <i class="bi bi-bicycle"></i>
+                        <div>
+                            <div class="home-stat-number">@Model.TotalRentals</div>
+                            <div class="home-stat-text">Total Rentals</div>
+                        </div>
+                    </div>
+                    <div class="home-stat-box">
+                        <i class="bi bi-star-fill"></i>
+                        <div>
+                            <div class="home-stat-number">@Model.PointsBalance</div>
+                            <div class="home-stat-text">Reward Points</div>
+                        </div>
+                    </div>
+                    <div class="home-stat-box">
+                        <i class="bi bi-wallet2"></i>
+                        <div>
+                            <div class="home-stat-number">₱@Model.WalletBalance.ToString("N0")</div>
+                            <div class="home-stat-text">Available Balance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Suggested Bikes Section (For Both) -->
+        <div class="home-section">
+            <div class="home-section-header">
+                <h2><i class="bi bi-stars"></i> 
+                    @if (AuthHelper.IsRenter(User))
+                    {
+                        <span>Bikes You Might Like</span>
+                    }
+                    else
+                    {
+                        <span>Popular Bikes</span>
+                    }
+                </h2>
+                <a href="/Bikes/Browse" class="home-link-more">Browse All →</a>
+            </div>
+            
+            @if (Model.SuggestedBikes.Any())
+            {
+                <div class="home-bikes-grid">
+                    @foreach (var bike in Model.SuggestedBikes)
+                    {
+                        <a href="/Bikes/Details/@bike.BikeId" class="home-bike-card">
+                            @if (bike.BikeImages.Any())
+                            {
+                                <div class="home-bike-image">
+                                    <img src="@bike.BikeImages.FirstOrDefault()?.ImageUrl" alt="@bike.Brand @bike.Model" />
+                                    <div class="home-bike-price">₱@bike.DailyRate.ToString("N0")<span>/day</span></div>
+                                </div>
+                            }
+                            <div class="home-bike-info">
+                                <h4>@bike.Brand @bike.Model</h4>
+                                <div class="home-bike-meta">
+                                    <span class="home-bike-type">@bike.BikeType.TypeName</span>
+                                    @if (Model.BikeRatings.ContainsKey(bike.BikeId) && Model.BikeRatings[bike.BikeId] > 0)
+                                    {
+                                        <span class="home-bike-rating">
+                                            <i class="bi bi-star-fill"></i>
+                                            @Model.BikeRatings[bike.BikeId].ToString("F1")
+                                        </span>
+                                    }
+                                </div>
+                                <div class="home-bike-owner">
+                                    <i class="bi bi-person"></i>
+                                    @bike.Owner.FullName
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="home-empty-state">
+                    <i class="bi bi-bicycle"></i>
+                    <p>No bikes available at the moment</p>
+                    <a href="/Bikes/Browse" class="home-btn-primary">Browse All Bikes</a>
+                </div>
+            }
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="home-quick-actions-section">
+            @if (AuthHelper.IsOwner(User))
+            {
+                <a href="/Owner/AddBike" class="home-action-card add-bike">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    <div>
+                        <h3>List a New Bike</h3>
+                        <p>Start earning by adding your bike</p>
+                    </div>
+                </a>
+            }
+            @if (AuthHelper.IsRenter(User))
+            {
+                <a href="/Wallet/Index" class="home-action-card wallet">
+                    <i class="bi bi-wallet2"></i>
+                    <div>
+                        <h3>Top Up Wallet</h3>
+                        <p>Add funds for easier bookings</p>
+                    </div>
+                </a>
+            }
+            <a href="/Points/Index" class="home-action-card points">
+                <i class="bi bi-star-fill"></i>
+                <div>
+                    <h3>Reward Points</h3>
+                    <p>Check your points and rewards</p>
+                </div>
+            </a>
+        </div>
+
+    </div>
+</div>

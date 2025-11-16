@@ -1,0 +1,904 @@
+/* ============================================
+   DASHBOARD HOME - PREMIUM MINIMALIST DESIGN
+   ============================================ */
+
+:root {
+    --sage-primary: #87A96B;
+    --sage-dark: #6B8E4D;
+    --sage-light: #A8C58F;
+    --sage-subtle: #F0F4ED;
+    
+    --neutral-50: #FAFAFA;
+    --neutral-100: #F5F5F5;
+    --neutral-200: #E5E5E5;
+    --neutral-300: #D4D4D4;
+    --neutral-400: #A3A3A3;
+    --neutral-500: #737373;
+    --neutral-600: #525252;
+    --neutral-700: #404040;
+    --neutral-800: #262626;
+    --neutral-900: #171717;
+    
+    --success: #10B981;
+    --warning: #F59E0B;
+    --info: #3B82F6;
+    --error: #EF4444;
+    
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.12);
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+}
+
+/* ============================================
+   LAYOUT & CONTAINER
+   ============================================ */
+
+.dashboard-home-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(to bottom, var(--neutral-50) 0%, white 100%);
+    padding: 1.25rem;
+}
+
+.dashboard-home-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   WELCOME SECTION - COMPACT HERO
+   ============================================ */
+
+.home-welcome-section {
+    background: linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-dark) 100%);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    box-shadow: 0 8px 24px rgba(135, 169, 107, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.home-welcome-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
+
+.home-welcome-content {
+    position: relative;
+    z-index: 1;
+}
+
+.home-welcome-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.375rem 0;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.home-welcome-subtitle {
+    font-size: 1rem;
+    margin: 0 0 1.25rem 0;
+    opacity: 0.95;
+}
+
+/* Quick Stats in Header */
+.home-quick-stats {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.home-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: all 0.2s ease;
+}
+
+.home-stat-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.home-stat-card i {
+    font-size: 1.125rem;
+}
+
+.home-stat-value {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.home-stat-label {
+    font-size: 0.6875rem;
+    opacity: 0.9;
+    margin-top: 0.125rem;
+}
+
+/* ============================================
+   SECTIONS - COMPACT CARDS
+   ============================================ */
+
+.home-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--neutral-200);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+}
+
+.home-section:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.home-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--neutral-100);
+}
+
+.home-section-header h2 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.home-section-header h2 i {
+    color: var(--sage-primary);
+    font-size: 1.25rem;
+}
+
+.home-link-more {
+    color: var(--sage-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.home-link-more:hover {
+    color: var(--sage-dark);
+    gap: 0.5rem;
+}
+
+/* ============================================
+   OWNER STATS - COMPACT GRID
+   ============================================ */
+
+.home-owner-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.home-mini-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--neutral-50);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--neutral-200);
+    transition: all 0.2s ease;
+}
+
+.home-mini-stat:hover {
+    border-color: var(--sage-primary);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.1);
+}
+
+.home-mini-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.home-mini-icon.earnings { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); }
+.home-mini-icon.listings { background: linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-dark) 100%); }
+.home-mini-icon.requests { background: linear-gradient(135deg, var(--warning) 0%, #D97706 100%); }
+
+.home-mini-value {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+}
+
+.home-mini-label {
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+/* ============================================
+   PENDING REQUESTS - COMPACT LIST
+   ============================================ */
+
+.home-pending-requests h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    margin: 0 0 0.75rem 0;
+}
+
+.home-requests-list {
+    display: grid;
+    gap: 0.625rem;
+}
+
+.home-request-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem;
+    background: var(--neutral-50);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--neutral-200);
+    transition: all 0.2s ease;
+}
+
+.home-request-item:hover {
+    border-color: var(--sage-primary);
+    background: var(--sage-subtle);
+}
+
+.home-request-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.home-request-info strong {
+    color: var(--neutral-900);
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.home-request-info span {
+    font-size: 0.8125rem;
+    color: var(--neutral-600);
+}
+
+.home-request-info small {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+}
+
+.home-btn-small {
+    padding: 0.5rem 1rem;
+    background: var(--sage-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.home-btn-small:hover {
+    background: var(--sage-dark);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.3);
+}
+
+/* ============================================
+   RENTALS GRID - COMPACT CARDS
+   ============================================ */
+
+.home-rentals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.home-rental-card {
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.home-rental-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    transform: translateY(-4px);
+    border-color: var(--sage-primary);
+}
+
+.home-rental-image {
+    position: relative;
+    height: 140px;
+    overflow: hidden;
+    background: var(--neutral-100);
+}
+
+.home-rental-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.home-rental-card:hover .home-rental-image img {
+    transform: scale(1.05);
+}
+
+.home-rental-badge {
+    position: absolute;
+    top: 0.625rem;
+    right: 0.625rem;
+    padding: 0.3125rem 0.625rem;
+    background: rgba(16, 185, 129, 0.95);
+    backdrop-filter: blur(8px);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.home-rental-badge.completed {
+    background: rgba(107, 114, 128, 0.95);
+}
+
+.home-rental-info {
+    padding: 0.875rem;
+}
+
+.home-rental-info h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--neutral-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.home-rental-dates {
+    display: flex;
+    align-items: center;
+    gap: 0.3125rem;
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+    margin-bottom: 0.5rem;
+}
+
+.home-rental-dates i {
+    font-size: 0.6875rem;
+}
+
+.home-rental-price {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--sage-primary);
+}
+
+/* ============================================
+   RENTER STATS - COMPACT BOXES
+   ============================================ */
+
+.home-renter-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.home-stat-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--neutral-50) 0%, white 100%);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--neutral-200);
+    transition: all 0.2s ease;
+}
+
+.home-stat-box:hover {
+    border-color: var(--sage-primary);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.1);
+}
+
+.home-stat-box i {
+    font-size: 1.75rem;
+    color: var(--sage-primary);
+}
+
+.home-stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+}
+
+.home-stat-text {
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+/* ============================================
+   BIKES GRID - MODERN CARDS
+   ============================================ */
+
+.home-bikes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.home-bike-card {
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.home-bike-card:hover {
+    box-shadow: 0 8px 24px rgba(135, 169, 107, 0.12);
+    transform: translateY(-4px);
+    border-color: var(--sage-primary);
+}
+
+.home-bike-image {
+    position: relative;
+    height: 150px;
+    overflow: hidden;
+    background: var(--neutral-100);
+}
+
+.home-bike-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.home-bike-card:hover .home-bike-image img {
+    transform: scale(1.05);
+}
+
+.home-bike-price {
+    position: absolute;
+    bottom: 0.625rem;
+    right: 0.625rem;
+    padding: 0.4375rem 0.75rem;
+    background: rgba(135, 169, 107, 0.95);
+    backdrop-filter: blur(8px);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 0.9375rem;
+}
+
+.home-bike-price span {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.home-bike-info {
+    padding: 0.875rem;
+}
+
+.home-bike-info h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--neutral-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.home-bike-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.home-bike-type {
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+    padding: 0.25rem 0.5rem;
+    background: var(--neutral-100);
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.home-bike-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.home-bike-rating i {
+    font-size: 0.75rem;
+}
+
+.home-bike-owner {
+    display: flex;
+    align-items: center;
+    gap: 0.3125rem;
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+}
+
+.home-bike-owner i {
+    font-size: 0.6875rem;
+}
+
+/* ============================================
+   QUICK ACTIONS - GRADIENT CARDS
+   ============================================ */
+
+.home-quick-actions-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.home-action-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.home-action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
+
+.home-action-card.add-bike {
+    background: linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-dark) 100%);
+    color: white;
+}
+
+.home-action-card.wallet {
+    background: linear-gradient(135deg, var(--info) 0%, #2563EB 100%);
+    color: white;
+}
+
+.home-action-card.points {
+    background: linear-gradient(135deg, var(--warning) 0%, #D97706 100%);
+    color: white;
+}
+
+.home-action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.home-action-card i {
+    font-size: 2.25rem;
+    position: relative;
+    z-index: 1;
+}
+
+.home-action-card > div {
+    position: relative;
+    z-index: 1;
+}
+
+.home-action-card h3 {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+}
+
+.home-action-card p {
+    font-size: 0.8125rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* ============================================
+   EMPTY STATES
+   ============================================ */
+
+.home-empty-state {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+}
+
+.home-empty-state i {
+    font-size: 2.5rem;
+    color: var(--neutral-300);
+    margin-bottom: 0.75rem;
+}
+
+.home-empty-state p {
+    color: var(--neutral-600);
+    margin-bottom: 1.25rem;
+    font-size: 0.9375rem;
+}
+
+.home-empty-state-inline {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--neutral-50) 0%, white 100%);
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--neutral-300);
+}
+
+.home-empty-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(135, 169, 107, 0.1) 0%, rgba(107, 142, 77, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.home-empty-icon i {
+    font-size: 2rem;
+    color: var(--sage-primary);
+}
+
+.home-empty-content {
+    flex: 1;
+}
+
+.home-empty-content h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0 0 0.375rem 0;
+}
+
+.home-empty-content p {
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+    margin: 0 0 1rem 0;
+    line-height: 1.5;
+}
+
+.home-empty-content .home-btn-primary {
+    display: inline-flex;
+}
+
+.home-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: var(--sage-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.home-btn-primary:hover {
+    background: var(--sage-dark);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(135, 169, 107, 0.3);
+}
+
+.home-link-view-all {
+    display: block;
+    text-align: center;
+    margin-top: 0.875rem;
+    color: var(--sage-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.home-link-view-all:hover {
+    color: var(--sage-dark);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .home-bikes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-home-wrapper {
+        padding: 1rem;
+    }
+    
+    .home-welcome-section {
+        padding: 1.5rem;
+    }
+    
+    .home-welcome-title {
+        font-size: 1.5rem;
+    }
+    
+    .home-welcome-subtitle {
+        font-size: 0.9375rem;
+    }
+    
+    .home-quick-stats {
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .home-stat-card {
+        padding: 0.625rem 1rem;
+    }
+    
+    .home-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .home-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .home-bikes-grid,
+    .home-rentals-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .home-quick-actions-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .home-empty-state-inline {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .home-empty-content h3 {
+        font-size: 1rem;
+    }
+    
+    .home-request-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .home-btn-small {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-welcome-title {
+        font-size: 1.25rem;
+    }
+    
+    .home-owner-stats,
+    .home-renter-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .home-bike-image,
+    .home-rental-image {
+        height: 120px;
+    }
+}
+
+/* ============================================
+   ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.home-section {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.home-section:nth-child(1) { animation-delay: 0.05s; }
+.home-section:nth-child(2) { animation-delay: 0.1s; }
+.home-section:nth-child(3) { animation-delay: 0.15s; }
+.home-section:nth-child(4) { animation-delay: 0.2s; }
+.home-section:nth-child(5) { animation-delay: 0.25s; }
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Focus states for accessibility */
+.home-btn-primary:focus,
+.home-btn-small:focus,
+.home-link-more:focus,
+.home-bike-card:focus,
+.home-rental-card:focus,
+.home-action-card:focus {
+    outline: 2px solid var(--sage-primary);
+    outline-offset: 2px;
+}
+
