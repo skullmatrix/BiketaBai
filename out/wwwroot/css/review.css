@@ -1,0 +1,394 @@
+/* ============================================
+   REVIEW PAGE - PREMIUM MINIMALIST DESIGN
+   Sage Green Accent Theme
+   ============================================ */
+
+:root {
+    --sage-50: #f6f7f6;
+    --sage-100: #e8ede8;
+    --sage-200: #d1ddd1;
+    --sage-300: #a8c5a8;
+    --sage-400: #7fa99b;
+    --sage-500: #6b8e5f;
+    --sage-600: #5a7c6f;
+    
+    --neutral-50: #fafafa;
+    --neutral-100: #f5f5f5;
+    --neutral-200: #e5e5e5;
+    --neutral-300: #d4d4d4;
+    --neutral-400: #a3a3a3;
+    --neutral-600: #525252;
+    --neutral-700: #404040;
+    --neutral-800: #262626;
+    --neutral-900: #171717;
+    
+    --danger: #ef4444;
+    --success: #10b981;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.review-page {
+    background: var(--neutral-50);
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+}
+
+.review-page .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.review-container {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--neutral-200);
+    overflow: hidden;
+}
+
+/* Header */
+.review-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--neutral-200);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.back-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--neutral-600);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color var(--transition);
+}
+
+.back-link:hover {
+    color: var(--sage-600);
+}
+
+.review-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.review-header h1 i {
+    color: var(--sage-500);
+}
+
+/* Alerts */
+.alert {
+    margin: 1.5rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.alert-error i {
+    color: var(--danger);
+}
+
+/* Booking Preview */
+.booking-preview {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--sage-50);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.booking-image {
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--neutral-100);
+}
+
+.booking-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--neutral-400);
+    font-size: 2.5rem;
+}
+
+.booking-info {
+    flex: 1;
+}
+
+.booking-info h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin: 0 0 0.75rem 0;
+}
+
+.booking-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+}
+
+.booking-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.booking-meta i {
+    color: var(--sage-500);
+}
+
+.booking-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+}
+
+.booking-date i {
+    color: var(--sage-500);
+}
+
+/* Review Form */
+.review-form {
+    padding: 1.5rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin-bottom: 1rem;
+}
+
+.form-label i {
+    color: var(--sage-500);
+}
+
+.required {
+    color: var(--danger);
+}
+
+/* Star Rating */
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.star-label {
+    font-size: 2rem;
+    color: var(--neutral-300);
+    cursor: pointer;
+    transition: all var(--transition);
+    line-height: 1;
+}
+
+.star-label:hover,
+.star-label.active {
+    color: #fbbf24;
+    transform: scale(1.1);
+}
+
+.star-label i {
+    display: block;
+}
+
+/* Textarea */
+.form-textarea {
+    width: 100%;
+    padding: 0.875rem;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    font-size: 0.9375rem;
+    color: var(--neutral-900);
+    background: white;
+    font-family: inherit;
+    resize: vertical;
+    transition: all var(--transition);
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--sage-500);
+    box-shadow: 0 0 0 3px rgba(107, 142, 95, 0.1);
+}
+
+.form-hint {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    margin-top: 0.5rem;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--neutral-200);
+}
+
+.btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    background: white;
+    color: var(--neutral-700);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-secondary:hover {
+    background: var(--neutral-100);
+    border-color: var(--neutral-300);
+    color: var(--neutral-900);
+}
+
+.btn-sage-primary {
+    background: var(--sage-500);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(107, 142, 95, 0.2);
+}
+
+.btn-sage-primary:hover {
+    background: var(--sage-600);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(107, 142, 95, 0.3);
+}
+
+/* Not Found / Already Submitted */
+.review-not-found,
+.review-already-submitted {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--neutral-200);
+}
+
+.review-not-found i,
+.review-already-submitted i {
+    font-size: 4rem;
+    color: var(--neutral-300);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.review-not-found h2,
+.review-already-submitted h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin: 0 0 0.5rem 0;
+}
+
+.review-not-found p,
+.review-already-submitted p {
+    font-size: 0.9375rem;
+    color: var(--neutral-600);
+    margin: 0 0 1.5rem 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .review-page {
+        padding: 1rem 0;
+    }
+    
+    .review-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .booking-preview {
+        flex-direction: column;
+    }
+    
+    .booking-image {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-secondary,
+    .btn-sage-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+

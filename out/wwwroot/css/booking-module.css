@@ -1,0 +1,558 @@
+/* ========================================
+   Bike Browsing & Booking Management Styles
+   ======================================== */
+
+/* Browse Page - Search Hero */
+.search-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 0;
+    color: white;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+}
+
+.search-hero h2 {
+    color: white;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.search-bar-main .form-control {
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.search-bar-main .btn {
+    padding: 1rem 3rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Filters Sidebar */
+.filters-sidebar {
+    border-radius: 15px;
+    background: white;
+}
+
+.filters-sidebar .form-label {
+    color: #2d3748;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.filters-sidebar .form-check-input:checked {
+    background-color: #48bb78;
+    border-color: #48bb78;
+}
+
+.filters-sidebar .btn-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border: none;
+    font-weight: 600;
+    padding: 0.75rem;
+}
+
+/* Bike Browse Cards */
+.bike-browse-card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.bike-browse-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.bike-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    height: 220px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.bike-browse-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.bike-browse-card:hover .bike-browse-image {
+    transform: scale(1.1);
+}
+
+.placeholder-bike-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 5rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.bike-badge-overlay {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+}
+
+.bike-badge-overlay .badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 20px;
+}
+
+.price-tag-browse strong {
+    font-size: 1.5rem;
+    color: #48bb78;
+}
+
+.rating-stars-small i {
+    font-size: 0.85rem;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 5rem 2rem;
+    text-align: center;
+    background: #f7fafc;
+    border-radius: 15px;
+}
+
+.empty-state i {
+    font-size: 5rem;
+    color: #cbd5e0;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state h4 {
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+/* Map View */
+.map-container {
+    background: white;
+    border-radius: 15px;
+    padding: 3rem;
+    min-height: 600px;
+}
+
+.map-placeholder {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.map-placeholder i {
+    font-size: 5rem;
+    color: #48bb78;
+}
+
+.map-feature-card {
+    background: #f7fafc;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.map-feature-card i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Bike Details Page */
+.spec-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 10px;
+}
+
+.spec-item i {
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.spec-content small {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.spec-content p {
+    font-size: 1rem;
+    color: #2d3748;
+}
+
+/* Rental Rules */
+.rules-section .rule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rules-section .rule-item:last-child {
+    border-bottom: none;
+}
+
+.rule-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.rule-content h6 {
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+/* Rating Summary */
+.rating-summary-box {
+    background: #f7fafc;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.average-rating-display h1 {
+    color: #48bb78;
+    font-weight: 700;
+}
+
+.rating-breakdown .rating-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.rating-label {
+    min-width: 50px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.rating-count {
+    min-width: 40px;
+    text-align: right;
+    color: #718096;
+}
+
+.rating-breakdown .progress {
+    height: 8px;
+    background-color: #e2e8f0;
+}
+
+/* Review Cards */
+.review-card {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.review-card:last-child {
+    border-bottom: none;
+}
+
+.reviewer-avatar {
+    font-size: 3rem;
+    color: #cbd5e0;
+    margin-right: 1rem;
+}
+
+.review-text {
+    color: #4a5568;
+    line-height: 1.6;
+}
+
+/* Booking Card */
+.sticky-top {
+    position: sticky;
+    top: 20px;
+}
+
+.price-tag {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #48bb78;
+}
+
+/* Pricing Preview */
+#pricingPreview .card-header {
+    font-weight: 600;
+}
+
+#pricingPreview .card-body div {
+    font-size: 0.95rem;
+}
+
+/* Rental History Page */
+.modern-stat-card {
+    border-radius: 15px;
+    padding: 2rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.modern-stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.bg-gradient-blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-green {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.bg-gradient-orange {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+.bg-gradient-purple {
+    background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+}
+
+.stat-icon {
+    font-size: 3rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    opacity: 0.95;
+}
+
+/* Rental History Cards */
+.rental-history-card {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.rental-history-card:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+}
+
+.rental-status-banner {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rental-history-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.placeholder-rental-image {
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: rgba(0, 0, 0, 0.1);
+}
+
+.price-highlight {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f7fafc;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-top: 1rem;
+}
+
+.price-label {
+    font-weight: 600;
+    color: #718096;
+}
+
+.price-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #48bb78;
+}
+
+.rental-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Tabs Styling */
+.nav-pills .nav-link {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: #4a5568;
+    transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: #f7fafc;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.nav-pills .nav-link .badge {
+    margin-left: 0.5rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .search-hero {
+        padding: 2rem 0;
+    }
+
+    .search-hero h2 {
+        font-size: 1.5rem;
+    }
+
+    .search-bar-main .btn {
+        padding: 0.75rem 1.5rem;
+    }
+
+    .filters-sidebar {
+        margin-bottom: 2rem;
+        position: relative !important;
+        top: 0 !important;
+    }
+
+    .bike-image-wrapper {
+        height: 180px;
+    }
+
+    .price-tag {
+        font-size: 1.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+    }
+
+    .modern-stat-card {
+        padding: 1.5rem;
+    }
+
+    .rental-history-image,
+    .placeholder-rental-image {
+        height: 120px;
+    }
+
+    .rental-actions {
+        flex-direction: column;
+    }
+
+    .rental-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bike-browse-card,
+.rental-history-card {
+    animation: fadeInUp 0.5s ease;
+}
+
+/* Utility Classes */
+.text-eco-green {
+    color: #48bb78;
+}
+
+.btn-eco-primary {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-eco-primary:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+    color: white;
+}
+
+.shadow-eco {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Success/Error Messages */
+.alert-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border: none;
+    color: white;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    border: none;
+    color: white;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+}
+
