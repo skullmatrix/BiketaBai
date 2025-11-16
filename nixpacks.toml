@@ -8,5 +8,5 @@ cmds = ["dotnet restore BiketaBai.csproj"]
 cmds = ["dotnet publish BiketaBai.csproj -c Release -o out --no-restore"]
 
 [start]
-cmd = "dotnet ./out/BiketaBai.dll"
+cmd = "dotnet out/BiketaBai.dll"
 
