@@ -119,8 +119,8 @@ public class EmailService
         using var client = new SmtpClient();
         try
         {
-            // Set timeout for SMTP operations (30 seconds)
-            client.Timeout = 30000;
+            // Set timeout for SMTP operations (30 minutes)
+            client.Timeout = 1800000; // 30 minutes = 30 * 60 * 1000 milliseconds
             
             Log.Information("Connecting to SMTP server {SmtpServer}:{SmtpPort} with STARTTLS", smtpServer, smtpPort);
             

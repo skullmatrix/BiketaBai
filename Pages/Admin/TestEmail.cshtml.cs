@@ -254,8 +254,8 @@ namespace BiketaBai.Pages.Admin
                 var step3 = new TestStep { Name = "3. Connect to SMTP Server" };
                 using var client = new SmtpClient();
                 
-                // Set timeout (30 seconds)
-                client.Timeout = 30000;
+                // Set timeout (30 minutes)
+                client.Timeout = 1800000; // 30 minutes = 30 * 60 * 1000 milliseconds
 
                 try
                 {
