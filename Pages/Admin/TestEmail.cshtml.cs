@@ -253,11 +253,19 @@ namespace BiketaBai.Pages.Admin
                 // Step 3: Connect to SMTP Server
                 var step3 = new TestStep { Name = "3. Connect to SMTP Server" };
                 using var client = new SmtpClient();
+                
+                // Set timeout (30 seconds)
+                client.Timeout = 30000;
 
                 try
                 {
-                    Log.Information("SMTP Test: Connecting to {Server}:{Port}", smtpServer, smtpPort);
-                    await client.ConnectAsync(smtpServer, int.Parse(smtpPort), SecureSocketOptions.StartTls);
+                    var port = int.Parse(smtpPort);
+                    var secureOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                    
+                    Log.Information("SMTP Test: Connecting to {Server}:{Port} with {SecureOption}", smtpServer, smtpPort, secureOption);
+                    
+                    // Try primary connection
+                    await client.ConnectAsync(smtpServer, port, secureOption);
                     
                     step3.Success = true;
                     step3.Message = "✅ Connected to SMTP server";
@@ -268,7 +276,23 @@ namespace BiketaBai.Pages.Admin
                 {
                     step3.Success = false;
                     step3.Message = "❌ Failed to connect to SMTP server";
-                    step3.Details = $"Error: {ex.Message}";
+                    
+                    var errorDetails = $"Error: {ex.Message}";
+                    
+                    // Add Railway-specific troubleshooting
+                    if (ex.Message.Contains("timeout") || ex.Message.Contains("timed out"))
+                    {
+                        errorDetails += $"\n\n⚠️ Connection Timeout - Possible Causes:\n";
+                        errorDetails += $"• Railway free tier may block outbound SMTP connections\n";
+                        errorDetails += $"• Port {smtpPort} may be blocked by firewall\n";
+                        errorDetails += $"• iCloud SMTP may be blocking Railway IP addresses\n";
+                        errorDetails += $"\n💡 Solutions:\n";
+                        errorDetails += $"• Try port 465 (SSL) instead of 587 (STARTTLS)\n";
+                        errorDetails += $"• Use Railway's SMTP service or third-party email service (SendGrid, Mailgun)\n";
+                        errorDetails += $"• Upgrade Railway plan (may have fewer restrictions)";
+                    }
+                    
+                    step3.Details = errorDetails;
                     result.Steps.Add(step3);
                     result.ErrorMessage = $"Connection failed: {ex.Message}";
                     result.FullException = ex.ToString();

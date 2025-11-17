@@ -87,13 +87,20 @@ public class EmailService
         using var client = new SmtpClient();
         try
         {
+            // Set timeout for SMTP operations (30 seconds)
+            client.Timeout = 30000;
+            
             Log.Information("Connecting to SMTP server {SmtpServer}:{SmtpPort} with STARTTLS", smtpServer, smtpPort);
             
-            // Connect with STARTTLS (port 587)
+            // Try connecting with timeout
+            var port = int.Parse(smtpPort);
+            var secureOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+            
+            // Connect with STARTTLS (port 587) or SSL (port 465)
             await client.ConnectAsync(
                 smtpServer, 
-                int.Parse(smtpPort), 
-                SecureSocketOptions.StartTls
+                port, 
+                secureOption
             );
 
             Log.Information("Connected to SMTP server successfully. Server capabilities: {Capabilities}", client.Capabilities);
