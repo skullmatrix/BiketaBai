@@ -280,16 +280,23 @@ namespace BiketaBai.Pages.Admin
                     var errorDetails = $"Error: {ex.Message}";
                     
                     // Add Railway-specific troubleshooting
-                    if (ex.Message.Contains("timeout") || ex.Message.Contains("timed out"))
+                    if (ex.Message.Contains("timeout") || ex.Message.Contains("timed out") || ex is System.TimeoutException)
                     {
-                        errorDetails += $"\n\n⚠️ Connection Timeout - Possible Causes:\n";
-                        errorDetails += $"• Railway free tier may block outbound SMTP connections\n";
-                        errorDetails += $"• Port {smtpPort} may be blocked by firewall\n";
-                        errorDetails += $"• iCloud SMTP may be blocking Railway IP addresses\n";
-                        errorDetails += $"\n💡 Solutions:\n";
-                        errorDetails += $"• Try port 465 (SSL) instead of 587 (STARTTLS)\n";
-                        errorDetails += $"• Use Railway's SMTP service or third-party email service (SendGrid, Mailgun)\n";
-                        errorDetails += $"• Upgrade Railway plan (may have fewer restrictions)";
+                        errorDetails += $"\n\n🚫 RAILWAY FREE TIER LIMITATION:\n";
+                        errorDetails += $"Railway's free tier BLOCKS outbound SMTP connections (ports 587, 465, 25).\n";
+                        errorDetails += $"This is a network restriction, not a configuration issue.\n";
+                        errorDetails += $"\n✅ RECOMMENDED SOLUTION - Use SendGrid (Free):\n";
+                        errorDetails += $"1. Sign up at https://sendgrid.com (100 emails/day free)\n";
+                        errorDetails += $"2. Create API Key\n";
+                        errorDetails += $"3. Update Railway env vars:\n";
+                        errorDetails += $"   EmailSettings__SmtpServer=smtp.sendgrid.net\n";
+                        errorDetails += $"   EmailSettings__SmtpPort=587\n";
+                        errorDetails += $"   EmailSettings__SmtpPassword=<your-sendgrid-api-key>\n";
+                        errorDetails += $"   EmailSettings__SenderEmail=<your-verified-sender>\n";
+                        errorDetails += $"\n📋 Alternative Solutions:\n";
+                        errorDetails += $"• Use Mailgun (5,000 emails/month free)\n";
+                        errorDetails += $"• Upgrade Railway plan (may allow SMTP)\n";
+                        errorDetails += $"• Use AWS SES (very cheap, pay-as-you-go)";
                     }
                     
                     step3.Details = errorDetails;
