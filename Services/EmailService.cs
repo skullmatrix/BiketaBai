@@ -3,6 +3,8 @@ using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace BiketaBai.Services;
 
@@ -93,80 +95,127 @@ public class EmailService
             smtpPort = "587"; // Default port
         }
 
-        Log.Information("Attempting to send email to {ToEmail} from {SenderEmail} via {SmtpServer}:{SmtpPort}", 
-            toEmail, senderEmail, smtpServer, smtpPort);
-        Log.Information("Email password length: {PasswordLength}, Starts with: {PasswordStart}, Ends with: {PasswordEnd}", 
-            smtpPassword?.Length ?? 0, 
-            smtpPassword?.Substring(0, Math.Min(4, smtpPassword?.Length ?? 0)) ?? "null",
-            smtpPassword?.Substring(Math.Max(0, (smtpPassword?.Length ?? 0) - 4)) ?? "null");
-        Log.Information("Auth email: {AuthEmail}, Sender email: {SenderEmail}", 
-            !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail, senderEmail);
+        // Check if using SendGrid - use REST API instead of SMTP (works with Railway)
+        var isSendGrid = smtpServer?.Contains("sendgrid", StringComparison.OrdinalIgnoreCase) == true;
         
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(
-            senderName ?? "Bike Ta Bai", 
-            senderEmail
-        ));
-        message.To.Add(new MailboxAddress("", toEmail));
-        message.Subject = subject;
-
-        var bodyBuilder = new BodyBuilder
+        if (isSendGrid)
         {
-            HtmlBody = htmlBody
-        };
-        message.Body = bodyBuilder.ToMessageBody();
+            // Use SendGrid REST API (works with Railway - uses HTTPS port 443)
+            Log.Information("Using SendGrid REST API (bypasses Railway SMTP restrictions)");
+            
+            try
+            {
+                var apiKey = smtpPassword?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(apiKey) || !apiKey.StartsWith("SG.", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("SendGrid API key is invalid. It should start with 'SG.'");
+                }
 
-        using var client = new SmtpClient();
-        try
-        {
-            // Set timeout for SMTP operations (30 minutes)
-            client.Timeout = 1800000; // 30 minutes = 30 * 60 * 1000 milliseconds
-            
-            Log.Information("Connecting to SMTP server {SmtpServer}:{SmtpPort} with STARTTLS", smtpServer, smtpPort);
-            
-            // Try connecting with timeout
-            var port = int.Parse(smtpPort);
-            var secureOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
-            
-            // Connect with STARTTLS (port 587) or SSL (port 465)
-            await client.ConnectAsync(
-                smtpServer, 
-                port, 
-                secureOption
-            );
-
-            Log.Information("Connected to SMTP server successfully. Server capabilities: {Capabilities}", client.Capabilities);
-
-            // For iCloud custom domain, use auth email if provided, otherwise use sender email
-            var authEmail = !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail;
-            
-            // Ensure password is trimmed (critical for Apple app passwords with dashes)
-            var trimmedPassword = smtpPassword?.Trim() ?? string.Empty;
-            
-            Log.Information("Authenticating with email: {AuthEmail} (sending from: {SenderEmail}). Password length: {PasswordLength}", 
-                authEmail, senderEmail, trimmedPassword.Length);
-            
-            // Authenticate with credentials (ensure password is trimmed)
-            await client.AuthenticateAsync(
-                authEmail, 
-                trimmedPassword
-            );
-            
-            Log.Information("Authentication successful!");
-
-            Log.Information("Sending email to {ToEmail}", toEmail);
-            await client.SendAsync(message);
-            Log.Information("Email sent successfully to {ToEmail}", toEmail);
+                var client = new SendGridClient(apiKey);
+                var from = new EmailAddress(senderEmail, senderName ?? "Bike Ta Bai");
+                var to = new EmailAddress(toEmail);
+                
+                var msg = MailHelper.CreateSingleEmail(from, to, subject, null, htmlBody);
+                
+                Log.Information("Sending email via SendGrid REST API to {ToEmail}", toEmail);
+                var response = await client.SendEmailAsync(msg);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Log.Information("Email sent successfully via SendGrid to {ToEmail}", toEmail);
+                }
+                else
+                {
+                    var responseBody = await response.Body.ReadAsStringAsync();
+                    Log.Error("SendGrid API error. Status: {StatusCode}, Body: {ResponseBody}", response.StatusCode, responseBody);
+                    throw new InvalidOperationException($"SendGrid API error: {response.StatusCode} - {responseBody}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SendGrid REST API failed. To: {ToEmail}, From: {SenderEmail}. Error: {ErrorMessage}", 
+                    toEmail, senderEmail, ex.Message);
+                throw;
+            }
         }
-        catch (Exception ex)
+        else
         {
-            Log.Error(ex, "Email sending failed. To: {ToEmail}, From: {SenderEmail}, SMTP: {SmtpServer}:{SmtpPort}. Error: {ErrorMessage}", 
-                toEmail, senderEmail, smtpServer, smtpPort, ex.Message);
-            throw;
-        }
-        finally
-        {
-            await client.DisconnectAsync(true);
+            // Use traditional SMTP for other providers
+            Log.Information("Attempting to send email to {ToEmail} from {SenderEmail} via {SmtpServer}:{SmtpPort}", 
+                toEmail, senderEmail, smtpServer, smtpPort);
+            Log.Information("Email password length: {PasswordLength}, Starts with: {PasswordStart}, Ends with: {PasswordEnd}", 
+                smtpPassword?.Length ?? 0, 
+                smtpPassword?.Substring(0, Math.Min(4, smtpPassword?.Length ?? 0)) ?? "null",
+                smtpPassword?.Substring(Math.Max(0, (smtpPassword?.Length ?? 0) - 4)) ?? "null");
+            Log.Information("Auth email: {AuthEmail}, Sender email: {SenderEmail}", 
+                !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail, senderEmail);
+            
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(
+                senderName ?? "Bike Ta Bai", 
+                senderEmail
+            ));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = subject;
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = htmlBody
+            };
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+            try
+            {
+                // Set timeout for SMTP operations (30 minutes)
+                client.Timeout = 1800000; // 30 minutes = 30 * 60 * 1000 milliseconds
+                
+                Log.Information("Connecting to SMTP server {SmtpServer}:{SmtpPort} with STARTTLS", smtpServer, smtpPort);
+                
+                // Try connecting with timeout
+                var port = int.Parse(smtpPort);
+                var secureOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                
+                // Connect with STARTTLS (port 587) or SSL (port 465)
+                await client.ConnectAsync(
+                    smtpServer, 
+                    port, 
+                    secureOption
+                );
+
+                Log.Information("Connected to SMTP server successfully. Server capabilities: {Capabilities}", client.Capabilities);
+
+                // For iCloud custom domain, use auth email if provided, otherwise use sender email
+                var authEmail = !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail;
+                
+                // Ensure password is trimmed (critical for Apple app passwords with dashes)
+                var trimmedPassword = smtpPassword?.Trim() ?? string.Empty;
+                
+                Log.Information("Authenticating with email: {AuthEmail} (sending from: {SenderEmail}). Password length: {PasswordLength}", 
+                    authEmail, senderEmail, trimmedPassword.Length);
+                
+                // Authenticate with credentials (ensure password is trimmed)
+                await client.AuthenticateAsync(
+                    authEmail, 
+                    trimmedPassword
+                );
+                
+                Log.Information("Authentication successful!");
+
+                Log.Information("Sending email to {ToEmail}", toEmail);
+                await client.SendAsync(message);
+                Log.Information("Email sent successfully to {ToEmail}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Email sending failed. To: {ToEmail}, From: {SenderEmail}, SMTP: {SmtpServer}:{SmtpPort}. Error: {ErrorMessage}", 
+                    toEmail, senderEmail, smtpServer, smtpPort, ex.Message);
+                throw;
+            }
+            finally
+            {
+                await client.DisconnectAsync(true);
+            }
         }
     }
 

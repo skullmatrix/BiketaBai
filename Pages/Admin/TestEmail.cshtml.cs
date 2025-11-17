@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
 using Serilog;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace BiketaBai.Pages.Admin
 {
@@ -250,75 +252,134 @@ namespace BiketaBai.Pages.Admin
                 step2.Details = $"To: {testEmail}, Subject: {message.Subject}";
                 result.Steps.Add(step2);
 
-                // Step 3: Connect to SMTP Server
-                var step3 = new TestStep { Name = "3. Connect to SMTP Server" };
-                using var client = new SmtpClient();
+                // Check if using SendGrid - use REST API instead of SMTP
+                var isSendGrid = smtpServer?.Contains("sendgrid", StringComparison.OrdinalIgnoreCase) == true;
                 
-                // Set timeout (30 minutes)
-                client.Timeout = 1800000; // 30 minutes = 30 * 60 * 1000 milliseconds
-
-                try
+                if (isSendGrid)
                 {
-                    var port = int.Parse(smtpPort);
-                    var secureOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                    // Use SendGrid REST API (bypasses Railway SMTP restrictions)
+                    var step3 = new TestStep { Name = "3. SendGrid REST API" };
                     
-                    Log.Information("SMTP Test: Connecting to {Server}:{Port} with {SecureOption}", smtpServer, smtpPort, secureOption);
-                    
-                    // Try primary connection
-                    await client.ConnectAsync(smtpServer, port, secureOption);
-                    
-                    step3.Success = true;
-                    step3.Message = "✅ Connected to SMTP server";
-                    step3.Details = $"Server: {smtpServer}:{smtpPort}, Capabilities: {client.Capabilities}";
-                    result.Steps.Add(step3);
-                }
-                catch (Exception ex)
-                {
-                    step3.Success = false;
-                    step3.Message = "❌ Failed to connect to SMTP server";
-                    
-                    var errorDetails = $"Error: {ex.Message}";
-                    
-                    // Check for timeout exception (Railway blocks SMTP)
-                    var isTimeout = ex is System.TimeoutException || 
-                                   ex.GetType().Name.Contains("Timeout") ||
-                                   ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) || 
-                                   ex.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase);
-                    
-                    if (isTimeout)
+                    try
                     {
-                        step3.Message = "🚫 RAILWAY BLOCKS SMTP - Use SendGrid Instead";
-                        errorDetails = $"\n\n🚫 RAILWAY FREE TIER LIMITATION DETECTED:\n";
-                        errorDetails += $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-                        errorDetails += $"Railway's free tier BLOCKS all outbound SMTP connections.\n";
-                        errorDetails += $"Ports 587, 465, and 25 are blocked by Railway's firewall.\n";
-                        errorDetails += $"This is a network restriction - NOT a configuration issue.\n";
-                        errorDetails += $"\n✅ SOLUTION: Switch to SendGrid (5 minutes setup)\n";
-                        errorDetails += $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-                        errorDetails += $"\n📝 Quick Setup Steps:\n";
-                        errorDetails += $"1. Sign up: https://sendgrid.com (100 emails/day FREE)\n";
-                        errorDetails += $"2. Verify sender: admin@biketabai.net\n";
-                        errorDetails += $"3. Create API Key (Settings → API Keys)\n";
-                        errorDetails += $"4. Update Railway Variables:\n";
-                        errorDetails += $"\n   EmailSettings__SmtpServer=smtp.sendgrid.net\n";
-                        errorDetails += $"   EmailSettings__SmtpPort=587\n";
-                        errorDetails += $"   EmailSettings__SmtpPassword=<your-api-key>\n";
-                        errorDetails += $"   EmailSettings__SmtpAuthEmail=apikey\n";
-                        errorDetails += $"   EmailSettings__SenderEmail=admin@biketabai.net\n";
-                        errorDetails += $"\n📖 Full guide: See SETUP_SENDGRID_FOR_RAILWAY.md\n";
-                        errorDetails += $"\n💡 Alternatives:\n";
-                        errorDetails += $"• Mailgun (5,000 emails/month free)\n";
-                        errorDetails += $"• Upgrade Railway plan\n";
-                        errorDetails += $"• AWS SES (pay-as-you-go)";
+                        var apiKey = smtpPassword?.Trim() ?? string.Empty;
+                        if (string.IsNullOrEmpty(apiKey) || !apiKey.StartsWith("SG.", StringComparison.OrdinalIgnoreCase))
+                        {
+                            step3.Success = false;
+                            step3.Message = "❌ Invalid SendGrid API Key";
+                            step3.Details = "SendGrid API key must start with 'SG.'. Please check your EmailSettings__SmtpPassword in Railway.";
+                            result.Steps.Add(step3);
+                            result.ErrorMessage = "Invalid SendGrid API key";
+                            return result;
+                        }
+
+                        var client = new SendGridClient(apiKey);
+                        var from = new EmailAddress(senderEmail, senderName ?? "Bike Ta Bai");
+                        var to = new EmailAddress(testEmail);
+                        
+                        var msg = MailHelper.CreateSingleEmail(from, to, message.Subject, null, 
+                            message.Body is TextPart textPart ? textPart.Text : "Test email from Bike Ta Bai");
+                        
+                        Log.Information("SMTP Test: Sending via SendGrid REST API to {TestEmail}", testEmail);
+                        var response = await client.SendEmailAsync(msg);
+                        
+                        if (response.IsSuccessStatusCode)
+                        {
+                            step3.Success = true;
+                            step3.Message = "✅ Email sent via SendGrid REST API";
+                            step3.Details = $"Status: {response.StatusCode}, To: {testEmail}\n\n✅ SendGrid REST API works with Railway!";
+                            result.Steps.Add(step3);
+                            
+                            result.Success = true;
+                            return result;
+                        }
+                        else
+                        {
+                            var responseBody = await response.Body.ReadAsStringAsync();
+                            step3.Success = false;
+                            step3.Message = "❌ SendGrid API error";
+                            step3.Details = $"Status: {response.StatusCode}\nResponse: {responseBody}";
+                            result.Steps.Add(step3);
+                            result.ErrorMessage = $"SendGrid API error: {response.StatusCode}";
+                            result.FullException = responseBody;
+                            return result;
+                        }
                     }
+                    catch (Exception ex)
+                    {
+                        step3.Success = false;
+                        step3.Message = "❌ SendGrid REST API failed";
+                        step3.Details = $"Error: {ex.Message}";
+                        result.Steps.Add(step3);
+                        result.ErrorMessage = $"SendGrid API failed: {ex.Message}";
+                        result.FullException = ex.ToString();
+                        return result;
+                    }
+                }
+                else
+                {
+                    // Use traditional SMTP for other providers
+                    // Step 3: Connect to SMTP Server
+                    var step3 = new TestStep { Name = "3. Connect to SMTP Server" };
+                    using var client = new SmtpClient();
                     
-                    step3.Details = errorDetails;
-                    result.Steps.Add(step3);
-                    result.ErrorMessage = isTimeout 
-                        ? "Railway blocks SMTP connections. Switch to SendGrid or another email service."
-                        : $"Connection failed: {ex.Message}";
-                    result.FullException = ex.ToString();
-                    return result;
+                    // Set timeout (30 minutes)
+                    client.Timeout = 1800000; // 30 minutes = 30 * 60 * 1000 milliseconds
+
+                    try
+                    {
+                        var port = int.Parse(smtpPort);
+                        var secureOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                        
+                        Log.Information("SMTP Test: Connecting to {Server}:{Port} with {SecureOption}", smtpServer, smtpPort, secureOption);
+                        
+                        // Try primary connection
+                        await client.ConnectAsync(smtpServer, port, secureOption);
+                        
+                        step3.Success = true;
+                        step3.Message = "✅ Connected to SMTP server";
+                        step3.Details = $"Server: {smtpServer}:{smtpPort}, Capabilities: {client.Capabilities}";
+                        result.Steps.Add(step3);
+                    }
+                    catch (Exception ex)
+                    {
+                        step3.Success = false;
+                        step3.Message = "❌ Failed to connect to SMTP server";
+                        
+                        var errorDetails = $"Error: {ex.Message}";
+                        
+                        // Check for timeout exception (Railway blocks SMTP)
+                        var isTimeout = ex is System.TimeoutException || 
+                                       ex.GetType().Name.Contains("Timeout") ||
+                                       ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) || 
+                                       ex.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase);
+                        
+                        if (isTimeout)
+                        {
+                            step3.Message = "🚫 RAILWAY BLOCKS SMTP - Use SendGrid REST API";
+                            errorDetails = $"\n\n🚫 RAILWAY FREE TIER LIMITATION DETECTED:\n";
+                            errorDetails += $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                            errorDetails += $"Railway's free tier BLOCKS all outbound SMTP connections.\n";
+                            errorDetails += $"Ports 587, 465, and 25 are blocked by Railway's firewall.\n";
+                            errorDetails += $"This is a network restriction - NOT a configuration issue.\n";
+                            errorDetails += $"\n✅ SOLUTION: Use SendGrid REST API (already implemented!)\n";
+                            errorDetails += $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                            errorDetails += $"\n📝 Update Railway Variables:\n";
+                            errorDetails += $"\n   EmailSettings__SmtpServer=smtp.sendgrid.net\n";
+                            errorDetails += $"   EmailSettings__SmtpPassword=<your-sendgrid-api-key>\n";
+                            errorDetails += $"   EmailSettings__SenderEmail=admin@biketabai.net\n";
+                            errorDetails += $"\n💡 The code now automatically uses SendGrid REST API when SendGrid is detected!\n";
+                            errorDetails += $"   This bypasses Railway's SMTP restrictions.";
+                        }
+                        
+                        step3.Details = errorDetails;
+                        result.Steps.Add(step3);
+                        result.ErrorMessage = isTimeout 
+                            ? "Railway blocks SMTP connections. Use SendGrid REST API instead."
+                            : $"Connection failed: {ex.Message}";
+                        result.FullException = ex.ToString();
+                        return result;
+                    }
                 }
 
                 // Step 4: Authenticate
