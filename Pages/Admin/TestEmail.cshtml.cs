@@ -380,85 +380,85 @@ namespace BiketaBai.Pages.Admin
                         result.FullException = ex.ToString();
                         return result;
                     }
-                }
 
-                // Step 4: Authenticate
-                var step4 = new TestStep { Name = "4. Authenticate" };
-                var authEmail = !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail;
-                
-                try
-                {
-                    Log.Information("SMTP Test: Authenticating with {AuthEmail}", authEmail);
-                    await client.AuthenticateAsync(authEmail, smtpPassword);
-                    
-                    step4.Success = true;
-                    step4.Message = "✅ Authentication successful";
-                    step4.Details = $"Authenticated as: {authEmail}";
-                    result.Steps.Add(step4);
-                }
-                catch (Exception ex)
-                {
-                    step4.Success = false;
-                    step4.Message = "❌ Authentication failed";
-                    step4.Details = $"Error: {ex.Message}\n\nCommon causes:\n- Wrong password (check for spaces/typos)\n- App password not generated\n- 2FA not enabled (for Gmail)\n- Account locked/restricted";
-                    result.Steps.Add(step4);
-                    result.ErrorMessage = $"Authentication failed: {ex.Message}";
-                    result.FullException = ex.ToString();
+                    // Step 4: Authenticate
+                    var step4 = new TestStep { Name = "4. Authenticate" };
+                    var authEmail = !string.IsNullOrEmpty(smtpAuthEmail) ? smtpAuthEmail : senderEmail;
                     
                     try
                     {
-                        await client.DisconnectAsync(true);
+                        Log.Information("SMTP Test: Authenticating with {AuthEmail}", authEmail);
+                        await client.AuthenticateAsync(authEmail, smtpPassword);
+                        
+                        step4.Success = true;
+                        step4.Message = "✅ Authentication successful";
+                        step4.Details = $"Authenticated as: {authEmail}";
+                        result.Steps.Add(step4);
                     }
-                    catch { }
-                    
-                    return result;
-                }
+                    catch (Exception ex)
+                    {
+                        step4.Success = false;
+                        step4.Message = "❌ Authentication failed";
+                        step4.Details = $"Error: {ex.Message}\n\nCommon causes:\n- Wrong password (check for spaces/typos)\n- App password not generated\n- 2FA not enabled (for Gmail)\n- Account locked/restricted";
+                        result.Steps.Add(step4);
+                        result.ErrorMessage = $"Authentication failed: {ex.Message}";
+                        result.FullException = ex.ToString();
+                        
+                        try
+                        {
+                            await client.DisconnectAsync(true);
+                        }
+                        catch { }
+                        
+                        return result;
+                    }
 
-                // Step 5: Send Email
-                var step5 = new TestStep { Name = "5. Send Email" };
-                try
-                {
-                    Log.Information("SMTP Test: Sending email to {TestEmail}", testEmail);
-                    await client.SendAsync(message);
-                    
-                    step5.Success = true;
-                    step5.Message = "✅ Email sent successfully";
-                    step5.Details = $"Email sent to: {testEmail}";
-                    result.Steps.Add(step5);
-                }
-                catch (Exception ex)
-                {
-                    step5.Success = false;
-                    step5.Message = "❌ Failed to send email";
-                    step5.Details = $"Error: {ex.Message}";
-                    result.Steps.Add(step5);
-                    result.ErrorMessage = $"Send failed: {ex.Message}";
-                    result.FullException = ex.ToString();
-                    
+                    // Step 5: Send Email
+                    var step5 = new TestStep { Name = "5. Send Email" };
+                    try
+                    {
+                        Log.Information("SMTP Test: Sending email to {TestEmail}", testEmail);
+                        await client.SendAsync(message);
+                        
+                        step5.Success = true;
+                        step5.Message = "✅ Email sent successfully";
+                        step5.Details = $"Email sent to: {testEmail}";
+                        result.Steps.Add(step5);
+                    }
+                    catch (Exception ex)
+                    {
+                        step5.Success = false;
+                        step5.Message = "❌ Failed to send email";
+                        step5.Details = $"Error: {ex.Message}";
+                        result.Steps.Add(step5);
+                        result.ErrorMessage = $"Send failed: {ex.Message}";
+                        result.FullException = ex.ToString();
+                        
+                        try
+                        {
+                            await client.DisconnectAsync(true);
+                        }
+                        catch { }
+                        
+                        return result;
+                    }
+
+                    // Step 6: Disconnect
+                    var step6 = new TestStep { Name = "6. Disconnect" };
                     try
                     {
                         await client.DisconnectAsync(true);
+                        step6.Success = true;
+                        step6.Message = "✅ Disconnected from SMTP server";
+                        result.Steps.Add(step6);
                     }
-                    catch { }
-                    
-                    return result;
-                }
-
-                // Step 6: Disconnect
-                var step6 = new TestStep { Name = "6. Disconnect" };
-                try
-                {
-                    await client.DisconnectAsync(true);
-                    step6.Success = true;
-                    step6.Message = "✅ Disconnected from SMTP server";
-                    result.Steps.Add(step6);
-                }
-                catch (Exception ex)
-                {
-                    step6.Success = false;
-                    step6.Message = "⚠️ Disconnect warning";
-                    step6.Details = $"Error: {ex.Message} (non-critical)";
-                    result.Steps.Add(step6);
+                    catch (Exception ex)
+                    {
+                        step6.Success = false;
+                        step6.Message = "⚠️ Disconnect warning";
+                        step6.Details = $"Error: {ex.Message} (non-critical)";
+                        result.Steps.Add(step6);
+                    }
                 }
 
                 result.Success = true;
