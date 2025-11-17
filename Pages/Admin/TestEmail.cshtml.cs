@@ -149,6 +149,10 @@ namespace BiketaBai.Pages.Admin
                            !string.IsNullOrEmpty(railwaySmtpServer) ||
                            !string.IsNullOrEmpty(railwaySmtpPassword);
             
+            // Check environment
+            var environment = _configuration["ASPNETCORE_ENVIRONMENT"] ?? "Production";
+            var isProduction = environment.Equals("Production", StringComparison.OrdinalIgnoreCase);
+            
             if (hasEnvVars)
             {
                 var envVars = new List<string>();
@@ -157,12 +161,21 @@ namespace BiketaBai.Pages.Admin
                 if (!string.IsNullOrEmpty(envSmtpPassword)) envVars.Add($"EmailSettings__SmtpPassword=***");
                 if (!string.IsNullOrEmpty(railwaySmtpPassword)) envVars.Add($"EmailSettings:SmtpPassword=***");
                 
-                ConfigInfo.ConfigSource = $"⚠️ Environment Variables OVERRIDE config files!\nFound: {string.Join(", ", envVars)}";
+                if (isProduction)
+                {
+                    // In production, environment variables are expected and correct
+                    ConfigInfo.ConfigSource = $"✅ Environment Variables (Production)\nFound: {string.Join(", ", envVars)}\n\nThis is normal for Railway deployment. Environment variables securely override config files.";
+                }
+                else
+                {
+                    // In development, warn if env vars are set (might be accidental)
+                    ConfigInfo.ConfigSource = $"⚠️ Environment Variables OVERRIDE config files!\nFound: {string.Join(", ", envVars)}\n\nIn Development, this might override your local appsettings.Development.json";
+                }
             }
             else
             {
                 // Check which appsettings file is being used
-                var isDevelopment = _configuration["ASPNETCORE_ENVIRONMENT"] == "Development";
+                var isDevelopment = environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
                 ConfigInfo.ConfigSource = isDevelopment ? "appsettings.Development.json" : "appsettings.json";
             }
         }

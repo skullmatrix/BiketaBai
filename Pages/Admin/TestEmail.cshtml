@@ -61,12 +61,18 @@
                                     <tr>
                                         <th>Config Source</th>
                                         <td>
-                                            @if (Model.ConfigInfo.ConfigSource.Contains("⚠️") || Model.ConfigInfo.ConfigSource.Contains("Environment Variables"))
+                                            @if (Model.ConfigInfo.ConfigSource.Contains("⚠️"))
                                             {
                                                 <div class="alert alert-warning p-2 mb-0">
                                                     <strong>⚠️ WARNING:</strong><br/>
                                                     <pre class="mb-0 small">@Model.ConfigInfo.ConfigSource</pre>
-                                                    <small class="text-danger">Environment variables override config files! You need to update/remove them.</small>
+                                                    <small class="text-muted">In Development, environment variables override local config files.</small>
+                                                </div>
+                                            }
+                                            else if (Model.ConfigInfo.ConfigSource.Contains("✅") || Model.ConfigInfo.ConfigSource.Contains("Environment Variables"))
+                                            {
+                                                <div class="alert alert-info p-2 mb-0">
+                                                    <pre class="mb-0 small">@Model.ConfigInfo.ConfigSource</pre>
                                                 </div>
                                             }
                                             else

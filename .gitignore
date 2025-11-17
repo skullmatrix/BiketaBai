@@ -119,3 +119,7 @@ appsettings.*.json
 # Documentation files - ignore all .md files (troubleshooting guides, deployment docs, etc.)
 *.md
 !README.md
+
+# Allow email test page files
+!Pages/Admin/TestEmail.cshtml
+!Pages/Admin/TestEmail.cshtml.cs
