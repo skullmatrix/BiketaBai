@@ -172,7 +172,16 @@
                                             <p class="mb-1">@step.Message</p>
                                             @if (!string.IsNullOrEmpty(step.Details))
                                             {
-                                                <small class="text-muted">@step.Details</small>
+                                                @if (step.Details.Contains("RAILWAY") || step.Details.Contains("SendGrid"))
+                                                {
+                                                    <div class="alert alert-warning mt-2 mb-0">
+                                                        <pre class="mb-0 small text-start" style="white-space: pre-wrap; font-family: inherit;">@step.Details</pre>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted">@step.Details</small>
+                                                }
                                             }
                                         </div>
                                     }

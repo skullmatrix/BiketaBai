@@ -279,29 +279,44 @@ namespace BiketaBai.Pages.Admin
                     
                     var errorDetails = $"Error: {ex.Message}";
                     
-                    // Add Railway-specific troubleshooting
-                    if (ex.Message.Contains("timeout") || ex.Message.Contains("timed out") || ex is System.TimeoutException)
+                    // Check for timeout exception (Railway blocks SMTP)
+                    var isTimeout = ex is System.TimeoutException || 
+                                   ex.GetType().Name.Contains("Timeout") ||
+                                   ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) || 
+                                   ex.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase);
+                    
+                    if (isTimeout)
                     {
-                        errorDetails += $"\n\n🚫 RAILWAY FREE TIER LIMITATION:\n";
-                        errorDetails += $"Railway's free tier BLOCKS outbound SMTP connections (ports 587, 465, 25).\n";
-                        errorDetails += $"This is a network restriction, not a configuration issue.\n";
-                        errorDetails += $"\n✅ RECOMMENDED SOLUTION - Use SendGrid (Free):\n";
-                        errorDetails += $"1. Sign up at https://sendgrid.com (100 emails/day free)\n";
-                        errorDetails += $"2. Create API Key\n";
-                        errorDetails += $"3. Update Railway env vars:\n";
-                        errorDetails += $"   EmailSettings__SmtpServer=smtp.sendgrid.net\n";
+                        step3.Message = "🚫 RAILWAY BLOCKS SMTP - Use SendGrid Instead";
+                        errorDetails = $"\n\n🚫 RAILWAY FREE TIER LIMITATION DETECTED:\n";
+                        errorDetails += $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                        errorDetails += $"Railway's free tier BLOCKS all outbound SMTP connections.\n";
+                        errorDetails += $"Ports 587, 465, and 25 are blocked by Railway's firewall.\n";
+                        errorDetails += $"This is a network restriction - NOT a configuration issue.\n";
+                        errorDetails += $"\n✅ SOLUTION: Switch to SendGrid (5 minutes setup)\n";
+                        errorDetails += $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                        errorDetails += $"\n📝 Quick Setup Steps:\n";
+                        errorDetails += $"1. Sign up: https://sendgrid.com (100 emails/day FREE)\n";
+                        errorDetails += $"2. Verify sender: admin@biketabai.net\n";
+                        errorDetails += $"3. Create API Key (Settings → API Keys)\n";
+                        errorDetails += $"4. Update Railway Variables:\n";
+                        errorDetails += $"\n   EmailSettings__SmtpServer=smtp.sendgrid.net\n";
                         errorDetails += $"   EmailSettings__SmtpPort=587\n";
-                        errorDetails += $"   EmailSettings__SmtpPassword=<your-sendgrid-api-key>\n";
-                        errorDetails += $"   EmailSettings__SenderEmail=<your-verified-sender>\n";
-                        errorDetails += $"\n📋 Alternative Solutions:\n";
-                        errorDetails += $"• Use Mailgun (5,000 emails/month free)\n";
-                        errorDetails += $"• Upgrade Railway plan (may allow SMTP)\n";
-                        errorDetails += $"• Use AWS SES (very cheap, pay-as-you-go)";
+                        errorDetails += $"   EmailSettings__SmtpPassword=<your-api-key>\n";
+                        errorDetails += $"   EmailSettings__SmtpAuthEmail=apikey\n";
+                        errorDetails += $"   EmailSettings__SenderEmail=admin@biketabai.net\n";
+                        errorDetails += $"\n📖 Full guide: See SETUP_SENDGRID_FOR_RAILWAY.md\n";
+                        errorDetails += $"\n💡 Alternatives:\n";
+                        errorDetails += $"• Mailgun (5,000 emails/month free)\n";
+                        errorDetails += $"• Upgrade Railway plan\n";
+                        errorDetails += $"• AWS SES (pay-as-you-go)";
                     }
                     
                     step3.Details = errorDetails;
                     result.Steps.Add(step3);
-                    result.ErrorMessage = $"Connection failed: {ex.Message}";
+                    result.ErrorMessage = isTimeout 
+                        ? "Railway blocks SMTP connections. Switch to SendGrid or another email service."
+                        : $"Connection failed: {ex.Message}";
                     result.FullException = ex.ToString();
                     return result;
                 }
