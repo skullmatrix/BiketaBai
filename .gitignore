@@ -116,6 +116,6 @@ appsettings.*.json
 **/secrets.json
 **/Properties/launchSettings.json
 
-# Documentation files (keep README)
+# Documentation files - ignore all .md files (troubleshooting guides, deployment docs, etc.)
 *.md
 !README.md
