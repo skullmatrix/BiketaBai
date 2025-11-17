@@ -2,10 +2,14 @@
 nixPkgs = ["dotnet-sdk_8"]
 
 [phases.install]
-cmds = ["dotnet restore BiketaBai.csproj"]
+cmds = [
+  "dotnet restore BiketaBai.csproj"
+]
 
 [phases.build]
-cmds = ["dotnet publish BiketaBai.csproj -c Release -o out --no-restore"]
+cmds = [
+  "dotnet publish BiketaBai.csproj -c Release -o out"
+]
 
 [start]
 cmd = "dotnet out/BiketaBai.dll"

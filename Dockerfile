@@ -1,37 +1,35 @@
 # Use the official .NET 8.0 SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-
-WORKDIR /app
+WORKDIR /src
 
 # Copy project file and restore dependencies
-COPY BiketaBai.csproj ./
+COPY BiketaBai.csproj .
 RUN dotnet restore BiketaBai.csproj
 
 # Copy everything else and build
-COPY . ./
-RUN dotnet publish BiketaBai.csproj -c Release -o out
+COPY . .
+RUN dotnet build BiketaBai.csproj -c Release -o /app/build
 
-# Use the ASP.NET Core runtime image for running
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# Publish the application
+FROM build AS publish
+RUN dotnet publish BiketaBai.csproj -c Release -o /app/publish
 
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# Copy the published output from build stage
-COPY --from=build /app/out .
-
-# Expose port (Railway will override this with PORT env var)
-EXPOSE 8080
-
 # Create necessary directories
-RUN mkdir -p /app/logs && \
-    mkdir -p /app/wwwroot/uploads/bikes && \
-    mkdir -p /app/wwwroot/uploads/id-documents && \
-    mkdir -p /app/wwwroot/uploads/profiles
+RUN mkdir -p logs wwwroot/uploads/bikes wwwroot/uploads/id-documents wwwroot/uploads/profiles
 
-# Set environment variable (Railway will override PORT)
-ENV ASPNETCORE_URLS=http://+:8080
+# Copy published application
+COPY --from=publish /app/publish .
+
+# Set environment to Production
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-# Run the application
+# Expose port (Railway will set PORT env var)
+EXPOSE 8080
+
+# Start the application
 ENTRYPOINT ["dotnet", "BiketaBai.dll"]
 

@@ -93,6 +93,8 @@ logs/
 # Environment files
 .env
 .env.local
+.env.*
+!.env.example
 
 # macOS
 .DS_Store
@@ -102,10 +104,18 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Application specific
+# Application specific - NEVER commit these!
 appsettings.Development.json
 appsettings.Production.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json.template
 
-# Documentation files
+# .NET User Secrets (local development secrets)
+**/.microsoft/usersecrets/
+**/secrets.json
+**/Properties/launchSettings.json
+
+# Documentation files (keep README)
 *.md
 !README.md

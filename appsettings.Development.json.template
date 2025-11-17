@@ -10,12 +10,12 @@
     "DefaultConnection": "Server=localhost;Port=3306;Database=biketabai;User=root;Password=;"
   },
   "EmailSettings": {
-    "SenderName": "BikeTaBai",
-    "SenderEmail": "biketabai@icloud.com",
-    "SmtpServer": "smtp.mail.me.com",
+    "SenderName": "Bike Ta Bai",
+    "SenderEmail": "your-email@example.com",
+    "SmtpServer": "",
     "SmtpPort": "587",
-    "SmtpPassword": "YOUR_APP_PASSWORD_HERE",
-    "SmtpAuthEmail": "biketabai@icloud.com"
+    "SmtpPassword": "your-app-password-here",
+    "SmtpAuthEmail": ""
   }
 }
 
