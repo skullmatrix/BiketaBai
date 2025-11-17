@@ -43,16 +43,48 @@ public class EmailService
             throw new InvalidOperationException(errorMsg);
         }
 
+        // Validate SMTP server - must be a hostname, not an email address
+        if (!string.IsNullOrEmpty(smtpServer) && smtpServer.Contains("@"))
+        {
+            Log.Warning("SMTP Server appears to be an email address ({SmtpServer}). This is incorrect. Auto-detecting from sender email.", smtpServer);
+            smtpServer = null; // Reset to trigger auto-detection
+        }
+
         if (string.IsNullOrEmpty(smtpServer))
         {
             // Auto-detect based on email domain
-            if (senderEmail?.Contains("@icloud.com") == true || senderEmail?.Contains("@me.com") == true || senderEmail?.Contains("@mac.com") == true)
+            var emailDomain = senderEmail?.Split('@').LastOrDefault()?.ToLower();
+            
+            if (senderEmail?.Contains("@icloud.com") == true || 
+                senderEmail?.Contains("@me.com") == true || 
+                senderEmail?.Contains("@mac.com") == true)
             {
                 smtpServer = "smtp.mail.me.com"; // iCloud SMTP
             }
+            else if (senderEmail?.Contains("@gmail.com") == true)
+            {
+                smtpServer = "smtp.gmail.com"; // Gmail SMTP
+            }
+            else if (emailDomain != null)
+            {
+                // For custom domains, try common patterns
+                // If using iCloud Custom Domain, use iCloud SMTP
+                // If using Google Workspace, use Gmail SMTP
+                // Otherwise, try smtp.{domain}
+                
+                // Check if it might be iCloud Custom Domain (common setup)
+                // You can override this by explicitly setting SmtpServer
+                smtpServer = $"smtp.{emailDomain}"; // Try smtp.yourdomain.com
+                
+                Log.Information("Auto-detected SMTP server as {SmtpServer} for domain {Domain}. " +
+                              "If this is incorrect, explicitly set EmailSettings:SmtpServer. " +
+                              "For iCloud Custom Domain, use: smtp.mail.me.com. " +
+                              "For Google Workspace, use: smtp.gmail.com", 
+                              smtpServer, emailDomain);
+            }
             else
             {
-                smtpServer = "smtp.gmail.com"; // Default to Gmail
+                smtpServer = "smtp.gmail.com"; // Default fallback
             }
         }
 
