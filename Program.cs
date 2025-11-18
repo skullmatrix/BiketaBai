@@ -85,6 +85,9 @@ builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserProfileService>();
 builder.Services.AddScoped<BookingManagementService>();
+builder.Services.AddHttpClient<AddressValidationService>();
+builder.Services.AddScoped<AddressValidationService>();
+builder.Services.AddScoped<IdValidationService>();
 
 // Add HttpContextAccessor for accessing HttpContext in services
 builder.Services.AddHttpContextAccessor();

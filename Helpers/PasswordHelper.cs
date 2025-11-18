@@ -23,5 +23,16 @@ public static class PasswordHelper
 
         return hasUpper && hasLower && hasDigit;
     }
+
+    /// <summary>
+    /// Validates medium password requirements: minimum 6 characters
+    /// </summary>
+    public static bool IsPasswordMedium(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return false;
+
+        return password.Length >= 6;
+    }
 }
 

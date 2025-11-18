@@ -598,10 +598,9 @@
                 }
                 
                 if (step === 2) {
-                    // Validate Password
+                    // Validate Password (medium: 6+ characters)
                     const password = $('#regPasswordInput').val();
-                    if (!password || password.length < 8 || !password.match(/[a-z]/) || 
-                        !password.match(/[A-Z]/) || !password.match(/[0-9]/)) {
+                    if (!password || password.length < 6) {
                         isValid = false;
                         if (!firstError) firstError = $('#regPasswordInput');
                     }
@@ -640,31 +639,22 @@
                 }
             });
 
-            // Password Strength & Dynamic Hint
+            // Password Strength & Dynamic Hint (Medium: 6+ characters)
             $('#regPasswordInput').on('input', function() {
                 const password = $(this).val();
                 let strength = 0;
                 let hint = '';
                 
-                // Check requirements
-                const hasLength = password.length >= 8;
-                const hasUppercase = password.match(/[A-Z]/);
-                const hasLowercase = password.match(/[a-z]/);
-                const hasNumber = password.match(/[0-9]/);
+                // Check requirements (medium: 6+ characters)
+                const hasLength = password.length >= 6;
                 
                 // Dynamic hint suggestions
                 if (password.length === 0) {
-                    hint = 'Use 8+ characters with uppercase, lowercase, and numbers';
+                    hint = 'Use at least 6 characters';
                 } else if (!hasLength) {
-                    hint = `Add ${8 - password.length} more character${8 - password.length > 1 ? 's' : ''}`;
-                } else if (!hasUppercase) {
-                    hint = 'Add an uppercase letter (A-Z)';
-                } else if (!hasLowercase) {
-                    hint = 'Add a lowercase letter (a-z)';
-                } else if (!hasNumber) {
-                    hint = 'Add a number (0-9)';
+                    hint = `Add ${6 - password.length} more character${6 - password.length > 1 ? 's' : ''}`;
                 } else {
-                    hint = '✓ Password meets all requirements';
+                    hint = '✓ Password meets requirements';
                     $('#passwordHint').css('color', '#87A96B');
                 }
                 
@@ -677,7 +667,8 @@
                     $('#passwordHint').css('color', '#6a6a6a');
                 }
                 
-                // Calculate strength
+                // Calculate strength (simplified for medium passwords)
+                if (password.length >= 6) strength++;
                 if (password.length >= 8) strength++;
                 if (password.match(/[a-z]/)) strength++;
                 if (password.match(/[A-Z]/)) strength++;
@@ -689,10 +680,10 @@
                 
                 strengthBar.removeClass('weak medium strong');
                 
-                if (strength <= 2) {
+                if (strength <= 1) {
                     strengthBar.addClass('weak').css('width', '33%');
                     strengthText.text('Weak password');
-                } else if (strength === 3 || strength === 4) {
+                } else if (strength >= 2 && strength <= 4) {
                     strengthBar.addClass('medium').css('width', '66%');
                     strengthText.text('Medium password');
                 } else {

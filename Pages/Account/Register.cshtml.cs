@@ -69,8 +69,10 @@ public class RegisterModel : PageModel
         public bool IsOwner { get; set; }
     }
 
-    public void OnGet()
+    public IActionResult OnGet()
     {
+        // Redirect to new registration type selection
+        return RedirectToPage("/Account/RegisterType");
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -87,10 +89,10 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        // Validate password strength
-        if (!PasswordHelper.IsPasswordStrong(Input.Password))
+        // Validate password strength (medium requirements: 6+ characters)
+        if (!PasswordHelper.IsPasswordMedium(Input.Password))
         {
-            ErrorMessage = "Password must be at least 8 characters with uppercase, lowercase, and number";
+            ErrorMessage = "Password must be at least 6 characters";
             return Page();
         }
 

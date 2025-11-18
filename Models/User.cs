@@ -99,6 +99,32 @@ public class User
     [Column("login_count")]
     public int LoginCount { get; set; } = 0;
 
+    // Store information (for owners)
+    [MaxLength(255)]
+    [Column("store_name")]
+    public string? StoreName { get; set; }
+
+    [MaxLength(500)]
+    [Column("store_address")]
+    public string? StoreAddress { get; set; }
+
+    // ID and Address Verification
+    [Column("id_verified")]
+    public bool IdVerified { get; set; } = false;
+
+    [Column("id_verified_at")]
+    public DateTime? IdVerifiedAt { get; set; }
+
+    [Column("address_verified")]
+    public bool AddressVerified { get; set; } = false;
+
+    [Column("address_verified_at")]
+    public DateTime? AddressVerifiedAt { get; set; }
+
+    [MaxLength(500)]
+    [Column("id_extracted_address")]
+    public string? IdExtractedAddress { get; set; }
+
     // Navigation properties
     public virtual ICollection<Bike> Bikes { get; set; } = new List<Bike>();
     public virtual ICollection<Booking> BookingsAsRenter { get; set; } = new List<Booking>();
