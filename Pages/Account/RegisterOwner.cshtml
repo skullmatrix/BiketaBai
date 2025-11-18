@@ -266,9 +266,9 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let storeAutocomplete;
         let storeAddressPlaceId = null;
-        let storePlacesService;
+        let storeAutocompleteService;
+        let storeService;
         let storeSuggestionsTimeout;
 
         // Initialize Google Maps Autocomplete for Store Address
@@ -276,8 +276,9 @@
             try {
                 const storeAddressInput = document.getElementById('storeAddressInput');
                 if (storeAddressInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                    // Use Places Service for text search (no deprecated Autocomplete)
-                    storePlacesService = new google.maps.places.PlacesService(document.createElement('div'));
+                    // Use AutocompleteService for better suggestions
+                    storeAutocompleteService = new google.maps.places.AutocompleteService();
+                    storeService = new google.maps.places.PlacesService(document.createElement('div'));
                     console.log('✅ Google Maps Places API initialized successfully');
                 } else {
                     console.error('❌ Google Maps API not loaded. Check API key and enabled APIs.');
@@ -299,56 +300,62 @@
         window.initAutocomplete = initAutocomplete;
 
         function showStoreAddressSuggestions(query) {
-            if (!storePlacesService) {
-                console.error('❌ PlacesService not initialized');
+            if (!storeAutocompleteService) {
+                console.error('❌ AutocompleteService not initialized');
                 showStoreAddressError('Address suggestions unavailable. Please check API configuration.');
                 return;
             }
 
-            if (query.length < 5) {
+            if (query.length < 3) {
                 $('#storeAddressSuggestions').hide();
                 return;
             }
 
             console.log('🔍 Searching for store address:', query);
 
+            // Use AutocompleteService.getPlacePredictions for better results
             const request = {
-                query: query,
-                fields: ['formatted_address', 'place_id', 'geometry'],
-                locationBias: { country: 'ph' }
+                input: query,
+                componentRestrictions: { country: 'ph' },
+                types: ['address']
             };
 
-            storePlacesService.textSearch(request, function(results, status) {
-                console.log('📍 Places API Status:', status);
-                console.log('📍 Results:', results);
+            storeAutocompleteService.getPlacePredictions(request, function(predictions, status) {
+                console.log('📍 Autocomplete Status:', status);
+                console.log('📍 Predictions:', predictions);
 
-                if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-                    const suggestionsHtml = results.slice(0, 5).map(function(place) {
+                if (status === google.maps.places.PlacesServiceStatus.OK && predictions && predictions.length > 0) {
+                    const suggestionsHtml = predictions.slice(0, 5).map(function(prediction) {
                         return `
-                            <div class="address-suggestion-item" data-place-id="${place.place_id}" data-address="${place.formatted_address}">
+                            <div class="address-suggestion-item" data-place-id="${prediction.place_id}" data-address="${prediction.description}">
                                 <div class="address-suggestion-icon">
                                     <i class="bi bi-geo-alt-fill"></i>
                                 </div>
-                                <div class="address-suggestion-text">${place.formatted_address}</div>
+                                <div class="address-suggestion-text">
+                                    <strong>${prediction.structured_formatting.main_text}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: 0.125rem;">
+                                        ${prediction.structured_formatting.secondary_text || ''}
+                                    </div>
+                                </div>
                             </div>
                         `;
                     }).join('');
 
                     $('#storeAddressSuggestions').html(suggestionsHtml).show();
-                    console.log('✅ Showing', results.length, 'suggestions');
+                    console.log('✅ Showing', predictions.length, 'suggestions');
                 } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-                    $('#storeAddressSuggestions').hide();
+                    $('#storeAddressSuggestions').html('<div class="address-suggestion-item" style="cursor: default; color: var(--neutral-500);">No addresses found</div>').show();
                     console.log('⚠️ No results found');
                 } else {
                     $('#storeAddressSuggestions').hide();
-                    const errorMsg = getPlacesApiErrorMessage(status);
+                    const errorMsg = getStorePlacesApiErrorMessage(status);
                     console.error('❌ Places API Error:', status, errorMsg);
                     showStoreAddressError(errorMsg);
                 }
             });
         }
 
-        function getPlacesApiErrorMessage(status) {
+        function getStorePlacesApiErrorMessage(status) {
             const errors = {
                 'ZERO_RESULTS': 'No addresses found. Try a different address.',
                 'OVER_QUERY_LIMIT': 'Address service temporarily unavailable. Please try again later.',
@@ -360,19 +367,27 @@
         }
 
         $(document).ready(function() {
-            // Store address input - show suggestions only after enough characters
+            // Store address input - show suggestions as user types (active search)
             $('#storeAddressInput').on('input', function() {
                 const query = $(this).val().trim();
                 
                 clearTimeout(storeSuggestionsTimeout);
                 
-                if (query.length >= 5) {
-                    // Wait 300ms after user stops typing before showing suggestions
+                if (query.length >= 3) {
+                    // Wait 200ms after user stops typing before showing suggestions (faster response)
                     storeSuggestionsTimeout = setTimeout(function() {
                         showStoreAddressSuggestions(query);
-                    }, 300);
+                    }, 200);
                 } else {
                     $('#storeAddressSuggestions').hide();
+                }
+            });
+
+            // Show suggestions on focus if there's text
+            $('#storeAddressInput').on('focus', function() {
+                const query = $(this).val().trim();
+                if (query.length >= 3) {
+                    showStoreAddressSuggestions(query);
                 }
             });
 
@@ -381,8 +396,23 @@
                 const address = $(this).data('address');
                 const placeId = $(this).data('place-id');
                 
+                if (!placeId) return; // Don't process "No addresses found" message
+                
                 $('#storeAddressInput').val(address);
                 storeAddressPlaceId = placeId;
+                
+                // Get full place details
+                if (storeService && placeId) {
+                    storeService.getDetails({
+                        placeId: placeId,
+                        fields: ['formatted_address', 'geometry', 'address_components']
+                    }, function(place, status) {
+                        if (status === google.maps.places.PlacesServiceStatus.OK) {
+                            $('#storeAddressInput').val(place.formatted_address);
+                            console.log('✅ Place details loaded:', place.formatted_address);
+                        }
+                    });
+                }
                 
                 // Hide suggestions
                 $('#storeAddressSuggestions').hide();
