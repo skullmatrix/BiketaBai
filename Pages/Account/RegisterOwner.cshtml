@@ -142,7 +142,7 @@
                                 </label>
                                 <div class="reg-camera-capture">
                                     <input type="file" name="IdDocumentFront" id="IdDocumentFront" 
-                                           accept="image/*" capture="environment" required style="display: none;" />
+                                           accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
                                     <label for="IdDocumentFront" class="reg-camera-btn">
                                         <div class="reg-camera-icon">
                                             <i class="bi bi-camera-fill"></i>
@@ -156,6 +156,7 @@
                                             <i class="bi bi-x-circle-fill"></i>
                                         </button>
                                     </div>
+                                    <div id="idFrontError" class="reg-form-error" style="display: none;"></div>
                                 </div>
                             </div>
 
@@ -165,7 +166,7 @@
                                 </label>
                                 <div class="reg-camera-capture">
                                     <input type="file" name="IdDocumentBack" id="IdDocumentBack" 
-                                           accept="image/*" capture="environment" required style="display: none;" />
+                                           accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
                                     <label for="IdDocumentBack" class="reg-camera-btn">
                                         <div class="reg-camera-icon">
                                             <i class="bi bi-camera-fill"></i>
@@ -179,6 +180,7 @@
                                             <i class="bi bi-x-circle-fill"></i>
                                         </button>
                                     </div>
+                                    <div id="idBackError" class="reg-form-error" style="display: none;"></div>
                                 </div>
                             </div>
 
@@ -271,21 +273,44 @@
 
         // Initialize Google Maps Autocomplete for Store Address
         function initAutocomplete() {
-            const storeAddressInput = document.getElementById('storeAddressInput');
-            if (storeAddressInput) {
-                // Use Places Service for text search (no deprecated Autocomplete)
-                storePlacesService = new google.maps.places.PlacesService(document.createElement('div'));
+            try {
+                const storeAddressInput = document.getElementById('storeAddressInput');
+                if (storeAddressInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                    // Use Places Service for text search (no deprecated Autocomplete)
+                    storePlacesService = new google.maps.places.PlacesService(document.createElement('div'));
+                    console.log('✅ Google Maps Places API initialized successfully');
+                } else {
+                    console.error('❌ Google Maps API not loaded. Check API key and enabled APIs.');
+                    showStoreAddressError('Google Maps API not loaded. Please check your API configuration.');
+                }
+            } catch (error) {
+                console.error('❌ Error initializing Google Maps:', error);
+                showStoreAddressError('Error initializing address suggestions. Please try again.');
             }
+        }
+
+        function showStoreAddressError(message) {
+            $('#storeAddressValidation').show();
+            $('#storeAddressValid').hide();
+            $('#storeAddressInvalid').show().find('span').text(message);
         }
 
         // Fallback if Google Maps doesn't load
         window.initAutocomplete = initAutocomplete;
 
         function showStoreAddressSuggestions(query) {
-            if (!storePlacesService || query.length < 5) {
+            if (!storePlacesService) {
+                console.error('❌ PlacesService not initialized');
+                showStoreAddressError('Address suggestions unavailable. Please check API configuration.');
+                return;
+            }
+
+            if (query.length < 5) {
                 $('#storeAddressSuggestions').hide();
                 return;
             }
+
+            console.log('🔍 Searching for store address:', query);
 
             const request = {
                 query: query,
@@ -294,7 +319,10 @@
             };
 
             storePlacesService.textSearch(request, function(results, status) {
-                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                console.log('📍 Places API Status:', status);
+                console.log('📍 Results:', results);
+
+                if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
                     const suggestionsHtml = results.slice(0, 5).map(function(place) {
                         return `
                             <div class="address-suggestion-item" data-place-id="${place.place_id}" data-address="${place.formatted_address}">
@@ -306,15 +334,29 @@
                         `;
                     }).join('');
 
-                    if (suggestionsHtml) {
-                        $('#storeAddressSuggestions').html(suggestionsHtml).show();
-                    } else {
-                        $('#storeAddressSuggestions').hide();
-                    }
+                    $('#storeAddressSuggestions').html(suggestionsHtml).show();
+                    console.log('✅ Showing', results.length, 'suggestions');
+                } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                    $('#storeAddressSuggestions').hide();
+                    console.log('⚠️ No results found');
                 } else {
                     $('#storeAddressSuggestions').hide();
+                    const errorMsg = getPlacesApiErrorMessage(status);
+                    console.error('❌ Places API Error:', status, errorMsg);
+                    showStoreAddressError(errorMsg);
                 }
             });
+        }
+
+        function getPlacesApiErrorMessage(status) {
+            const errors = {
+                'ZERO_RESULTS': 'No addresses found. Try a different address.',
+                'OVER_QUERY_LIMIT': 'Address service temporarily unavailable. Please try again later.',
+                'REQUEST_DENIED': 'Address service access denied. Please check API configuration.',
+                'INVALID_REQUEST': 'Invalid address query. Please try again.',
+                'UNKNOWN_ERROR': 'An error occurred. Please try again.'
+            };
+            return errors[status] || 'Unable to search addresses. Please try again.';
         }
 
         $(document).ready(function() {
@@ -362,11 +404,31 @@
             $('#IdDocumentFront').change(function(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    // Validate file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('ID front photo must be less than 5MB. Please choose a smaller file.');
+                        $(this).val('');
+                        return;
+                    }
+
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('ID front photo must be JPG or PNG image.');
+                        $(this).val('');
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         $('#idFrontPreviewImg').attr('src', e.target.result);
                         $('#idFrontPreview').show();
                         $('#IdDocumentFront').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                        $('#idFrontError').hide();
+                    };
+                    reader.onerror = function() {
+                        alert('Error reading file. Please try again.');
+                        $('#IdDocumentFront').val('');
                     };
                     reader.readAsDataURL(file);
                 }
@@ -376,13 +438,84 @@
             $('#IdDocumentBack').change(function(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    // Validate file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('ID back photo must be less than 5MB. Please choose a smaller file.');
+                        $(this).val('');
+                        return;
+                    }
+
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('ID back photo must be JPG or PNG image.');
+                        $(this).val('');
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         $('#idBackPreviewImg').attr('src', e.target.result);
                         $('#idBackPreview').show();
                         $('#IdDocumentBack').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                        $('#idBackError').hide();
+                    };
+                    reader.onerror = function() {
+                        alert('Error reading file. Please try again.');
+                        $('#IdDocumentBack').val('');
                     };
                     reader.readAsDataURL(file);
+                }
+            });
+
+            // Form validation before submission (Step 2)
+            $('#ownerRegistrationForm').on('submit', function(e) {
+                const currentStep = $('input[name="step"]').val();
+                
+                if (currentStep === '2') {
+                    const frontFile = $('#IdDocumentFront')[0].files[0];
+                    const backFile = $('#IdDocumentBack')[0].files[0];
+
+                    if (!frontFile) {
+                        e.preventDefault();
+                        alert('Please take a photo of the front of your ID.');
+                        $('#IdDocumentFront').focus();
+                        return false;
+                    }
+
+                    if (!backFile) {
+                        e.preventDefault();
+                        alert('Please take a photo of the back of your ID.');
+                        $('#IdDocumentBack').focus();
+                        return false;
+                    }
+
+                    // Validate file sizes
+                    if (frontFile.size > 5 * 1024 * 1024) {
+                        e.preventDefault();
+                        alert('ID front photo is too large. Maximum size is 5MB.');
+                        return false;
+                    }
+
+                    if (backFile.size > 5 * 1024 * 1024) {
+                        e.preventDefault();
+                        alert('ID back photo is too large. Maximum size is 5MB.');
+                        return false;
+                    }
+
+                    // Validate file types
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(frontFile.type)) {
+                        e.preventDefault();
+                        alert('ID front photo must be JPG or PNG image.');
+                        return false;
+                    }
+
+                    if (!allowedTypes.includes(backFile.type)) {
+                        e.preventDefault();
+                        alert('ID back photo must be JPG or PNG image.');
+                        return false;
+                    }
                 }
             });
 
