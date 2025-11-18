@@ -45,7 +45,10 @@ public class RegisterOwnerModel : PageModel
     public InputModel Input { get; set; } = new();
 
     [BindProperty]
-    public IFormFile? IdDocument { get; set; }
+    public IFormFile? IdDocumentFront { get; set; }
+
+    [BindProperty]
+    public IFormFile? IdDocumentBack { get; set; }
 
     [BindProperty]
     public IFormFile? BusinessLicense { get; set; }
@@ -149,48 +152,59 @@ public class RegisterOwnerModel : PageModel
             return Page();
         }
 
-        // Step 2: ID Document
+        // Step 2: ID Document (Front and Back)
         if (CurrentStep == 2)
         {
-            if (IdDocument == null)
+            if (IdDocumentFront == null || IdDocumentBack == null)
             {
-                ErrorMessage = "ID document is required";
+                ErrorMessage = "Both ID front and back photos are required";
                 CurrentStep = 2;
                 return Page();
             }
 
-            // Validate file size (max 5MB)
-            if (IdDocument.Length > 5 * 1024 * 1024)
+            // Validate file sizes (max 5MB each)
+            if (IdDocumentFront.Length > 5 * 1024 * 1024 || IdDocumentBack.Length > 5 * 1024 * 1024)
             {
-                ErrorMessage = "ID document must be less than 5MB";
+                ErrorMessage = "ID photos must be less than 5MB each";
                 CurrentStep = 2;
                 return Page();
             }
 
-            // Validate file type
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
-            var fileExtension = Path.GetExtension(IdDocument.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(fileExtension))
+            // Validate file types (images only, no PDF for camera capture)
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            var frontExtension = Path.GetExtension(IdDocumentFront.FileName).ToLowerInvariant();
+            var backExtension = Path.GetExtension(IdDocumentBack.FileName).ToLowerInvariant();
+            
+            if (!allowedExtensions.Contains(frontExtension) || !allowedExtensions.Contains(backExtension))
             {
-                ErrorMessage = "ID document must be JPG, PNG, or PDF";
+                ErrorMessage = "ID photos must be JPG or PNG images";
                 CurrentStep = 2;
                 return Page();
             }
 
-            // Save ID document
+            // Save ID documents
             var uploadsDir = Path.Combine(_environment.WebRootPath, "uploads", "id-documents");
             Directory.CreateDirectory(uploadsDir);
-            var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-            var filePath = Path.Combine(uploadsDir, uniqueFileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            
+            // Save front
+            var frontFileName = $"{Guid.NewGuid()}_front{frontExtension}";
+            var frontFilePath = Path.Combine(uploadsDir, frontFileName);
+            using (var stream = new FileStream(frontFilePath, FileMode.Create))
             {
-                await IdDocument.CopyToAsync(stream);
+                await IdDocumentFront.CopyToAsync(stream);
             }
+            var idDocumentFrontPath = $"/uploads/id-documents/{frontFileName}";
 
-            var idDocumentPath = $"/uploads/id-documents/{uniqueFileName}";
+            // Save back
+            var backFileName = $"{Guid.NewGuid()}_back{backExtension}";
+            var backFilePath = Path.Combine(uploadsDir, backFileName);
+            using (var stream = new FileStream(backFilePath, FileMode.Create))
+            {
+                await IdDocumentBack.CopyToAsync(stream);
+            }
+            var idDocumentBackPath = $"/uploads/id-documents/{backFileName}";
 
-            // Handle business license (optional)
+            // Handle business license (optional, camera capture)
             string? businessLicensePath = null;
             if (BusinessLicense != null)
             {
@@ -204,12 +218,12 @@ public class RegisterOwnerModel : PageModel
                 var licenseExtension = Path.GetExtension(BusinessLicense.FileName).ToLowerInvariant();
                 if (!allowedExtensions.Contains(licenseExtension))
                 {
-                    ErrorMessage = "Business license must be JPG, PNG, or PDF";
+                    ErrorMessage = "Business license must be JPG or PNG image";
                     CurrentStep = 2;
                     return Page();
                 }
 
-                var licenseFileName = $"{Guid.NewGuid()}{licenseExtension}";
+                var licenseFileName = $"{Guid.NewGuid()}_license{licenseExtension}";
                 var licenseFilePath = Path.Combine(uploadsDir, licenseFileName);
 
                 using (var stream = new FileStream(licenseFilePath, FileMode.Create))
@@ -220,8 +234,8 @@ public class RegisterOwnerModel : PageModel
                 businessLicensePath = $"/uploads/id-documents/{licenseFileName}";
             }
 
-            // Validate ID using IdValidationService
-            var idValidation = await _idValidationService.ValidateIdAsync(IdDocument);
+            // Validate ID using IdValidationService (use front for validation)
+            var idValidation = await _idValidationService.ValidateIdAsync(IdDocumentFront);
             if (!idValidation.IsValid)
             {
                 ErrorMessage = idValidation.ErrorMessage ?? "Invalid ID document";
@@ -229,10 +243,11 @@ public class RegisterOwnerModel : PageModel
                 return Page();
             }
 
-            // TODO: Extract address from ID using OCR
-            var extractedAddress = await _idValidationService.ExtractAddressFromIdAsync(IdDocument);
+            // Extract address from ID using OCR (use front)
+            var extractedAddress = await _idValidationService.ExtractAddressFromIdAsync(IdDocumentFront);
 
-            TempData["OwnerIdDocument"] = idDocumentPath;
+            TempData["OwnerIdDocumentFront"] = idDocumentFrontPath;
+            TempData["OwnerIdDocumentBack"] = idDocumentBackPath;
             TempData["OwnerBusinessLicense"] = businessLicensePath;
             TempData["OwnerIdExtractedAddress"] = extractedAddress ?? "";
             TempData["OwnerIdVerified"] = "true";
@@ -248,10 +263,14 @@ public class RegisterOwnerModel : PageModel
             var email = TempData["OwnerEmail"]?.ToString();
             var storeName = TempData["OwnerStoreName"]?.ToString();
             var storeAddress = TempData["OwnerStoreAddress"]?.ToString();
-            var idDocumentPath = TempData["OwnerIdDocument"]?.ToString();
+            var idDocumentFrontPath = TempData["OwnerIdDocumentFront"]?.ToString();
+            var idDocumentBackPath = TempData["OwnerIdDocumentBack"]?.ToString();
             var idExtractedAddress = TempData["OwnerIdExtractedAddress"]?.ToString();
             var addressVerified = TempData["OwnerAddressVerified"]?.ToString() == "true";
             var idVerified = TempData["OwnerIdVerified"]?.ToString() == "true";
+            
+            // Store front as primary ID document
+            var idDocumentPath = idDocumentFrontPath;
 
             if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || 
                 string.IsNullOrEmpty(storeName) || string.IsNullOrEmpty(storeAddress))

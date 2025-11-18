@@ -2,42 +2,52 @@
 @model BiketaBai.Pages.Account.RegisterOwnerModel
 @{
     ViewData["Title"] = "Register as Owner";
+    Layout = null;
+    var googleMapsKey = ViewContext.HttpContext.RequestServices.GetService<IConfiguration>()?["AppSettings:GoogleMapsApiKey"] ?? "";
 }
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/registration-premium.css" asp-append-version="true" />
+    <script src="https://maps.googleapis.com/maps/api/js?key=@googleMapsKey&libraries=places&callback=initAutocomplete" async defer></script>
+</head>
+<body>
+    <div class="registration-wrapper">
+        <div class="registration-container">
             <!-- Progress Steps -->
-            <div class="d-flex justify-content-center mb-4">
-                <div class="registration-progress">
-                    <div class="progress-step @(Model.CurrentStep >= 1 ? "active" : "") @(Model.CurrentStep > 1 ? "completed" : "")">
-                        <div class="step-number">1</div>
-                        <div class="step-label">Store Info</div>
-                    </div>
-                    <div class="progress-line @(Model.CurrentStep > 1 ? "completed" : "")"></div>
-                    <div class="progress-step @(Model.CurrentStep >= 2 ? "active" : "") @(Model.CurrentStep > 2 ? "completed" : "")">
-                        <div class="step-number">2</div>
-                        <div class="step-label">ID Verification</div>
-                    </div>
-                    <div class="progress-line @(Model.CurrentStep > 2 ? "completed" : "")"></div>
-                    <div class="progress-step @(Model.CurrentStep >= 3 ? "active" : "")">
-                        <div class="step-number">3</div>
-                        <div class="step-label">Account Setup</div>
-                    </div>
+            <div class="reg-progress">
+                <div class="reg-progress-step @(Model.CurrentStep >= 1 ? "active" : "") @(Model.CurrentStep > 1 ? "completed" : "")">
+                    <div class="reg-progress-number">@(Model.CurrentStep > 1 ? "" : "1")</div>
+                    <div class="reg-progress-label">Store Info</div>
+                </div>
+                <div class="reg-progress-line @(Model.CurrentStep > 1 ? "completed" : "")"></div>
+                <div class="reg-progress-step @(Model.CurrentStep >= 2 ? "active" : "") @(Model.CurrentStep > 2 ? "completed" : "")">
+                    <div class="reg-progress-number">@(Model.CurrentStep > 2 ? "" : "2")</div>
+                    <div class="reg-progress-label">ID Verification</div>
+                </div>
+                <div class="reg-progress-line @(Model.CurrentStep > 2 ? "completed" : "")"></div>
+                <div class="reg-progress-step @(Model.CurrentStep >= 3 ? "active" : "")">
+                    <div class="reg-progress-number">3</div>
+                    <div class="reg-progress-label">Account Setup</div>
                 </div>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">
-                        <i class="bi bi-shop"></i> Register as Owner
-                    </h3>
+            <div class="reg-form-card">
+                <div class="reg-form-header">
+                    <h2><i class="bi bi-shop"></i> Register as Owner</h2>
                 </div>
-                <div class="card-body p-4">
+                <div class="reg-form-body">
                     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
                     {
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                        <div class="reg-alert reg-alert-error">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div>@Model.ErrorMessage</div>
                         </div>
                     }
 
@@ -47,306 +57,334 @@
                         <!-- Step 1: Store Information -->
                         @if (Model.CurrentStep == 1)
                         {
-                            <div class="registration-step">
-                                <h4 class="mb-4">
-                                    <i class="bi bi-shop"></i> Store Information
-                                </h4>
+                            <div class="reg-form-group">
+                                <label asp-for="Input.FullName" class="reg-form-label">
+                                    Full Name <span class="required">*</span>
+                                </label>
+                                <input asp-for="Input.FullName" class="reg-form-input" 
+                                       placeholder="Enter your full name" required />
+                                <span asp-validation-for="Input.FullName" class="reg-form-error"></span>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label asp-for="Input.FullName" class="form-label">
-                                        Full Name <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="Input.FullName" class="form-control" 
-                                           placeholder="Enter your full name" required />
-                                    <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                            <div class="reg-form-group">
+                                <label asp-for="Input.Email" class="reg-form-label">
+                                    Email Address <span class="required">*</span>
+                                </label>
+                                <input asp-for="Input.Email" type="email" class="reg-form-input" 
+                                       placeholder="Enter your email" required />
+                                <span asp-validation-for="Input.Email" class="reg-form-error"></span>
+                            </div>
+
+                            <div class="reg-form-group">
+                                <label asp-for="Input.StoreName" class="reg-form-label">
+                                    Store Name <span class="required">*</span>
+                                </label>
+                                <input asp-for="Input.StoreName" class="reg-form-input" 
+                                       placeholder="Enter your store/business name" required />
+                                <div class="reg-form-help">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>This will be displayed to renters</span>
                                 </div>
+                                <span asp-validation-for="Input.StoreName" class="reg-form-error"></span>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label asp-for="Input.Email" class="form-label">
-                                        Email Address <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="Input.Email" type="email" class="form-control" 
-                                           placeholder="Enter your email" required />
-                                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                            <div class="reg-form-group" style="position: relative;">
+                                <label asp-for="Input.StoreAddress" class="reg-form-label">
+                                    Store Address <span class="required">*</span>
+                                </label>
+                                <input asp-for="Input.StoreAddress" class="reg-form-input" 
+                                       placeholder="Start typing your address..." required 
+                                       id="storeAddressInput" autocomplete="off" />
+                                <div class="reg-form-help">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>Select from suggestions as you type</span>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label asp-for="Input.StoreName" class="form-label">
-                                        Store Name <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="Input.StoreName" class="form-control" 
-                                           placeholder="Enter your store/business name" required />
-                                    <small class="form-text text-muted">
-                                        This will be displayed to renters
-                                    </small>
-                                    <span asp-validation-for="Input.StoreName" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label asp-for="Input.StoreAddress" class="form-label">
-                                        Store Address <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="Input.StoreAddress" class="form-control" 
-                                           placeholder="Enter your complete store address" required 
-                                           id="storeAddressInput" />
-                                    <small class="form-text text-muted">
-                                        <i class="bi bi-info-circle"></i> We'll verify this address
-                                    </small>
-                                    <div id="storeAddressValidation" class="mt-2" style="display: none;">
-                                        <span class="badge bg-success" id="storeAddressValid">
-                                            <i class="bi bi-check-circle"></i> Address verified
-                                        </span>
-                                        <span class="badge bg-danger" id="storeAddressInvalid" style="display: none;">
-                                            <i class="bi bi-x-circle"></i> Address not found
-                                        </span>
+                                <div id="storeAddressSuggestions" class="address-suggestions"></div>
+                                <div id="storeAddressValidation" style="display: none;">
+                                    <div class="reg-validation-badge success" id="storeAddressValid">
+                                        <i class="bi bi-check-circle"></i> Address verified
                                     </div>
-                                    <span asp-validation-for="Input.StoreAddress" class="text-danger"></span>
+                                    <div class="reg-validation-badge error" id="storeAddressInvalid" style="display: none;">
+                                        <i class="bi bi-x-circle"></i> <span></span>
+                                    </div>
                                 </div>
+                                <span asp-validation-for="Input.StoreAddress" class="reg-form-error"></span>
+                            </div>
 
-                                <div class="d-flex justify-content-end mt-4">
-                                    <a href="/Account/RegisterType" class="btn btn-outline-secondary me-2">
-                                        <i class="bi bi-arrow-left"></i> Back
-                                    </a>
-                                    <button type="submit" class="btn btn-primary">
-                                        Next: ID Verification <i class="bi bi-arrow-right"></i>
-                                    </button>
-                                </div>
+                            <div class="reg-btn-group">
+                                <a href="/Account/RegisterType" class="reg-btn reg-btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </a>
+                                <button type="submit" class="reg-btn reg-btn-primary">
+                                    Next: ID Verification <i class="bi bi-arrow-right"></i>
+                                </button>
                             </div>
                         }
 
                         <!-- Step 2: ID Verification -->
                         @if (Model.CurrentStep == 2)
                         {
-                            <div class="registration-step">
-                                <h4 class="mb-4">
-                                    <i class="bi bi-card-text"></i> ID Verification
-                                </h4>
-
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle-fill"></i>
+                            <div class="reg-alert reg-alert-info">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <div>
                                     <strong>Why we need your ID:</strong>
-                                    <ul class="mb-0 mt-2">
+                                    <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
                                         <li>Verify your identity for security</li>
                                         <li>Validate your business ownership</li>
                                         <li>Ensure account authenticity</li>
                                     </ul>
                                 </div>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label for="IdDocument" class="form-label">
-                                        Upload ID Document <span class="text-danger">*</span>
+                            <div class="reg-form-group">
+                                <label class="reg-form-label">
+                                    ID Front Photo <span class="required">*</span>
+                                </label>
+                                <div class="reg-camera-capture">
+                                    <input type="file" name="IdDocumentFront" id="IdDocumentFront" 
+                                           accept="image/*" capture="environment" required style="display: none;" />
+                                    <label for="IdDocumentFront" class="reg-camera-btn">
+                                        <div class="reg-camera-icon">
+                                            <i class="bi bi-camera-fill"></i>
+                                        </div>
+                                        <div class="reg-camera-text">Take Photo of ID Front</div>
+                                        <div class="reg-camera-hint">Tap to open camera</div>
                                     </label>
-                                    <input type="file" name="IdDocument" id="IdDocument" 
-                                           class="form-control" accept=".jpg,.jpeg,.png,.pdf" required />
-                                    <small class="form-text text-muted">
-                                        Accepted formats: JPG, PNG, PDF (Max 5MB)
-                                    </small>
-                                    <div id="idPreview" class="mt-3" style="display: none;">
-                                        <img id="idPreviewImg" src="" alt="ID Preview" 
-                                             class="img-thumbnail" style="max-height: 200px;" />
+                                    <div id="idFrontPreview" class="reg-camera-preview" style="display: none;">
+                                        <img id="idFrontPreviewImg" src="" alt="ID Front Preview" />
+                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('front')">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label for="BusinessLicense" class="form-label">
-                                        Business License (Optional)
+                            <div class="reg-form-group">
+                                <label class="reg-form-label">
+                                    ID Back Photo <span class="required">*</span>
+                                </label>
+                                <div class="reg-camera-capture">
+                                    <input type="file" name="IdDocumentBack" id="IdDocumentBack" 
+                                           accept="image/*" capture="environment" required style="display: none;" />
+                                    <label for="IdDocumentBack" class="reg-camera-btn">
+                                        <div class="reg-camera-icon">
+                                            <i class="bi bi-camera-fill"></i>
+                                        </div>
+                                        <div class="reg-camera-text">Take Photo of ID Back</div>
+                                        <div class="reg-camera-hint">Tap to open camera</div>
                                     </label>
-                                    <input type="file" name="BusinessLicense" id="BusinessLicense" 
-                                           class="form-control" accept=".jpg,.jpeg,.png,.pdf" />
-                                    <small class="form-text text-muted">
-                                        Upload your business license if available (Max 5MB)
-                                    </small>
+                                    <div id="idBackPreview" class="reg-camera-preview" style="display: none;">
+                                        <img id="idBackPreviewImg" src="" alt="ID Back Preview" />
+                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('back')">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        </button>
+                                    </div>
                                 </div>
+                            </div>
 
-                                <div class="d-flex justify-content-between mt-4">
-                                    <button type="submit" name="step" value="1" class="btn btn-outline-secondary">
-                                        <i class="bi bi-arrow-left"></i> Back
-                                    </button>
-                                    <button type="submit" name="step" value="2" class="btn btn-primary">
-                                        Next: Account Setup <i class="bi bi-arrow-right"></i>
-                                    </button>
+                            <div class="reg-form-group">
+                                <label for="BusinessLicense" class="reg-form-label">
+                                    Business License <span style="color: var(--neutral-500); font-weight: 400;">(Optional)</span>
+                                </label>
+                                <div class="reg-camera-capture">
+                                    <input type="file" name="BusinessLicense" id="BusinessLicense" 
+                                           accept="image/*" capture="environment" style="display: none;" />
+                                    <label for="BusinessLicense" class="reg-camera-btn">
+                                        <div class="reg-camera-icon">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </div>
+                                        <div class="reg-camera-text">Take Photo of Business License</div>
+                                        <div class="reg-camera-hint">Tap to open camera (optional)</div>
+                                    </label>
+                                    <div id="businessLicensePreview" class="reg-camera-preview" style="display: none;">
+                                        <img id="businessLicensePreviewImg" src="" alt="Business License Preview" />
+                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('license')">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        </button>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div class="reg-btn-group">
+                                <button type="submit" name="step" value="1" class="reg-btn reg-btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </button>
+                                <button type="submit" name="step" value="2" class="reg-btn reg-btn-primary">
+                                    Next: Account Setup <i class="bi bi-arrow-right"></i>
+                                </button>
                             </div>
                         }
 
                         <!-- Step 3: Account Setup -->
                         @if (Model.CurrentStep == 3)
                         {
-                            <div class="registration-step">
-                                <h4 class="mb-4">
-                                    <i class="bi bi-shield-lock"></i> Account Setup
-                                </h4>
-
-                                <div class="mb-3">
-                                    <label asp-for="Input.Password" class="form-label">
-                                        Password <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="Input.Password" type="password" class="form-control" 
-                                           placeholder="Create a password (minimum 6 characters)" 
-                                           required minlength="6" id="passwordInput" />
-                                    <small class="form-text text-muted">
-                                        Password must be at least 6 characters
-                                    </small>
-                                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                            <div class="reg-form-group">
+                                <label asp-for="Input.Password" class="reg-form-label">
+                                    Password <span class="required">*</span>
+                                </label>
+                                <input asp-for="Input.Password" type="password" class="reg-form-input" 
+                                       placeholder="Create a password (minimum 6 characters)" 
+                                       required minlength="6" id="passwordInput" />
+                                <div class="reg-form-help">
+                                    <i class="bi bi-shield-check"></i>
+                                    <span>Password must be at least 6 characters</span>
                                 </div>
+                                <span asp-validation-for="Input.Password" class="reg-form-error"></span>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label asp-for="Input.ConfirmPassword" class="form-label">
-                                        Confirm Password <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="Input.ConfirmPassword" type="password" class="form-control" 
-                                           placeholder="Re-enter your password" required 
-                                           id="confirmPasswordInput" />
-                                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-                                </div>
+                            <div class="reg-form-group">
+                                <label asp-for="Input.ConfirmPassword" class="reg-form-label">
+                                    Confirm Password <span class="required">*</span>
+                                </label>
+                                <input asp-for="Input.ConfirmPassword" type="password" class="reg-form-input" 
+                                       placeholder="Re-enter your password" required 
+                                       id="confirmPasswordInput" />
+                                <span asp-validation-for="Input.ConfirmPassword" class="reg-form-error"></span>
+                            </div>
 
-                                <div class="d-flex justify-content-between mt-4">
-                                    <button type="submit" name="step" value="2" class="btn btn-outline-secondary">
-                                        <i class="bi bi-arrow-left"></i> Back
-                                    </button>
-                                    <button type="submit" name="step" value="3" class="btn btn-success">
-                                        <i class="bi bi-check-circle"></i> Complete Registration
-                                    </button>
-                                </div>
+                            <div class="reg-btn-group">
+                                <button type="submit" name="step" value="2" class="reg-btn reg-btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </button>
+                                <button type="submit" name="step" value="3" class="reg-btn reg-btn-success">
+                                    <i class="bi bi-check-circle"></i> Complete Registration
+                                </button>
                             </div>
                         }
                     </form>
                 </div>
             </div>
 
-            <div class="text-center mt-3">
-                <p class="text-muted">
-                    Already have an account? 
-                    <a href="/Account/Login">Sign in here</a>
-                </p>
+            <div class="reg-footer">
+                <a href="/Account/Login" class="reg-footer-link">Already have an account? Sign in</a>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-    .registration-progress {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let storeAutocomplete;
+        let storeAddressPlaceId = null;
 
-    .progress-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .step-number {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #e0e0e0;
-        color: #666;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-
-    .progress-step.active .step-number {
-        background: #87A96B;
-        color: white;
-    }
-
-    .progress-step.completed .step-number {
-        background: #28a745;
-        color: white;
-    }
-
-    .step-label {
-        font-size: 0.85rem;
-        color: #666;
-    }
-
-    .progress-step.active .step-label {
-        color: #87A96B;
-        font-weight: 600;
-    }
-
-    .progress-line {
-        width: 60px;
-        height: 2px;
-        background: #e0e0e0;
-        transition: all 0.3s;
-    }
-
-    .progress-line.completed {
-        background: #28a745;
-    }
-</style>
-
-<script>
-    $(document).ready(function() {
-        // ID Preview
-        $('#IdDocument').change(function(e) {
-            const file = e.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#idPreviewImg').attr('src', e.target.result);
-                    $('#idPreview').show();
-                };
-                reader.readAsDataURL(file);
-            } else {
-                $('#idPreview').hide();
-            }
-        });
-
-        // Store address validation with API
-        let storeAddressValidationTimeout;
-        $('#storeAddressInput').on('input', function() {
-            const address = $(this).val();
-            $('#storeAddressValidation').hide();
-            
-            clearTimeout(storeAddressValidationTimeout);
-            
-            if (address && address.length > 5) {
-                storeAddressValidationTimeout = setTimeout(function() {
-                    validateStoreAddress(address);
-                }, 1000); // Wait 1 second after user stops typing
-            }
-        });
-
-        function validateStoreAddress(address) {
-            $.get('/Api/ValidateAddress', { address: address })
-                .done(function(data) {
-                    $('#storeAddressValidation').show();
-                    if (data.valid) {
-                        $('#storeAddressValid').show();
-                        $('#storeAddressInvalid').hide();
-                        if (data.formattedAddress && data.formattedAddress !== address) {
-                            $('#storeAddressInput').data('validated-address', data.formattedAddress);
-                        }
-                    } else {
-                        $('#storeAddressValid').hide();
-                        $('#storeAddressInvalid').show().text(data.error || 'Address not found');
-                    }
-                })
-                .fail(function() {
-                    $('#storeAddressValidation').show();
-                    $('#storeAddressValid').hide();
-                    $('#storeAddressInvalid').show().text('Validation service unavailable');
+        // Initialize Google Maps Autocomplete for Store Address
+        function initAutocomplete() {
+            const storeAddressInput = document.getElementById('storeAddressInput');
+            if (storeAddressInput) {
+                storeAutocomplete = new google.maps.places.Autocomplete(storeAddressInput, {
+                    types: ['address'],
+                    componentRestrictions: { country: ['ph'] }, // Philippines - adjust as needed
+                    fields: ['formatted_address', 'geometry', 'place_id', 'address_components']
                 });
+
+                storeAutocomplete.addListener('place_changed', function() {
+                    const place = storeAutocomplete.getPlace();
+                    if (!place.geometry) {
+                        return;
+                    }
+
+                    storeAddressPlaceId = place.place_id;
+                    storeAddressInput.value = place.formatted_address;
+                    
+                    // Show validation success
+                    $('#storeAddressValidation').show();
+                    $('#storeAddressValid').show();
+                    $('#storeAddressInvalid').hide();
+                    $('#storeAddressSuggestions').hide();
+                });
+            }
         }
 
-        // Password confirmation validation
-        $('#confirmPasswordInput').on('input', function() {
-            const password = $('#passwordInput').val();
-            const confirm = $(this).val();
-            if (confirm && password !== confirm) {
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
-    });
-</script>
+        // Fallback if Google Maps doesn't load
+        window.initAutocomplete = initAutocomplete;
 
+        $(document).ready(function() {
+            // Store address input - show suggestions
+            $('#storeAddressInput').on('input', function() {
+                const query = $(this).val();
+                if (query.length > 2) {
+                    $('#storeAddressSuggestions').show();
+                } else {
+                    $('#storeAddressSuggestions').hide();
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#storeAddressInput, #storeAddressSuggestions').length) {
+                    $('#storeAddressSuggestions').hide();
+                }
+            });
+
+            // ID Front Photo Capture
+            $('#IdDocumentFront').change(function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#idFrontPreviewImg').attr('src', e.target.result);
+                        $('#idFrontPreview').show();
+                        $('#IdDocumentFront').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // ID Back Photo Capture
+            $('#IdDocumentBack').change(function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#idBackPreviewImg').attr('src', e.target.result);
+                        $('#idBackPreview').show();
+                        $('#IdDocumentBack').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Business License Capture
+            $('#BusinessLicense').change(function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#businessLicensePreviewImg').attr('src', e.target.result);
+                        $('#businessLicensePreview').show();
+                        $('#BusinessLicense').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Password confirmation
+            $('#confirmPasswordInput').on('input', function() {
+                const password = $('#passwordInput').val();
+                const confirm = $(this).val();
+                if (confirm && password !== confirm) {
+                    $(this).css('border-color', 'var(--error)');
+                } else {
+                    $(this).css('border-color', '');
+                }
+            });
+        });
+
+        function removeIdPhoto(side) {
+            if (side === 'front') {
+                $('#IdDocumentFront').val('');
+                $('#idFrontPreview').hide();
+                $('#IdDocumentFront').closest('.reg-camera-capture').find('.reg-camera-btn').show();
+            } else if (side === 'back') {
+                $('#IdDocumentBack').val('');
+                $('#idBackPreview').hide();
+                $('#IdDocumentBack').closest('.reg-camera-capture').find('.reg-camera-btn').show();
+            } else if (side === 'license') {
+                $('#BusinessLicense').val('');
+                $('#businessLicensePreview').hide();
+                $('#BusinessLicense').closest('.reg-camera-capture').find('.reg-camera-btn').show();
+            }
+        }
+    </script>
+</body>
+</html>

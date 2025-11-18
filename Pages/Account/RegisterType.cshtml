@@ -2,171 +2,102 @@
 @model BiketaBai.Pages.Account.RegisterTypeModel
 @{
     ViewData["Title"] = "Choose Your Account Type";
+    Layout = null;
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="text-center mb-5">
-                <h1 class="display-4 mb-3">🚴 Welcome to Bike Ta Bai</h1>
-                <p class="lead text-muted">Choose how you'd like to use our platform</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/registration-premium.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="registration-wrapper">
+        <div class="registration-container">
+            <div class="reg-type-header">
+                <h1>Welcome to Bike Ta Bai</h1>
+                <p>Choose how you'd like to use our platform</p>
             </div>
 
             <form method="post" id="registerTypeForm">
-                <div class="row g-4">
+                <input type="hidden" name="SelectedType" id="selectedTypeInput" value="" />
+                <div class="reg-type-cards">
                     <!-- Renter Option -->
-                    <div class="col-md-6">
-                        <div class="card h-100 shadow-sm registration-type-card" 
-                             data-type="Renter"
-                             style="cursor: pointer; border: 2px solid #e0e0e0; transition: all 0.3s;">
-                            <div class="card-body text-center p-5">
-                                <div class="mb-4">
-                                    <i class="bi bi-bicycle" style="font-size: 4rem; color: #87A96B;"></i>
-                                </div>
-                                <h3 class="card-title mb-3">I want to rent a bike</h3>
-                                <p class="text-muted mb-4">
-                                    Browse and rent bikes from owners in your area. Perfect for commuters and casual riders.
-                                </p>
-                                <div class="registration-features">
-                                    <div class="feature-item mb-2">
-                                        <i class="bi bi-check-circle-fill text-success"></i>
-                                        <span>Browse available bikes</span>
-                                    </div>
-                                    <div class="feature-item mb-2">
-                                        <i class="bi bi-check-circle-fill text-success"></i>
-                                        <span>Easy booking system</span>
-                                    </div>
-                                    <div class="feature-item mb-2">
-                                        <i class="bi bi-check-circle-fill text-success"></i>
-                                        <span>Earn loyalty points</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4">
-                                    <input type="radio" name="SelectedType" value="Renter" id="renterType" 
-                                           class="form-check-input" style="display: none;">
-                                    <label for="renterType" class="btn btn-primary btn-lg w-100">
-                                        Choose Renter
-                                    </label>
-                                </div>
-                            </div>
+                    <div class="reg-type-card" data-type="Renter" id="renterCard">
+                        <div class="reg-type-icon">
+                            <i class="bi bi-bicycle"></i>
                         </div>
+                        <h3 class="reg-type-title">I want to rent a bike</h3>
+                        <p class="reg-type-desc">Browse and rent bikes from owners in your area</p>
+                        <ul class="reg-type-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Browse available bikes</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Easy booking system</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Earn loyalty points</li>
+                        </ul>
                     </div>
 
                     <!-- Owner Option -->
-                    <div class="col-md-6">
-                        <div class="card h-100 shadow-sm registration-type-card" 
-                             data-type="Owner"
-                             style="cursor: pointer; border: 2px solid #e0e0e0; transition: all 0.3s;">
-                            <div class="card-body text-center p-5">
-                                <div class="mb-4">
-                                    <i class="bi bi-shop" style="font-size: 4rem; color: #87A96B;"></i>
-                                </div>
-                                <h3 class="card-title mb-3">I want to rent out my bike</h3>
-                                <p class="text-muted mb-4">
-                                    List your bikes and earn money by renting them to others. Manage your bike fleet easily.
-                                </p>
-                                <div class="registration-features">
-                                    <div class="feature-item mb-2">
-                                        <i class="bi bi-check-circle-fill text-success"></i>
-                                        <span>List multiple bikes</span>
-                                    </div>
-                                    <div class="feature-item mb-2">
-                                        <i class="bi bi-check-circle-fill text-success"></i>
-                                        <span>Manage bookings</span>
-                                    </div>
-                                    <div class="feature-item mb-2">
-                                        <i class="bi bi-check-circle-fill text-success"></i>
-                                        <span>Track earnings</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4">
-                                    <input type="radio" name="SelectedType" value="Owner" id="ownerType" 
-                                           class="form-check-input" style="display: none;">
-                                    <label for="ownerType" class="btn btn-primary btn-lg w-100">
-                                        Choose Owner
-                                    </label>
-                                </div>
-                            </div>
+                    <div class="reg-type-card" data-type="Owner" id="ownerCard">
+                        <div class="reg-type-icon">
+                            <i class="bi bi-shop"></i>
                         </div>
+                        <h3 class="reg-type-title">I want to rent out my bike</h3>
+                        <p class="reg-type-desc">List your bikes and earn money by renting them</p>
+                        <ul class="reg-type-features">
+                            <li><i class="bi bi-check-circle-fill"></i> List multiple bikes</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Manage bookings</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Track earnings</li>
+                        </ul>
                     </div>
                 </div>
 
-                @if (!string.IsNullOrEmpty(Model.SelectedType))
-                {
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-success btn-lg px-5">
-                            Continue <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
-                }
-
-                <div class="text-center mt-4">
-                    <p class="text-muted">
-                        Already have an account? 
-                        <a href="/Account/Login" class="text-decoration-none">Sign in here</a>
-                    </p>
+                <div class="reg-footer">
+                    <a href="/Account/Login" class="reg-footer-link">Already have an account? Sign in</a>
                 </div>
             </form>
         </div>
     </div>
-</div>
 
-<style>
-    .registration-type-card {
-        transition: all 0.3s ease;
-    }
-
-    .registration-type-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-        border-color: #87A96B !important;
-    }
-
-    .registration-type-card.selected {
-        border-color: #87A96B !important;
-        border-width: 3px !important;
-        background-color: #f8fff8;
-    }
-
-    .feature-item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    .feature-item i {
-        font-size: 1.1rem;
-    }
-</style>
-
-<script>
-    $(document).ready(function() {
-        // Handle card click
-        $('.registration-type-card').click(function() {
-            const type = $(this).data('type');
-            
-            // Remove previous selection
-            $('.registration-type-card').removeClass('selected');
-            $('input[name="SelectedType"]').prop('checked', false);
-            
-            // Add selection
-            $(this).addClass('selected');
-            $(`#${type.toLowerCase()}Type`).prop('checked', true);
-            
-            // Show continue button
-            if ($('button[type="submit"]').length === 0) {
-                $('<div class="text-center mt-4">' +
-                  '<button type="submit" class="btn btn-success btn-lg px-5">' +
-                  'Continue <i class="bi bi-arrow-right"></i>' +
-                  '</button></div>').insertAfter('.row.g-4');
-            }
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Handle card click - auto-submit and route
+            $('.reg-type-card').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const type = $(this).data('type');
+                
+                // Visual feedback
+                $('.reg-type-card').removeClass('selected');
+                $(this).addClass('selected');
+                
+                // Set the selected type and submit immediately
+                $('#selectedTypeInput').val(type);
+                
+                // Add loading state
+                $(this).css('opacity', '0.7');
+                $(this).find('.reg-type-icon').html('<i class="bi bi-arrow-repeat spin"></i>');
+                
+                // Submit form immediately
+                $('#registerTypeForm').submit();
+            });
         });
-
-        // Auto-submit when type is selected (optional - can remove if you want manual submit)
-        // $('input[name="SelectedType"]').change(function() {
-        //     $('#registerTypeForm').submit();
-        // });
-    });
-</script>
-
+    </script>
+    
+    <style>
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @@keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>

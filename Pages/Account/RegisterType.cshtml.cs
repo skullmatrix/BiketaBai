@@ -23,7 +23,7 @@ public class RegisterTypeModel : PageModel
         // Store selection in TempData for next step
         TempData["RegistrationType"] = SelectedType;
 
-        // Redirect to appropriate registration page
+        // Redirect to appropriate registration page immediately
         if (SelectedType == "Renter")
         {
             return RedirectToPage("/Account/RegisterRenter");
