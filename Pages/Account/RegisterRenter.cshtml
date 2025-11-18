@@ -230,16 +230,24 @@
     <script>
         let autocomplete;
         let addressPlaceId = null;
+        let placesService;
+        let geocoder;
+        let suggestionsTimeout;
 
         // Initialize Google Maps Autocomplete
         function initAutocomplete() {
             const addressInput = document.getElementById('addressInput');
             if (addressInput) {
+                // Create autocomplete instance (but we'll handle suggestions manually)
                 autocomplete = new google.maps.places.Autocomplete(addressInput, {
                     types: ['address'],
-                    componentRestrictions: { country: ['ph'] }, // Philippines - adjust as needed
+                    componentRestrictions: { country: ['ph'] },
                     fields: ['formatted_address', 'geometry', 'place_id', 'address_components']
                 });
+
+                // Initialize Places Service for custom suggestions
+                placesService = new google.maps.places.PlacesService(document.createElement('div'));
+                geocoder = new google.maps.Geocoder();
 
                 autocomplete.addListener('place_changed', function() {
                     const place = autocomplete.getPlace();
@@ -250,11 +258,13 @@
                     addressPlaceId = place.place_id;
                     addressInput.value = place.formatted_address;
                     
+                    // Hide suggestions
+                    $('#addressSuggestions').hide();
+                    
                     // Show validation success
                     $('#addressValidation').show();
                     $('#addressValid').show();
                     $('#addressInvalid').hide();
-                    $('#addressSuggestions').hide();
                 });
             }
         }
@@ -262,16 +272,74 @@
         // Fallback if Google Maps doesn't load
         window.initAutocomplete = initAutocomplete;
 
-        $(document).ready(function() {
-            // Address input - show suggestions
-            $('#addressInput').on('input', function() {
-                const query = $(this).val();
-                if (query.length > 2) {
-                    // Google Autocomplete handles this automatically
-                    $('#addressSuggestions').show();
+        function showAddressSuggestions(query) {
+            if (!placesService || query.length < 5) {
+                $('#addressSuggestions').hide();
+                return;
+            }
+
+            const request = {
+                query: query,
+                fields: ['formatted_address', 'place_id', 'geometry'],
+                locationBias: { country: 'ph' }
+            };
+
+            placesService.textSearch(request, function(results, status) {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                    const suggestionsHtml = results.slice(0, 5).map(function(place) {
+                        return `
+                            <div class="address-suggestion-item" data-place-id="${place.place_id}" data-address="${place.formatted_address}">
+                                <div class="address-suggestion-icon">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                </div>
+                                <div class="address-suggestion-text">${place.formatted_address}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    if (suggestionsHtml) {
+                        $('#addressSuggestions').html(suggestionsHtml).show();
+                    } else {
+                        $('#addressSuggestions').hide();
+                    }
                 } else {
                     $('#addressSuggestions').hide();
                 }
+            });
+        }
+
+        $(document).ready(function() {
+            // Address input - show suggestions only after enough characters
+            $('#addressInput').on('input', function() {
+                const query = $(this).val().trim();
+                
+                clearTimeout(suggestionsTimeout);
+                
+                if (query.length >= 5) {
+                    // Wait 300ms after user stops typing before showing suggestions
+                    suggestionsTimeout = setTimeout(function() {
+                        showAddressSuggestions(query);
+                    }, 300);
+                } else {
+                    $('#addressSuggestions').hide();
+                }
+            });
+
+            // Handle suggestion click
+            $(document).on('click', '.address-suggestion-item', function() {
+                const address = $(this).data('address');
+                const placeId = $(this).data('place-id');
+                
+                $('#addressInput').val(address);
+                addressPlaceId = placeId;
+                
+                // Hide suggestions
+                $('#addressSuggestions').hide();
+                
+                // Show validation success
+                $('#addressValidation').show();
+                $('#addressValid').show();
+                $('#addressInvalid').hide();
             });
 
             // Hide suggestions when clicking outside

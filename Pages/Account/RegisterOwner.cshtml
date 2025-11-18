@@ -266,16 +266,22 @@
     <script>
         let storeAutocomplete;
         let storeAddressPlaceId = null;
+        let storePlacesService;
+        let storeSuggestionsTimeout;
 
         // Initialize Google Maps Autocomplete for Store Address
         function initAutocomplete() {
             const storeAddressInput = document.getElementById('storeAddressInput');
             if (storeAddressInput) {
+                // Create autocomplete instance (but we'll handle suggestions manually)
                 storeAutocomplete = new google.maps.places.Autocomplete(storeAddressInput, {
                     types: ['address'],
-                    componentRestrictions: { country: ['ph'] }, // Philippines - adjust as needed
+                    componentRestrictions: { country: ['ph'] },
                     fields: ['formatted_address', 'geometry', 'place_id', 'address_components']
                 });
+
+                // Initialize Places Service for custom suggestions
+                storePlacesService = new google.maps.places.PlacesService(document.createElement('div'));
 
                 storeAutocomplete.addListener('place_changed', function() {
                     const place = storeAutocomplete.getPlace();
@@ -286,11 +292,13 @@
                     storeAddressPlaceId = place.place_id;
                     storeAddressInput.value = place.formatted_address;
                     
+                    // Hide suggestions
+                    $('#storeAddressSuggestions').hide();
+                    
                     // Show validation success
                     $('#storeAddressValidation').show();
                     $('#storeAddressValid').show();
                     $('#storeAddressInvalid').hide();
-                    $('#storeAddressSuggestions').hide();
                 });
             }
         }
@@ -298,15 +306,74 @@
         // Fallback if Google Maps doesn't load
         window.initAutocomplete = initAutocomplete;
 
-        $(document).ready(function() {
-            // Store address input - show suggestions
-            $('#storeAddressInput').on('input', function() {
-                const query = $(this).val();
-                if (query.length > 2) {
-                    $('#storeAddressSuggestions').show();
+        function showStoreAddressSuggestions(query) {
+            if (!storePlacesService || query.length < 5) {
+                $('#storeAddressSuggestions').hide();
+                return;
+            }
+
+            const request = {
+                query: query,
+                fields: ['formatted_address', 'place_id', 'geometry'],
+                locationBias: { country: 'ph' }
+            };
+
+            storePlacesService.textSearch(request, function(results, status) {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                    const suggestionsHtml = results.slice(0, 5).map(function(place) {
+                        return `
+                            <div class="address-suggestion-item" data-place-id="${place.place_id}" data-address="${place.formatted_address}">
+                                <div class="address-suggestion-icon">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                </div>
+                                <div class="address-suggestion-text">${place.formatted_address}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    if (suggestionsHtml) {
+                        $('#storeAddressSuggestions').html(suggestionsHtml).show();
+                    } else {
+                        $('#storeAddressSuggestions').hide();
+                    }
                 } else {
                     $('#storeAddressSuggestions').hide();
                 }
+            });
+        }
+
+        $(document).ready(function() {
+            // Store address input - show suggestions only after enough characters
+            $('#storeAddressInput').on('input', function() {
+                const query = $(this).val().trim();
+                
+                clearTimeout(storeSuggestionsTimeout);
+                
+                if (query.length >= 5) {
+                    // Wait 300ms after user stops typing before showing suggestions
+                    storeSuggestionsTimeout = setTimeout(function() {
+                        showStoreAddressSuggestions(query);
+                    }, 300);
+                } else {
+                    $('#storeAddressSuggestions').hide();
+                }
+            });
+
+            // Handle suggestion click
+            $(document).on('click', '.address-suggestion-item', function() {
+                const address = $(this).data('address');
+                const placeId = $(this).data('place-id');
+                
+                $('#storeAddressInput').val(address);
+                storeAddressPlaceId = placeId;
+                
+                // Hide suggestions
+                $('#storeAddressSuggestions').hide();
+                
+                // Show validation success
+                $('#storeAddressValidation').show();
+                $('#storeAddressValid').show();
+                $('#storeAddressInvalid').hide();
             });
 
             // Hide suggestions when clicking outside
