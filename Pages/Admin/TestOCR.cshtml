@@ -1,0 +1,135 @@
+@page
+@model BiketaBai.Pages.Admin.TestOCRModel
+@{
+    ViewData["Title"] = "Test OCR - ID Validation";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>🧪 Test OCR - ID Validation</h2>
+            <p class="text-muted">Upload an ID document to see the OCR results, verification score, and extracted information.</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Upload ID Document</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="IdDocument" class="form-label">ID Document Image</label>
+                            <input type="file" class="form-control" id="IdDocument" name="IdDocument" accept="image/jpeg,image/png,image/jpg" required>
+                            <small class="form-text text-muted">Upload a JPG or PNG image of an ID document</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">🔍 Test OCR</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            @if (Model.Result != null)
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5>OCR Test Results</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!Model.Result.Success)
+                        {
+                            <div class="alert alert-danger">
+                                <strong>❌ Error:</strong> @Model.Result.ErrorMessage
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <h6>Validation Status</h6>
+                                @if (Model.Result.IsValid)
+                                {
+                                    <span class="badge bg-success fs-6">✅ @Model.Result.ValidationMessage</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger fs-6">❌ @Model.Result.ValidationMessage</span>
+                                }
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>Verification Score</h6>
+                                <div class="progress" style="height: 30px;">
+                                    <div class="progress-bar @(Model.Result.VerificationScore >= 3 ? "bg-success" : Model.Result.VerificationScore >= 2 ? "bg-warning" : "bg-danger")" 
+                                         role="progressbar" 
+                                         style="width: @(Model.Result.VerificationScore * 20)%"
+                                         aria-valuenow="@Model.Result.VerificationScore" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="5">
+                                        @Model.Result.VerificationScore / 5
+                                    </div>
+                                </div>
+                                <small class="text-muted">Score breakdown: ID Number (1), DOB (1), Address (1), Expiration (1), Name (1), Government Agency (1 bonus)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>Extracted Information</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item">
+                                        <strong>Name:</strong> @(Model.Result.ExtractedName ?? "<span class='text-muted'>Not extracted</span>")
+                                    </li>
+                                    <li class="list-group-item">
+                                        <strong>Address:</strong> @(Model.Result.ExtractedAddress ?? "<span class='text-muted'>Not extracted</span>")
+                                    </li>
+                                    @if (Model.Result.ExtractedFields.Any())
+                                    {
+                                        @foreach (var field in Model.Result.ExtractedFields)
+                                        {
+                                            <li class="list-group-item">
+                                                <strong>@field.Key:</strong> @field.Value
+                                            </li>
+                                        }
+                                    }
+                                </ul>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>OCR Text Statistics</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item"><strong>Text Length:</strong> @Model.Result.TextLength characters</li>
+                                    <li class="list-group-item"><strong>Meaningful Lines:</strong> @Model.Result.MeaningfulLines lines</li>
+                                </ul>
+                            </div>
+
+                            @if (Model.Result.MatchedPatterns.Any())
+                            {
+                                <div class="mb-3">
+                                    <h6>Matched Patterns</h6>
+                                    <ul class="list-group">
+                                        @foreach (var pattern in Model.Result.MatchedPatterns)
+                                        {
+                                            <li class="list-group-item">@pattern</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(Model.Result.FullText))
+                            {
+                                <div class="mb-3">
+                                    <h6>Full OCR Text</h6>
+                                    <div class="border p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa; font-family: monospace; font-size: 0.85em;">
+                                        <pre style="white-space: pre-wrap; word-wrap: break-word; margin: 0;">@Model.Result.FullText</pre>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

@@ -108,7 +108,8 @@ public class IdValidationService
                     if (textAnnotations != null && textAnnotations.Length > 0)
                     {
                         var fullText = textAnnotations[0].Description ?? "";
-                        Log.Information("OCR extracted text from ID: {TextLength} characters", fullText.Length);
+                        Log.Information("OCR extracted text from ID: {TextLength} characters. First 200 chars: {TextPreview}", 
+                            fullText.Length, fullText.Substring(0, Math.Min(200, fullText.Length)));
 
                         // Extract information from OCR text
                         result.ExtractedName = ExtractName(fullText);
@@ -121,6 +122,7 @@ public class IdValidationService
                         // Log the verification score and extracted text snippet for debugging
                         Log.Information("ID verification score: {Score}/5, Text length: {Length}, Extracted name: {Name}, Extracted address: {Address}", 
                             verificationScore, fullText.Length, result.ExtractedName ?? "none", result.ExtractedAddress ?? "none");
+                        Log.Debug("Full OCR text (first 500 chars): {FullText}", fullText.Substring(0, Math.Min(500, fullText.Length)));
                         
                         if (verificationScore >= 4) // Very high confidence it's a real ID
                         {
