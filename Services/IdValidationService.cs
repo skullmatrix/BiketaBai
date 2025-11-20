@@ -115,20 +115,34 @@ public class IdValidationService
                         result.ExtractedAddress = ExtractAddress(fullText);
                         result.ExtractedFields = ExtractFields(fullText);
 
-                        // Validate that we extracted meaningful information
-                        if (!string.IsNullOrWhiteSpace(result.ExtractedName) || 
-                            !string.IsNullOrWhiteSpace(result.ExtractedAddress))
+                        // Verify if this looks like a real ID document
+                        var verificationScore = VerifyIdDocument(fullText, result.ExtractedFields);
+                        
+                        if (verificationScore >= 3) // High confidence it's a real ID
                         {
                             result.IsValid = true;
-                            Log.Information("ID validation successful via OCR. Name: {Name}, Address: {Address}", 
-                                result.ExtractedName, result.ExtractedAddress);
+                            Log.Information("ID validation successful via OCR. Name: {Name}, Address: {Address}, Verification Score: {Score}/5", 
+                                result.ExtractedName, result.ExtractedAddress, verificationScore);
+                        }
+                        else if (verificationScore >= 2) // Medium confidence
+                        {
+                            result.IsValid = true;
+                            Log.Warning("ID validation passed with medium confidence (Score: {Score}/5). Manual review recommended.", verificationScore);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(result.ExtractedName) || 
+                                 !string.IsNullOrWhiteSpace(result.ExtractedAddress))
+                        {
+                            // Low confidence but has name/address - still accept but flag for review
+                            result.IsValid = true;
+                            Log.Warning("ID validation passed with low confidence (Score: {Score}/5). Manual review required.", verificationScore);
                         }
                         else
                         {
-                            Log.Warning("OCR extracted text but could not find name or address. Text: {Text}", 
+                            // Very low confidence - might not be a valid ID
+                            result.IsValid = false;
+                            result.ErrorMessage = "Unable to verify this as a valid ID document. Please ensure the image is clear and shows a government-issued ID.";
+                            Log.Warning("ID validation failed. OCR extracted text but could not verify ID authenticity. Text: {Text}", 
                                 fullText.Substring(0, Math.Min(200, fullText.Length)));
-                            // Still valid if basic checks passed
-                            result.IsValid = true;
                         }
                     }
                     else
@@ -372,6 +386,121 @@ public class IdValidationService
             }
         }
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Verifies if the extracted text looks like a real ID document
+    /// Returns a score from 0-5 indicating confidence level
+    /// </summary>
+    private int VerifyIdDocument(string fullText, Dictionary<string, string> extractedFields)
+    {
+        if (string.IsNullOrWhiteSpace(fullText))
+            return 0;
+
+        int score = 0;
+        var upperText = fullText.ToUpperInvariant();
+
+        // Check 1: Contains ID number or identification number (1 point)
+        var idNumberPatterns = new[] { 
+            "ID NO", "ID NUMBER", "ID#", "ID:", "IDENTIFICATION", 
+            "LICENSE NO", "LICENSE NUMBER", "LICENSE#", 
+            "PASSPORT NO", "PASSPORT NUMBER", "PASSPORT#",
+            "SSS NO", "SSS NUMBER", "SSS#",
+            "TIN NO", "TIN NUMBER", "TIN#",
+            "DRIVER", "DRIVER'S", "DRIVERS"
+        };
+        if (idNumberPatterns.Any(pattern => upperText.Contains(pattern)))
+        {
+            score++;
+            Log.Debug("ID verification: Found ID number pattern (+1 point)");
+        }
+
+        // Check 2: Contains date of birth or birth date (1 point)
+        var dobPatterns = new[] { 
+            "DATE OF BIRTH", "DOB", "BIRTH DATE", "BIRTHDATE", 
+            "BORN", "BIRTH", "MM/DD/YYYY", "DD/MM/YYYY", 
+            "YYYY-MM-DD"
+        };
+        if (dobPatterns.Any(pattern => upperText.Contains(pattern)) || 
+            extractedFields.ContainsKey("DateOfBirth"))
+        {
+            score++;
+            Log.Debug("ID verification: Found date of birth (+1 point)");
+        }
+
+        // Check 3: Contains address field (1 point)
+        var addressPatterns = new[] { 
+            "ADDRESS", "RESIDENCE", "HOME ADDRESS", "PERMANENT ADDRESS",
+            "STREET", "BARANGAY", "CITY", "PROVINCE"
+        };
+        if (addressPatterns.Any(pattern => upperText.Contains(pattern)))
+        {
+            score++;
+            Log.Debug("ID verification: Found address field (+1 point)");
+        }
+
+        // Check 4: Contains expiration date or valid until (1 point)
+        var expiryPatterns = new[] { 
+            "EXPIR", "EXPIRES", "VALID UNTIL", "VALID THRU", 
+            "VALID UNTIL", "EFFECTIVE", "ISSUED", "VALIDITY",
+            "MM/DD/YYYY", "DD/MM/YYYY"
+        };
+        if (expiryPatterns.Any(pattern => upperText.Contains(pattern)))
+        {
+            score++;
+            Log.Debug("ID verification: Found expiration/validity date (+1 point)");
+        }
+
+        // Check 5: Contains name field and name looks valid (1 point)
+        var namePatterns = new[] { 
+            "NAME", "FULL NAME", "LAST NAME", "FIRST NAME", 
+            "GIVEN NAME", "SURNAME", "FAMILY NAME"
+        };
+        if (namePatterns.Any(pattern => upperText.Contains(pattern)))
+        {
+            score++;
+            Log.Debug("ID verification: Found name field (+1 point)");
+        }
+
+        // Bonus: Check for government agency keywords (Philippines-specific)
+        var agencyPatterns = new[] { 
+            "PHILIPPINES", "REPUBLIC", "LTO", "NBI", "SSS", 
+            "PHILHEALTH", "PAG-IBIG", "TIN", "CIVIL", "COMMISSION",
+            "DEPARTMENT", "NATIONAL", "PHILIPPINE"
+        };
+        if (agencyPatterns.Any(pattern => upperText.Contains(pattern)))
+        {
+            score++; // Bonus point for government-issued document
+            Log.Debug("ID verification: Found government agency keyword (+1 bonus point)");
+        }
+
+        // Verify structure: Should have at least 3-4 lines of text for a proper ID
+        var lines = fullText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var meaningfulLines = lines.Count(line => line.Trim().Length > 5);
+        if (meaningfulLines >= 3)
+        {
+            // Already counted in other checks, but verify minimum structure
+            Log.Debug("ID verification: Document has {LineCount} meaningful lines of text", meaningfulLines);
+        }
+        else if (meaningfulLines < 2)
+        {
+            // Too little text - might not be a valid ID
+            score = Math.Max(0, score - 1);
+            Log.Warning("ID verification: Document has very little text ({LineCount} lines). Might not be a valid ID.", meaningfulLines);
+        }
+
+        // Check for suspicious patterns (reduce score if found)
+        var suspiciousPatterns = new[] { 
+            "SAMPLE", "EXAMPLE", "TEST", "DEMO", "PLACEHOLDER",
+            "XXXX", "XXXXX", "12345", "12345678" // Common placeholder patterns
+        };
+        if (suspiciousPatterns.Any(pattern => upperText.Contains(pattern)))
+        {
+            score = Math.Max(0, score - 2); // Heavy penalty for placeholder text
+            Log.Warning("ID verification: Found suspicious placeholder patterns. Score reduced.");
+        }
+
+        return Math.Min(5, Math.Max(0, score)); // Clamp between 0-5
     }
 
     // Google Vision API response models

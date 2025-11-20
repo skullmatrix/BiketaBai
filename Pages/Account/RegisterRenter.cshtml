@@ -30,12 +30,12 @@
                 <div class="reg-progress-line @(Model.CurrentStep > 1 ? "completed" : "")"></div>
                 <div class="reg-progress-step @(Model.CurrentStep >= 2 ? "active" : "") @(Model.CurrentStep > 2 ? "completed" : "")">
                     <div class="reg-progress-number">@(Model.CurrentStep > 2 ? "" : "2")</div>
-                    <div class="reg-progress-label">ID Verification</div>
+                    <div class="reg-progress-label">Set Password</div>
                 </div>
                 <div class="reg-progress-line @(Model.CurrentStep > 2 ? "completed" : "")"></div>
                 <div class="reg-progress-step @(Model.CurrentStep >= 3 ? "active" : "")">
-                    <div class="reg-progress-number">3</div>
-                    <div class="reg-progress-label">Account Setup</div>
+                    <div class="reg-progress-number">@(Model.CurrentStep > 3 ? "" : "3")</div>
+                    <div class="reg-progress-label">ID Verification</div>
                 </div>
             </div>
 
@@ -107,86 +107,13 @@
                                     <i class="bi bi-arrow-left"></i> Back
                                 </a>
                                 <button type="submit" name="step" value="1" class="reg-btn reg-btn-primary">
-                                    Next: ID Verification <i class="bi bi-arrow-right"></i>
+                                    Next: Set Password <i class="bi bi-arrow-right"></i>
                                 </button>
                             </div>
                         }
 
-                        <!-- Step 2: ID Verification -->
+                        <!-- Step 2: Account Setup (Password) -->
                         @if (Model.CurrentStep == 2)
-                        {
-                            <div class="reg-alert reg-alert-info">
-                                <i class="bi bi-info-circle-fill"></i>
-                                <div>
-                                    <strong>Why we need your ID:</strong>
-                                    <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
-                                        <li>Verify your identity for security</li>
-                                        <li>Cross-check with your provided address</li>
-                                        <li>Ensure account authenticity</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="reg-form-group">
-                                <label class="reg-form-label">
-                                    ID Front Photo <span class="required">*</span>
-                                </label>
-                                <div class="reg-camera-capture">
-                                    <input type="file" name="IdDocumentFront" id="IdDocumentFront" 
-                                           accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
-                                    <label for="IdDocumentFront" class="reg-camera-btn">
-                                        <div class="reg-camera-icon">
-                                            <i class="bi bi-camera-fill"></i>
-                                        </div>
-                                        <div class="reg-camera-text">Take Photo of ID Front</div>
-                                        <div class="reg-camera-hint">Tap to open camera</div>
-                                    </label>
-                                    <div id="idFrontPreview" class="reg-camera-preview" style="display: none;">
-                                        <img id="idFrontPreviewImg" src="" alt="ID Front Preview" />
-                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('front')">
-                                            <i class="bi bi-x-circle-fill"></i>
-                                        </button>
-                                    </div>
-                                    <div id="idFrontError" class="reg-form-error" style="display: none;"></div>
-                                </div>
-                            </div>
-
-                            <div class="reg-form-group">
-                                <label class="reg-form-label">
-                                    ID Back Photo <span class="required">*</span>
-                                </label>
-                                <div class="reg-camera-capture">
-                                    <input type="file" name="IdDocumentBack" id="IdDocumentBack" 
-                                           accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
-                                    <label for="IdDocumentBack" class="reg-camera-btn">
-                                        <div class="reg-camera-icon">
-                                            <i class="bi bi-camera-fill"></i>
-                                        </div>
-                                        <div class="reg-camera-text">Take Photo of ID Back</div>
-                                        <div class="reg-camera-hint">Tap to open camera</div>
-                                    </label>
-                                    <div id="idBackPreview" class="reg-camera-preview" style="display: none;">
-                                        <img id="idBackPreviewImg" src="" alt="ID Back Preview" />
-                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('back')">
-                                            <i class="bi bi-x-circle-fill"></i>
-                                        </button>
-                                    </div>
-                                    <div id="idBackError" class="reg-form-error" style="display: none;"></div>
-                                </div>
-                            </div>
-
-                            <div class="reg-btn-group">
-                                <button type="submit" name="step" value="back" class="reg-btn reg-btn-secondary" formnovalidate>
-                                    <i class="bi bi-arrow-left"></i> Back
-                                </button>
-                                <button type="submit" name="step" value="2" class="reg-btn reg-btn-primary" id="step2NextBtn">
-                                    Next: Account Setup <i class="bi bi-arrow-right"></i>
-                                </button>
-                            </div>
-                        }
-
-                        <!-- Step 3: Account Setup -->
-                        @if (Model.CurrentStep == 3)
                         {
                             <div class="reg-form-group">
                                 <label asp-for="Input.Password" class="reg-form-label">
@@ -225,10 +152,83 @@
                             </div>
 
                             <div class="reg-btn-group">
-                                <button type="submit" name="step" value="2" class="reg-btn reg-btn-secondary">
+                                <button type="submit" name="step" value="back" class="reg-btn reg-btn-secondary" formnovalidate>
                                     <i class="bi bi-arrow-left"></i> Back
                                 </button>
-                                <button type="submit" name="step" value="3" class="reg-btn reg-btn-success">
+                                <button type="submit" name="step" value="2" class="reg-btn reg-btn-primary">
+                                    Next: ID Verification <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        }
+
+                        <!-- Step 3: ID Verification -->
+                        @if (Model.CurrentStep == 3)
+                        {
+                            <div class="reg-alert reg-alert-info">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <div>
+                                    <strong>Why we need your ID:</strong>
+                                    <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                                        <li>Verify your identity for security</li>
+                                        <li>Cross-check with your provided address</li>
+                                        <li>Ensure account authenticity</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="reg-form-group">
+                                <label class="reg-form-label">
+                                    ID Front Photo <span class="required">*</span>
+                                </label>
+                                <div class="reg-camera-capture">
+                                    <input type="file" name="IdDocumentFront" id="IdDocumentFront" 
+                                           accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
+                                    <label for="IdDocumentFront" class="reg-camera-btn">
+                                        <div class="reg-camera-icon">
+                                            <i class="bi bi-camera-fill"></i>
+                                        </div>
+                                        <div class="reg-camera-text">Take Photo of ID Front</div>
+                                        <div class="reg-camera-hint">Tap to open camera (images will be automatically compressed)</div>
+                                    </label>
+                                    <div id="idFrontPreview" class="reg-camera-preview" style="display: none;">
+                                        <img id="idFrontPreviewImg" src="" alt="ID Front Preview" />
+                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('front')">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        </button>
+                                    </div>
+                                    <div id="idFrontError" class="reg-form-error" style="display: none;"></div>
+                                </div>
+                            </div>
+
+                            <div class="reg-form-group">
+                                <label class="reg-form-label">
+                                    ID Back Photo <span class="required">*</span>
+                                </label>
+                                <div class="reg-camera-capture">
+                                    <input type="file" name="IdDocumentBack" id="IdDocumentBack" 
+                                           accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
+                                    <label for="IdDocumentBack" class="reg-camera-btn">
+                                        <div class="reg-camera-icon">
+                                            <i class="bi bi-camera-fill"></i>
+                                        </div>
+                                        <div class="reg-camera-text">Take Photo of ID Back</div>
+                                        <div class="reg-camera-hint">Tap to open camera (images will be automatically compressed)</div>
+                                    </label>
+                                    <div id="idBackPreview" class="reg-camera-preview" style="display: none;">
+                                        <img id="idBackPreviewImg" src="" alt="ID Back Preview" />
+                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('back')">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        </button>
+                                    </div>
+                                    <div id="idBackError" class="reg-form-error" style="display: none;"></div>
+                                </div>
+                            </div>
+
+                            <div class="reg-btn-group">
+                                <button type="submit" name="step" value="back" class="reg-btn reg-btn-secondary" formnovalidate>
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </button>
+                                <button type="submit" name="step" value="3" class="reg-btn reg-btn-success" id="step3NextBtn">
                                     <i class="bi bi-check-circle"></i> Complete Registration
                                 </button>
                             </div>
@@ -371,16 +371,11 @@
                 }
             });
 
-            // ID Front Photo Capture
+            // ID Front Photo Capture (no size limit - will be auto-compressed)
             $('#IdDocumentFront').change(function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    // Validate file size (max 5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('ID front photo must be less than 5MB. Please choose a smaller file.');
-                        $(this).val('');
-                        return;
-                    }
+                    // No size validation - images will be automatically compressed
 
                     // Validate file type
                     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -405,16 +400,11 @@
                 }
             });
 
-            // ID Back Photo Capture
+            // ID Back Photo Capture (no size limit - will be auto-compressed)
             $('#IdDocumentBack').change(function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    // Validate file size (max 5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('ID back photo must be less than 5MB. Please choose a smaller file.');
-                        $(this).val('');
-                        return;
-                    }
+                    // No size validation - images will be automatically compressed
 
                     // Validate file type
                     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -459,7 +449,7 @@
                     return true;
                 }
                 
-                if (stepValue === '2') {
+                if (stepValue === '3') {
                     const frontFile = $('#IdDocumentFront')[0].files[0];
                     const backFile = $('#IdDocumentBack')[0].files[0];
 
@@ -477,18 +467,7 @@
                         return false;
                     }
 
-                    // Validate file sizes
-                    if (frontFile.size > 5 * 1024 * 1024) {
-                        e.preventDefault();
-                        alert('ID front photo is too large. Maximum size is 5MB.');
-                        return false;
-                    }
-
-                    if (backFile.size > 5 * 1024 * 1024) {
-                        e.preventDefault();
-                        alert('ID back photo is too large. Maximum size is 5MB.');
-                        return false;
-                    }
+                    // No size validation - images will be automatically compressed on server
 
                     // Validate file types
                     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
