@@ -118,6 +118,10 @@ public class IdValidationService
                         // Verify if this looks like a real ID document
                         var verificationScore = VerifyIdDocument(fullText, result.ExtractedFields);
                         
+                        // Log the verification score and extracted text snippet for debugging
+                        Log.Information("ID verification score: {Score}/5, Text length: {Length}, Extracted name: {Name}, Extracted address: {Address}", 
+                            verificationScore, fullText.Length, result.ExtractedName ?? "none", result.ExtractedAddress ?? "none");
+                        
                         if (verificationScore >= 4) // Very high confidence it's a real ID
                         {
                             result.IsValid = true;
@@ -139,18 +143,43 @@ public class IdValidationService
                             }
                             else
                             {
-                                // Medium score but no name/address extracted - likely not a valid ID
+                                // Medium score but no name/address extracted - check if text looks reasonable
+                                // If text is substantial and contains typical ID elements, accept it
+                                if (fullText.Length > 50 && HasIdLikeContent(fullText))
+                                {
+                                    result.IsValid = true;
+                                    Log.Warning("ID validation passed with medium score ({Score}/5) but no name/address extracted. Text appears ID-like.", verificationScore);
+                                }
+                                else
+                                {
+                                    result.IsValid = false;
+                                    result.ErrorMessage = "Please upload a valid ID";
+                                    Log.Warning("ID validation failed. Medium score ({Score}/5) but could not extract name or address and text doesn't appear ID-like.", verificationScore);
+                                }
+                            }
+                        }
+                        else if (verificationScore >= 1) // Low confidence but has some ID-like elements
+                        {
+                            // If text is substantial and contains typical ID elements, accept it
+                            if (fullText.Length > 100 && HasIdLikeContent(fullText))
+                            {
+                                result.IsValid = true;
+                                Log.Warning("ID validation passed with low score ({Score}/5) but text appears ID-like. Manual review recommended.", verificationScore);
+                            }
+                            else
+                            {
                                 result.IsValid = false;
                                 result.ErrorMessage = "Please upload a valid ID";
-                                Log.Warning("ID validation failed. Medium score ({Score}/5) but could not extract name or address.", verificationScore);
+                                Log.Warning("ID validation failed. Low verification score ({Score}/5). Text: {Text}", 
+                                    verificationScore, fullText.Substring(0, Math.Min(200, fullText.Length)));
                             }
                         }
                         else
                         {
-                            // Low confidence - not a valid ID
+                            // Very low confidence - not a valid ID
                             result.IsValid = false;
                             result.ErrorMessage = "Please upload a valid ID";
-                            Log.Warning("ID validation failed. Low verification score ({Score}/5). Text: {Text}", 
+                            Log.Warning("ID validation failed. Very low verification score ({Score}/5). Text: {Text}", 
                                 verificationScore, fullText.Substring(0, Math.Min(200, fullText.Length)));
                         }
                     }
@@ -532,6 +561,38 @@ public class IdValidationService
         }
 
         return Math.Min(5, Math.Max(0, score)); // Clamp between 0-5
+    }
+
+    /// <summary>
+    /// Checks if the text has ID-like content (contains numbers, dates, etc.)
+    /// </summary>
+    private bool HasIdLikeContent(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        var upperText = text.ToUpperInvariant();
+        
+        // Check for common ID-like patterns
+        // Has numbers (likely ID numbers, dates)
+        bool hasNumbers = text.Any(char.IsDigit);
+        
+        // Has dates (MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD patterns)
+        bool hasDates = Regex.IsMatch(text, @"\d{1,2}[/-]\d{1,2}[/-]\d{2,4}");
+        
+        // Has letters (likely names, addresses)
+        bool hasLetters = text.Any(char.IsLetter);
+        
+        // Has common ID words
+        var idWords = new[] { "REPUBLIC", "PHILIPPINES", "GOVERNMENT", "IDENTIFICATION", "LICENSE", "PASSPORT" };
+        bool hasIdWords = idWords.Any(word => upperText.Contains(word));
+        
+        // Has typical ID field indicators
+        var fieldIndicators = new[] { ":", "-", "NO", "NUMBER", "DATE", "BIRTH", "ADDRESS" };
+        bool hasFieldIndicators = fieldIndicators.Any(indicator => upperText.Contains(indicator));
+        
+        // Consider it ID-like if it has numbers and letters, and either dates or ID words or field indicators
+        return hasNumbers && hasLetters && (hasDates || hasIdWords || hasFieldIndicators);
     }
 
     // Google Vision API response models
