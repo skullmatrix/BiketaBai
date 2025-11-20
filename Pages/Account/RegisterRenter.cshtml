@@ -83,7 +83,8 @@
                                 <div style="position: relative;">
                                     <input asp-for="Input.Address" class="reg-form-input" 
                                            placeholder="Start typing your address..." required 
-                                           id="addressInput" autocomplete="off" />
+                                           id="addressInput" autocomplete="off" 
+                                           onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" />
                                     <div id="addressSuggestions" class="address-suggestions"></div>
                                 </div>
                                 <div class="reg-form-help">
@@ -191,9 +192,15 @@
                                 <label asp-for="Input.Password" class="reg-form-label">
                                     Password <span class="required">*</span>
                                 </label>
-                                <input asp-for="Input.Password" type="password" class="reg-form-input" 
-                                       placeholder="Create a password (minimum 6 characters)" 
-                                       required minlength="6" id="passwordInput" />
+                                <div style="position: relative;">
+                                    <input asp-for="Input.Password" type="password" class="reg-form-input" 
+                                           placeholder="Create a password (minimum 6 characters)" 
+                                           required minlength="6" id="passwordInput" 
+                                           style="padding-right: 45px;" />
+                                    <button type="button" class="reg-password-toggle" id="togglePassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--neutral-500); cursor: pointer; padding: 5px; font-size: 1.1rem;">
+                                        <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                                    </button>
+                                </div>
                                 <div class="reg-form-help">
                                     <i class="bi bi-shield-check"></i>
                                     <span>Password must be at least 6 characters</span>
@@ -205,9 +212,15 @@
                                 <label asp-for="Input.ConfirmPassword" class="reg-form-label">
                                     Confirm Password <span class="required">*</span>
                                 </label>
-                                <input asp-for="Input.ConfirmPassword" type="password" class="reg-form-input" 
-                                       placeholder="Re-enter your password" required 
-                                       id="confirmPasswordInput" />
+                                <div style="position: relative;">
+                                    <input asp-for="Input.ConfirmPassword" type="password" class="reg-form-input" 
+                                           placeholder="Re-enter your password" required 
+                                           id="confirmPasswordInput" 
+                                           style="padding-right: 45px;" />
+                                    <button type="button" class="reg-password-toggle" id="toggleConfirmPassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--neutral-500); cursor: pointer; padding: 5px; font-size: 1.1rem;">
+                                        <i class="bi bi-eye" id="toggleConfirmPasswordIcon"></i>
+                                    </button>
+                                </div>
                                 <span asp-validation-for="Input.ConfirmPassword" class="reg-form-error"></span>
                             </div>
 
@@ -310,6 +323,15 @@
                     }, 200);
                 } else {
                     $('#addressSuggestions').hide();
+                }
+            });
+
+            // Prevent Enter key from submitting form in address input
+            $('#addressInput').on('keydown', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
                 }
             });
 
@@ -481,6 +503,23 @@
                         alert('ID back photo must be JPG or PNG image.');
                         return false;
                     }
+                }
+            });
+
+            // Password Toggle
+            $('#togglePassword, #toggleConfirmPassword').click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isPassword = $(this).attr('id') === 'togglePassword';
+                const passwordInput = isPassword ? $('#passwordInput') : $('#confirmPasswordInput');
+                const toggleIcon = isPassword ? $('#togglePasswordIcon') : $('#toggleConfirmPasswordIcon');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    toggleIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
                 }
             });
 
