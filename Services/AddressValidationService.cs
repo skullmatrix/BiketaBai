@@ -8,13 +8,13 @@ public class AddressValidationService
 {
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
-    private readonly string? _apiKey;
 
     public AddressValidationService(IConfiguration configuration, HttpClient httpClient)
     {
         _configuration = configuration;
         _httpClient = httpClient;
-        _apiKey = _configuration["AppSettings:GoogleMapsApiKey"];
+        // Set user agent as required by Nominatim usage policy
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "BikeTaBai/1.0 (biketabai.net)");
     }
 
     public class AddressValidationResult
@@ -37,29 +37,20 @@ public class AddressValidationService
             return result;
         }
 
-        if (string.IsNullOrEmpty(_apiKey) || _apiKey == "YOUR_GOOGLE_MAPS_API_KEY_HERE")
-        {
-            Log.Warning("Google Maps API key not configured. Skipping address validation.");
-            // Return valid but don't validate - allows registration to proceed
-            result.IsValid = true;
-            result.StandardizedAddress = address;
-            result.FormattedAddress = address;
-            return result;
-        }
-
         try
         {
+            // Use OpenStreetMap Nominatim API (free, no API key required)
             var encodedAddress = Uri.EscapeDataString(address);
-            var url = $"https://maps.googleapis.com/maps/api/geocode/json?address={encodedAddress}&key={_apiKey}";
+            var url = $"https://nominatim.openstreetmap.org/search?q={encodedAddress}&format=json&addressdetails=1&limit=1&countrycodes=ph";
 
-            Log.Information("Validating address via Google Maps API: {Address}", address);
+            Log.Information("Validating address via OpenStreetMap Nominatim: {Address}", address);
 
             var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                Log.Error("Google Maps API error: {StatusCode} - {Content}", response.StatusCode, content);
+                Log.Error("OpenStreetMap API error: {StatusCode} - {Content}", response.StatusCode, content);
                 result.ErrorMessage = "Address validation service unavailable";
                 result.IsValid = false;
                 return result;
@@ -68,36 +59,34 @@ public class AddressValidationService
             var jsonDoc = JsonDocument.Parse(content);
             var root = jsonDoc.RootElement;
 
-            var status = root.GetProperty("status").GetString();
-
-            if (status == "OK" && root.TryGetProperty("results", out var results) && results.GetArrayLength() > 0)
+            if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
             {
-                var firstResult = results[0];
-                var formattedAddress = firstResult.GetProperty("formatted_address").GetString();
-                var geometry = firstResult.GetProperty("geometry");
-                var location = geometry.GetProperty("location");
-                var lat = location.GetProperty("lat").GetDouble();
-                var lng = location.GetProperty("lng").GetDouble();
+                var firstResult = root[0];
+                var displayName = firstResult.TryGetProperty("display_name", out var displayNameElement)
+                    ? displayNameElement.GetString() ?? ""
+                    : "";
+
+                var lat = firstResult.TryGetProperty("lat", out var latElement)
+                    ? (double.TryParse(latElement.GetString(), out var latitude) ? latitude : 0)
+                    : 0;
+
+                var lng = firstResult.TryGetProperty("lon", out var lonElement)
+                    ? (double.TryParse(lonElement.GetString(), out var longitude) ? longitude : 0)
+                    : 0;
 
                 result.IsValid = true;
-                result.StandardizedAddress = formattedAddress;
-                result.FormattedAddress = formattedAddress;
+                result.StandardizedAddress = displayName;
+                result.FormattedAddress = displayName;
                 result.Latitude = lat;
                 result.Longitude = lng;
 
-                Log.Information("Address validated successfully: {FormattedAddress}", formattedAddress);
-            }
-            else if (status == "ZERO_RESULTS")
-            {
-                result.IsValid = false;
-                result.ErrorMessage = "Address not found. Please check and try again.";
-                Log.Warning("Address not found: {Address}", address);
+                Log.Information("Address validated successfully: {FormattedAddress}", displayName);
             }
             else
             {
                 result.IsValid = false;
-                result.ErrorMessage = $"Address validation failed: {status}";
-                Log.Warning("Address validation failed with status: {Status}", status);
+                result.ErrorMessage = "Address not found. Please check and try again.";
+                Log.Warning("Address not found: {Address}", address);
             }
         }
         catch (Exception ex)

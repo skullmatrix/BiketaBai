@@ -9,6 +9,9 @@
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;Port=3306;Database=biketabai;User=root;Password=;"
   },
+  "AppSettings": {
+    "GoogleCloudVisionApiKey": "YOUR_GOOGLE_CLOUD_VISION_API_KEY_HERE"
+  },
   "EmailSettings": {
     "SenderName": "Bike Ta Bai",
     "SenderEmail": "your-email@example.com",

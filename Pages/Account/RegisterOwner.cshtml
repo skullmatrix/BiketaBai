@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = "Register as Owner";
     Layout = null;
-    var googleMapsKey = ViewContext.HttpContext.RequestServices.GetService<IConfiguration>()?["AppSettings:GoogleMapsApiKey"] ?? "";
 }
 
 <!DOCTYPE html>
@@ -11,11 +10,13 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>@ViewData["Title"] - Bike Ta Bai</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="~/css/registration-premium.css" asp-append-version="true" />
-    <script src="https://maps.googleapis.com/maps/api/js?key=@googleMapsKey&libraries=places&loading=async&callback=initAutocomplete" async defer></script>
 </head>
 <body>
     <div class="registration-wrapper">
@@ -92,14 +93,16 @@
                                 <label asp-for="Input.StoreAddress" class="reg-form-label">
                                     Store Address <span class="required">*</span>
                                 </label>
-                                <input asp-for="Input.StoreAddress" class="reg-form-input" 
-                                       placeholder="Start typing your address..." required 
-                                       id="storeAddressInput" autocomplete="off" />
+                                <div style="position: relative;">
+                                    <input asp-for="Input.StoreAddress" class="reg-form-input" 
+                                           placeholder="Start typing your address..." required 
+                                           id="storeAddressInput" autocomplete="off" />
+                                    <div id="storeAddressSuggestions" class="address-suggestions"></div>
+                                </div>
                                 <div class="reg-form-help">
                                     <i class="bi bi-info-circle"></i>
                                     <span>Select from suggestions as you type</span>
                                 </div>
-                                <div id="storeAddressSuggestions" class="address-suggestions"></div>
                                 <div id="storeAddressValidation" style="display: none;">
                                     <div class="reg-validation-badge success" id="storeAddressValid">
                                         <i class="bi bi-check-circle"></i> Address verified
@@ -208,7 +211,7 @@
                             </div>
 
                             <div class="reg-btn-group">
-                                <button type="submit" name="step" value="1" class="reg-btn reg-btn-secondary">
+                                <button type="submit" name="step" value="back" class="reg-btn reg-btn-secondary" formnovalidate>
                                     <i class="bi bi-arrow-left"></i> Back
                                 </button>
                                 <button type="submit" name="step" value="2" class="reg-btn reg-btn-primary">
@@ -267,28 +270,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let storeAddressPlaceId = null;
-        let storeAutocompleteService;
-        let storeService;
         let storeSuggestionsTimeout;
-
-        // Initialize Google Maps Autocomplete for Store Address
-        function initAutocomplete() {
-            try {
-                const storeAddressInput = document.getElementById('storeAddressInput');
-                if (storeAddressInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                    // Use AutocompleteService for better suggestions
-                    storeAutocompleteService = new google.maps.places.AutocompleteService();
-                    storeService = new google.maps.places.PlacesService(document.createElement('div'));
-                    console.log('✅ Google Maps Places API initialized successfully');
-                } else {
-                    console.error('❌ Google Maps API not loaded. Check API key and enabled APIs.');
-                    showStoreAddressError('Google Maps API not loaded. Please check your API configuration.');
-                }
-            } catch (error) {
-                console.error('❌ Error initializing Google Maps:', error);
-                showStoreAddressError('Error initializing address suggestions. Please try again.');
-            }
-        }
+        let storeSessionToken = null;
 
         function showStoreAddressError(message) {
             $('#storeAddressValidation').show();
@@ -296,77 +279,60 @@
             $('#storeAddressInvalid').show().find('span').text(message);
         }
 
-        // Fallback if Google Maps doesn't load
-        window.initAutocomplete = initAutocomplete;
-
         function showStoreAddressSuggestions(query) {
-            if (!storeAutocompleteService) {
-                console.error('❌ AutocompleteService not initialized');
-                showStoreAddressError('Address suggestions unavailable. Please check API configuration.');
-                return;
-            }
-
             if (query.length < 3) {
                 $('#storeAddressSuggestions').hide();
                 return;
             }
 
-            console.log('🔍 Searching for store address:', query);
+            console.log('🔍 Searching for store address via OpenStreetMap:', query);
 
-            // Use AutocompleteService.getPlacePredictions for better results
-            const request = {
-                input: query,
-                componentRestrictions: { country: 'ph' },
-                types: ['address']
-            };
+            // Use server-side OpenStreetMap Nominatim API (no Google Maps!)
+            const url = `/Api/PlacesAutocomplete?query=${encodeURIComponent(query)}${storeSessionToken ? '&sessionToken=' + storeSessionToken : ''}&_=${Date.now()}`;
 
-            storeAutocompleteService.getPlacePredictions(request, function(predictions, status) {
-                console.log('📍 Autocomplete Status:', status);
-                console.log('📍 Predictions:', predictions);
+            $.get(url)
+                .done(function(data) {
+                    console.log('📍 API Response:', data);
 
-                if (status === google.maps.places.PlacesServiceStatus.OK && predictions && predictions.length > 0) {
-                    const suggestionsHtml = predictions.slice(0, 5).map(function(prediction) {
-                        return `
-                            <div class="address-suggestion-item" data-place-id="${prediction.place_id}" data-address="${prediction.description}">
-                                <div class="address-suggestion-icon">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                </div>
-                                <div class="address-suggestion-text">
-                                    <strong>${prediction.structured_formatting.main_text}</strong>
-                                    <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: 0.125rem;">
-                                        ${prediction.structured_formatting.secondary_text || ''}
+                    if (data.success && data.predictions && data.predictions.length > 0) {
+                        const suggestionsHtml = data.predictions.slice(0, 5).map(function(prediction) {
+                            return `
+                                <div class="address-suggestion-item" data-place-id="${prediction.place_id}" data-address="${prediction.description}">
+                                    <div class="address-suggestion-icon">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                    </div>
+                                    <div class="address-suggestion-text">
+                                        <strong>${prediction.main_text || prediction.description}</strong>
+                                        ${prediction.secondary_text ? `<div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: 0.125rem;">${prediction.secondary_text}</div>` : ''}
                                     </div>
                                 </div>
-                            </div>
-                        `;
-                    }).join('');
+                            `;
+                        }).join('');
 
-                    $('#storeAddressSuggestions').html(suggestionsHtml).show();
-                    console.log('✅ Showing', predictions.length, 'suggestions');
-                } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-                    $('#storeAddressSuggestions').html('<div class="address-suggestion-item" style="cursor: default; color: var(--neutral-500);">No addresses found</div>').show();
-                    console.log('⚠️ No results found');
-                } else {
+                        $('#storeAddressSuggestions').html(suggestionsHtml).show();
+                        console.log('✅ Showing', data.predictions.length, 'suggestions');
+                    } else if (data.status === 'ZERO_RESULTS') {
+                        $('#storeAddressSuggestions').html('<div class="address-suggestion-item" style="cursor: default; color: var(--neutral-500);">No addresses found</div>').show();
+                        console.log('⚠️ No results found');
+                    } else {
+                        $('#storeAddressSuggestions').hide();
+                        const errorMsg = data.error || 'Unable to search addresses. Please try again.';
+                        console.error('❌ Places API Error:', data.status, errorMsg);
+                        showStoreAddressError(errorMsg);
+                    }
+                })
+                .fail(function(xhr, status, error) {
+                    console.error('❌ Request failed:', error);
                     $('#storeAddressSuggestions').hide();
-                    const errorMsg = getStorePlacesApiErrorMessage(status);
-                    console.error('❌ Places API Error:', status, errorMsg);
-                    showStoreAddressError(errorMsg);
-                }
-            });
-        }
-
-        function getStorePlacesApiErrorMessage(status) {
-            const errors = {
-                'ZERO_RESULTS': 'No addresses found. Try a different address.',
-                'OVER_QUERY_LIMIT': 'Address service temporarily unavailable. Please try again later.',
-                'REQUEST_DENIED': 'Address service access denied. Please check API configuration.',
-                'INVALID_REQUEST': 'Invalid address query. Please try again.',
-                'UNKNOWN_ERROR': 'An error occurred. Please try again.'
-            };
-            return errors[status] || 'Unable to search addresses. Please try again.';
+                    showStoreAddressError('Failed to fetch address suggestions. Please try again.');
+                });
         }
 
         $(document).ready(function() {
+            // Generate session token for this session
+            storeSessionToken = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            console.log('✅ Using Places API REST endpoint (server-side)');
+
             // Store address input - show suggestions as user types (active search)
             $('#storeAddressInput').on('input', function() {
                 const query = $(this).val().trim();
@@ -401,19 +367,6 @@
                 $('#storeAddressInput').val(address);
                 storeAddressPlaceId = placeId;
                 
-                // Get full place details
-                if (storeService && placeId) {
-                    storeService.getDetails({
-                        placeId: placeId,
-                        fields: ['formatted_address', 'geometry', 'address_components']
-                    }, function(place, status) {
-                        if (status === google.maps.places.PlacesServiceStatus.OK) {
-                            $('#storeAddressInput').val(place.formatted_address);
-                            console.log('✅ Place details loaded:', place.formatted_address);
-                        }
-                    });
-                }
-                
                 // Hide suggestions
                 $('#storeAddressSuggestions').hide();
                 
@@ -421,6 +374,8 @@
                 $('#storeAddressValidation').show();
                 $('#storeAddressValid').show();
                 $('#storeAddressInvalid').hide();
+                
+                console.log('✅ Store address selected:', address);
             });
 
             // Hide suggestions when clicking outside
@@ -500,9 +455,25 @@
 
             // Form validation before submission (Step 2)
             $('#ownerRegistrationForm').on('submit', function(e) {
-                const currentStep = $('input[name="step"]').val();
+                const submitButton = $(document.activeElement);
+                let stepValue = null;
                 
-                if (currentStep === '2') {
+                // Check if the clicked button has name="step"
+                if (submitButton.is('button[type="submit"]') && submitButton.attr('name') === 'step') {
+                    stepValue = submitButton.val();
+                } else {
+                    // Fallback to hidden input
+                    stepValue = $('input[name="step"]').val();
+                }
+                
+                // Allow back button to work without validation
+                if (stepValue === 'back') {
+                    // Remove the hidden step input so back button value is used
+                    $('input[name="step"]').remove();
+                    return true;
+                }
+                
+                if (stepValue === '2') {
                     const frontFile = $('#IdDocumentFront')[0].files[0];
                     const backFile = $('#IdDocumentBack')[0].files[0];
 

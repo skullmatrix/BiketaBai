@@ -100,11 +100,43 @@ public class RegisterOwnerModel : PageModel
             // Redirect to type selection if not coming from there
             return RedirectToPage("/Account/RegisterType");
         }
+
+        // Restore step from TempData if available
+        if (TempData.ContainsKey("OwnerCurrentStep"))
+        {
+            CurrentStep = int.TryParse(TempData["OwnerCurrentStep"]?.ToString(), out var step) ? step : 1;
+        }
+
+        // Restore step 1 data if going back
+        if (CurrentStep == 1 && TempData.ContainsKey("OwnerFullName"))
+        {
+            Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
+            Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
+            Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
+            Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
+        }
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(string? step)
     {
+        // Handle back button from step 2 FIRST (before parsing step as int)
+        if (step == "back")
+        {
+            // User clicked back from step 2, restore step 1 data
+            if (TempData.ContainsKey("OwnerFullName"))
+            {
+                Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
+                Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
+                Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
+                Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
+            }
+            CurrentStep = 1;
+            TempData["OwnerCurrentStep"] = "1";
+            return Page();
+        }
+
         CurrentStep = int.TryParse(step, out var stepNum) ? stepNum : 1;
 
         if (!ModelState.IsValid && CurrentStep > 1)
@@ -148,6 +180,7 @@ public class RegisterOwnerModel : PageModel
             TempData["OwnerStoreName"] = Input.StoreName;
             TempData["OwnerStoreAddress"] = validatedAddress;
             TempData["OwnerAddressVerified"] = "true";
+            TempData["OwnerCurrentStep"] = "2";
             CurrentStep = 2;
             return Page();
         }
@@ -234,23 +267,40 @@ public class RegisterOwnerModel : PageModel
                 businessLicensePath = $"/uploads/id-documents/{licenseFileName}";
             }
 
-            // Validate ID using IdValidationService (use front for validation)
+            // Validate ID using IdValidationService with OCR (use front for validation)
             var idValidation = await _idValidationService.ValidateIdAsync(IdDocumentFront);
             if (!idValidation.IsValid)
             {
                 ErrorMessage = idValidation.ErrorMessage ?? "Invalid ID document";
                 CurrentStep = 2;
+                TempData["OwnerCurrentStep"] = "2";
                 return Page();
             }
 
             // Extract address from ID using OCR (use front)
-            var extractedAddress = await _idValidationService.ExtractAddressFromIdAsync(IdDocumentFront);
+            string? extractedAddress = idValidation.ExtractedAddress;
+            string? extractedName = idValidation.ExtractedName;
+            
+            // If OCR successfully extracted name or address, mark as verified
+            bool isVerified = !string.IsNullOrWhiteSpace(extractedName) || !string.IsNullOrWhiteSpace(extractedAddress);
+            
+            if (isVerified)
+            {
+                Log.Information("ID automatically verified via OCR. Name: {Name}, Address: {Address}", 
+                    extractedName, extractedAddress);
+            }
+            else
+            {
+                Log.Warning("OCR did not extract name or address from ID. Manual verification may be required.");
+            }
 
             TempData["OwnerIdDocumentFront"] = idDocumentFrontPath;
             TempData["OwnerIdDocumentBack"] = idDocumentBackPath;
             TempData["OwnerBusinessLicense"] = businessLicensePath;
             TempData["OwnerIdExtractedAddress"] = extractedAddress ?? "";
-            TempData["OwnerIdVerified"] = "true";
+            TempData["OwnerIdExtractedName"] = extractedName ?? "";
+            TempData["OwnerIdVerified"] = isVerified ? "true" : "pending";
+            TempData["OwnerCurrentStep"] = "3";
             CurrentStep = 3;
             return Page();
         }

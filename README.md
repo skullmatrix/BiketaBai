@@ -221,7 +221,7 @@ Edit `appsettings.json` to configure:
     "MaximumAdvanceBookingDays": 30,
     "CancellationFreeHours": 24,
     "CancellationPartialRefundPercentage": 50,
-    "GoogleMapsApiKey": "YOUR_API_KEY"
+    "GoogleCloudVisionApiKey": "YOUR_GOOGLE_CLOUD_VISION_API_KEY_HERE"
   },
   "PointsRules": {
     "OnTimeReturn": 10,
@@ -344,7 +344,7 @@ Built with ❤️ using ASP.NET Core 8.0 and MySQL
 **Note**: This is a demonstration project. For production use, implement:
 - Real payment gateway integration
 - Email service for notifications
-- Google Maps API integration
+- OpenStreetMap Nominatim API integration (free address autocomplete & geocoding)
 - Image optimization and CDN
 - Advanced security measures
 - Comprehensive error handling

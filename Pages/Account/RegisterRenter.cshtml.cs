@@ -93,26 +93,55 @@ public class RegisterRenterModel : PageModel
             // Redirect to type selection if not coming from there
             return RedirectToPage("/Account/RegisterType");
         }
+
+        // Restore step from TempData if available
+        if (TempData.ContainsKey("RenterCurrentStep"))
+        {
+            CurrentStep = int.TryParse(TempData["RenterCurrentStep"]?.ToString(), out var step) ? step : 1;
+        }
+
+        // Restore step 1 data if going back
+        if (CurrentStep == 1 && TempData.ContainsKey("RenterFullName"))
+        {
+            Input.FullName = TempData["RenterFullName"]?.ToString() ?? "";
+            Input.Email = TempData["RenterEmail"]?.ToString() ?? "";
+            Input.Address = TempData["RenterAddress"]?.ToString() ?? "";
+        }
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(string? step)
     {
-        CurrentStep = int.TryParse(step, out var stepNum) ? stepNum : 1;
-
-        if (!ModelState.IsValid && CurrentStep > 1)
+        // Handle back button from step 2 FIRST (before parsing step as int)
+        if (step == "back")
         {
+            // User clicked back from step 2, restore step 1 data
+            if (TempData.ContainsKey("RenterFullName"))
+            {
+                Input.FullName = TempData["RenterFullName"]?.ToString() ?? "";
+                Input.Email = TempData["RenterEmail"]?.ToString() ?? "";
+                Input.Address = TempData["RenterAddress"]?.ToString() ?? "";
+            }
+            CurrentStep = 1;
+            TempData["RenterCurrentStep"] = "1";
             return Page();
         }
+
+        CurrentStep = int.TryParse(step, out var stepNum) ? stepNum : 1;
 
         // Step 1: Basic Information
         if (CurrentStep == 1)
         {
+            // Clear ModelState errors for fields we're manually validating
+            ModelState.Clear();
+            
             if (string.IsNullOrWhiteSpace(Input.FullName) || 
                 string.IsNullOrWhiteSpace(Input.Email) || 
                 string.IsNullOrWhiteSpace(Input.Address))
             {
                 ErrorMessage = "Please fill in all required fields";
+                CurrentStep = 1;
                 return Page();
             }
 
@@ -139,6 +168,7 @@ public class RegisterRenterModel : PageModel
             TempData["RenterEmail"] = Input.Email;
             TempData["RenterAddress"] = validatedAddress;
             TempData["RenterAddressVerified"] = "true";
+            TempData["RenterCurrentStep"] = "2";
             CurrentStep = 2;
             return Page();
         }
@@ -146,10 +176,20 @@ public class RegisterRenterModel : PageModel
         // Step 2: ID Document (Front and Back)
         if (CurrentStep == 2)
         {
-            if (IdDocumentFront == null || IdDocumentBack == null)
+            // Validate that files are present
+            if (IdDocumentFront == null || IdDocumentFront.Length == 0)
             {
-                ErrorMessage = "Both ID front and back photos are required";
+                ErrorMessage = "ID front photo is required";
                 CurrentStep = 2;
+                TempData["RenterCurrentStep"] = "2";
+                return Page();
+            }
+
+            if (IdDocumentBack == null || IdDocumentBack.Length == 0)
+            {
+                ErrorMessage = "ID back photo is required";
+                CurrentStep = 2;
+                TempData["RenterCurrentStep"] = "2";
                 return Page();
             }
 
@@ -195,22 +235,71 @@ public class RegisterRenterModel : PageModel
             }
             var idDocumentBackPath = $"/uploads/id-documents/{backFileName}";
 
-            // Validate ID using IdValidationService (use front for validation)
-            var idValidation = await _idValidationService.ValidateIdAsync(IdDocumentFront);
+            // Validate ID using IdValidationService with OCR (read from saved file)
+            IdValidationService.IdValidationResult idValidation;
+            try
+            {
+                // Read the saved file and create a FormFile for validation
+                using var fileStream = System.IO.File.OpenRead(frontFilePath);
+                var memoryStream = new MemoryStream();
+                await fileStream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+                
+                var formFile = new Microsoft.AspNetCore.Http.FormFile(
+                    memoryStream, 
+                    0, 
+                    memoryStream.Length, 
+                    IdDocumentFront.Name, 
+                    IdDocumentFront.FileName)
+                {
+                    Headers = new Microsoft.AspNetCore.Http.HeaderDictionary(),
+                    ContentType = IdDocumentFront.ContentType
+                };
+                
+                idValidation = await _idValidationService.ValidateIdAsync(formFile);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during ID OCR validation. Proceeding with basic validation.");
+                // If OCR fails, still proceed - basic file validation already passed
+                idValidation = new IdValidationService.IdValidationResult
+                {
+                    IsValid = true,
+                    ErrorMessage = null
+                };
+            }
+
             if (!idValidation.IsValid)
             {
                 ErrorMessage = idValidation.ErrorMessage ?? "Invalid ID document";
                 CurrentStep = 2;
+                TempData["RenterCurrentStep"] = "2";
                 return Page();
             }
 
             // Extract address from ID using OCR (use front)
-            var extractedAddress = await _idValidationService.ExtractAddressFromIdAsync(IdDocumentFront);
+            string? extractedAddress = idValidation.ExtractedAddress;
+            string? extractedName = idValidation.ExtractedName;
+            
+            // If OCR successfully extracted name or address, mark as verified
+            bool isVerified = !string.IsNullOrWhiteSpace(extractedName) || !string.IsNullOrWhiteSpace(extractedAddress);
+            
+            if (isVerified)
+            {
+                Log.Information("ID automatically verified via OCR. Name: {Name}, Address: {Address}", 
+                    extractedName, extractedAddress);
+            }
+            else
+            {
+                Log.Warning("OCR did not extract name or address from ID. Manual verification may be required.");
+            }
             
             TempData["RenterIdDocumentFront"] = idDocumentFrontPath;
             TempData["RenterIdDocumentBack"] = idDocumentBackPath;
             TempData["RenterIdExtractedAddress"] = extractedAddress ?? "";
-            TempData["RenterIdVerified"] = "true";
+            TempData["RenterIdExtractedName"] = extractedName ?? "";
+            TempData["RenterIdVerified"] = isVerified ? "true" : "pending";
+            TempData["RenterCurrentStep"] = "3";
             CurrentStep = 3;
             return Page();
         }
