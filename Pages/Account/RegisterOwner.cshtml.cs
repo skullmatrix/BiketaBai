@@ -267,8 +267,40 @@ public class RegisterOwnerModel : PageModel
                 businessLicensePath = $"/uploads/id-documents/{licenseFileName}";
             }
 
-            // Validate ID using IdValidationService with OCR (use front for validation)
-            var idValidation = await _idValidationService.ValidateIdAsync(IdDocumentFront);
+            // Validate ID using IdValidationService with OCR (read from saved file)
+            IdValidationService.IdValidationResult idValidation;
+            try
+            {
+                // Read the saved file and create a FormFile for validation
+                using var fileStream = System.IO.File.OpenRead(frontFilePath);
+                var memoryStream = new MemoryStream();
+                await fileStream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+                
+                var formFile = new Microsoft.AspNetCore.Http.FormFile(
+                    memoryStream, 
+                    0, 
+                    memoryStream.Length, 
+                    IdDocumentFront.Name, 
+                    IdDocumentFront.FileName)
+                {
+                    Headers = new Microsoft.AspNetCore.Http.HeaderDictionary(),
+                    ContentType = IdDocumentFront.ContentType
+                };
+                
+                idValidation = await _idValidationService.ValidateIdAsync(formFile);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during ID OCR validation. Cannot verify ID authenticity.");
+                // If OCR fails, we cannot verify if it's a valid ID - reject it
+                idValidation = new IdValidationService.IdValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Please upload a valid ID"
+                };
+            }
+
             if (!idValidation.IsValid)
             {
                 ErrorMessage = idValidation.ErrorMessage ?? "Please upload a valid ID";

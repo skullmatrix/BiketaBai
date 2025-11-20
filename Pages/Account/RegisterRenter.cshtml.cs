@@ -336,12 +336,12 @@ public class RegisterRenterModel : PageModel
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error during ID OCR validation. Proceeding with basic validation.");
-                // If OCR fails, still proceed - basic file validation already passed
+                Log.Error(ex, "Error during ID OCR validation. Cannot verify ID authenticity.");
+                // If OCR fails, we cannot verify if it's a valid ID - reject it
                 idValidation = new IdValidationService.IdValidationResult
                 {
-                    IsValid = true,
-                    ErrorMessage = null
+                    IsValid = false,
+                    ErrorMessage = "Please upload a valid ID"
                 };
             }
 

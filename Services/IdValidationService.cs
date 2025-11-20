@@ -39,12 +39,8 @@ public class IdValidationService
             return result;
         }
 
-        // Validate file size (max 5MB)
-        if (idDocument.Length > 5 * 1024 * 1024)
-        {
-            result.ErrorMessage = "ID document must be less than 5MB";
-            return result;
-        }
+        // Note: File size validation removed - images are auto-compressed
+        // No size limit check here
 
         // Validate file type
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
@@ -52,11 +48,12 @@ public class IdValidationService
         if (!allowedExtensions.Contains(fileExtension))
         {
             result.ErrorMessage = "ID document must be JPG or PNG image";
+            result.IsValid = false;
             return result;
         }
 
-        // Basic validation passed
-        result.IsValid = true;
+        // Default to false - will be set to true only if OCR verification passes
+        result.IsValid = false;
 
         // Perform OCR using Google Cloud Vision API
         try
@@ -64,8 +61,10 @@ public class IdValidationService
             var apiKey = _configuration["AppSettings:GoogleCloudVisionApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                Log.Warning("Google Cloud Vision API key not configured. Skipping OCR validation.");
-                return result; // Return basic validation if API key is missing
+                Log.Warning("Google Cloud Vision API key not configured. Cannot verify ID.");
+                result.IsValid = false;
+                result.ErrorMessage = "Please upload a valid ID";
+                return result;
             }
 
             // Convert image to base64
@@ -102,7 +101,8 @@ public class IdValidationService
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var visionResponse = JsonSerializer.Deserialize<VisionApiResponse>(responseContent);
 
-                if (visionResponse?.Responses != null && visionResponse.Responses.Length > 0)
+                if (visionResponse?.Responses != null && visionResponse.Responses.Length > 0 && 
+                    visionResponse.Responses[0] != null)
                 {
                     var textAnnotations = visionResponse.Responses[0].TextAnnotations;
                     if (textAnnotations != null && textAnnotations.Length > 0)
@@ -161,6 +161,13 @@ public class IdValidationService
                         result.IsValid = false;
                         result.ErrorMessage = "Please upload a valid ID";
                     }
+                }
+                else
+                {
+                    // Vision API returned empty or null response
+                    Log.Warning("Vision API returned empty or null response");
+                    result.IsValid = false;
+                    result.ErrorMessage = "Please upload a valid ID";
                 }
             }
             else
