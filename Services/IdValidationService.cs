@@ -525,20 +525,34 @@ public class IdValidationService
             Log.Debug("ID verification: Found government agency keyword (+1 bonus point)");
         }
 
-        // Verify structure: Should have at least 3-4 lines of text for a proper ID
+        // Verify structure: Should have at least some text for a proper ID
         var lines = fullText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var meaningfulLines = lines.Count(line => line.Trim().Length > 5);
+        
+        // Check if text is substantial enough (either multiple lines OR substantial single line)
         if (meaningfulLines >= 3)
         {
             // Already counted in other checks, but verify minimum structure
             Log.Debug("ID verification: Document has {LineCount} meaningful lines of text", meaningfulLines);
         }
-        else if (meaningfulLines < 2)
+        else if (meaningfulLines == 0 && fullText.Trim().Length < 20)
         {
-            // Too little text - definitely not a valid ID
+            // No meaningful lines AND very little text - likely not a valid ID
             score = 0;
-            Log.Warning("ID verification: Document has very little text ({LineCount} lines). Not a valid ID.", meaningfulLines);
+            Log.Warning("ID verification: Document has no meaningful text ({TextLength} chars). Not a valid ID.", fullText.Length);
             return 0; // Return immediately - invalid ID
+        }
+        else if (meaningfulLines == 1 && fullText.Trim().Length < 50)
+        {
+            // Single line with very little text - check if it has ID-like content
+            if (!HasIdLikeContent(fullText))
+            {
+                score = 0;
+                Log.Warning("ID verification: Document has only {LineCount} line with {TextLength} chars and no ID-like content. Not a valid ID.", meaningfulLines, fullText.Length);
+                return 0; // Return immediately - invalid ID
+            }
+            // If it has ID-like content, continue with scoring
+            Log.Debug("ID verification: Document has {LineCount} line with {TextLength} chars but contains ID-like content. Continuing verification.", meaningfulLines, fullText.Length);
         }
 
         // Check for suspicious patterns - reject immediately if found

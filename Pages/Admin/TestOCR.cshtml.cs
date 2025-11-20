@@ -75,17 +75,40 @@ namespace BiketaBai.Pages.Admin
                 // Get matched patterns
                 var matchedPatterns = GetMatchedPatterns(fullText);
 
+                // Determine validation message
+                string validationMessage;
+                if (validationResult.IsValid)
+                {
+                    validationMessage = "✅ ID is Valid";
+                }
+                else if (string.IsNullOrWhiteSpace(fullText) || fullText.StartsWith("❌"))
+                {
+                    validationMessage = $"❌ OCR Error: {fullText}";
+                }
+                else if (fullText.Length < 20)
+                {
+                    validationMessage = $"❌ Too little text extracted ({fullText.Length} chars). Image may be blurry or not a valid ID.";
+                }
+                else if (score == 0)
+                {
+                    validationMessage = $"❌ Verification score is 0. Text doesn't match ID patterns. Extracted text: \"{fullText.Substring(0, Math.Min(50, fullText.Length))}...\"";
+                }
+                else
+                {
+                    validationMessage = validationResult.ErrorMessage ?? $"❌ ID is Invalid (Score: {score}/5)";
+                }
+
                 Result = new OCRTestResult
                 {
                     Success = true,
-                    FullText = fullText,
-                    TextLength = fullText?.Length ?? 0,
+                    FullText = fullText.StartsWith("❌") ? fullText : (string.IsNullOrWhiteSpace(fullText) ? "No text extracted from image" : fullText),
+                    TextLength = fullText.StartsWith("❌") ? 0 : (fullText?.Length ?? 0),
                     VerificationScore = score,
                     ExtractedName = validationResult.ExtractedName,
                     ExtractedAddress = validationResult.ExtractedAddress,
                     ExtractedFields = validationResult.ExtractedFields,
                     IsValid = validationResult.IsValid,
-                    ValidationMessage = validationResult.IsValid ? "✅ ID is Valid" : validationResult.ErrorMessage ?? "❌ ID is Invalid",
+                    ValidationMessage = validationMessage,
                     MatchedPatterns = matchedPatterns,
                     MeaningfulLines = meaningfulLines
                 };
@@ -155,8 +178,17 @@ namespace BiketaBai.Pages.Admin
                         var textAnnotations = visionResponse.Responses[0].TextAnnotations;
                         if (textAnnotations != null && textAnnotations.Length > 0)
                         {
-                            return textAnnotations[0].Description ?? "No text extracted";
+                            var extractedText = textAnnotations[0].Description ?? "";
+                            return string.IsNullOrWhiteSpace(extractedText) ? "No text extracted from image" : extractedText;
                         }
+                        else
+                        {
+                            return "No text annotations found in OCR response";
+                        }
+                    }
+                    else
+                    {
+                        return "Empty or null response from Vision API";
                     }
                 }
                 else
