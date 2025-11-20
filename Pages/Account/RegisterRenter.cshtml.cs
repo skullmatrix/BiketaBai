@@ -347,7 +347,7 @@ public class RegisterRenterModel : PageModel
 
             if (!idValidation.IsValid)
             {
-                ErrorMessage = idValidation.ErrorMessage ?? "Invalid ID document. Please ensure the ID is clear and readable.";
+                ErrorMessage = idValidation.ErrorMessage ?? "Please upload a valid ID";
                 CurrentStep = 3;
                 TempData["RenterCurrentStep"] = "3";
                 return Page();

@@ -271,7 +271,7 @@ public class RegisterOwnerModel : PageModel
             var idValidation = await _idValidationService.ValidateIdAsync(IdDocumentFront);
             if (!idValidation.IsValid)
             {
-                ErrorMessage = idValidation.ErrorMessage ?? "Invalid ID document";
+                ErrorMessage = idValidation.ErrorMessage ?? "Please upload a valid ID";
                 CurrentStep = 2;
                 TempData["OwnerCurrentStep"] = "2";
                 return Page();

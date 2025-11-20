@@ -118,37 +118,48 @@ public class IdValidationService
                         // Verify if this looks like a real ID document
                         var verificationScore = VerifyIdDocument(fullText, result.ExtractedFields);
                         
-                        if (verificationScore >= 3) // High confidence it's a real ID
+                        if (verificationScore >= 4) // Very high confidence it's a real ID
                         {
                             result.IsValid = true;
                             Log.Information("ID validation successful via OCR. Name: {Name}, Address: {Address}, Verification Score: {Score}/5", 
                                 result.ExtractedName, result.ExtractedAddress, verificationScore);
                         }
-                        else if (verificationScore >= 2) // Medium confidence
+                        else if (verificationScore >= 3) // High confidence
                         {
                             result.IsValid = true;
-                            Log.Warning("ID validation passed with medium confidence (Score: {Score}/5). Manual review recommended.", verificationScore);
+                            Log.Information("ID validation successful via OCR. Verification Score: {Score}/5", verificationScore);
                         }
-                        else if (!string.IsNullOrWhiteSpace(result.ExtractedName) || 
-                                 !string.IsNullOrWhiteSpace(result.ExtractedAddress))
+                        else if (verificationScore >= 2) // Medium confidence - require at least name or address
                         {
-                            // Low confidence but has name/address - still accept but flag for review
-                            result.IsValid = true;
-                            Log.Warning("ID validation passed with low confidence (Score: {Score}/5). Manual review required.", verificationScore);
+                            if (!string.IsNullOrWhiteSpace(result.ExtractedName) || 
+                                !string.IsNullOrWhiteSpace(result.ExtractedAddress))
+                            {
+                                result.IsValid = true;
+                                Log.Warning("ID validation passed with medium confidence (Score: {Score}/5). Manual review recommended.", verificationScore);
+                            }
+                            else
+                            {
+                                // Medium score but no name/address extracted - likely not a valid ID
+                                result.IsValid = false;
+                                result.ErrorMessage = "Please upload a valid ID";
+                                Log.Warning("ID validation failed. Medium score ({Score}/5) but could not extract name or address.", verificationScore);
+                            }
                         }
                         else
                         {
-                            // Very low confidence - might not be a valid ID
+                            // Low confidence - not a valid ID
                             result.IsValid = false;
-                            result.ErrorMessage = "Unable to verify this as a valid ID document. Please ensure the image is clear and shows a government-issued ID.";
-                            Log.Warning("ID validation failed. OCR extracted text but could not verify ID authenticity. Text: {Text}", 
-                                fullText.Substring(0, Math.Min(200, fullText.Length)));
+                            result.ErrorMessage = "Please upload a valid ID";
+                            Log.Warning("ID validation failed. Low verification score ({Score}/5). Text: {Text}", 
+                                verificationScore, fullText.Substring(0, Math.Min(200, fullText.Length)));
                         }
                     }
                     else
                     {
                         Log.Warning("OCR did not extract any text from ID document");
-                        result.IsValid = true; // Basic validation passed
+                        // No text extracted - likely not a valid ID document
+                        result.IsValid = false;
+                        result.ErrorMessage = "Please upload a valid ID";
                     }
                 }
             }
@@ -156,15 +167,17 @@ public class IdValidationService
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Log.Error("Google Vision API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                // Don't fail validation if API call fails - just log and continue
-                result.IsValid = true;
+                // API call failed - cannot verify ID, reject it
+                result.IsValid = false;
+                result.ErrorMessage = "Please upload a valid ID";
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error during OCR validation. Continuing with basic validation.");
-            // Don't fail validation if OCR fails - just log and continue
-            result.IsValid = true;
+            Log.Error(ex, "Error during OCR validation. Cannot verify ID authenticity.");
+            // OCR validation failed - cannot verify if it's a real ID
+            result.IsValid = false;
+            result.ErrorMessage = "Please upload a valid ID";
         }
 
         return result;
@@ -484,20 +497,31 @@ public class IdValidationService
         }
         else if (meaningfulLines < 2)
         {
-            // Too little text - might not be a valid ID
-            score = Math.Max(0, score - 1);
-            Log.Warning("ID verification: Document has very little text ({LineCount} lines). Might not be a valid ID.", meaningfulLines);
+            // Too little text - definitely not a valid ID
+            score = 0;
+            Log.Warning("ID verification: Document has very little text ({LineCount} lines). Not a valid ID.", meaningfulLines);
+            return 0; // Return immediately - invalid ID
         }
 
-        // Check for suspicious patterns (reduce score if found)
+        // Check for suspicious patterns - reject immediately if found
         var suspiciousPatterns = new[] { 
             "SAMPLE", "EXAMPLE", "TEST", "DEMO", "PLACEHOLDER",
-            "XXXX", "XXXXX", "12345", "12345678" // Common placeholder patterns
+            "FAKE", "MOCK", "DRAFT", "TEMPLATE"
         };
         if (suspiciousPatterns.Any(pattern => upperText.Contains(pattern)))
         {
-            score = Math.Max(0, score - 2); // Heavy penalty for placeholder text
-            Log.Warning("ID verification: Found suspicious placeholder patterns. Score reduced.");
+            score = 0; // Reject immediately if placeholder/sample text found
+            Log.Warning("ID verification: Found suspicious placeholder/sample patterns. ID rejected.");
+            return 0; // Return immediately - invalid ID
+        }
+
+        // Check for placeholder ID numbers (like XXXX, 12345, etc.)
+        var placeholderIdPatterns = new Regex(@"\b(XXXX+|12345+|00000+|11111+|12345678|99999999)\b", RegexOptions.IgnoreCase);
+        if (placeholderIdPatterns.IsMatch(fullText))
+        {
+            score = 0; // Reject if placeholder ID number found
+            Log.Warning("ID verification: Found placeholder ID number pattern. ID rejected.");
+            return 0; // Return immediately - invalid ID
         }
 
         return Math.Min(5, Math.Max(0, score)); // Clamp between 0-5
