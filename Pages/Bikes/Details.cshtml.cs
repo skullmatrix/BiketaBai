@@ -99,10 +99,39 @@ public class DetailsModel : PageModel
         if (!Input.EndDate.HasValue)
             Input.EndDate = DateTime.Now.AddDays(1);
 
+        // Check if user needs phone verification (for first-time renters)
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (userId.HasValue && AuthHelper.IsRenter(User))
+            {
+                var user = await _context.Users.FindAsync(userId.Value);
+                if (user != null && !string.IsNullOrWhiteSpace(user.Phone))
+                {
+                    // Check if user has any completed bookings
+                    var hasCompletedBooking = await _context.Bookings
+                        .AnyAsync(b => b.RenterId == userId.Value && b.BookingStatusId == 3); // 3 = Completed
+
+                    if (!hasCompletedBooking)
+                    {
+                        // Check if phone is already verified
+                        var hasVerifiedOtp = await _context.PhoneOtps
+                            .AnyAsync(o => o.PhoneNumber == user.Phone && o.IsVerified && o.VerifiedAt.HasValue);
+
+                        if (!hasVerifiedOtp)
+                        {
+                            RequiresPhoneVerification = true;
+                            UserPhone = user.Phone;
+                        }
+                    }
+                }
+            }
+        }
+
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int id)
+    public async Task<IActionResult> OnPostAsync(int id, string? sendOtp)
     {
         if (!User.Identity?.IsAuthenticated == true)
             return RedirectToPage("/Account/Login", new { returnUrl = $"/Bikes/Details/{id}" });
@@ -151,8 +180,8 @@ public class DetailsModel : PageModel
                     RequiresPhoneVerification = true;
                     UserPhone = user.Phone;
 
-                    // Handle OTP sending
-                    if (Request.Form.ContainsKey("sendOtp"))
+                    // Handle OTP sending - check both form key and parameter
+                    if (!string.IsNullOrEmpty(sendOtp) || Request.Form.ContainsKey("sendOtp"))
                     {
                         try
                         {
