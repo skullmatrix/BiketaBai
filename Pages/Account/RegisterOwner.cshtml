@@ -168,6 +168,17 @@
                 <!-- Step 2: ID Verification -->
                 @if (Model.CurrentStep == 2)
                 {
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="auth-alert-minimal error" style="margin-bottom: 1rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div class="alert-content">
+                                <strong>Error</strong>
+                                <p>@Model.ErrorMessage</p>
+                            </div>
+                        </div>
+                    }
+
                     <div class="auth-alert-minimal" style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e40af;">
                         <i class="bi bi-info-circle-fill"></i>
                         <div class="alert-content">

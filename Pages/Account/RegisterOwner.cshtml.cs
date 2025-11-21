@@ -155,11 +155,9 @@ public class RegisterOwnerModel : PageModel
         }
 
         CurrentStep = int.TryParse(step, out var stepNum) ? stepNum : 1;
-
-        if (!ModelState.IsValid && CurrentStep > 1)
-        {
-            return Page();
-        }
+        
+        // Store current step in TempData for persistence
+        TempData["OwnerCurrentStep"] = CurrentStep.ToString();
 
         // Step 1: Basic Information
         if (CurrentStep == 1)
@@ -206,9 +204,17 @@ public class RegisterOwnerModel : PageModel
         // Step 2: ID Document (Front and Back)
         if (CurrentStep == 2)
         {
-            if (IdDocumentFront == null || IdDocumentBack == null)
+            // Validate that files are present
+            if (IdDocumentFront == null || IdDocumentFront.Length == 0)
             {
-                TempData["OwnerErrorMessage"] = "Both ID front and back photos are required";
+                TempData["OwnerErrorMessage"] = "ID front photo is required";
+                TempData["OwnerCurrentStep"] = "2";
+                return RedirectToPage();
+            }
+
+            if (IdDocumentBack == null || IdDocumentBack.Length == 0)
+            {
+                TempData["OwnerErrorMessage"] = "ID back photo is required";
                 TempData["OwnerCurrentStep"] = "2";
                 return RedirectToPage();
             }
