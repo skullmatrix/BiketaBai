@@ -64,8 +64,9 @@ namespace BiketaBai.Pages.Admin
                 // Validate the ID
                 var validationResult = await _idValidationService.ValidateIdAsync(IdDocument);
 
-                // Get the full OCR text by calling the Vision API directly (for debugging)
-                var fullText = await GetFullOCRTextAsync(IdDocument);
+                // Use the same OCR service to get full text (for debugging)
+                // This ensures we see what the validation service sees
+                var fullText = await GetFullOCRTextFromServicesAsync(IdDocument);
                 
                 // Calculate verification score manually for display
                 var score = CalculateVerificationScore(fullText, validationResult.ExtractedFields);
@@ -126,16 +127,95 @@ namespace BiketaBai.Pages.Admin
             return Page();
         }
 
-        private async Task<string> GetFullOCRTextAsync(IFormFile idDocument)
+        /// <summary>
+        /// Gets OCR text using the same services as validation (OCR.space first, then Google Vision)
+        /// </summary>
+        private async Task<string> GetFullOCRTextFromServicesAsync(IFormFile idDocument)
         {
             var configuration = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
-            var apiKey = configuration["AppSettings:GoogleCloudVisionApiKey"];
+            var idValidationService = HttpContext.RequestServices.GetRequiredService<IdValidationService>();
             
-            if (string.IsNullOrEmpty(apiKey))
+            // Use the actual validation service to get OCR text
+            try
             {
-                return "❌ Google Cloud Vision API key not configured";
+                // We'll call the OCR methods directly to get the text
+                var ocrSpaceApiKey = configuration["AppSettings:OcrSpaceApiKey"] ?? "helloworld";
+                var ocrSpaceText = await PerformOcrSpaceForTestAsync(idDocument, ocrSpaceApiKey);
+                
+                if (!string.IsNullOrWhiteSpace(ocrSpaceText) && ocrSpaceText.Length >= 10)
+                {
+                    return ocrSpaceText;
+                }
+                
+                // Fallback to Google Vision
+                var googleApiKey = configuration["AppSettings:GoogleCloudVisionApiKey"];
+                if (!string.IsNullOrEmpty(googleApiKey))
+                {
+                    var googleText = await PerformGoogleVisionForTestAsync(idDocument, googleApiKey);
+                    if (!string.IsNullOrWhiteSpace(googleText) && googleText.Length >= 10)
+                    {
+                        return googleText;
+                    }
+                }
+                
+                return "No text extracted from either OCR service";
+            }
+            catch (Exception ex)
+            {
+                return $"❌ Error: {ex.Message}";
+            }
+        }
+
+        private async Task<string> PerformOcrSpaceForTestAsync(IFormFile idDocument, string apiKey)
+        {
+            try
+            {
+                // Convert image to base64
+                using var memoryStream = new MemoryStream();
+                await idDocument.CopyToAsync(memoryStream);
+                var imageBytes = memoryStream.ToArray();
+                var base64Image = Convert.ToBase64String(imageBytes);
+
+                // Call OCR.space API
+                using var httpClient = new System.Net.Http.HttpClient();
+                var formData = new System.Net.Http.MultipartFormDataContent();
+                formData.Add(new System.Net.Http.StringContent(base64Image), "base64Image");
+                formData.Add(new System.Net.Http.StringContent("eng"), "language");
+                formData.Add(new System.Net.Http.StringContent("false"), "isOverlayRequired");
+                formData.Add(new System.Net.Http.StringContent("true"), "detectOrientation");
+                formData.Add(new System.Net.Http.StringContent("true"), "scale");
+                formData.Add(new System.Net.Http.StringContent("2"), "OCREngine");
+
+                var requestUrl = $"https://api.ocr.space/parse/imagebase64?apikey={apiKey}";
+                var response = await httpClient.PostAsync(requestUrl, formData);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var ocrResponse = System.Text.Json.JsonSerializer.Deserialize<OcrSpaceTestResponse>(responseContent);
+
+                    if (ocrResponse?.ParsedResults != null && ocrResponse.ParsedResults.Length > 0)
+                    {
+                        var extractedText = ocrResponse.ParsedResults[0].ParsedText ?? "";
+                        return string.IsNullOrWhiteSpace(extractedText) ? "" : extractedText;
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return $"❌ OCR.space API error ({response.StatusCode}): {errorContent}";
+                }
+            }
+            catch (Exception ex)
+            {
+                return $"❌ OCR.space error: {ex.Message}";
             }
 
+            return "";
+        }
+
+        private async Task<string> PerformGoogleVisionForTestAsync(IFormFile idDocument, string apiKey)
+        {
             try
             {
                 // Convert image to base64
@@ -170,7 +250,10 @@ namespace BiketaBai.Pages.Admin
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    var visionResponse = System.Text.Json.JsonSerializer.Deserialize<VisionApiResponse>(responseContent);
+                    var visionResponse = System.Text.Json.JsonSerializer.Deserialize<VisionApiResponse>(responseContent, new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
 
                     if (visionResponse?.Responses != null && visionResponse.Responses.Length > 0 &&
                         visionResponse.Responses[0] != null)
@@ -179,7 +262,7 @@ namespace BiketaBai.Pages.Admin
                         if (textAnnotations != null && textAnnotations.Length > 0)
                         {
                             var extractedText = textAnnotations[0].Description ?? "";
-                            return string.IsNullOrWhiteSpace(extractedText) ? "No text extracted from image" : extractedText;
+                            return string.IsNullOrWhiteSpace(extractedText) ? "" : extractedText;
                         }
                         else
                         {
@@ -188,7 +271,7 @@ namespace BiketaBai.Pages.Admin
                     }
                     else
                     {
-                        return "Empty or null response from Vision API";
+                        return $"Empty or null response from Vision API. Response: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}";
                     }
                 }
                 else
@@ -201,8 +284,12 @@ namespace BiketaBai.Pages.Admin
             {
                 return $"❌ Error: {ex.Message}";
             }
+        }
 
-            return "No text extracted from image";
+        private async Task<string> GetFullOCRTextAsync(IFormFile idDocument)
+        {
+            // This method is deprecated - use GetFullOCRTextFromServicesAsync instead
+            return await GetFullOCRTextFromServicesAsync(idDocument);
         }
 
         private int CalculateVerificationScore(string fullText, Dictionary<string, string> extractedFields)
@@ -336,6 +423,18 @@ namespace BiketaBai.Pages.Admin
         private class TextAnnotation
         {
             public string? Description { get; set; }
+        }
+
+        private class OcrSpaceTestResponse
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("ParsedResults")]
+            public OcrSpaceParsedTestResult[]? ParsedResults { get; set; }
+        }
+
+        private class OcrSpaceParsedTestResult
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("ParsedText")]
+            public string? ParsedText { get; set; }
         }
     }
 }

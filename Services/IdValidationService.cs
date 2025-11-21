@@ -585,34 +585,48 @@ public class IdValidationService
             var imageBytes = memoryStream.ToArray();
             var base64Image = Convert.ToBase64String(imageBytes);
 
-            // Call OCR.space API
+            // Call OCR.space API - API key can be in URL or form data
             using var httpClient = new HttpClient();
             var formData = new MultipartFormDataContent();
-            formData.Add(new StringContent("base64"), "apikey");
             formData.Add(new StringContent(base64Image), "base64Image");
             formData.Add(new StringContent("eng"), "language"); // English + auto-detect
-            formData.Add(new StringContent("true"), "isOverlayRequired");
+            formData.Add(new StringContent("false"), "isOverlayRequired"); // Don't need overlay
             formData.Add(new StringContent("true"), "detectOrientation");
             formData.Add(new StringContent("true"), "scale");
-            formData.Add(new StringContent("true"), "OCREngine");
+            formData.Add(new StringContent("2"), "OCREngine"); // Use OCR Engine 2 (better accuracy)
 
-            // Use free API key if provided, otherwise use default
-            var requestUrl = string.IsNullOrEmpty(apiKey) || apiKey == "helloworld"
-                ? "https://api.ocr.space/parse/image"
-                : $"https://api.ocr.space/parse/image?apikey={apiKey}";
+            // API key in URL parameter (recommended by OCR.space docs)
+            var requestUrl = $"https://api.ocr.space/parse/imagebase64?apikey={Uri.EscapeDataString(apiKey)}";
 
             var response = await httpClient.PostAsync(requestUrl, formData);
             
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var ocrResponse = JsonSerializer.Deserialize<OcrSpaceResponse>(responseContent);
+                Log.Debug("OCR.space API response: {Response}", responseContent.Substring(0, Math.Min(500, responseContent.Length)));
+                
+                var ocrResponse = JsonSerializer.Deserialize<OcrSpaceResponse>(responseContent, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
                 if (ocrResponse?.ParsedResults != null && ocrResponse.ParsedResults.Length > 0)
                 {
                     var extractedText = ocrResponse.ParsedResults[0].ParsedText ?? "";
-                    Log.Information("OCR.space extracted {Length} characters", extractedText.Length);
-                    return extractedText;
+                    if (!string.IsNullOrWhiteSpace(extractedText))
+                    {
+                        Log.Information("OCR.space extracted {Length} characters", extractedText.Length);
+                        return extractedText;
+                    }
+                    else
+                    {
+                        Log.Warning("OCR.space returned empty ParsedText");
+                    }
+                }
+                else
+                {
+                    Log.Warning("OCR.space returned null or empty ParsedResults. Response: {Response}", 
+                        responseContent.Substring(0, Math.Min(500, responseContent.Length)));
                 }
             }
             else
@@ -668,7 +682,12 @@ public class IdValidationService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var visionResponse = JsonSerializer.Deserialize<VisionApiResponse>(responseContent);
+                Log.Debug("Google Vision API response: {Response}", responseContent.Substring(0, Math.Min(500, responseContent.Length)));
+                
+                var visionResponse = JsonSerializer.Deserialize<VisionApiResponse>(responseContent, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
                 if (visionResponse?.Responses != null && visionResponse.Responses.Length > 0 && 
                     visionResponse.Responses[0] != null)
@@ -680,6 +699,15 @@ public class IdValidationService
                         Log.Information("Google Vision API extracted {Length} characters", extractedText.Length);
                         return extractedText;
                     }
+                    else
+                    {
+                        Log.Warning("Google Vision API returned empty textAnnotations array");
+                    }
+                }
+                else
+                {
+                    Log.Warning("Google Vision API returned null or empty responses array. Response content: {Content}", 
+                        responseContent.Substring(0, Math.Min(500, responseContent.Length)));
                 }
             }
             else
