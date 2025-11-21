@@ -16,97 +16,123 @@
     <title>@ViewData["Title"] - Bike Ta Bai</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth-minimal.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/registration-premium.css" asp-append-version="true" />
 </head>
 <body>
-    <div class="registration-wrapper">
-        <div class="registration-container">
+    <div class="auth-minimal-container">
+        <div class="auth-card-minimal register">
+            <!-- Back Link -->
+            <a href="/Account/RegisterType" class="auth-back-link">
+                <i class="bi bi-arrow-left"></i> Back to Selection
+            </a>
+
             <!-- Progress Steps -->
-            <div class="reg-progress">
-                <div class="reg-progress-step @(Model.CurrentStep >= 1 ? "active" : "") @(Model.CurrentStep > 1 ? "completed" : "")">
-                    <div class="reg-progress-number">@(Model.CurrentStep > 1 ? "" : "1")</div>
-                    <div class="reg-progress-label">Basic Info</div>
+            <div class="auth-progress-steps">
+                <div class="auth-step @(Model.CurrentStep >= 1 ? "active" : "") @(Model.CurrentStep > 1 ? "completed" : "")">
+                    <div class="auth-step-circle">@(Model.CurrentStep > 1 ? "✓" : "1")</div>
+                    <div class="auth-step-label">Basic Info</div>
                 </div>
-                <div class="reg-progress-line @(Model.CurrentStep > 1 ? "completed" : "")"></div>
-                <div class="reg-progress-step @(Model.CurrentStep >= 2 ? "active" : "") @(Model.CurrentStep > 2 ? "completed" : "")">
-                    <div class="reg-progress-number">@(Model.CurrentStep > 2 ? "" : "2")</div>
-                    <div class="reg-progress-label">Set Password</div>
+                <div class="auth-step-line @(Model.CurrentStep > 1 ? "completed" : "")"></div>
+                <div class="auth-step @(Model.CurrentStep >= 2 ? "active" : "") @(Model.CurrentStep > 2 ? "completed" : "")">
+                    <div class="auth-step-circle">@(Model.CurrentStep > 2 ? "✓" : "2")</div>
+                    <div class="auth-step-label">Password</div>
                 </div>
-                <div class="reg-progress-line @(Model.CurrentStep > 2 ? "completed" : "")"></div>
-                <div class="reg-progress-step @(Model.CurrentStep >= 3 ? "active" : "")">
-                    <div class="reg-progress-number">@(Model.CurrentStep > 3 ? "" : "3")</div>
-                    <div class="reg-progress-label">ID Verification</div>
+                <div class="auth-step-line @(Model.CurrentStep > 2 ? "completed" : "")"></div>
+                <div class="auth-step @(Model.CurrentStep >= 3 ? "active" : "")">
+                    <div class="auth-step-circle">3</div>
+                    <div class="auth-step-label">ID Verify</div>
                 </div>
             </div>
 
-            <div class="reg-form-card">
-                <div class="reg-form-header">
-                    <h2><i class="bi bi-bicycle"></i> Register as Renter</h2>
+            <!-- Header -->
+            <div class="auth-header-minimal">
+                <div class="auth-logo-minimal">
+                    <i class="bi bi-bicycle"></i>
                 </div>
-                <div class="reg-form-body">
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="reg-alert reg-alert-error">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            <div>@Model.ErrorMessage</div>
-                        </div>
-                    }
+                <h1>Register as Renter</h1>
+                <p>Join our community of bike enthusiasts</p>
+            </div>
 
-                    <form method="post" enctype="multipart/form-data" id="renterRegistrationForm">
-                        <input type="hidden" name="step" value="@Model.CurrentStep" />
+            <!-- Alert Messages -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="auth-alert-minimal error">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div class="alert-content">
+                        <strong>Error</strong>
+                        <p>@Model.ErrorMessage</p>
+                    </div>
+                </div>
+            }
+
+            <form method="post" enctype="multipart/form-data" id="renterRegistrationForm">
+                <input type="hidden" name="step" value="@Model.CurrentStep" />
 
                         <!-- Step 1: Basic Information -->
                         @if (Model.CurrentStep == 1)
                         {
-                            <div class="reg-form-group">
-                                <label asp-for="Input.FullName" class="reg-form-label">
+                            <div class="auth-form-group">
+                                <label asp-for="Input.FullName" class="auth-form-label">
                                     Full Name <span class="required">*</span>
                                 </label>
-                                <input asp-for="Input.FullName" class="reg-form-input" 
-                                       placeholder="Enter your full name" required />
-                                <span asp-validation-for="Input.FullName" class="reg-form-error"></span>
+                                <div class="auth-input-wrapper">
+                                    <input asp-for="Input.FullName" class="auth-input" 
+                                           placeholder="Enter your full name" required autofocus />
+                                    <i class="bi bi-person auth-input-icon"></i>
+                                </div>
+                                <span asp-validation-for="Input.FullName" class="validation-message error"></span>
                             </div>
 
-                            <div class="reg-form-group">
-                                <label asp-for="Input.Email" class="reg-form-label">
+                            <div class="auth-form-group">
+                                <label asp-for="Input.Email" class="auth-form-label">
                                     Email Address <span class="required">*</span>
                                 </label>
-                                <input asp-for="Input.Email" type="email" class="reg-form-input" 
-                                       placeholder="Enter your email" required />
-                                <span asp-validation-for="Input.Email" class="reg-form-error"></span>
+                                <div class="auth-input-wrapper" id="emailWrapper">
+                                    <input asp-for="Input.Email" type="email" class="auth-input" 
+                                           placeholder="Enter your email" required autocomplete="email" />
+                                    <i class="bi bi-envelope auth-input-icon"></i>
+                                </div>
+                                <span asp-validation-for="Input.Email" class="validation-message error"></span>
                             </div>
 
-                            <div class="reg-form-group" style="position: relative;">
-                                <label asp-for="Input.Address" class="reg-form-label">
+                            <div class="auth-form-group" style="position: relative;">
+                                <label asp-for="Input.Address" class="auth-form-label">
                                     Address <span class="required">*</span>
                                 </label>
                                 <div style="position: relative;">
-                                    <input asp-for="Input.Address" class="reg-form-input" 
-                                           placeholder="Start typing your address..." required 
-                                           id="addressInput" autocomplete="off" 
-                                           onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" />
+                                    <div class="auth-input-wrapper">
+                                        <input asp-for="Input.Address" class="auth-input" 
+                                               placeholder="Start typing your address..." required 
+                                               id="addressInput" autocomplete="off" 
+                                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" />
+                                        <i class="bi bi-geo-alt auth-input-icon"></i>
+                                    </div>
                                     <div id="addressSuggestions" class="address-suggestions"></div>
                                 </div>
-                                <div class="reg-form-help">
+                                <div class="helper-text">
                                     <i class="bi bi-info-circle"></i>
                                     <span>Select from suggestions as you type</span>
                                 </div>
-                                <div id="addressValidation" style="display: none;">
-                                    <div class="reg-validation-badge success" id="addressValid">
-                                        <i class="bi bi-check-circle"></i> Address verified
+                                <div id="addressValidation" style="display: none; margin-top: 0.5rem;">
+                                    <div class="validation-message success" id="addressValid">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        <span>Address verified</span>
                                     </div>
-                                    <div class="reg-validation-badge error" id="addressInvalid" style="display: none;">
-                                        <i class="bi bi-x-circle"></i> <span></span>
+                                    <div class="validation-message error" id="addressInvalid" style="display: none;">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                        <span></span>
                                     </div>
                                 </div>
-                                <span asp-validation-for="Input.Address" class="reg-form-error"></span>
+                                <span asp-validation-for="Input.Address" class="validation-message error"></span>
                             </div>
 
-                            <div class="reg-btn-group">
-                                <a href="/Account/RegisterType" class="reg-btn reg-btn-secondary">
+                            <div class="auth-step-buttons">
+                                <a href="/Account/RegisterType" class="auth-btn-minimal auth-btn-outline">
                                     <i class="bi bi-arrow-left"></i> Back
                                 </a>
-                                <button type="submit" name="step" value="1" class="reg-btn reg-btn-primary">
+                                <button type="submit" name="step" value="1" class="auth-btn-minimal auth-btn-primary">
                                     Next: Set Password <i class="bi bi-arrow-right"></i>
                                 </button>
                             </div>
@@ -115,47 +141,59 @@
                         <!-- Step 2: Account Setup (Password) -->
                         @if (Model.CurrentStep == 2)
                         {
-                            <div class="reg-form-group">
-                                <label asp-for="Input.Password" class="reg-form-label">
+                            <div class="auth-form-group">
+                                <label asp-for="Input.Password" class="auth-form-label">
                                     Password <span class="required">*</span>
                                 </label>
-                                <div style="position: relative;">
-                                    <input asp-for="Input.Password" type="password" class="reg-form-input" 
-                                           placeholder="Create a password (minimum 6 characters)" 
+                                <div class="auth-input-wrapper" id="passwordWrapper">
+                                    <input asp-for="Input.Password" type="password" class="auth-input" 
+                                           placeholder="Create a strong password" 
                                            required minlength="6" id="passwordInput" 
-                                           style="padding-right: 45px;" />
-                                    <button type="button" class="reg-password-toggle" id="togglePassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--neutral-500); cursor: pointer; padding: 5px; font-size: 1.1rem;">
+                                           autocomplete="new-password" />
+                                    <i class="bi bi-lock auth-input-icon"></i>
+                                    <button type="button" class="auth-password-toggle" id="togglePassword">
                                         <i class="bi bi-eye" id="togglePasswordIcon"></i>
                                     </button>
                                 </div>
-                                <div class="reg-form-help">
+                                <!-- Password Strength Indicator -->
+                                <div class="auth-password-strength" id="passwordStrength" style="display: none;">
+                                    <div class="auth-strength-bar">
+                                        <div class="auth-strength-fill" id="strengthFill"></div>
+                                    </div>
+                                    <div class="auth-strength-text" id="strengthText"></div>
+                                </div>
+                                <div class="helper-text">
                                     <i class="bi bi-shield-check"></i>
                                     <span>Password must be at least 6 characters</span>
                                 </div>
-                                <span asp-validation-for="Input.Password" class="reg-form-error"></span>
+                                <span asp-validation-for="Input.Password" class="validation-message error"></span>
                             </div>
 
-                            <div class="reg-form-group">
-                                <label asp-for="Input.ConfirmPassword" class="reg-form-label">
+                            <div class="auth-form-group">
+                                <label asp-for="Input.ConfirmPassword" class="auth-form-label">
                                     Confirm Password <span class="required">*</span>
                                 </label>
-                                <div style="position: relative;">
-                                    <input asp-for="Input.ConfirmPassword" type="password" class="reg-form-input" 
+                                <div class="auth-input-wrapper" id="confirmPasswordWrapper">
+                                    <input asp-for="Input.ConfirmPassword" type="password" class="auth-input" 
                                            placeholder="Re-enter your password" required 
-                                           id="confirmPasswordInput" 
-                                           style="padding-right: 45px;" />
-                                    <button type="button" class="reg-password-toggle" id="toggleConfirmPassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--neutral-500); cursor: pointer; padding: 5px; font-size: 1.1rem;">
+                                           id="confirmPasswordInput" autocomplete="new-password" />
+                                    <i class="bi bi-lock auth-input-icon"></i>
+                                    <button type="button" class="auth-password-toggle" id="toggleConfirmPassword">
                                         <i class="bi bi-eye" id="toggleConfirmPasswordIcon"></i>
                                     </button>
                                 </div>
-                                <span asp-validation-for="Input.ConfirmPassword" class="reg-form-error"></span>
+                                <div class="validation-message error" id="confirmPasswordError" style="display: none;">
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                    <span>Passwords do not match</span>
+                                </div>
+                                <span asp-validation-for="Input.ConfirmPassword" class="validation-message error"></span>
                             </div>
 
-                            <div class="reg-btn-group">
-                                <button type="submit" name="step" value="back" class="reg-btn reg-btn-secondary" formnovalidate>
+                            <div class="auth-step-buttons">
+                                <button type="submit" name="step" value="back" class="auth-btn-minimal auth-btn-outline" formnovalidate>
                                     <i class="bi bi-arrow-left"></i> Back
                                 </button>
-                                <button type="submit" name="step" value="2" class="reg-btn reg-btn-primary">
+                                <button type="submit" name="step" value="2" class="auth-btn-minimal auth-btn-primary">
                                     Next: ID Verification <i class="bi bi-arrow-right"></i>
                                 </button>
                             </div>
@@ -164,11 +202,11 @@
                         <!-- Step 3: ID Verification -->
                         @if (Model.CurrentStep == 3)
                         {
-                            <div class="reg-alert reg-alert-info">
+                            <div class="auth-alert-minimal" style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e40af;">
                                 <i class="bi bi-info-circle-fill"></i>
-                                <div>
+                                <div class="alert-content">
                                     <strong>Why we need your ID:</strong>
-                                    <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                                    <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0; font-size: 0.875rem;">
                                         <li>Verify your identity for security</li>
                                         <li>Cross-check with your provided address</li>
                                         <li>Ensure account authenticity</li>
@@ -176,69 +214,68 @@
                                 </div>
                             </div>
 
-                            <div class="reg-form-group">
-                                <label class="reg-form-label">
+                            <div class="auth-form-group">
+                                <label class="auth-form-label">
                                     ID Front Photo <span class="required">*</span>
                                 </label>
-                                <div class="reg-camera-capture">
+                                <div class="id-upload-container">
                                     <input type="file" name="IdDocumentFront" id="IdDocumentFront" 
                                            accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
-                                    <label for="IdDocumentFront" class="reg-camera-btn">
-                                        <div class="reg-camera-icon">
+                                    <label for="IdDocumentFront" style="cursor: pointer;">
+                                        <div class="id-upload-icon">
                                             <i class="bi bi-camera-fill"></i>
                                         </div>
-                                        <div class="reg-camera-text">Take Photo of ID Front</div>
-                                        <div class="reg-camera-hint">Tap to open camera (images will be automatically compressed)</div>
+                                        <div class="id-upload-title">Take Photo of ID Front</div>
+                                        <div class="id-upload-subtitle">Images will be automatically compressed</div>
                                     </label>
-                                    <div id="idFrontPreview" class="reg-camera-preview" style="display: none;">
-                                        <img id="idFrontPreviewImg" src="" alt="ID Front Preview" />
-                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('front')">
+                                    <div id="idFrontPreview" style="display: none; margin-top: 1rem; position: relative; border-radius: 0.75rem; overflow: hidden; border: 2px solid #87A96B;">
+                                        <img id="idFrontPreviewImg" src="" alt="ID Front Preview" style="width: 100%; max-height: 300px; object-fit: contain; background: #f5f5f5; display: block;" />
+                                        <button type="button" onclick="removeIdPhoto('front')" style="position: absolute; top: 0.5rem; right: 0.5rem; width: 36px; height: 36px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.25rem;">
                                             <i class="bi bi-x-circle-fill"></i>
                                         </button>
                                     </div>
-                                    <div id="idFrontError" class="reg-form-error" style="display: none;"></div>
+                                    <div id="idFrontError" class="validation-message error" style="display: none;"></div>
                                 </div>
                             </div>
 
-                            <div class="reg-form-group">
-                                <label class="reg-form-label">
+                            <div class="auth-form-group">
+                                <label class="auth-form-label">
                                     ID Back Photo <span class="required">*</span>
                                 </label>
-                                <div class="reg-camera-capture">
+                                <div class="id-upload-container">
                                     <input type="file" name="IdDocumentBack" id="IdDocumentBack" 
                                            accept="image/jpeg,image/jpg,image/png" capture="environment" required style="display: none;" />
-                                    <label for="IdDocumentBack" class="reg-camera-btn">
-                                        <div class="reg-camera-icon">
+                                    <label for="IdDocumentBack" style="cursor: pointer;">
+                                        <div class="id-upload-icon">
                                             <i class="bi bi-camera-fill"></i>
                                         </div>
-                                        <div class="reg-camera-text">Take Photo of ID Back</div>
-                                        <div class="reg-camera-hint">Tap to open camera (images will be automatically compressed)</div>
+                                        <div class="id-upload-title">Take Photo of ID Back</div>
+                                        <div class="id-upload-subtitle">Images will be automatically compressed</div>
                                     </label>
-                                    <div id="idBackPreview" class="reg-camera-preview" style="display: none;">
-                                        <img id="idBackPreviewImg" src="" alt="ID Back Preview" />
-                                        <button type="button" class="reg-camera-remove" onclick="removeIdPhoto('back')">
+                                    <div id="idBackPreview" style="display: none; margin-top: 1rem; position: relative; border-radius: 0.75rem; overflow: hidden; border: 2px solid #87A96B;">
+                                        <img id="idBackPreviewImg" src="" alt="ID Back Preview" style="width: 100%; max-height: 300px; object-fit: contain; background: #f5f5f5; display: block;" />
+                                        <button type="button" onclick="removeIdPhoto('back')" style="position: absolute; top: 0.5rem; right: 0.5rem; width: 36px; height: 36px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.25rem;">
                                             <i class="bi bi-x-circle-fill"></i>
                                         </button>
                                     </div>
-                                    <div id="idBackError" class="reg-form-error" style="display: none;"></div>
+                                    <div id="idBackError" class="validation-message error" style="display: none;"></div>
                                 </div>
                             </div>
 
-                            <div class="reg-btn-group">
-                                <button type="submit" name="step" value="back" class="reg-btn reg-btn-secondary" formnovalidate>
+                            <div class="auth-step-buttons">
+                                <button type="submit" name="step" value="back" class="auth-btn-minimal auth-btn-outline" formnovalidate>
                                     <i class="bi bi-arrow-left"></i> Back
                                 </button>
-                                <button type="submit" name="step" value="3" class="reg-btn reg-btn-success" id="step3NextBtn">
+                                <button type="submit" name="step" value="3" class="auth-btn-minimal auth-btn-primary" id="step3NextBtn">
                                     <i class="bi bi-check-circle"></i> Complete Registration
                                 </button>
                             </div>
                         }
                     </form>
-                </div>
-            </div>
 
-            <div class="reg-footer">
-                <a href="/Account/Login" class="reg-footer-link">Already have an account? Sign in</a>
+            <!-- Footer -->
+            <div class="auth-footer-minimal">
+                <p>Already have an account? <a href="/Account/Login" class="auth-link">Sign in</a></p>
             </div>
         </div>
     </div>
@@ -389,7 +426,7 @@
                     reader.onload = function(e) {
                         $('#idFrontPreviewImg').attr('src', e.target.result);
                         $('#idFrontPreview').show();
-                        $('#IdDocumentFront').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                        $('#IdDocumentFront').closest('.id-upload-container').find('label').hide();
                         $('#idFrontError').hide();
                     };
                     reader.onerror = function() {
@@ -418,7 +455,7 @@
                     reader.onload = function(e) {
                         $('#idBackPreviewImg').attr('src', e.target.result);
                         $('#idBackPreview').show();
-                        $('#IdDocumentBack').closest('.reg-camera-capture').find('.reg-camera-btn').hide();
+                        $('#IdDocumentBack').closest('.id-upload-container').find('label').hide();
                         $('#idBackError').hide();
                     };
                     reader.onerror = function() {
@@ -486,12 +523,10 @@
             });
 
             // Password Toggle
-            $('#togglePassword, #toggleConfirmPassword').click(function(e) {
+            $('#togglePassword').click(function(e) {
                 e.preventDefault();
-                e.stopPropagation();
-                const isPassword = $(this).attr('id') === 'togglePassword';
-                const passwordInput = isPassword ? $('#passwordInput') : $('#confirmPasswordInput');
-                const toggleIcon = isPassword ? $('#togglePasswordIcon') : $('#toggleConfirmPasswordIcon');
+                const passwordInput = $('#passwordInput');
+                const toggleIcon = $('#togglePasswordIcon');
                 
                 if (passwordInput.attr('type') === 'password') {
                     passwordInput.attr('type', 'text');
@@ -502,14 +537,98 @@
                 }
             });
 
+            $('#toggleConfirmPassword').click(function(e) {
+                e.preventDefault();
+                const confirmInput = $('#confirmPasswordInput');
+                const toggleIcon = $('#toggleConfirmPasswordIcon');
+                
+                if (confirmInput.attr('type') === 'password') {
+                    confirmInput.attr('type', 'text');
+                    toggleIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+                } else {
+                    confirmInput.attr('type', 'password');
+                    toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+                }
+            });
+
+            // Password Strength Indicator
+            function calculatePasswordStrength(password) {
+                let strength = 0;
+                let strengthText = '';
+                let strengthClass = '';
+
+                if (password.length === 0) {
+                    $('#passwordStrength').hide();
+                    return;
+                }
+
+                $('#passwordStrength').show();
+
+                // Length check
+                if (password.length >= 8) strength += 1;
+                if (password.length >= 12) strength += 1;
+
+                // Character variety checks
+                if (/[a-z]/.test(password)) strength += 1;
+                if (/[A-Z]/.test(password)) strength += 1;
+                if (/[0-9]/.test(password)) strength += 1;
+                if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
+
+                // Determine strength level
+                if (strength <= 2) {
+                    strengthText = 'Weak';
+                    strengthClass = 'weak';
+                } else if (strength <= 4) {
+                    strengthText = 'Medium';
+                    strengthClass = 'medium';
+                } else {
+                    strengthText = 'Strong';
+                    strengthClass = 'strong';
+                }
+
+                // Update UI
+                const percentage = (strength / 5) * 100;
+                $('#strengthFill').css('width', percentage + '%').removeClass('weak medium strong').addClass(strengthClass);
+                $('#strengthText').text(strengthText);
+            }
+
+            $('#passwordInput').on('input', function() {
+                const password = $(this).val();
+                calculatePasswordStrength(password);
+
+                // Real-time validation
+                const wrapper = $('#passwordWrapper');
+                if (password.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                } else if (password.length >= 6) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                } else {
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                }
+            });
+
             // Password confirmation
             $('#confirmPasswordInput').on('input', function() {
                 const password = $('#passwordInput').val();
                 const confirm = $(this).val();
-                if (confirm && password !== confirm) {
-                    $(this).css('border-color', 'var(--error)');
+                const wrapper = $('#confirmPasswordWrapper');
+                const errorMsg = $('#confirmPasswordError');
+
+                if (confirm.length === 0) {
+                    wrapper.removeClass('has-error has-success');
+                    $(this).removeClass('error success');
+                    errorMsg.hide();
+                } else if (password === confirm) {
+                    wrapper.removeClass('has-error').addClass('has-success');
+                    $(this).removeClass('error').addClass('success');
+                    errorMsg.hide();
                 } else {
-                    $(this).css('border-color', '');
+                    wrapper.removeClass('has-success').addClass('has-error');
+                    $(this).removeClass('success').addClass('error');
+                    errorMsg.show();
                 }
             });
         });
@@ -518,11 +637,11 @@
             if (side === 'front') {
                 $('#IdDocumentFront').val('');
                 $('#idFrontPreview').hide();
-                $('#IdDocumentFront').closest('.reg-camera-capture').find('.reg-camera-btn').show();
+                $('#IdDocumentFront').closest('.id-upload-container').find('label').show();
             } else {
                 $('#IdDocumentBack').val('');
                 $('#idBackPreview').hide();
-                $('#IdDocumentBack').closest('.reg-camera-capture').find('.reg-camera-btn').show();
+                $('#IdDocumentBack').closest('.id-upload-container').find('label').show();
             }
         }
     </script>
