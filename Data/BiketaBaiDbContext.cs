@@ -26,6 +26,7 @@ public class BiketaBaiDbContext : DbContext
     public DbSet<PointsHistory> PointsHistory { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Report> Reports { get; set; }
+    public DbSet<PhoneOtp> PhoneOtps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -144,7 +145,9 @@ public class BiketaBaiDbContext : DbContext
             new PaymentMethod { MethodId = 1, MethodName = "Wallet" },
             new PaymentMethod { MethodId = 2, MethodName = "GCash" },
             new PaymentMethod { MethodId = 3, MethodName = "QRPH" },
-            new PaymentMethod { MethodId = 4, MethodName = "Cash" }
+            new PaymentMethod { MethodId = 4, MethodName = "Cash" },
+            new PaymentMethod { MethodId = 5, MethodName = "PayMaya" },
+            new PaymentMethod { MethodId = 6, MethodName = "Credit/Debit Card" }
         );
 
         modelBuilder.Entity<TransactionType>().HasData(

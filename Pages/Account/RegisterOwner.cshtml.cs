@@ -91,7 +91,7 @@ public class RegisterOwnerModel : PageModel
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
         // Check if coming from type selection
         var registrationType = TempData["RegistrationType"]?.ToString();
@@ -116,24 +116,41 @@ public class RegisterOwnerModel : PageModel
             Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
         }
 
+        // Check for error messages from TempData (from POST redirect)
+        if (TempData.ContainsKey("OwnerErrorMessage"))
+        {
+            ErrorMessage = TempData["OwnerErrorMessage"]?.ToString();
+        }
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(string? step)
     {
-        // Handle back button from step 2 FIRST (before parsing step as int)
+        // Handle back button FIRST (before parsing step as int)
         if (step == "back")
         {
-            // User clicked back from step 2, restore step 1 data
-            if (TempData.ContainsKey("OwnerFullName"))
+            var currentStepFromTemp = int.TryParse(TempData["OwnerCurrentStep"]?.ToString(), out var tempStep) ? tempStep : 1;
+            
+            if (currentStepFromTemp == 3)
             {
-                Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
-                Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
-                Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
-                Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
+                // Going back from step 3 (password) to step 2 (ID)
+                CurrentStep = 2;
+                TempData["OwnerCurrentStep"] = "2";
             }
-            CurrentStep = 1;
-            TempData["OwnerCurrentStep"] = "1";
+            else if (currentStepFromTemp == 2)
+            {
+                // Going back from step 2 (ID) to step 1 (basic info)
+                CurrentStep = 1;
+                TempData["OwnerCurrentStep"] = "1";
+                if (TempData.ContainsKey("OwnerFullName"))
+                {
+                    Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
+                    Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
+                    Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
+                    Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
+                }
+            }
             return Page();
         }
 
@@ -164,6 +181,7 @@ public class RegisterOwnerModel : PageModel
                 return Page();
             }
 
+
             // Validate store address using AddressValidationService
             var addressValidation = await _addressValidationService.ValidateAddressAsync(Input.StoreAddress);
             if (!addressValidation.IsValid)
@@ -190,17 +208,17 @@ public class RegisterOwnerModel : PageModel
         {
             if (IdDocumentFront == null || IdDocumentBack == null)
             {
-                ErrorMessage = "Both ID front and back photos are required";
-                CurrentStep = 2;
-                return Page();
+                TempData["OwnerErrorMessage"] = "Both ID front and back photos are required";
+                TempData["OwnerCurrentStep"] = "2";
+                return RedirectToPage();
             }
 
             // Validate file sizes (max 5MB each)
             if (IdDocumentFront.Length > 5 * 1024 * 1024 || IdDocumentBack.Length > 5 * 1024 * 1024)
             {
-                ErrorMessage = "ID photos must be less than 5MB each";
-                CurrentStep = 2;
-                return Page();
+                TempData["OwnerErrorMessage"] = "ID photos must be less than 5MB each";
+                TempData["OwnerCurrentStep"] = "2";
+                return RedirectToPage();
             }
 
             // Validate file types (images only, no PDF for camera capture)
@@ -210,9 +228,9 @@ public class RegisterOwnerModel : PageModel
             
             if (!allowedExtensions.Contains(frontExtension) || !allowedExtensions.Contains(backExtension))
             {
-                ErrorMessage = "ID photos must be JPG or PNG images";
-                CurrentStep = 2;
-                return Page();
+                TempData["OwnerErrorMessage"] = "ID photos must be JPG or PNG images";
+                TempData["OwnerCurrentStep"] = "2";
+                return RedirectToPage();
             }
 
             // Save ID documents
@@ -243,17 +261,17 @@ public class RegisterOwnerModel : PageModel
             {
                 if (BusinessLicense.Length > 5 * 1024 * 1024)
                 {
-                    ErrorMessage = "Business license must be less than 5MB";
-                    CurrentStep = 2;
-                    return Page();
+                    TempData["OwnerErrorMessage"] = "Business license must be less than 5MB";
+                    TempData["OwnerCurrentStep"] = "2";
+                    return RedirectToPage();
                 }
 
                 var licenseExtension = Path.GetExtension(BusinessLicense.FileName).ToLowerInvariant();
                 if (!allowedExtensions.Contains(licenseExtension))
                 {
-                    ErrorMessage = "Business license must be JPG or PNG image";
-                    CurrentStep = 2;
-                    return Page();
+                    TempData["OwnerErrorMessage"] = "Business license must be JPG or PNG image";
+                    TempData["OwnerCurrentStep"] = "2";
+                    return RedirectToPage();
                 }
 
                 var licenseFileName = $"{Guid.NewGuid()}_license{licenseExtension}";
@@ -303,10 +321,10 @@ public class RegisterOwnerModel : PageModel
 
             if (!idValidation.IsValid)
             {
-                ErrorMessage = idValidation.ErrorMessage ?? "Please upload a valid ID";
-                CurrentStep = 2;
+                // Store error in TempData and redirect to prevent POST resubmission on refresh
+                TempData["OwnerErrorMessage"] = idValidation.ErrorMessage ?? "Please upload a valid ID";
                 TempData["OwnerCurrentStep"] = "2";
-                return Page();
+                return RedirectToPage();
             }
 
             // Extract address from ID using OCR (use front)

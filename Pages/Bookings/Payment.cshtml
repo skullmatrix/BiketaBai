@@ -116,6 +116,28 @@
                                     </div>
                                 </label>
                                 <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="5" />
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-phone fs-3 me-3" style="color: #00D9FF;"></i>
+                                        <div>
+                                            <strong>PayMaya</strong>
+                                            <br />
+                                            <small class="text-muted">Pay via PayMaya mobile payment</small>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="6" />
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-credit-card fs-3 me-3 text-warning"></i>
+                                        <div>
+                                            <strong>Credit/Debit Card</strong>
+                                            <br />
+                                            <small class="text-muted">Visa, Mastercard, JCB, and more</small>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="list-group-item">
                                     <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="4" />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-cash fs-3 me-3 text-success"></i>
@@ -128,9 +150,39 @@
                                 </label>
                             </div>
 
+                            <!-- Card Payment Form (shown when card is selected) -->
+                            <div id="cardPaymentForm" style="display: none;" class="card bg-light p-4 mb-4">
+                                <h6 class="mb-3">Card Details</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Cardholder Name</label>
+                                    <input type="text" class="form-control" id="cardholderName" placeholder="John Doe" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Card Number</label>
+                                    <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Expiry Date</label>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <input type="text" class="form-control" id="expMonth" placeholder="MM" maxlength="2" />
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="text" class="form-control" id="expYear" placeholder="YYYY" maxlength="4" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">CVV</label>
+                                        <input type="text" class="form-control" id="cvv" placeholder="123" maxlength="4" />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-eco-primary btn-lg">
-                                    <i class="bi bi-check-circle"></i> Confirm Payment
+                                <button type="submit" class="btn btn-eco-primary btn-lg" id="submitBtn">
+                                    <i class="bi bi-check-circle"></i> <span id="submitBtnText">Confirm Payment</span>
                                 </button>
                                 <a href="/Dashboard/Renter" class="btn btn-outline-secondary">Cancel</a>
                             </div>
@@ -141,4 +193,29 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Show/hide card form based on payment method selection
+    document.querySelectorAll('input[name="PaymentMethodId"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const cardForm = document.getElementById('cardPaymentForm');
+            const submitBtn = document.getElementById('submitBtnText');
+            
+            if (this.value === '6') {
+                cardForm.style.display = 'block';
+                submitBtn.textContent = 'Pay with Card';
+            } else {
+                cardForm.style.display = 'none';
+                submitBtn.textContent = 'Confirm Payment';
+            }
+        });
+    });
+
+    // Format card number input
+    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\s/g, '');
+        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+        e.target.value = formattedValue;
+    });
+</script>
 

@@ -67,6 +67,17 @@
                 </div>
             }
 
+            @if (TempData.ContainsKey("RenterSuccessMessage"))
+            {
+                <div class="auth-alert-minimal" style="background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div class="alert-content">
+                        <strong>Success</strong>
+                        <p>@TempData["RenterSuccessMessage"]</p>
+                    </div>
+                </div>
+            }
+
             <form method="post" enctype="multipart/form-data" id="renterRegistrationForm">
                 <input type="hidden" name="step" value="@Model.CurrentStep" />
 
@@ -126,6 +137,22 @@
                                     </div>
                                 </div>
                                 <span asp-validation-for="Input.Address" class="validation-message error"></span>
+                            </div>
+
+                            <div class="auth-form-group">
+                                <label asp-for="Input.Phone" class="auth-form-label">
+                                    Phone Number <span class="required">*</span>
+                                </label>
+                                <div class="auth-input-wrapper">
+                                    <input asp-for="Input.Phone" type="tel" class="auth-input" 
+                                           placeholder="09123456789 or +639123456789" required autocomplete="tel" />
+                                    <i class="bi bi-phone auth-input-icon"></i>
+                                </div>
+                                <div class="helper-text">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>Required for booking verification</span>
+                                </div>
+                                <span asp-validation-for="Input.Phone" class="validation-message error"></span>
                             </div>
 
                             <div class="auth-step-buttons">

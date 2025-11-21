@@ -90,6 +90,11 @@ builder.Services.AddScoped<AddressValidationService>();
 builder.Services.AddHttpClient<OpenStreetMapService>();
 builder.Services.AddScoped<OpenStreetMapService>();
 builder.Services.AddScoped<IdValidationService>();
+builder.Services.AddHttpClient<SmsService>();
+builder.Services.AddScoped<SmsService>();
+builder.Services.AddScoped<OtpService>();
+builder.Services.AddHttpClient<PaymentGatewayService>();
+builder.Services.AddScoped<PaymentGatewayService>();
 
 // Add HttpContextAccessor for accessing HttpContext in services
 builder.Services.AddHttpContextAccessor();

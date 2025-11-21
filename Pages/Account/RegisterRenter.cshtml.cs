@@ -69,6 +69,11 @@ public class RegisterRenterModel : PageModel
         [Display(Name = "Address")]
         public string Address { get; set; } = string.Empty;
 
+        [Required]
+        [Phone]
+        [Display(Name = "Phone Number")]
+        public string Phone { get; set; } = string.Empty;
+
         // Step 2: ID Document (handled via IdDocument property)
 
         // Step 3: Account Setup
@@ -84,7 +89,7 @@ public class RegisterRenterModel : PageModel
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
         // Check if coming from type selection
         var registrationType = TempData["RegistrationType"]?.ToString();
@@ -106,6 +111,7 @@ public class RegisterRenterModel : PageModel
             Input.FullName = TempData["RenterFullName"]?.ToString() ?? "";
             Input.Email = TempData["RenterEmail"]?.ToString() ?? "";
             Input.Address = TempData["RenterAddress"]?.ToString() ?? "";
+            Input.Phone = TempData["RenterPhone"]?.ToString() ?? "";
         }
 
         // Restore step 2 data if on step 2 (password)
@@ -113,6 +119,12 @@ public class RegisterRenterModel : PageModel
         {
             Input.Password = TempData["RenterPassword"]?.ToString() ?? "";
             Input.ConfirmPassword = TempData["RenterPassword"]?.ToString() ?? "";
+        }
+
+        // Check for error messages from TempData (from POST redirect)
+        if (TempData.ContainsKey("RenterErrorMessage"))
+        {
+            ErrorMessage = TempData["RenterErrorMessage"]?.ToString();
         }
 
         return Page();
@@ -131,7 +143,6 @@ public class RegisterRenterModel : PageModel
                 // Going back from step 3 (ID upload) to step 2 (password)
                 CurrentStep = 2;
                 TempData["RenterCurrentStep"] = "2";
-                // Restore password from TempData if available
                 if (TempData.ContainsKey("RenterPassword"))
                 {
                     Input.Password = TempData["RenterPassword"]?.ToString() ?? "";
@@ -141,14 +152,15 @@ public class RegisterRenterModel : PageModel
             else if (currentStepFromTemp == 2)
             {
                 // Going back from step 2 (password) to step 1 (basic info)
+                CurrentStep = 1;
+                TempData["RenterCurrentStep"] = "1";
                 if (TempData.ContainsKey("RenterFullName"))
                 {
                     Input.FullName = TempData["RenterFullName"]?.ToString() ?? "";
                     Input.Email = TempData["RenterEmail"]?.ToString() ?? "";
                     Input.Address = TempData["RenterAddress"]?.ToString() ?? "";
+                    Input.Phone = TempData["RenterPhone"]?.ToString() ?? "";
                 }
-                CurrentStep = 1;
-                TempData["RenterCurrentStep"] = "1";
             }
             return Page();
         }
@@ -163,7 +175,8 @@ public class RegisterRenterModel : PageModel
             
             if (string.IsNullOrWhiteSpace(Input.FullName) || 
                 string.IsNullOrWhiteSpace(Input.Email) || 
-                string.IsNullOrWhiteSpace(Input.Address))
+                string.IsNullOrWhiteSpace(Input.Address) ||
+                string.IsNullOrWhiteSpace(Input.Phone))
             {
                 ErrorMessage = "Please fill in all required fields";
                 CurrentStep = 1;
@@ -175,6 +188,14 @@ public class RegisterRenterModel : PageModel
             if (existingUser != null)
             {
                 ErrorMessage = "Email address is already registered";
+                return Page();
+            }
+
+            // Check if phone already exists
+            var existingPhone = await _context.Users.FirstOrDefaultAsync(u => u.Phone == Input.Phone);
+            if (existingPhone != null)
+            {
+                ErrorMessage = "Phone number is already registered";
                 return Page();
             }
 
@@ -192,6 +213,7 @@ public class RegisterRenterModel : PageModel
             TempData["RenterFullName"] = Input.FullName;
             TempData["RenterEmail"] = Input.Email;
             TempData["RenterAddress"] = validatedAddress;
+            TempData["RenterPhone"] = Input.Phone;
             TempData["RenterAddressVerified"] = "true";
             TempData["RenterCurrentStep"] = "2";
             CurrentStep = 2;
@@ -232,18 +254,16 @@ public class RegisterRenterModel : PageModel
             // Validate that files are present
             if (IdDocumentFront == null || IdDocumentFront.Length == 0)
             {
-                ErrorMessage = "ID front photo is required";
-                CurrentStep = 3;
+                TempData["RenterErrorMessage"] = "ID front photo is required";
                 TempData["RenterCurrentStep"] = "3";
-                return Page();
+                return RedirectToPage();
             }
 
             if (IdDocumentBack == null || IdDocumentBack.Length == 0)
             {
-                ErrorMessage = "ID back photo is required";
-                CurrentStep = 3;
+                TempData["RenterErrorMessage"] = "ID back photo is required";
                 TempData["RenterCurrentStep"] = "3";
-                return Page();
+                return RedirectToPage();
             }
 
             // Compress images automatically if they're too large (no size limit, auto-compress to 5MB)
@@ -255,10 +275,9 @@ public class RegisterRenterModel : PageModel
             
             if (!allowedExtensions.Contains(frontExtension) || !allowedExtensions.Contains(backExtension))
             {
-                ErrorMessage = "ID photos must be JPG or PNG images";
-                CurrentStep = 3;
+                TempData["RenterErrorMessage"] = "ID photos must be JPG or PNG images";
                 TempData["RenterCurrentStep"] = "3";
-                return Page();
+                return RedirectToPage();
             }
 
             // Compress and save ID documents
@@ -347,10 +366,10 @@ public class RegisterRenterModel : PageModel
 
             if (!idValidation.IsValid)
             {
-                ErrorMessage = idValidation.ErrorMessage ?? "Please upload a valid ID";
-                CurrentStep = 3;
+                // Store error in TempData and redirect to prevent POST resubmission on refresh
+                TempData["RenterErrorMessage"] = idValidation.ErrorMessage ?? "Please upload a valid ID";
                 TempData["RenterCurrentStep"] = "3";
-                return Page();
+                return RedirectToPage();
             }
 
             // Extract address from ID using OCR (use front)
@@ -384,6 +403,7 @@ public class RegisterRenterModel : PageModel
             var fullName = TempData["RenterFullName"]?.ToString() ?? "";
             var email = TempData["RenterEmail"]?.ToString() ?? "";
             var address = TempData["RenterAddress"]?.ToString() ?? "";
+            var phone = TempData["RenterPhone"]?.ToString() ?? "";
             
             TempData["RenterIdDocumentFront"] = idDocumentFrontPath;
             TempData["RenterIdDocumentBack"] = idDocumentBackPath;
@@ -392,13 +412,13 @@ public class RegisterRenterModel : PageModel
             TempData["RenterIdVerified"] = isVerified ? "true" : "pending";
             
             // Proceed to create account
-            return await CreateRenterAccountAsync(fullName, email, address, password, idDocumentFrontPath);
+            return await CreateRenterAccountAsync(fullName, email, address, phone, password, idDocumentFrontPath);
         }
 
         return Page();
     }
 
-    private async Task<IActionResult> CreateRenterAccountAsync(string fullName, string email, string address, string password, string idDocumentPath)
+    private async Task<IActionResult> CreateRenterAccountAsync(string fullName, string email, string address, string phone, string password, string idDocumentPath)
     {
         // Retrieve additional data from TempData
         var idDocumentFrontPath = TempData["RenterIdDocumentFront"]?.ToString();
@@ -407,7 +427,7 @@ public class RegisterRenterModel : PageModel
         var addressVerified = TempData["RenterAddressVerified"]?.ToString() == "true";
         var idVerified = TempData["RenterIdVerified"]?.ToString() == "true";
 
-        if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(address))
+        if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(address) || string.IsNullOrEmpty(phone))
         {
             ErrorMessage = "Session expired. Please start over.";
             return RedirectToPage("/Account/RegisterType");
@@ -428,6 +448,7 @@ public class RegisterRenterModel : PageModel
         {
             FullName = fullName,
             Email = email,
+            Phone = phone,
             Address = address,
             PasswordHash = PasswordHelper.HashPassword(password),
             IsRenter = true,

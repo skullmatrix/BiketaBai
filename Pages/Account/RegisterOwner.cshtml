@@ -67,6 +67,17 @@
                 </div>
             }
 
+            @if (TempData.ContainsKey("OwnerSuccessMessage"))
+            {
+                <div class="auth-alert-minimal" style="background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div class="alert-content">
+                        <strong>Success</strong>
+                        <p>@TempData["OwnerSuccessMessage"]</p>
+                    </div>
+                </div>
+            }
+
             <form method="post" enctype="multipart/form-data" id="ownerRegistrationForm">
                 <input type="hidden" name="step" value="@Model.CurrentStep" />
 

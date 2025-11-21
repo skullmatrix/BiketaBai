@@ -2,6 +2,7 @@ using BiketaBai.Data;
 using BiketaBai.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace BiketaBai.Services;
 
@@ -10,13 +11,20 @@ public class PaymentService
     private readonly BiketaBaiDbContext _context;
     private readonly WalletService _walletService;
     private readonly NotificationService _notificationService;
+    private readonly PaymentGatewayService _paymentGatewayService;
     private readonly IConfiguration _configuration;
 
-    public PaymentService(BiketaBaiDbContext context, WalletService walletService, NotificationService notificationService, IConfiguration configuration)
+    public PaymentService(
+        BiketaBaiDbContext context, 
+        WalletService walletService, 
+        NotificationService notificationService, 
+        PaymentGatewayService paymentGatewayService,
+        IConfiguration configuration)
     {
         _context = context;
         _walletService = walletService;
         _notificationService = notificationService;
+        _paymentGatewayService = paymentGatewayService;
         _configuration = configuration;
     }
 
@@ -60,10 +68,44 @@ public class PaymentService
                 break;
 
             case 2: // GCash
+            case 5: // PayMaya
             case 3: // QRPH
-                // Simulate payment gateway - in real implementation, integrate with actual payment API
-                paymentSuccess = true;
-                message = "Payment successful via " + (paymentMethodId == 2 ? "GCash" : "QRPH");
+            case 6: // Credit/Debit Card
+                // These will be handled via payment gateway redirect
+                // For now, return payment intent creation result
+                var paymentMethodType = paymentMethodId switch
+                {
+                    2 => "gcash",
+                    5 => "paymaya",
+                    3 => "qrph",
+                    6 => "card",
+                    _ => "gcash"
+                };
+
+                var paymentIntent = await _paymentGatewayService.CreatePaymentIntentAsync(
+                    amount,
+                    "PHP",
+                    paymentMethodType,
+                    $"Booking payment for booking #{bookingId}",
+                    new Dictionary<string, string>
+                    {
+                        { "booking_id", bookingId.ToString() },
+                        { "renter_id", booking.RenterId.ToString() }
+                    }
+                );
+
+                if (paymentIntent.Success && !string.IsNullOrEmpty(paymentIntent.PaymentIntentId))
+                {
+                    payment.TransactionReference = paymentIntent.PaymentIntentId;
+                    payment.PaymentStatus = "Pending"; // Will be updated via webhook
+                    paymentSuccess = true;
+                    message = $"Payment intent created. Please complete payment via {GetPaymentMethodName(paymentMethodId)}";
+                }
+                else
+                {
+                    paymentSuccess = false;
+                    message = paymentIntent.ErrorMessage ?? "Failed to create payment intent";
+                }
                 break;
 
             case 4: // Cash
@@ -195,6 +237,164 @@ public class PaymentService
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Gets payment method name by ID
+    /// </summary>
+    private string GetPaymentMethodName(int paymentMethodId)
+    {
+        return paymentMethodId switch
+        {
+            1 => "Wallet",
+            2 => "GCash",
+            3 => "QRPH",
+            4 => "Cash",
+            5 => "PayMaya",
+            6 => "Credit/Debit Card",
+            _ => "Unknown"
+        };
+    }
+
+    /// <summary>
+    /// Creates a payment intent for gateway payments (GCash, PayMaya, QRPH, Cards)
+    /// Returns the payment intent ID and redirect URL
+    /// </summary>
+    public async Task<(bool success, string? paymentIntentId, string? redirectUrl, string? clientKey, string message)> CreateGatewayPaymentAsync(
+        int bookingId, 
+        int paymentMethodId, 
+        decimal amount)
+    {
+        try
+        {
+            var booking = await _context.Bookings
+                .Include(b => b.Bike)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId);
+
+            if (booking == null)
+                return (false, null, null, null, "Booking not found");
+
+            var paymentMethodType = paymentMethodId switch
+            {
+                2 => "gcash",
+                5 => "paymaya",
+                3 => "qrph",
+                6 => "card",
+                _ => "gcash"
+            };
+
+            var paymentIntent = await _paymentGatewayService.CreatePaymentIntentAsync(
+                amount,
+                "PHP",
+                paymentMethodType,
+                $"Booking payment for {booking.Bike.Brand} {booking.Bike.Model}",
+                new Dictionary<string, string>
+                {
+                    { "booking_id", bookingId.ToString() },
+                    { "renter_id", booking.RenterId.ToString() }
+                }
+            );
+
+            if (paymentIntent.Success && !string.IsNullOrEmpty(paymentIntent.PaymentIntentId))
+            {
+                // Create pending payment record
+                var payment = new Payment
+                {
+                    BookingId = bookingId,
+                    PaymentMethodId = paymentMethodId,
+                    Amount = amount,
+                    PaymentStatus = "Pending",
+                    TransactionReference = paymentIntent.PaymentIntentId,
+                    PaymentDate = DateTime.UtcNow
+                };
+
+                _context.Payments.Add(payment);
+                await _context.SaveChangesAsync();
+
+                // Xendit returns invoice URL in ClientKey
+                var redirectUrl = paymentIntent.ClientKey; // This is the invoice URL
+
+                return (true, paymentIntent.PaymentIntentId, redirectUrl, paymentIntent.ClientKey, "Payment invoice created successfully");
+            }
+
+            return (false, null, null, null, paymentIntent.ErrorMessage ?? "Failed to create payment intent");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating gateway payment");
+            return (false, null, null, null, $"Error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Confirms payment after gateway redirect or webhook
+    /// </summary>
+    public async Task<(bool success, string message)> ConfirmGatewayPaymentAsync(string paymentIntentId)
+    {
+        try
+        {
+            var paymentStatus = await _paymentGatewayService.GetPaymentIntentStatusAsync(paymentIntentId);
+
+            if (!paymentStatus.Success)
+                return (false, "Failed to retrieve payment status");
+
+            var payment = await _context.Payments
+                .Include(p => p.Booking)
+                .ThenInclude(b => b.Bike)
+                .FirstOrDefaultAsync(p => p.TransactionReference == paymentIntentId);
+
+            if (payment == null)
+                return (false, "Payment record not found");
+
+            // Xendit statuses: PENDING, PAID, SETTLED, EXPIRED, CANCELLED
+            if (paymentStatus.Status == "PAID" || paymentStatus.Status == "SETTLED" || paymentStatus.Status == "succeeded")
+            {
+                payment.PaymentStatus = "Completed";
+                payment.PaymentDate = DateTime.UtcNow;
+
+                // Update booking status
+                payment.Booking.BookingStatusId = 2; // Active
+                payment.Booking.UpdatedAt = DateTime.UtcNow;
+
+                // Update bike status
+                payment.Booking.Bike.AvailabilityStatusId = 2; // Rented
+                payment.Booking.Bike.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // Send notifications
+                await _notificationService.CreateNotificationAsync(
+                    payment.Booking.RenterId,
+                    "Payment Successful",
+                    $"Your payment of ₱{payment.Amount:F2} has been processed",
+                    "/Bookings/Confirmation"
+                );
+
+                await _notificationService.CreateNotificationAsync(
+                    payment.Booking.Bike.OwnerId,
+                    "New Booking",
+                    $"Your bike {payment.Booking.Bike.Brand} {payment.Booking.Bike.Model} has been booked",
+                    "/Owner/RentalRequests"
+                );
+
+                return (true, "Payment confirmed successfully");
+            }
+            else if (paymentStatus.Status == "awaiting_payment_method" || paymentStatus.Status == "awaiting_next_action")
+            {
+                return (false, "Payment is still pending. Please complete the payment.");
+            }
+            else
+            {
+                payment.PaymentStatus = "Failed";
+                await _context.SaveChangesAsync();
+                return (false, "Payment failed or was cancelled");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error confirming gateway payment");
+            return (false, $"Error: {ex.Message}");
+        }
     }
 }
 

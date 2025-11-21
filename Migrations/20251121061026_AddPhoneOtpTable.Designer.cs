@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251121061026_AddPhoneOtpTable")]
+    partial class AddPhoneOtpTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -610,16 +613,6 @@ namespace BiketaBai.Migrations
                         {
                             MethodId = 4,
                             MethodName = "Cash"
-                        },
-                        new
-                        {
-                            MethodId = 5,
-                            MethodName = "PayMaya"
-                        },
-                        new
-                        {
-                            MethodId = 6,
-                            MethodName = "Credit/Debit Card"
                         });
                 });
 

@@ -1,0 +1,132 @@
+@page
+@model BiketaBai.Pages.Admin.TestSmsModel
+@{
+    ViewData["Title"] = "Test SMS Service";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="text-center mb-4">
+            <i class="bi bi-chat-dots"></i> SMS Service Test
+        </h1>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- Test Send SMS -->
+        <div class="test-section">
+            <h3><i class="bi bi-send"></i> Test Send SMS</h3>
+            <form method="post" asp-page-handler="SendSms">
+                <div class="mb-3">
+                    <label for="phoneNumber" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phoneNumber" asp-for="PhoneNumber" 
+                           placeholder="09123456789 or +639123456789" required />
+                    <small class="form-text text-muted">Supports local (09123456789) or international (+639123456789) format</small>
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea class="form-control" id="message" asp-for="Message" rows="3" 
+                              placeholder="Enter your test message here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Send SMS
+                </button>
+            </form>
+        </div>
+
+        <!-- Test Send OTP -->
+        <div class="test-section">
+            <h3><i class="bi bi-shield-lock"></i> Test Send OTP</h3>
+            <form method="post" asp-page-handler="SendOtp">
+                <div class="mb-3">
+                    <label for="phoneNumberOtp" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phoneNumberOtp" name="PhoneNumber" 
+                           placeholder="09123456789 or +639123456789" required />
+                    <small class="form-text text-muted">A 6-digit OTP code will be sent to this number</small>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-key"></i> Send OTP
+                </button>
+            </form>
+        </div>
+
+        <!-- Test Verify OTP -->
+        <div class="test-section">
+            <h3><i class="bi bi-check-circle"></i> Test Verify OTP</h3>
+            <form method="post" asp-page-handler="VerifyOtp">
+                <div class="mb-3">
+                    <label for="phoneNumberVerify" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phoneNumberVerify" name="PhoneNumber" 
+                           placeholder="09123456789 or +639123456789" required />
+                </div>
+                <div class="mb-3">
+                    <label for="otpCode" class="form-label">OTP Code</label>
+                    <input type="text" class="form-control" id="otpCode" asp-for="OtpCode" 
+                           placeholder="123456" maxlength="6" pattern="[0-9]{6}" required />
+                    <small class="form-text text-muted">Enter the 6-digit code you received</small>
+                </div>
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-shield-check"></i> Verify OTP
+                </button>
+            </form>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

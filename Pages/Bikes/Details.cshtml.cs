@@ -13,11 +13,13 @@ public class DetailsModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly BookingManagementService _bookingService;
+    private readonly OtpService _otpService;
 
-    public DetailsModel(BiketaBaiDbContext context, BookingManagementService bookingService)
+    public DetailsModel(BiketaBaiDbContext context, BookingManagementService bookingService, OtpService otpService)
     {
         _context = context;
         _bookingService = bookingService;
+        _otpService = otpService;
     }
 
     public Bike? Bike { get; set; }
@@ -28,6 +30,12 @@ public class DetailsModel : PageModel
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
+
+    [BindProperty]
+    public string? OtpCode { get; set; }
+
+    public bool RequiresPhoneVerification { get; set; } = false;
+    public string? UserPhone { get; set; }
 
     public class InputModel
     {
@@ -115,6 +123,76 @@ public class DetailsModel : PageModel
             return Page();
         }
 
+        // Check if this is first-time rental and requires phone verification
+        var user = await _context.Users.FindAsync(userId.Value);
+        if (user != null)
+        {
+            // Check if user has any completed bookings
+            var hasCompletedBooking = await _context.Bookings
+                .AnyAsync(b => b.RenterId == userId.Value && b.BookingStatusId == 3); // 3 = Completed
+
+            if (!hasCompletedBooking)
+            {
+                // First-time renter - check if they have a phone number
+                if (string.IsNullOrWhiteSpace(user.Phone))
+                {
+                    TempData["ErrorMessage"] = "Please add your phone number in your profile before making your first booking. Phone verification is required for first-time renters.";
+                    return RedirectToPage("/Account/Profile");
+                }
+
+                // Check if phone is already verified (check for verified OTP)
+                var hasVerifiedOtp = await _context.PhoneOtps
+                    .AnyAsync(o => o.PhoneNumber == user.Phone && o.IsVerified && o.VerifiedAt.HasValue);
+
+                if (!hasVerifiedOtp)
+                {
+                    // Require phone verification
+                    RequiresPhoneVerification = true;
+                    UserPhone = user.Phone;
+
+                    // Handle OTP sending
+                    if (Request.Form.ContainsKey("sendOtp"))
+                    {
+                        var otpSent = await _otpService.GenerateAndSendOtpAsync(user.Phone);
+                        if (otpSent)
+                        {
+                            TempData["SuccessMessage"] = "OTP code sent to your phone! Please check your SMS.";
+                        }
+                        else
+                        {
+                            TempData["ErrorMessage"] = "Failed to send OTP. Please try again.";
+                        }
+                        return Page();
+                    }
+
+                    // Handle OTP verification
+                    if (!string.IsNullOrWhiteSpace(OtpCode))
+                    {
+                        var isValid = await _otpService.VerifyOtpAsync(user.Phone, OtpCode);
+                        if (!isValid)
+                        {
+                            TempData["ErrorMessage"] = "Invalid or expired OTP code. Please try again.";
+                            RequiresPhoneVerification = true;
+                            UserPhone = user.Phone;
+                            // Preserve dates
+                            await LoadBikeDataAsync(id);
+                            return Page();
+                        }
+                        // OTP verified - continue with booking (fall through to booking creation)
+                    }
+                    else
+                    {
+                        // Show OTP verification form
+                        RequiresPhoneVerification = true;
+                        UserPhone = user.Phone;
+                        // Preserve dates
+                        await LoadBikeDataAsync(id);
+                        return Page();
+                    }
+                }
+            }
+        }
+
         // Validate dates
         if (!Input.StartDate.HasValue || !Input.EndDate.HasValue)
         {
@@ -138,6 +216,7 @@ public class DetailsModel : PageModel
 
         if (!ModelState.IsValid)
         {
+            await LoadBikeDataAsync(id);
             return Page();
         }
 

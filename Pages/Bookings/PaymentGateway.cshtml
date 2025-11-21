@@ -1,0 +1,126 @@
+@page "{bookingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model PaymentGatewayModel
+@{
+    ViewData["Title"] = "Complete Payment";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            @if (Model.Booking == null)
+            {
+                <div class="alert alert-danger">Booking not found</div>
+            }
+            else
+            {
+                <div class="card shadow-eco">
+                    <div class="card-body p-5">
+                        <h2 class="text-eco-green mb-4">
+                            <i class="bi bi-credit-card"></i> Complete Payment
+                        </h2>
+
+                        <!-- Booking Summary -->
+                        <div class="card bg-eco-light mb-4">
+                            <div class="card-body">
+                                <h5 class="text-eco-green">Booking Summary</h5>
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Bike:</strong> @Model.Booking.Bike.Brand @Model.Booking.Bike.Model</p>
+                                        <p><strong>Total Amount:</strong> <strong class="text-eco-green">₱@Model.Booking.TotalAmount.ToString("F2")</strong></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Start:</strong> @Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p><strong>End:</strong> @Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                        {
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+                            </div>
+                        }
+
+                        <!-- Card Payment Form -->
+                        <form method="post" asp-page-handler="ProcessCard">
+                            <input type="hidden" name="paymentIntentId" value="@Model.PaymentIntentId" />
+                            
+                            <h5 class="mb-3">Card Details</h5>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Cardholder Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" asp-for="CardPayment.CardholderName" 
+                                       placeholder="John Doe" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Card Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" asp-for="CardPayment.CardNumber" 
+                                       placeholder="1234 5678 9012 3456" maxlength="19" required 
+                                       id="cardNumber" />
+                                <small class="text-muted">Visa, Mastercard, JCB, and more</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Expiry Date <span class="text-danger">*</span></label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="number" class="form-control" asp-for="CardPayment.ExpMonth" 
+                                                   placeholder="MM" min="1" max="12" required />
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="number" class="form-control" asp-for="CardPayment.ExpYear" 
+                                                   placeholder="YYYY" min="@DateTime.Now.Year" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">CVV <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" asp-for="CardPayment.Cvc" 
+                                           placeholder="123" maxlength="4" required />
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-shield-lock"></i>
+                                <small>Your payment is secured and encrypted. We do not store your card details.</small>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-eco-primary btn-lg">
+                                    <i class="bi bi-lock-fill"></i> Pay ₱@Model.Booking.TotalAmount.ToString("F2")
+                                </button>
+                                <a href="/Bookings/Payment/@Model.Booking.BookingId" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back to Payment Methods
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // Format card number input
+    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\s/g, '');
+        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+        e.target.value = formattedValue;
+    });
+</script>
+

@@ -68,28 +68,89 @@ public class PaymentModel : PageModel
 
         WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
 
-        // Validate wallet balance if paying via wallet
-        if (PaymentMethodId == 1 && WalletBalance < Booking.TotalAmount)
+        // Handle different payment methods
+        if (PaymentMethodId == 1) // Wallet
         {
-            ErrorMessage = "Insufficient wallet balance. Please top up your wallet or choose another payment method.";
-            return Page();
-        }
+            // Validate wallet balance
+            if (WalletBalance < Booking.TotalAmount)
+            {
+                ErrorMessage = "Insufficient wallet balance. Please top up your wallet or choose another payment method.";
+                return Page();
+            }
 
-        // Process payment
-        var result = await _paymentService.ProcessPaymentAsync(
-            bookingId,
-            PaymentMethodId,
-            Booking.TotalAmount
-        );
+            // Process wallet payment
+            var result = await _paymentService.ProcessPaymentAsync(
+                bookingId,
+                PaymentMethodId,
+                Booking.TotalAmount
+            );
 
-        if (result.success)
-        {
-            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+            if (result.success)
+            {
+                return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+            }
+            else
+            {
+                ErrorMessage = result.message;
+                return Page();
+            }
         }
-        else
+        else if (PaymentMethodId == 4) // Cash
         {
-            ErrorMessage = result.message;
-            return Page();
+            // Process cash payment
+            var result = await _paymentService.ProcessPaymentAsync(
+                bookingId,
+                PaymentMethodId,
+                Booking.TotalAmount
+            );
+
+            if (result.success)
+            {
+                return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+            }
+            else
+            {
+                ErrorMessage = result.message;
+                return Page();
+            }
+        }
+        else // GCash, PayMaya, QRPH, or Card - Gateway payments
+        {
+            // Create payment intent for gateway payment
+            var gatewayResult = await _paymentService.CreateGatewayPaymentAsync(
+                bookingId,
+                PaymentMethodId,
+                Booking.TotalAmount
+            );
+
+            if (gatewayResult.success && !string.IsNullOrEmpty(gatewayResult.paymentIntentId))
+            {
+                // Store payment intent ID in TempData for confirmation
+                TempData["PaymentIntentId"] = gatewayResult.paymentIntentId;
+                TempData["BookingId"] = bookingId.ToString();
+
+                // For card payments, redirect to payment gateway page
+                if (PaymentMethodId == 6)
+                {
+                    TempData["PaymentIntentId"] = gatewayResult.paymentIntentId;
+                    return RedirectToPage("/Bookings/PaymentGateway", new { bookingId = bookingId });
+                }
+                // For GCash/PayMaya/QRPH, redirect to Xendit invoice page
+                else if (!string.IsNullOrEmpty(gatewayResult.redirectUrl))
+                {
+                    return Redirect(gatewayResult.redirectUrl);
+                }
+                else
+                {
+                    // Fallback: redirect to confirmation page
+                    return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                }
+            }
+            else
+            {
+                ErrorMessage = gatewayResult.message;
+                return Page();
+            }
         }
     }
 }
