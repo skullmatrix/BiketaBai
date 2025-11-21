@@ -55,27 +55,24 @@ public class IdValidationService
         // Default to false - will be set to true only if OCR verification passes
         result.IsValid = false;
 
-        // Perform OCR - try OCR.space first (free), then fallback to Google Vision
+        // Perform OCR using Google Cloud Vision API
         try
         {
-            // Try OCR.space first (free tier: 25,000 requests/month)
-            var ocrSpaceApiKey = _configuration["AppSettings:OcrSpaceApiKey"] ?? "helloworld"; // Default free key
-            var fullText = await PerformOcrSpaceAsync(idDocument, ocrSpaceApiKey);
-            
-            // If OCR.space fails or returns empty, try Google Vision as fallback
-            if (string.IsNullOrWhiteSpace(fullText) || fullText.Length < 10)
+            var apiKey = _configuration["AppSettings:GoogleCloudVisionApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
             {
-                Log.Information("OCR.space returned insufficient text, trying Google Vision API as fallback");
-                var googleApiKey = _configuration["AppSettings:GoogleCloudVisionApiKey"];
-                if (!string.IsNullOrEmpty(googleApiKey))
-                {
-                    fullText = await PerformGoogleVisionOcrAsync(idDocument, googleApiKey);
-                }
+                Log.Warning("Google Cloud Vision API key not configured. Cannot verify ID.");
+                result.IsValid = false;
+                result.ErrorMessage = "Please upload a valid ID";
+                return result;
             }
+
+            // Get OCR text from Google Vision API
+            var fullText = await PerformGoogleVisionOcrAsync(idDocument, apiKey);
             
             if (string.IsNullOrWhiteSpace(fullText))
             {
-                Log.Warning("Both OCR services failed to extract text. Cannot verify ID.");
+                Log.Warning("OCR failed to extract text. Cannot verify ID.");
                 result.IsValid = false;
                 result.ErrorMessage = "Please upload a valid ID";
                 return result;
@@ -573,78 +570,7 @@ public class IdValidationService
     }
 
     /// <summary>
-    /// Performs OCR using OCR.space API (free tier available)
-    /// </summary>
-    private async Task<string> PerformOcrSpaceAsync(IFormFile idDocument, string apiKey)
-    {
-        try
-        {
-            // Convert image to base64
-            using var memoryStream = new MemoryStream();
-            await idDocument.CopyToAsync(memoryStream);
-            var imageBytes = memoryStream.ToArray();
-            var base64Image = Convert.ToBase64String(imageBytes);
-
-            // Call OCR.space API - API key can be in URL or form data
-            using var httpClient = new HttpClient();
-            var formData = new MultipartFormDataContent();
-            formData.Add(new StringContent(base64Image), "base64Image");
-            formData.Add(new StringContent("eng"), "language"); // English + auto-detect
-            formData.Add(new StringContent("false"), "isOverlayRequired"); // Don't need overlay
-            formData.Add(new StringContent("true"), "detectOrientation");
-            formData.Add(new StringContent("true"), "scale");
-            formData.Add(new StringContent("2"), "OCREngine"); // Use OCR Engine 2 (better accuracy)
-
-            // API key in URL parameter (recommended by OCR.space docs)
-            var requestUrl = $"https://api.ocr.space/parse/imagebase64?apikey={Uri.EscapeDataString(apiKey)}";
-
-            var response = await httpClient.PostAsync(requestUrl, formData);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                Log.Debug("OCR.space API response: {Response}", responseContent.Substring(0, Math.Min(500, responseContent.Length)));
-                
-                var ocrResponse = JsonSerializer.Deserialize<OcrSpaceResponse>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                if (ocrResponse?.ParsedResults != null && ocrResponse.ParsedResults.Length > 0)
-                {
-                    var extractedText = ocrResponse.ParsedResults[0].ParsedText ?? "";
-                    if (!string.IsNullOrWhiteSpace(extractedText))
-                    {
-                        Log.Information("OCR.space extracted {Length} characters", extractedText.Length);
-                        return extractedText;
-                    }
-                    else
-                    {
-                        Log.Warning("OCR.space returned empty ParsedText");
-                    }
-                }
-                else
-                {
-                    Log.Warning("OCR.space returned null or empty ParsedResults. Response: {Response}", 
-                        responseContent.Substring(0, Math.Min(500, responseContent.Length)));
-                }
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Log.Warning("OCR.space API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Error calling OCR.space API");
-        }
-
-        return string.Empty;
-    }
-
-    /// <summary>
-    /// Performs OCR using Google Cloud Vision API (fallback)
+    /// Performs OCR using Google Cloud Vision API
     /// </summary>
     private async Task<string> PerformGoogleVisionOcrAsync(IFormFile idDocument, string apiKey)
     {
@@ -722,28 +648,6 @@ public class IdValidationService
         }
 
         return string.Empty;
-    }
-
-    // OCR.space API response models
-    private class OcrSpaceResponse
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("ParsedResults")]
-        public OcrSpaceParsedResult[]? ParsedResults { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("OCRExitCode")]
-        public int? OcrExitCode { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("ErrorMessage")]
-        public string[]? ErrorMessage { get; set; }
-    }
-
-    private class OcrSpaceParsedResult
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("ParsedText")]
-        public string? ParsedText { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("TextOverlay")]
-        public object? TextOverlay { get; set; }
     }
 
     // Google Vision API response models
