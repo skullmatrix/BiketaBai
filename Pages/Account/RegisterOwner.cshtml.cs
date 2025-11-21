@@ -107,13 +107,20 @@ public class RegisterOwnerModel : PageModel
             CurrentStep = int.TryParse(TempData["OwnerCurrentStep"]?.ToString(), out var step) ? step : 1;
         }
 
-        // Restore step 1 data if going back
+        // Restore step 1 data if on step 1
         if (CurrentStep == 1 && TempData.ContainsKey("OwnerFullName"))
         {
             Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
             Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
             Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
             Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
+        }
+
+        // Restore step 2 data if on step 2 (password)
+        if (CurrentStep == 2 && TempData.ContainsKey("OwnerPassword"))
+        {
+            Input.Password = TempData["OwnerPassword"]?.ToString() ?? "";
+            Input.ConfirmPassword = TempData["OwnerPassword"]?.ToString() ?? "";
         }
 
         // Check for error messages from TempData (from POST redirect)
@@ -134,13 +141,18 @@ public class RegisterOwnerModel : PageModel
             
             if (currentStepFromTemp == 3)
             {
-                // Going back from step 3 (password) to step 2 (ID)
+                // Going back from step 3 (ID upload) to step 2 (password)
                 CurrentStep = 2;
                 TempData["OwnerCurrentStep"] = "2";
+                if (TempData.ContainsKey("OwnerPassword"))
+                {
+                    Input.Password = TempData["OwnerPassword"]?.ToString() ?? "";
+                    Input.ConfirmPassword = TempData["OwnerPassword"]?.ToString() ?? "";
+                }
             }
             else if (currentStepFromTemp == 2)
             {
-                // Going back from step 2 (ID) to step 1 (basic info)
+                // Going back from step 2 (password) to step 1 (basic info)
                 CurrentStep = 1;
                 TempData["OwnerCurrentStep"] = "1";
                 if (TempData.ContainsKey("OwnerFullName"))
@@ -201,21 +213,49 @@ public class RegisterOwnerModel : PageModel
             return Page();
         }
 
-        // Step 2: ID Document (Front and Back)
+        // Step 2: Account Setup (Password)
         if (CurrentStep == 2)
+        {
+            // Clear ModelState errors for password fields
+            ModelState.Clear();
+            
+            if (string.IsNullOrWhiteSpace(Input.Password) || Input.Password.Length < 6)
+            {
+                ErrorMessage = "Password must be at least 6 characters";
+                CurrentStep = 2;
+                TempData["OwnerCurrentStep"] = "2";
+                return Page();
+            }
+
+            if (Input.Password != Input.ConfirmPassword)
+            {
+                ErrorMessage = "Passwords do not match";
+                CurrentStep = 2;
+                TempData["OwnerCurrentStep"] = "2";
+                return Page();
+            }
+
+            TempData["OwnerPassword"] = Input.Password;
+            TempData["OwnerCurrentStep"] = "3";
+            CurrentStep = 3;
+            return Page();
+        }
+
+        // Step 3: ID Document (Front and Back)
+        if (CurrentStep == 3)
         {
             // Validate that files are present
             if (IdDocumentFront == null || IdDocumentFront.Length == 0)
             {
                 TempData["OwnerErrorMessage"] = "ID front photo is required";
-                TempData["OwnerCurrentStep"] = "2";
+                TempData["OwnerCurrentStep"] = "3";
                 return RedirectToPage();
             }
 
             if (IdDocumentBack == null || IdDocumentBack.Length == 0)
             {
                 TempData["OwnerErrorMessage"] = "ID back photo is required";
-                TempData["OwnerCurrentStep"] = "2";
+                TempData["OwnerCurrentStep"] = "3";
                 return RedirectToPage();
             }
 
@@ -229,7 +269,7 @@ public class RegisterOwnerModel : PageModel
             if (!allowedExtensions.Contains(frontExtension) || !allowedExtensions.Contains(backExtension))
             {
                 TempData["OwnerErrorMessage"] = "ID photos must be JPG or PNG images";
-                TempData["OwnerCurrentStep"] = "2";
+                TempData["OwnerCurrentStep"] = "3";
                 return RedirectToPage();
             }
 
@@ -290,7 +330,7 @@ public class RegisterOwnerModel : PageModel
                 if (BusinessLicense.Length > 5 * 1024 * 1024)
                 {
                     TempData["OwnerErrorMessage"] = "Business license must be less than 5MB";
-                    TempData["OwnerCurrentStep"] = "2";
+                    TempData["OwnerCurrentStep"] = "3";
                     return RedirectToPage();
                 }
 
@@ -298,7 +338,7 @@ public class RegisterOwnerModel : PageModel
                 if (!allowedExtensions.Contains(licenseExtension))
                 {
                     TempData["OwnerErrorMessage"] = "Business license must be JPG or PNG image";
-                    TempData["OwnerCurrentStep"] = "2";
+                    TempData["OwnerCurrentStep"] = "3";
                     return RedirectToPage();
                 }
 
@@ -351,7 +391,7 @@ public class RegisterOwnerModel : PageModel
             {
                 // Store error in TempData and redirect to prevent POST resubmission on refresh
                 TempData["OwnerErrorMessage"] = idValidation.ErrorMessage ?? "Please upload a valid ID";
-                TempData["OwnerCurrentStep"] = "2";
+                TempData["OwnerCurrentStep"] = "3";
                 return RedirectToPage();
             }
 
@@ -378,106 +418,116 @@ public class RegisterOwnerModel : PageModel
             TempData["OwnerIdExtractedAddress"] = extractedAddress ?? "";
             TempData["OwnerIdExtractedName"] = extractedName ?? "";
             TempData["OwnerIdVerified"] = isVerified ? "true" : "pending";
-            TempData["OwnerCurrentStep"] = "3";
-            CurrentStep = 3;
-            return Page();
-        }
-
-        // Step 3: Account Setup
-        if (CurrentStep == 3)
-        {
-            // Retrieve data from TempData
-            var fullName = TempData["OwnerFullName"]?.ToString();
-            var email = TempData["OwnerEmail"]?.ToString();
-            var storeName = TempData["OwnerStoreName"]?.ToString();
-            var storeAddress = TempData["OwnerStoreAddress"]?.ToString();
-            var idDocumentFrontPath = TempData["OwnerIdDocumentFront"]?.ToString();
-            var idDocumentBackPath = TempData["OwnerIdDocumentBack"]?.ToString();
-            var idExtractedAddress = TempData["OwnerIdExtractedAddress"]?.ToString();
-            var addressVerified = TempData["OwnerAddressVerified"]?.ToString() == "true";
-            var idVerified = TempData["OwnerIdVerified"]?.ToString() == "true";
             
-            // Store front as primary ID document
-            var idDocumentPath = idDocumentFrontPath;
-
-            if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || 
-                string.IsNullOrEmpty(storeName) || string.IsNullOrEmpty(storeAddress))
+            // Get password from TempData
+            var password = TempData["OwnerPassword"]?.ToString() ?? "";
+            if (string.IsNullOrEmpty(password))
             {
-                ErrorMessage = "Session expired. Please start over.";
-                return RedirectToPage("/Account/RegisterType");
-            }
-
-            // Validate password
-            if (!PasswordHelper.IsPasswordMedium(Input.Password))
-            {
-                ErrorMessage = "Password must be at least 6 characters";
+                ErrorMessage = "Password is required. Please go back and set your password.";
                 CurrentStep = 3;
+                TempData["OwnerCurrentStep"] = "3";
                 return Page();
             }
 
-            // Create user
-            var verificationToken = Guid.NewGuid().ToString("N");
-            var user = new User
-            {
-                FullName = fullName,
-                Email = email,
-                StoreName = storeName,
-                StoreAddress = storeAddress,
-                PasswordHash = PasswordHelper.HashPassword(Input.Password),
-                IsRenter = false,
-                IsOwner = true,
-                IsAdmin = false,
-                IsEmailVerified = false,
-                EmailVerificationToken = verificationToken,
-                EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24),
-                IdDocumentUrl = idDocumentPath,
-                IdVerified = idVerified,
-                IdVerifiedAt = idVerified ? DateTime.UtcNow : null,
-                AddressVerified = addressVerified,
-                AddressVerifiedAt = addressVerified ? DateTime.UtcNow : null,
-                IdExtractedAddress = idExtractedAddress,
-                IsVerifiedOwner = false, // Requires admin verification
-                VerificationStatus = "Pending",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            // Cross-check store address with ID address if available
-            if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(storeAddress))
-            {
-                var addressMatch = await _idValidationService.CrossCheckAddressAsync(storeAddress, idExtractedAddress);
-                if (!addressMatch)
-                {
-                    Log.Warning("Address mismatch for owner {Email}: Store address='{StoreAddress}', ID address='{IdAddress}'", 
-                        email, storeAddress, idExtractedAddress);
-                    // Don't block registration, but log the mismatch
-                }
-            }
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Create wallet and points
-            await _walletService.GetOrCreateWalletAsync(user.UserId);
-            await _pointsService.GetOrCreatePointsAsync(user.UserId);
-
-            // Send verification email
-            try
-            {
-                var verificationLink = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(user.Email)}";
-                await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationLink);
-                TempData["SuccessMessage"] = "Registration successful! Please check your email to verify your account. Your owner account will be reviewed by our team.";
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to send verification email to {Email}", user.Email);
-                TempData["ErrorMessage"] = "Account created but failed to send verification email. Please contact support.";
-            }
-
-            return RedirectToPage("/Account/RegistrationSuccess");
+            // Proceed to create account
+            return await CreateOwnerAccountAsync(password);
         }
 
         return Page();
+    }
+
+    private async Task<IActionResult> CreateOwnerAccountAsync(string password)
+    {
+        // Retrieve data from TempData
+        var fullName = TempData["OwnerFullName"]?.ToString();
+        var email = TempData["OwnerEmail"]?.ToString();
+        var storeName = TempData["OwnerStoreName"]?.ToString();
+        var storeAddress = TempData["OwnerStoreAddress"]?.ToString();
+        var idDocumentFrontPath = TempData["OwnerIdDocumentFront"]?.ToString();
+        var idDocumentBackPath = TempData["OwnerIdDocumentBack"]?.ToString();
+        var idExtractedAddress = TempData["OwnerIdExtractedAddress"]?.ToString();
+        var addressVerified = TempData["OwnerAddressVerified"]?.ToString() == "true";
+        var idVerified = TempData["OwnerIdVerified"]?.ToString() == "true";
+        
+        // Store front as primary ID document
+        var idDocumentPath = idDocumentFrontPath;
+
+        if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || 
+            string.IsNullOrEmpty(storeName) || string.IsNullOrEmpty(storeAddress))
+        {
+            ErrorMessage = "Session expired. Please start over.";
+            return RedirectToPage("/Account/RegisterType");
+        }
+
+        // Validate password
+        if (!PasswordHelper.IsPasswordMedium(password))
+        {
+            ErrorMessage = "Password must be at least 6 characters";
+            CurrentStep = 3;
+            TempData["OwnerCurrentStep"] = "3";
+            return Page();
+        }
+
+        // Create user
+        var verificationToken = Guid.NewGuid().ToString("N");
+        var user = new User
+        {
+            FullName = fullName,
+            Email = email,
+            StoreName = storeName,
+            StoreAddress = storeAddress,
+            PasswordHash = PasswordHelper.HashPassword(password),
+            IsRenter = false,
+            IsOwner = true,
+            IsAdmin = false,
+            IsEmailVerified = false,
+            EmailVerificationToken = verificationToken,
+            EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24),
+            IdDocumentUrl = idDocumentPath,
+            IdVerified = idVerified,
+            IdVerifiedAt = idVerified ? DateTime.UtcNow : null,
+            AddressVerified = addressVerified,
+            AddressVerifiedAt = addressVerified ? DateTime.UtcNow : null,
+            IdExtractedAddress = idExtractedAddress,
+            IsVerifiedOwner = false, // Requires admin verification
+            VerificationStatus = "Pending",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Cross-check store address with ID address if available
+        if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(storeAddress))
+        {
+            var addressMatch = await _idValidationService.CrossCheckAddressAsync(storeAddress, idExtractedAddress);
+            if (!addressMatch)
+            {
+                Log.Warning("Address mismatch for owner {Email}: Store address='{StoreAddress}', ID address='{IdAddress}'", 
+                    email, storeAddress, idExtractedAddress);
+                // Don't block registration, but log the mismatch
+            }
+        }
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        // Create wallet and points
+        await _walletService.GetOrCreateWalletAsync(user.UserId);
+        await _pointsService.GetOrCreatePointsAsync(user.UserId);
+
+        // Send verification email
+        try
+        {
+            var verificationLink = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(user.Email)}";
+            await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationLink);
+            TempData["SuccessMessage"] = "Registration successful! Please check your email to verify your account. Your owner account will be reviewed by our team.";
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to send verification email to {Email}", user.Email);
+            TempData["ErrorMessage"] = "Account created but failed to send verification email. Please contact support.";
+        }
+
+        return RedirectToPage("/Account/RegistrationSuccess");
     }
 }
 

@@ -37,12 +37,12 @@
                 <div class="auth-step-line @(Model.CurrentStep > 1 ? "completed" : "")"></div>
                 <div class="auth-step @(Model.CurrentStep >= 2 ? "active" : "") @(Model.CurrentStep > 2 ? "completed" : "")">
                     <div class="auth-step-circle">@(Model.CurrentStep > 2 ? "✓" : "2")</div>
-                    <div class="auth-step-label">ID Verify</div>
+                    <div class="auth-step-label">Password</div>
                 </div>
                 <div class="auth-step-line @(Model.CurrentStep > 2 ? "completed" : "")"></div>
                 <div class="auth-step @(Model.CurrentStep >= 3 ? "active" : "")">
                     <div class="auth-step-circle">3</div>
-                    <div class="auth-step-label">Password</div>
+                    <div class="auth-step-label">ID Verify</div>
                 </div>
             </div>
 
@@ -160,13 +160,54 @@
                             <i class="bi bi-arrow-left"></i> Back
                         </a>
                         <button type="submit" name="step" value="1" class="auth-btn-minimal auth-btn-primary">
-                            Next: ID Verification <i class="bi bi-arrow-right"></i>
+                            Next: Set Password <i class="bi bi-arrow-right"></i>
                         </button>
                     </div>
                         }
 
-                <!-- Step 2: ID Verification -->
+                <!-- Step 2: Account Setup (Password) -->
                 @if (Model.CurrentStep == 2)
+                {
+                    <div class="auth-form-group">
+                        <label asp-for="Input.Password" class="auth-form-label">
+                            Password <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper">
+                            <input asp-for="Input.Password" type="password" class="auth-input" 
+                                   placeholder="Enter your password" required autofocus />
+                            <i class="bi bi-lock auth-input-icon"></i>
+                        </div>
+                        <div class="helper-text">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Must be at least 6 characters</span>
+                        </div>
+                        <span asp-validation-for="Input.Password" class="validation-message error"></span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label asp-for="Input.ConfirmPassword" class="auth-form-label">
+                            Confirm Password <span class="required">*</span>
+                        </label>
+                        <div class="auth-input-wrapper">
+                            <input asp-for="Input.ConfirmPassword" type="password" class="auth-input" 
+                                   placeholder="Confirm your password" required />
+                            <i class="bi bi-lock-fill auth-input-icon"></i>
+                        </div>
+                        <span asp-validation-for="Input.ConfirmPassword" class="validation-message error"></span>
+                    </div>
+
+                    <div class="auth-step-buttons">
+                        <button type="submit" name="step" value="back" class="auth-btn-minimal auth-btn-outline" formnovalidate>
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button type="submit" name="step" value="2" class="auth-btn-minimal auth-btn-primary">
+                            Next: ID Verification <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                }
+
+                <!-- Step 3: ID Verification -->
+                @if (Model.CurrentStep == 3)
                 {
                     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
                     {
@@ -266,72 +307,11 @@
                         <button type="submit" name="step" value="back" class="auth-btn-minimal auth-btn-outline" formnovalidate>
                             <i class="bi bi-arrow-left"></i> Back
                         </button>
-                        <button type="submit" name="step" value="2" class="auth-btn-minimal auth-btn-primary">
-                            Next: Account Setup <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
-                }
-
-                <!-- Step 3: Account Setup -->
-                @if (Model.CurrentStep == 3)
-                {
-                    <div class="auth-form-group">
-                        <label asp-for="Input.Password" class="auth-form-label">
-                            Password <span class="required">*</span>
-                        </label>
-                        <div class="auth-input-wrapper" id="passwordWrapper">
-                            <input asp-for="Input.Password" type="password" class="auth-input" 
-                                   placeholder="Create a strong password" 
-                                   required minlength="6" id="passwordInput" 
-                                   autocomplete="new-password" />
-                            <i class="bi bi-lock auth-input-icon"></i>
-                            <button type="button" class="auth-password-toggle" id="togglePassword">
-                                <i class="bi bi-eye" id="togglePasswordIcon"></i>
-                            </button>
-                        </div>
-                        <!-- Password Strength Indicator -->
-                        <div class="auth-password-strength" id="passwordStrength" style="display: none;">
-                            <div class="auth-strength-bar">
-                                <div class="auth-strength-fill" id="strengthFill"></div>
-                            </div>
-                            <div class="auth-strength-text" id="strengthText"></div>
-                        </div>
-                        <div class="helper-text">
-                            <i class="bi bi-shield-check"></i>
-                            <span>Password must be at least 6 characters</span>
-                        </div>
-                        <span asp-validation-for="Input.Password" class="validation-message error"></span>
-                    </div>
-
-                    <div class="auth-form-group">
-                        <label asp-for="Input.ConfirmPassword" class="auth-form-label">
-                            Confirm Password <span class="required">*</span>
-                        </label>
-                        <div class="auth-input-wrapper" id="confirmPasswordWrapper">
-                            <input asp-for="Input.ConfirmPassword" type="password" class="auth-input" 
-                                   placeholder="Re-enter your password" required 
-                                   id="confirmPasswordInput" autocomplete="new-password" />
-                            <i class="bi bi-lock auth-input-icon"></i>
-                            <button type="button" class="auth-password-toggle" id="toggleConfirmPassword">
-                                <i class="bi bi-eye" id="toggleConfirmPasswordIcon"></i>
-                            </button>
-                        </div>
-                        <div class="validation-message error" id="confirmPasswordError" style="display: none;">
-                            <i class="bi bi-exclamation-circle-fill"></i>
-                            <span>Passwords do not match</span>
-                        </div>
-                        <span asp-validation-for="Input.ConfirmPassword" class="validation-message error"></span>
-                    </div>
-
-                    <div class="auth-step-buttons">
-                        <button type="submit" name="step" value="back" class="auth-btn-minimal auth-btn-outline" formnovalidate>
-                            <i class="bi bi-arrow-left"></i> Back
-                        </button>
-                        <button type="submit" name="step" value="3" class="auth-btn-minimal auth-btn-primary">
+                        <button type="submit" name="step" value="3" class="auth-btn-minimal auth-btn-primary" id="step3NextBtn">
                             <i class="bi bi-check-circle"></i> Complete Registration
                         </button>
                     </div>
-                        }
+                }
             </form>
 
             <!-- Footer -->
