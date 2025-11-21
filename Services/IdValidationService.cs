@@ -55,159 +55,120 @@ public class IdValidationService
         // Default to false - will be set to true only if OCR verification passes
         result.IsValid = false;
 
-        // Perform OCR using Google Cloud Vision API
+        // Perform OCR - try OCR.space first (free), then fallback to Google Vision
         try
         {
-            var apiKey = _configuration["AppSettings:GoogleCloudVisionApiKey"];
-            if (string.IsNullOrEmpty(apiKey))
+            // Try OCR.space first (free tier: 25,000 requests/month)
+            var ocrSpaceApiKey = _configuration["AppSettings:OcrSpaceApiKey"] ?? "helloworld"; // Default free key
+            var fullText = await PerformOcrSpaceAsync(idDocument, ocrSpaceApiKey);
+            
+            // If OCR.space fails or returns empty, try Google Vision as fallback
+            if (string.IsNullOrWhiteSpace(fullText) || fullText.Length < 10)
             {
-                Log.Warning("Google Cloud Vision API key not configured. Cannot verify ID.");
+                Log.Information("OCR.space returned insufficient text, trying Google Vision API as fallback");
+                var googleApiKey = _configuration["AppSettings:GoogleCloudVisionApiKey"];
+                if (!string.IsNullOrEmpty(googleApiKey))
+                {
+                    fullText = await PerformGoogleVisionOcrAsync(idDocument, googleApiKey);
+                }
+            }
+            
+            if (string.IsNullOrWhiteSpace(fullText))
+            {
+                Log.Warning("Both OCR services failed to extract text. Cannot verify ID.");
                 result.IsValid = false;
                 result.ErrorMessage = "Please upload a valid ID";
                 return result;
             }
 
-            // Convert image to base64
-            using var memoryStream = new MemoryStream();
-            await idDocument.CopyToAsync(memoryStream);
-            var imageBytes = memoryStream.ToArray();
-            var base64Image = Convert.ToBase64String(imageBytes);
+            // Process the extracted text
+            Log.Information("OCR extracted text from ID: {TextLength} characters. First 200 chars: {TextPreview}", 
+                fullText.Length, fullText.Substring(0, Math.Min(200, fullText.Length)));
 
-            // Call Google Cloud Vision API
-            using var httpClient = new HttpClient();
-            var requestBody = new
+            // Extract information from OCR text
+            result.ExtractedName = ExtractName(fullText);
+            result.ExtractedAddress = ExtractAddress(fullText);
+            result.ExtractedFields = ExtractFields(fullText);
+
+            // Verify if this looks like a real ID document
+            var verificationScore = VerifyIdDocument(fullText, result.ExtractedFields);
+            
+            // Log the verification score and extracted text snippet for debugging
+            Log.Information("ID verification score: {Score}/5, Text length: {Length}, Extracted name: {Name}, Extracted address: {Address}", 
+                verificationScore, fullText.Length, result.ExtractedName ?? "none", result.ExtractedAddress ?? "none");
+            Log.Debug("Full OCR text (first 500 chars): {FullText}", fullText.Substring(0, Math.Min(500, fullText.Length)));
+            
+            if (verificationScore >= 4) // Very high confidence it's a real ID
             {
-                requests = new[]
-                {
-                    new
-                    {
-                        image = new { content = base64Image },
-                        features = new[]
-                        {
-                            new { type = "TEXT_DETECTION", maxResults = 10 }
-                        }
-                    }
-                }
-            };
-
-            var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync(
-                $"https://vision.googleapis.com/v1/images:annotate?key={apiKey}",
-                content);
-
-            if (response.IsSuccessStatusCode)
+                result.IsValid = true;
+                Log.Information("ID validation successful via OCR. Name: {Name}, Address: {Address}, Verification Score: {Score}/5", 
+                    result.ExtractedName, result.ExtractedAddress, verificationScore);
+            }
+            else if (verificationScore >= 3) // High confidence
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var visionResponse = JsonSerializer.Deserialize<VisionApiResponse>(responseContent);
-
-                if (visionResponse?.Responses != null && visionResponse.Responses.Length > 0 && 
-                    visionResponse.Responses[0] != null)
+                result.IsValid = true;
+                Log.Information("ID validation successful via OCR. Verification Score: {Score}/5", verificationScore);
+            }
+            else if (verificationScore >= 2) // Medium confidence - require at least name or address
+            {
+                if (!string.IsNullOrWhiteSpace(result.ExtractedName) || 
+                    !string.IsNullOrWhiteSpace(result.ExtractedAddress))
                 {
-                    var textAnnotations = visionResponse.Responses[0].TextAnnotations;
-                    if (textAnnotations != null && textAnnotations.Length > 0)
-                    {
-                        var fullText = textAnnotations[0].Description ?? "";
-                        Log.Information("OCR extracted text from ID: {TextLength} characters. First 200 chars: {TextPreview}", 
-                            fullText.Length, fullText.Substring(0, Math.Min(200, fullText.Length)));
-
-                        // Extract information from OCR text
-                        result.ExtractedName = ExtractName(fullText);
-                        result.ExtractedAddress = ExtractAddress(fullText);
-                        result.ExtractedFields = ExtractFields(fullText);
-
-                        // Verify if this looks like a real ID document
-                        var verificationScore = VerifyIdDocument(fullText, result.ExtractedFields);
-                        
-                        // Log the verification score and extracted text snippet for debugging
-                        Log.Information("ID verification score: {Score}/5, Text length: {Length}, Extracted name: {Name}, Extracted address: {Address}", 
-                            verificationScore, fullText.Length, result.ExtractedName ?? "none", result.ExtractedAddress ?? "none");
-                        Log.Debug("Full OCR text (first 500 chars): {FullText}", fullText.Substring(0, Math.Min(500, fullText.Length)));
-                        
-                        if (verificationScore >= 4) // Very high confidence it's a real ID
-                        {
-                            result.IsValid = true;
-                            Log.Information("ID validation successful via OCR. Name: {Name}, Address: {Address}, Verification Score: {Score}/5", 
-                                result.ExtractedName, result.ExtractedAddress, verificationScore);
-                        }
-                        else if (verificationScore >= 3) // High confidence
-                        {
-                            result.IsValid = true;
-                            Log.Information("ID validation successful via OCR. Verification Score: {Score}/5", verificationScore);
-                        }
-                        else if (verificationScore >= 2) // Medium confidence - require at least name or address
-                        {
-                            if (!string.IsNullOrWhiteSpace(result.ExtractedName) || 
-                                !string.IsNullOrWhiteSpace(result.ExtractedAddress))
-                            {
-                                result.IsValid = true;
-                                Log.Warning("ID validation passed with medium confidence (Score: {Score}/5). Manual review recommended.", verificationScore);
-                            }
-                            else
-                            {
-                                // Medium score but no name/address extracted - check if text looks reasonable
-                                // If text is substantial and contains typical ID elements, accept it
-                                if (fullText.Length > 50 && HasIdLikeContent(fullText))
-                                {
-                                    result.IsValid = true;
-                                    Log.Warning("ID validation passed with medium score ({Score}/5) but no name/address extracted. Text appears ID-like.", verificationScore);
-                                }
-                                else
-                                {
-                                    result.IsValid = false;
-                                    result.ErrorMessage = "Please upload a valid ID";
-                                    Log.Warning("ID validation failed. Medium score ({Score}/5) but could not extract name or address and text doesn't appear ID-like.", verificationScore);
-                                }
-                            }
-                        }
-                        else if (verificationScore >= 1) // Low confidence but has some ID-like elements
-                        {
-                            // If text is substantial and contains typical ID elements, accept it
-                            if (fullText.Length > 100 && HasIdLikeContent(fullText))
-                            {
-                                result.IsValid = true;
-                                Log.Warning("ID validation passed with low score ({Score}/5) but text appears ID-like. Manual review recommended.", verificationScore);
-                            }
-                            else
-                            {
-                                result.IsValid = false;
-                                result.ErrorMessage = "Please upload a valid ID";
-                                Log.Warning("ID validation failed. Low verification score ({Score}/5). Text: {Text}", 
-                                    verificationScore, fullText.Substring(0, Math.Min(200, fullText.Length)));
-                            }
-                        }
-                        else
-                        {
-                            // Very low confidence - not a valid ID
-                            result.IsValid = false;
-                            result.ErrorMessage = "Please upload a valid ID";
-                            Log.Warning("ID validation failed. Very low verification score ({Score}/5). Text: {Text}", 
-                                verificationScore, fullText.Substring(0, Math.Min(200, fullText.Length)));
-                        }
-                    }
-                    else
-                    {
-                        Log.Warning("OCR did not extract any text from ID document");
-                        // No text extracted - likely not a valid ID document
-                        result.IsValid = false;
-                        result.ErrorMessage = "Please upload a valid ID";
-                    }
+                    result.IsValid = true;
+                    Log.Warning("ID validation passed with medium confidence (Score: {Score}/5). Manual review recommended.", verificationScore);
                 }
                 else
                 {
-                    // Vision API returned empty or null response
-                    Log.Warning("Vision API returned empty or null response");
+                    // Medium score but no name/address extracted - check if text looks reasonable
+                    // If text is substantial and contains typical ID elements, accept it
+                    if (fullText.Length > 50 && HasIdLikeContent(fullText))
+                    {
+                        result.IsValid = true;
+                        Log.Warning("ID validation passed with medium score ({Score}/5) but no name/address extracted. Text appears ID-like.", verificationScore);
+                    }
+                    else
+                    {
+                        result.IsValid = false;
+                        result.ErrorMessage = "Please upload a valid ID";
+                        Log.Warning("ID validation failed. Medium score ({Score}/5) but could not extract name or address and text doesn't appear ID-like.", verificationScore);
+                    }
+                }
+            }
+            else if (verificationScore >= 1) // Low confidence but has some ID-like elements
+            {
+                // If text is substantial and contains typical ID elements, accept it
+                // Also accept if text is reasonable length (50+ chars) and has ID-like content
+                if ((fullText.Length > 100 && HasIdLikeContent(fullText)) ||
+                    (fullText.Length >= 50 && fullText.Length < 100 && HasIdLikeContent(fullText) && verificationScore >= 1))
+                {
+                    result.IsValid = true;
+                    Log.Warning("ID validation passed with low score ({Score}/5) but text appears ID-like. Manual review recommended.", verificationScore);
+                }
+                else
+                {
                     result.IsValid = false;
                     result.ErrorMessage = "Please upload a valid ID";
+                    Log.Warning("ID validation failed. Low verification score ({Score}/5). Text length: {Length}, Text: {Text}", 
+                        verificationScore, fullText.Length, fullText.Substring(0, Math.Min(200, fullText.Length)));
                 }
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Log.Error("Google Vision API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                // API call failed - cannot verify ID, reject it
-                result.IsValid = false;
-                result.ErrorMessage = "Please upload a valid ID";
+                // Very low confidence - but check if text is ID-like despite low score
+                if (fullText.Length >= 20 && HasIdLikeContent(fullText))
+                {
+                    // Text looks ID-like even with low score - might be a valid ID with unusual format
+                    result.IsValid = true;
+                    Log.Warning("ID validation passed with very low score ({Score}/5) but text appears ID-like ({Length} chars). Manual review recommended.", 
+                        verificationScore, fullText.Length);
+                }
+                else
+                {
+                    result.IsValid = false;
+                    result.ErrorMessage = "Please upload a valid ID";
+                    Log.Warning("ID validation failed. Very low verification score ({Score}/5). Text length: {Length}, Text: {Text}", 
+                        verificationScore, fullText.Length, fullText.Substring(0, Math.Min(200, fullText.Length)));
+                }
             }
         }
         catch (Exception ex)
@@ -609,6 +570,152 @@ public class IdValidationService
         
         // Consider it ID-like if it has numbers and letters, and either dates or ID words or field indicators
         return hasNumbers && hasLetters && (hasDates || hasIdWords || hasFieldIndicators);
+    }
+
+    /// <summary>
+    /// Performs OCR using OCR.space API (free tier available)
+    /// </summary>
+    private async Task<string> PerformOcrSpaceAsync(IFormFile idDocument, string apiKey)
+    {
+        try
+        {
+            // Convert image to base64
+            using var memoryStream = new MemoryStream();
+            await idDocument.CopyToAsync(memoryStream);
+            var imageBytes = memoryStream.ToArray();
+            var base64Image = Convert.ToBase64String(imageBytes);
+
+            // Call OCR.space API
+            using var httpClient = new HttpClient();
+            var formData = new MultipartFormDataContent();
+            formData.Add(new StringContent("base64"), "apikey");
+            formData.Add(new StringContent(base64Image), "base64Image");
+            formData.Add(new StringContent("eng"), "language"); // English + auto-detect
+            formData.Add(new StringContent("true"), "isOverlayRequired");
+            formData.Add(new StringContent("true"), "detectOrientation");
+            formData.Add(new StringContent("true"), "scale");
+            formData.Add(new StringContent("true"), "OCREngine");
+
+            // Use free API key if provided, otherwise use default
+            var requestUrl = string.IsNullOrEmpty(apiKey) || apiKey == "helloworld"
+                ? "https://api.ocr.space/parse/image"
+                : $"https://api.ocr.space/parse/image?apikey={apiKey}";
+
+            var response = await httpClient.PostAsync(requestUrl, formData);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var ocrResponse = JsonSerializer.Deserialize<OcrSpaceResponse>(responseContent);
+
+                if (ocrResponse?.ParsedResults != null && ocrResponse.ParsedResults.Length > 0)
+                {
+                    var extractedText = ocrResponse.ParsedResults[0].ParsedText ?? "";
+                    Log.Information("OCR.space extracted {Length} characters", extractedText.Length);
+                    return extractedText;
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Log.Warning("OCR.space API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Error calling OCR.space API");
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Performs OCR using Google Cloud Vision API (fallback)
+    /// </summary>
+    private async Task<string> PerformGoogleVisionOcrAsync(IFormFile idDocument, string apiKey)
+    {
+        try
+        {
+            // Convert image to base64
+            using var memoryStream = new MemoryStream();
+            await idDocument.CopyToAsync(memoryStream);
+            var imageBytes = memoryStream.ToArray();
+            var base64Image = Convert.ToBase64String(imageBytes);
+
+            // Call Google Cloud Vision API
+            using var httpClient = new HttpClient();
+            var requestBody = new
+            {
+                requests = new[]
+                {
+                    new
+                    {
+                        image = new { content = base64Image },
+                        features = new[]
+                        {
+                            new { type = "TEXT_DETECTION", maxResults = 10 }
+                        }
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync(
+                $"https://vision.googleapis.com/v1/images:annotate?key={apiKey}",
+                content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var visionResponse = JsonSerializer.Deserialize<VisionApiResponse>(responseContent);
+
+                if (visionResponse?.Responses != null && visionResponse.Responses.Length > 0 && 
+                    visionResponse.Responses[0] != null)
+                {
+                    var textAnnotations = visionResponse.Responses[0].TextAnnotations;
+                    if (textAnnotations != null && textAnnotations.Length > 0)
+                    {
+                        var extractedText = textAnnotations[0].Description ?? "";
+                        Log.Information("Google Vision API extracted {Length} characters", extractedText.Length);
+                        return extractedText;
+                    }
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Log.Warning("Google Vision API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Error calling Google Vision API");
+        }
+
+        return string.Empty;
+    }
+
+    // OCR.space API response models
+    private class OcrSpaceResponse
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("ParsedResults")]
+        public OcrSpaceParsedResult[]? ParsedResults { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("OCRExitCode")]
+        public int? OcrExitCode { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("ErrorMessage")]
+        public string[]? ErrorMessage { get; set; }
+    }
+
+    private class OcrSpaceParsedResult
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("ParsedText")]
+        public string? ParsedText { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("TextOverlay")]
+        public object? TextOverlay { get; set; }
     }
 
     // Google Vision API response models
