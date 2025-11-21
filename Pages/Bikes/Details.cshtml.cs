@@ -6,6 +6,7 @@ using BiketaBai.Models;
 using BiketaBai.Services;
 using BiketaBai.Helpers;
 using System.ComponentModel.DataAnnotations;
+using Serilog;
 
 namespace BiketaBai.Pages.Bikes;
 
@@ -153,15 +154,29 @@ public class DetailsModel : PageModel
                     // Handle OTP sending
                     if (Request.Form.ContainsKey("sendOtp"))
                     {
-                        var otpSent = await _otpService.GenerateAndSendOtpAsync(user.Phone);
-                        if (otpSent)
+                        try
                         {
-                            TempData["SuccessMessage"] = "OTP code sent to your phone! Please check your SMS.";
+                            Log.Information("Details: Attempting to send OTP to {PhoneNumber} for user {UserId}", user.Phone, userId.Value);
+                            var otpSent = await _otpService.GenerateAndSendOtpAsync(user.Phone);
+                            if (otpSent)
+                            {
+                                TempData["SuccessMessage"] = "OTP code sent to your phone! Please check your SMS.";
+                                Log.Information("Details: OTP sent successfully to {PhoneNumber}", user.Phone);
+                            }
+                            else
+                            {
+                                TempData["ErrorMessage"] = "Failed to send OTP. Please check your phone number and try again. If the problem persists, contact support.";
+                                Log.Warning("Details: Failed to send OTP to {PhoneNumber}", user.Phone);
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            TempData["ErrorMessage"] = "Failed to send OTP. Please try again.";
+                            Log.Error(ex, "Details: Error sending OTP to {PhoneNumber}", user.Phone);
+                            TempData["ErrorMessage"] = $"Error sending OTP: {ex.Message}. Please try again or contact support.";
                         }
+                        RequiresPhoneVerification = true;
+                        UserPhone = user.Phone;
+                        await LoadBikeDataAsync(id);
                         return Page();
                     }
 

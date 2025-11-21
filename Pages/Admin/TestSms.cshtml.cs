@@ -72,21 +72,24 @@ public class TestSmsModel : PageModel
 
         try
         {
+            Log.Information("TestSms: Attempting to send OTP to {PhoneNumber}", PhoneNumber);
             var success = await _otpService.GenerateAndSendOtpAsync(PhoneNumber);
             
             if (success)
             {
                 SuccessMessage = $"OTP code sent successfully to {PhoneNumber}! Check your phone for the 6-digit code.";
+                Log.Information("TestSms: OTP sent successfully to {PhoneNumber}", PhoneNumber);
             }
             else
             {
-                ErrorMessage = "Failed to send OTP. Please check the logs for details.";
+                ErrorMessage = "Failed to send OTP. Please check the logs for details. Make sure the iProgSMS API token is configured correctly in appsettings.json.";
+                Log.Warning("TestSms: Failed to send OTP to {PhoneNumber}", PhoneNumber);
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error in TestSms page");
-            ErrorMessage = $"Error: {ex.Message}";
+            Log.Error(ex, "Error in TestSms page when sending OTP to {PhoneNumber}", PhoneNumber);
+            ErrorMessage = $"Error: {ex.Message}. Check the logs for more details.";
         }
 
         return Page();
