@@ -412,14 +412,7 @@ public class RegisterOwnerModel : PageModel
                 Log.Warning("OCR did not extract name or address from ID. Manual verification may be required.");
             }
 
-            TempData["OwnerIdDocumentFront"] = idDocumentFrontPath;
-            TempData["OwnerIdDocumentBack"] = idDocumentBackPath;
-            TempData["OwnerBusinessLicense"] = businessLicensePath;
-            TempData["OwnerIdExtractedAddress"] = extractedAddress ?? "";
-            TempData["OwnerIdExtractedName"] = extractedName ?? "";
-            TempData["OwnerIdVerified"] = isVerified ? "true" : "pending";
-            
-            // Get password from TempData
+            // Get password from TempData before storing ID data (to preserve it)
             var password = TempData["OwnerPassword"]?.ToString() ?? "";
             if (string.IsNullOrEmpty(password))
             {
@@ -429,35 +422,66 @@ public class RegisterOwnerModel : PageModel
                 return Page();
             }
 
-            // Proceed to create account
-            return await CreateOwnerAccountAsync(password);
+            // Keep all TempData values to ensure they persist
+            TempData.Keep("OwnerFullName");
+            TempData.Keep("OwnerEmail");
+            TempData.Keep("OwnerStoreName");
+            TempData.Keep("OwnerStoreAddress");
+            TempData.Keep("OwnerAddressVerified");
+            TempData.Keep("OwnerPassword");
+
+            TempData["OwnerIdDocumentFront"] = idDocumentFrontPath;
+            TempData["OwnerIdDocumentBack"] = idDocumentBackPath;
+            TempData["OwnerBusinessLicense"] = businessLicensePath;
+            TempData["OwnerIdExtractedAddress"] = extractedAddress ?? "";
+            TempData["OwnerIdExtractedName"] = extractedName ?? "";
+            TempData["OwnerIdVerified"] = isVerified ? "true" : "pending";
+
+            // Proceed to create account - pass all required data directly
+            return await CreateOwnerAccountAsync(
+                password: password,
+                fullName: TempData["OwnerFullName"]?.ToString() ?? "",
+                email: TempData["OwnerEmail"]?.ToString() ?? "",
+                storeName: TempData["OwnerStoreName"]?.ToString() ?? "",
+                storeAddress: TempData["OwnerStoreAddress"]?.ToString() ?? "",
+                idDocumentFrontPath: idDocumentFrontPath,
+                idDocumentBackPath: idDocumentBackPath,
+                idExtractedAddress: extractedAddress ?? "",
+                addressVerified: TempData["OwnerAddressVerified"]?.ToString() == "true",
+                idVerified: isVerified
+            );
         }
 
         return Page();
     }
 
-    private async Task<IActionResult> CreateOwnerAccountAsync(string password)
+    private async Task<IActionResult> CreateOwnerAccountAsync(
+        string password,
+        string fullName,
+        string email,
+        string storeName,
+        string storeAddress,
+        string idDocumentFrontPath,
+        string? idDocumentBackPath,
+        string? idExtractedAddress,
+        bool addressVerified,
+        bool idVerified)
     {
-        // Retrieve data from TempData
-        var fullName = TempData["OwnerFullName"]?.ToString();
-        var email = TempData["OwnerEmail"]?.ToString();
-        var storeName = TempData["OwnerStoreName"]?.ToString();
-        var storeAddress = TempData["OwnerStoreAddress"]?.ToString();
-        var idDocumentFrontPath = TempData["OwnerIdDocumentFront"]?.ToString();
-        var idDocumentBackPath = TempData["OwnerIdDocumentBack"]?.ToString();
-        var idExtractedAddress = TempData["OwnerIdExtractedAddress"]?.ToString();
-        var addressVerified = TempData["OwnerAddressVerified"]?.ToString() == "true";
-        var idVerified = TempData["OwnerIdVerified"]?.ToString() == "true";
-        
-        // Store front as primary ID document
-        var idDocumentPath = idDocumentFrontPath;
-
+        // Validate required parameters
         if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || 
-            string.IsNullOrEmpty(storeName) || string.IsNullOrEmpty(storeAddress))
+            string.IsNullOrEmpty(storeName) || string.IsNullOrEmpty(storeAddress) ||
+            string.IsNullOrEmpty(idDocumentFrontPath))
         {
+            Log.Error("Missing required data for owner account creation. FullName: {HasFullName}, Email: {HasEmail}, StoreName: {HasStoreName}, StoreAddress: {HasStoreAddress}, IdDocument: {HasIdDocument}",
+                !string.IsNullOrEmpty(fullName), !string.IsNullOrEmpty(email), 
+                !string.IsNullOrEmpty(storeName), !string.IsNullOrEmpty(storeAddress),
+                !string.IsNullOrEmpty(idDocumentFrontPath));
             ErrorMessage = "Session expired. Please start over.";
             return RedirectToPage("/Account/RegisterType");
         }
+        
+        // Store front as primary ID document
+        var idDocumentPath = idDocumentFrontPath;
 
         // Validate password
         if (!PasswordHelper.IsPasswordMedium(password))
