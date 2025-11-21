@@ -213,13 +213,7 @@ public class RegisterOwnerModel : PageModel
                 return RedirectToPage();
             }
 
-            // Validate file sizes (max 5MB each)
-            if (IdDocumentFront.Length > 5 * 1024 * 1024 || IdDocumentBack.Length > 5 * 1024 * 1024)
-            {
-                TempData["OwnerErrorMessage"] = "ID photos must be less than 5MB each";
-                TempData["OwnerCurrentStep"] = "2";
-                return RedirectToPage();
-            }
+            // Compress images automatically if they're too large (no size limit, auto-compress to 5MB)
 
             // Validate file types (images only, no PDF for camera capture)
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
@@ -233,25 +227,53 @@ public class RegisterOwnerModel : PageModel
                 return RedirectToPage();
             }
 
-            // Save ID documents
+            // Compress and save ID documents
             var uploadsDir = Path.Combine(_environment.WebRootPath, "uploads", "id-documents");
             Directory.CreateDirectory(uploadsDir);
             
-            // Save front
+            // Compress and save front
             var frontFileName = $"{Guid.NewGuid()}_front{frontExtension}";
             var frontFilePath = Path.Combine(uploadsDir, frontFileName);
-            using (var stream = new FileStream(frontFilePath, FileMode.Create))
+            byte[] frontCompressedBytes;
+            try
             {
-                await IdDocumentFront.CopyToAsync(stream);
+                frontCompressedBytes = await ImageCompressionHelper.CompressFormFileAsync(IdDocumentFront);
+                await System.IO.File.WriteAllBytesAsync(frontFilePath, frontCompressedBytes);
+                Log.Information("Compressed ID front: Original {OriginalSize} bytes -> Compressed {CompressedSize} bytes", 
+                    IdDocumentFront.Length, frontCompressedBytes.Length);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error compressing front ID image. Saving original.");
+                // Fallback: save original if compression fails
+                using (var stream = new FileStream(frontFilePath, FileMode.Create))
+                {
+                    await IdDocumentFront.CopyToAsync(stream);
+                }
+                frontCompressedBytes = await System.IO.File.ReadAllBytesAsync(frontFilePath);
             }
             var idDocumentFrontPath = $"/uploads/id-documents/{frontFileName}";
 
-            // Save back
+            // Compress and save back
             var backFileName = $"{Guid.NewGuid()}_back{backExtension}";
             var backFilePath = Path.Combine(uploadsDir, backFileName);
-            using (var stream = new FileStream(backFilePath, FileMode.Create))
+            byte[] backCompressedBytes;
+            try
             {
-                await IdDocumentBack.CopyToAsync(stream);
+                backCompressedBytes = await ImageCompressionHelper.CompressFormFileAsync(IdDocumentBack);
+                await System.IO.File.WriteAllBytesAsync(backFilePath, backCompressedBytes);
+                Log.Information("Compressed ID back: Original {OriginalSize} bytes -> Compressed {CompressedSize} bytes", 
+                    IdDocumentBack.Length, backCompressedBytes.Length);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error compressing back ID image. Saving original.");
+                // Fallback: save original if compression fails
+                using (var stream = new FileStream(backFilePath, FileMode.Create))
+                {
+                    await IdDocumentBack.CopyToAsync(stream);
+                }
+                backCompressedBytes = await System.IO.File.ReadAllBytesAsync(backFilePath);
             }
             var idDocumentBackPath = $"/uploads/id-documents/{backFileName}";
 
