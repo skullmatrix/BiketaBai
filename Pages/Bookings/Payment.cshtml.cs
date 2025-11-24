@@ -25,6 +25,8 @@ public class PaymentModel : PageModel
     public decimal WalletBalance { get; set; }
     public string? ErrorMessage { get; set; }
     public string? SuccessMessage { get; set; }
+    public Payment? ExistingPayment { get; set; }
+    public int? CurrentPaymentMethodId { get; set; }
 
     [BindProperty]
     public int PaymentMethodId { get; set; } = 1;
@@ -40,12 +42,24 @@ public class PaymentModel : PageModel
                 .ThenInclude(bike => bike.BikeType)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
+            .Include(b => b.Payments)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
         if (Booking == null)
             return NotFound();
 
         WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
+
+        // Check for existing pending payment
+        ExistingPayment = Booking.Payments
+            .OrderByDescending(p => p.PaymentDate)
+            .FirstOrDefault(p => p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed");
+
+        if (ExistingPayment != null)
+        {
+            CurrentPaymentMethodId = ExistingPayment.PaymentMethodId;
+            PaymentMethodId = ExistingPayment.PaymentMethodId; // Pre-select current method
+        }
 
         return Page();
     }
@@ -61,12 +75,33 @@ public class PaymentModel : PageModel
                 .ThenInclude(bike => bike.BikeType)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
+            .Include(b => b.Payments)
+                .ThenInclude(p => p.PaymentMethod)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
         if (Booking == null)
             return NotFound();
 
         WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
+
+        // Check for existing pending payment
+        ExistingPayment = Booking.Payments
+            .OrderByDescending(p => p.PaymentDate)
+            .FirstOrDefault(p => p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed");
+
+        // If user is changing payment method and there's a pending payment, cancel it
+        if (ExistingPayment != null && ExistingPayment.PaymentMethodId != PaymentMethodId)
+        {
+            // Cancel/void the existing pending payment
+            if (ExistingPayment.PaymentStatus == "Pending" && !string.IsNullOrEmpty(ExistingPayment.TransactionReference))
+            {
+                // For gateway payments, we can mark as cancelled
+                // The gateway will handle expiry
+                ExistingPayment.PaymentStatus = "Cancelled";
+                ExistingPayment.Notes = $"Cancelled - user changed to payment method {PaymentMethodId}";
+                await _context.SaveChangesAsync();
+            }
+        }
 
         // Handle different payment methods
         if (PaymentMethodId == 1) // Wallet

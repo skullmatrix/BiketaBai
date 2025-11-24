@@ -283,6 +283,11 @@ public class PaymentService
                 _ => "gcash"
             };
 
+            // Get renter email for Xendit invoice
+            var renter = await _context.Users.FindAsync(booking.RenterId);
+            var renterEmail = renter?.Email ?? "";
+            var renterName = renter?.FullName ?? "Customer";
+
             var paymentIntent = await _paymentGatewayService.CreatePaymentIntentAsync(
                 amount,
                 "PHP",
@@ -291,7 +296,9 @@ public class PaymentService
                 new Dictionary<string, string>
                 {
                     { "booking_id", bookingId.ToString() },
-                    { "renter_id", booking.RenterId.ToString() }
+                    { "renter_id", booking.RenterId.ToString() },
+                    { "customer_email", renterEmail },
+                    { "customer_name", renterName }
                 }
             );
 

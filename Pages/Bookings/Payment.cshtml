@@ -72,13 +72,25 @@
                             <div class="alert alert-success">@Model.SuccessMessage</div>
                         }
 
+                        @if (Model.ExistingPayment != null)
+                        {
+                            <div class="alert alert-warning">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Current Payment Method:</strong> 
+                                @Model.ExistingPayment.PaymentMethod.MethodName 
+                                (@Model.ExistingPayment.PaymentStatus)
+                                <br />
+                                <small>You can change your payment method below. The previous payment will be cancelled.</small>
+                            </div>
+                        }
+
                         <!-- Payment Methods -->
                         <h5 class="mb-3">Select Payment Method</h5>
 
                         <form method="post">
                             <div class="list-group mb-4">
                                 <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="1" checked />
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 || (Model.CurrentPaymentMethodId == null && Model.PaymentMethodId == 1) ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-wallet2 fs-3 me-3 text-eco-green"></i>
                                         <div>
@@ -94,7 +106,7 @@
                                     </div>
                                 </label>
                                 <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="2" />
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="2" @(Model.PaymentMethodId == 2 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-phone fs-3 me-3 text-primary"></i>
                                         <div>
@@ -105,7 +117,7 @@
                                     </div>
                                 </label>
                                 <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="3" />
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="3" @(Model.PaymentMethodId == 3 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-qr-code fs-3 me-3 text-info"></i>
                                         <div>
@@ -116,7 +128,7 @@
                                     </div>
                                 </label>
                                 <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="5" />
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="5" @(Model.PaymentMethodId == 5 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-phone fs-3 me-3" style="color: #00D9FF;"></i>
                                         <div>
@@ -127,7 +139,7 @@
                                     </div>
                                 </label>
                                 <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="6" />
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="6" @(Model.PaymentMethodId == 6 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-credit-card fs-3 me-3 text-warning"></i>
                                         <div>
@@ -138,7 +150,7 @@
                                     </div>
                                 </label>
                                 <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="4" />
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="4" @(Model.PaymentMethodId == 4 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-cash fs-3 me-3 text-success"></i>
                                         <div>

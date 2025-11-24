@@ -52,19 +52,24 @@ public class PaymentGatewayService
                 };
             }
 
-            // Map payment method type to Xendit channel
-            var channel = paymentMethodType.ToLower() switch
+            // Map payment method type to Xendit channels
+            // Xendit supports multiple payment methods in one invoice
+            var enabledChannels = paymentMethodType.ToLower() switch
             {
-                "gcash" => "GCASH",
-                "paymaya" => "PAYMAYA",
-                "qrph" => "QRIS", // Xendit uses QRIS for QR codes
-                _ => "GCASH"
+                "gcash" => new[] { "GCASH" },
+                "paymaya" => new[] { "PAYMAYA" },
+                "qrph" => new[] { "QRIS" }, // Xendit uses QRIS for QR codes
+                _ => new[] { "GCASH", "PAYMAYA", "QRIS" } // Default: enable all
             };
 
-            // Create invoice for e-wallet payments
+            // Get base URL for redirects
+            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000";
+            var bookingId = metadata?.GetValueOrDefault("booking_id", "");
+            
+            // Create invoice for e-wallet payments (GCash, PayMaya, QRPH)
             var payload = new
             {
-                external_id = $"booking_{metadata?.GetValueOrDefault("booking_id", Guid.NewGuid().ToString())}",
+                external_id = $"booking_{bookingId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
                 amount = (double)amount,
                 description = description,
                 invoice_duration = 3600, // 1 hour expiry
@@ -80,8 +85,8 @@ public class PaymentGatewayService
                     invoice_paid = new[] { "email", "sms" },
                     invoice_expired = new[] { "email", "sms" }
                 },
-                success_redirect_url = metadata?.GetValueOrDefault("success_url", ""),
-                failure_redirect_url = metadata?.GetValueOrDefault("failure_url", ""),
+                success_redirect_url = $"{baseUrl}/Bookings/PaymentGateway?bookingId={bookingId}&action=confirm",
+                failure_redirect_url = $"{baseUrl}/Bookings/Payment?bookingId={bookingId}",
                 currency = currency,
                 items = new[]
                 {
@@ -92,20 +97,14 @@ public class PaymentGatewayService
                         price = (double)amount
                     }
                 },
-                fees = new[]
-                {
-                    new
-                    {
-                        type = channel,
-                        value = 0 // Fees handled separately
-                    }
-                }
+                // Enable specific payment channels
+                enabled_payment_methods = enabledChannels
             };
 
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            Log.Information("Creating Xendit invoice: Amount={Amount}, Channel={Channel}", amount, channel);
+            Log.Information("Creating Xendit invoice: Amount={Amount}, Channels={Channels}", amount, string.Join(", ", enabledChannels));
 
             var response = await _httpClient.PostAsync("/v2/invoices", content);
             var responseContent = await response.Content.ReadAsStringAsync();

@@ -43,7 +43,7 @@ public class PaymentGatewayModel : PageModel
         public string Cvc { get; set; } = string.Empty;
     }
 
-    public async Task<IActionResult> OnGetAsync(int bookingId, string? paymentIntentId)
+    public async Task<IActionResult> OnGetAsync(int bookingId, string? paymentIntentId, string? action)
     {
         var userId = AuthHelper.GetCurrentUserId(User);
         if (!userId.HasValue)
@@ -58,6 +58,54 @@ public class PaymentGatewayModel : PageModel
 
         if (Booking == null)
             return NotFound();
+
+        // Handle redirect from Xendit after payment
+        if (action == "confirm")
+        {
+            // Get invoice ID from query string (Xendit passes it as invoice_id)
+            var invoiceId = Request.Query["invoice_id"].FirstOrDefault() 
+                ?? paymentIntentId 
+                ?? TempData["PaymentIntentId"]?.ToString();
+            
+            if (!string.IsNullOrEmpty(invoiceId))
+            {
+                // Confirm payment
+                var result = await _paymentService.ConfirmGatewayPaymentAsync(invoiceId);
+                
+                if (result.success)
+                {
+                    TempData["SuccessMessage"] = "Payment confirmed successfully!";
+                    return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.message;
+                    return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
+                }
+            }
+            else
+            {
+                // If no invoice ID, try to find the latest pending payment for this booking
+                var latestPayment = await _context.Payments
+                    .Where(p => p.BookingId == bookingId && p.PaymentStatus == "Pending")
+                    .OrderByDescending(p => p.PaymentDate)
+                    .FirstOrDefaultAsync();
+                
+                if (latestPayment != null && !string.IsNullOrEmpty(latestPayment.TransactionReference))
+                {
+                    var result = await _paymentService.ConfirmGatewayPaymentAsync(latestPayment.TransactionReference);
+                    
+                    if (result.success)
+                    {
+                        TempData["SuccessMessage"] = "Payment confirmed successfully!";
+                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                    }
+                }
+                
+                TempData["ErrorMessage"] = "Could not find payment information. Please try again.";
+                return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
+            }
+        }
 
         PaymentIntentId = paymentIntentId ?? TempData["PaymentIntentId"]?.ToString();
         ClientKey = TempData["ClientKey"]?.ToString();
