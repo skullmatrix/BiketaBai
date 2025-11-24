@@ -317,50 +317,10 @@ else
                                             </div>
                                         </div>
 
-                                        @if (Model.RequiresPhoneVerification)
-                                        {
-                                            <div class="alert alert-warning-compact" role="alert" style="background: #fff3cd; border-color: #ffc107; color: #856404; margin-bottom: 1rem;">
-                                                <i class="bi bi-shield-lock"></i>
-                                                <div>
-                                                    <strong>Phone Verification Required</strong>
-                                                    <p>As a first-time renter, please verify your phone number <strong>@Model.UserPhone</strong> to complete your booking.</p>
-                                                </div>
-                                            </div>
-
-                                            <div class="form-group" style="margin-bottom: 1rem;">
-                                                <label for="OtpCode" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
-                                                    <i class="bi bi-key"></i> Verification Code
-                                                </label>
-                                                <input type="text" 
-                                                       asp-for="OtpCode" 
-                                                       class="input-sage" 
-                                                       placeholder="Enter 6-digit code" 
-                                                       maxlength="6" 
-                                                       pattern="[0-9]{6}" 
-                                                       required 
-                                                       autocomplete="off" 
-                                                       style="text-align: center; font-size: 1.25rem; letter-spacing: 0.5rem;" />
-                                                <small style="display: block; margin-top: 0.5rem; color: #6c757d;">
-                                                    <i class="bi bi-info-circle"></i> Code expires in 10 minutes
-                                                </small>
-                                            </div>
-
-                                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                                                <button type="submit" name="sendOtp" value="true" class="btn btn-outline-secondary" style="flex: 1;">
-                                                    <i class="bi bi-arrow-clockwise"></i> Resend Code
-                                                </button>
-                                                <button type="submit" class="btn-sage-primary" style="flex: 2;">
-                                                    <i class="bi bi-shield-check"></i> Verify & Book
-                                                </button>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <button type="submit" class="btn-sage-primary btn-booking">
-                                                <i class="bi bi-calendar-check"></i>
-                                                <span>Reserve Now</span>
-                                            </button>
-                                        }
+                                        <button type="submit" class="btn-sage-primary btn-booking">
+                                            <i class="bi bi-calendar-check"></i>
+                                            <span>Reserve Now</span>
+                                        </button>
                                         
                                         <div class="booking-note">
                                             <i class="bi bi-shield-check"></i>

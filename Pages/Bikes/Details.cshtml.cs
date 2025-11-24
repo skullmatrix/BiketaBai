@@ -32,11 +32,6 @@ public class DetailsModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
-    [BindProperty]
-    public string? OtpCode { get; set; }
-
-    public bool RequiresPhoneVerification { get; set; } = false;
-    public string? UserPhone { get; set; }
 
     public class InputModel
     {
@@ -99,39 +94,13 @@ public class DetailsModel : PageModel
         if (!Input.EndDate.HasValue)
             Input.EndDate = DateTime.Now.AddDays(1);
 
-        // Check if user needs phone verification (for first-time renters)
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            var userId = AuthHelper.GetCurrentUserId(User);
-            if (userId.HasValue && AuthHelper.IsRenter(User))
-            {
-                var user = await _context.Users.FindAsync(userId.Value);
-                if (user != null && !string.IsNullOrWhiteSpace(user.Phone))
-                {
-                    // Check if user has any completed bookings
-                    var hasCompletedBooking = await _context.Bookings
-                        .AnyAsync(b => b.RenterId == userId.Value && b.BookingStatusId == 3); // 3 = Completed
-
-                    if (!hasCompletedBooking)
-                    {
-                        // Check if phone is already verified
-                        var hasVerifiedOtp = await _context.PhoneOtps
-                            .AnyAsync(o => o.PhoneNumber == user.Phone && o.IsVerified && o.VerifiedAt.HasValue);
-
-                        if (!hasVerifiedOtp)
-                        {
-                            RequiresPhoneVerification = true;
-                            UserPhone = user.Phone;
-                        }
-                    }
-                }
-            }
-        }
+        // Note: Phone verification is now handled on a separate page
+        // If user needs verification, they'll be redirected when trying to book
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int id, string? sendOtp)
+    public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!User.Identity?.IsAuthenticated == true)
             return RedirectToPage("/Account/Login", new { returnUrl = $"/Bikes/Details/{id}" });
@@ -176,63 +145,10 @@ public class DetailsModel : PageModel
 
                 if (!hasVerifiedOtp)
                 {
-                    // Require phone verification
-                    RequiresPhoneVerification = true;
-                    UserPhone = user.Phone;
-
-                    // Handle OTP sending - check both form key and parameter
-                    if (!string.IsNullOrEmpty(sendOtp) || Request.Form.ContainsKey("sendOtp"))
-                    {
-                        try
-                        {
-                            Log.Information("Details: Attempting to send OTP to {PhoneNumber} for user {UserId}", user.Phone, userId.Value);
-                            var otpSent = await _otpService.GenerateAndSendOtpAsync(user.Phone);
-                            if (otpSent)
-                            {
-                                TempData["SuccessMessage"] = "OTP code sent to your phone! Please check your SMS.";
-                                Log.Information("Details: OTP sent successfully to {PhoneNumber}", user.Phone);
-                            }
-                            else
-                            {
-                                TempData["ErrorMessage"] = "Failed to send OTP. Please check your phone number and try again. If the problem persists, contact support.";
-                                Log.Warning("Details: Failed to send OTP to {PhoneNumber}", user.Phone);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex, "Details: Error sending OTP to {PhoneNumber}", user.Phone);
-                            TempData["ErrorMessage"] = $"Error sending OTP: {ex.Message}. Please try again or contact support.";
-                        }
-                        RequiresPhoneVerification = true;
-                        UserPhone = user.Phone;
-                        await LoadBikeDataAsync(id);
-                        return Page();
-                    }
-
-                    // Handle OTP verification
-                    if (!string.IsNullOrWhiteSpace(OtpCode))
-                    {
-                        var isValid = await _otpService.VerifyOtpAsync(user.Phone, OtpCode);
-                        if (!isValid)
-                        {
-                            TempData["ErrorMessage"] = "Invalid or expired OTP code. Please try again.";
-                            RequiresPhoneVerification = true;
-                            UserPhone = user.Phone;
-                            // Preserve dates
-                            await LoadBikeDataAsync(id);
-                            return Page();
-                        }
-                        // OTP verified - continue with booking (fall through to booking creation)
-                    }
-                    else
-                    {
-                        // Show OTP verification form
-                        RequiresPhoneVerification = true;
-                        UserPhone = user.Phone;
-                        // Preserve dates
-                        await LoadBikeDataAsync(id);
-                        return Page();
-                    }
+                    // Redirect to phone verification page with return URL
+                    var returnUrl = $"/Bikes/Details/{id}";
+                    TempData["ErrorMessage"] = "Please verify your phone number to complete your first booking.";
+                    return RedirectToPage("/Account/VerifyPhone", new { returnUrl });
                 }
             }
         }

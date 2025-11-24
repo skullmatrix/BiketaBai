@@ -1,0 +1,133 @@
+@page
+@model BiketaBai.Pages.Account.VerifyPhoneModel
+@{
+    ViewData["Title"] = "Verify Phone Number";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth-minimal.css" asp-append-version="true" />
+</head>
+<body>
+<div class="auth-container-minimal">
+    <div class="auth-card-minimal">
+        <!-- Header -->
+        <div class="auth-header-minimal">
+            <div class="auth-logo-minimal">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <h1>Verify Phone Number</h1>
+            <p>Enter the verification code sent to your phone</p>
+        </div>
+
+        <!-- Alert Messages -->
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="auth-alert-minimal" style="background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;">
+                <i class="bi bi-check-circle-fill"></i>
+                <div class="alert-content">
+                    <strong>Success</strong>
+                    <p>@Model.SuccessMessage</p>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="auth-alert-minimal error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div class="alert-content">
+                    <strong>Error</strong>
+                    <p>@Model.ErrorMessage</p>
+                </div>
+            </div>
+        }
+
+        <!-- Phone Number Display -->
+        @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+        {
+            <div class="auth-alert-minimal" style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e40af; margin-bottom: 1.5rem;">
+                <i class="bi bi-phone"></i>
+                <div class="alert-content">
+                    <strong>Verifying:</strong>
+                    <p>@Model.PhoneNumber</p>
+                </div>
+            </div>
+        }
+
+        <!-- OTP Verification Form -->
+        <form method="post" asp-page-handler="Verify">
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+            
+            <div class="auth-form-group">
+                <label for="OtpCode" class="auth-form-label">
+                    Verification Code <span class="required">*</span>
+                </label>
+                <div class="auth-input-wrapper">
+                    <input asp-for="OtpCode" 
+                           type="text" 
+                           class="auth-input" 
+                           placeholder="Enter 6-digit code" 
+                           maxlength="6" 
+                           pattern="[0-9]{6}" 
+                           required 
+                           autofocus 
+                           autocomplete="off"
+                           style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 600;" />
+                    <i class="bi bi-key auth-input-icon"></i>
+                </div>
+                <div class="helper-text">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Code expires in 10 minutes</span>
+                </div>
+                <span asp-validation-for="OtpCode" class="validation-message error"></span>
+            </div>
+
+            <div class="auth-step-buttons">
+                <button type="submit" asp-page-handler="SendOtp" class="auth-btn-minimal auth-btn-outline" formnovalidate>
+                    <i class="bi bi-arrow-clockwise"></i> Resend Code
+                </button>
+                <button type="submit" class="auth-btn-minimal auth-btn-primary">
+                    <i class="bi bi-shield-check"></i> Verify
+                </button>
+            </div>
+        </form>
+
+        <!-- Footer -->
+        <div class="auth-footer-minimal">
+            @if (!string.IsNullOrEmpty(Model.ReturnUrl))
+            {
+                <p><a href="@Model.ReturnUrl" class="auth-link">← Back to booking</a></p>
+            }
+            else
+            {
+                <p><a href="/" class="auth-link">← Back to home</a></p>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-focus on OTP input
+    document.addEventListener('DOMContentLoaded', function() {
+        const otpInput = document.querySelector('input[name="OtpCode"]');
+        if (otpInput) {
+            otpInput.focus();
+        }
+    });
+
+    // Format OTP input (numbers only)
+    document.querySelector('input[name="OtpCode"]')?.addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+</script>
+</body>
+</html>
