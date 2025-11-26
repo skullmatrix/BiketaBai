@@ -93,18 +93,53 @@ public class RegisterOwnerModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Check if we have a current step in TempData (check this first before consuming TempData)
+        var hasCurrentStep = TempData.ContainsKey("OwnerCurrentStep");
+        
+        // Restore step from TempData if available
+        if (hasCurrentStep)
+        {
+            CurrentStep = int.TryParse(TempData["OwnerCurrentStep"]?.ToString(), out var step) ? step : 1;
+            TempData.Keep("OwnerCurrentStep");
+        }
+
         // Check if coming from type selection
         var registrationType = TempData["RegistrationType"]?.ToString();
-        if (registrationType != "Owner")
+        
+        // If we have a current step set (step > 1 or we had it in TempData), we're in the middle of registration
+        // This handles the case where ID validation fails and we redirect back
+        if (CurrentStep > 1 || hasCurrentStep)
+        {
+            // We're in the middle of registration, ensure RegistrationType is set
+            if (string.IsNullOrEmpty(registrationType))
+            {
+                // If RegistrationType is missing but we have a step, set it to Owner
+                registrationType = "Owner";
+                TempData["RegistrationType"] = "Owner";
+            }
+            else
+            {
+                TempData.Keep("RegistrationType");
+            }
+        }
+        else if (!string.IsNullOrEmpty(registrationType))
+        {
+            // Keep RegistrationType in TempData so it persists across redirects
+            TempData.Keep("RegistrationType");
+        }
+        
+        // Only redirect to type selection if we're on step 1 and registration type is wrong or missing
+        if (CurrentStep == 1 && string.IsNullOrEmpty(registrationType))
         {
             // Redirect to type selection if not coming from there
             return RedirectToPage("/Account/RegisterType");
         }
 
-        // Restore step from TempData if available
-        if (TempData.ContainsKey("OwnerCurrentStep"))
+        // If we have a step > 1, we're definitely in registration, so don't redirect
+        if (CurrentStep > 1 && registrationType != "Owner")
         {
-            CurrentStep = int.TryParse(TempData["OwnerCurrentStep"]?.ToString(), out var step) ? step : 1;
+            // Ensure RegistrationType is set correctly
+            TempData["RegistrationType"] = "Owner";
         }
 
         // Restore step 1 data if on step 1
@@ -124,9 +159,12 @@ public class RegisterOwnerModel : PageModel
         }
 
         // Check for error messages from TempData (from POST redirect)
+        // Don't keep error messages - they should only display once
         if (TempData.ContainsKey("OwnerErrorMessage"))
         {
             ErrorMessage = TempData["OwnerErrorMessage"]?.ToString();
+            // Explicitly remove error message to prevent it from persisting
+            TempData.Remove("OwnerErrorMessage");
         }
 
         return Page();
@@ -155,19 +193,19 @@ public class RegisterOwnerModel : PageModel
                 // Going back from step 2 (password) to step 1 (basic info)
                 CurrentStep = 1;
                 TempData["OwnerCurrentStep"] = "1";
-                if (TempData.ContainsKey("OwnerFullName"))
-                {
-                    Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
-                    Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
-                    Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
-                    Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
-                }
+            if (TempData.ContainsKey("OwnerFullName"))
+            {
+                Input.FullName = TempData["OwnerFullName"]?.ToString() ?? "";
+                Input.Email = TempData["OwnerEmail"]?.ToString() ?? "";
+                Input.StoreName = TempData["OwnerStoreName"]?.ToString() ?? "";
+                Input.StoreAddress = TempData["OwnerStoreAddress"]?.ToString() ?? "";
+            }
             }
             return Page();
         }
 
         CurrentStep = int.TryParse(step, out var stepNum) ? stepNum : 1;
-        
+
         // Store current step in TempData for persistence
         TempData["OwnerCurrentStep"] = CurrentStep.ToString();
 
@@ -249,6 +287,7 @@ public class RegisterOwnerModel : PageModel
             {
                 TempData["OwnerErrorMessage"] = "ID front photo is required";
                 TempData["OwnerCurrentStep"] = "3";
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -256,6 +295,7 @@ public class RegisterOwnerModel : PageModel
             {
                 TempData["OwnerErrorMessage"] = "ID back photo is required";
                 TempData["OwnerCurrentStep"] = "3";
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -270,6 +310,7 @@ public class RegisterOwnerModel : PageModel
             {
                 TempData["OwnerErrorMessage"] = "ID photos must be JPG or PNG images";
                 TempData["OwnerCurrentStep"] = "3";
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -293,8 +334,8 @@ public class RegisterOwnerModel : PageModel
                 Log.Error(ex, "Error compressing front ID image. Saving original.");
                 // Fallback: save original if compression fails
                 using (var stream = new FileStream(frontFilePath, FileMode.Create))
-                {
-                    await IdDocumentFront.CopyToAsync(stream);
+            {
+                await IdDocumentFront.CopyToAsync(stream);
                 }
                 frontCompressedBytes = await System.IO.File.ReadAllBytesAsync(frontFilePath);
             }
@@ -316,8 +357,8 @@ public class RegisterOwnerModel : PageModel
                 Log.Error(ex, "Error compressing back ID image. Saving original.");
                 // Fallback: save original if compression fails
                 using (var stream = new FileStream(backFilePath, FileMode.Create))
-                {
-                    await IdDocumentBack.CopyToAsync(stream);
+            {
+                await IdDocumentBack.CopyToAsync(stream);
                 }
                 backCompressedBytes = await System.IO.File.ReadAllBytesAsync(backFilePath);
             }
@@ -331,6 +372,7 @@ public class RegisterOwnerModel : PageModel
                 {
                     TempData["OwnerErrorMessage"] = "Business license must be less than 5MB";
                     TempData["OwnerCurrentStep"] = "3";
+                    TempData.Keep("RegistrationType");
                     return RedirectToPage();
                 }
 
@@ -339,6 +381,7 @@ public class RegisterOwnerModel : PageModel
                 {
                     TempData["OwnerErrorMessage"] = "Business license must be JPG or PNG image";
                     TempData["OwnerCurrentStep"] = "3";
+                    TempData.Keep("RegistrationType");
                     return RedirectToPage();
                 }
 
@@ -392,6 +435,8 @@ public class RegisterOwnerModel : PageModel
                 // Store error in TempData and redirect to prevent POST resubmission on refresh
                 TempData["OwnerErrorMessage"] = idValidation.ErrorMessage ?? "Please upload a valid ID";
                 TempData["OwnerCurrentStep"] = "3";
+                // Keep RegistrationType so OnGetAsync doesn't redirect to RegisterType
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -468,90 +513,90 @@ public class RegisterOwnerModel : PageModel
         bool idVerified)
     {
         // Validate required parameters
-        if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || 
+            if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || 
             string.IsNullOrEmpty(storeName) || string.IsNullOrEmpty(storeAddress) ||
             string.IsNullOrEmpty(idDocumentFrontPath))
-        {
+            {
             Log.Error("Missing required data for owner account creation. FullName: {HasFullName}, Email: {HasEmail}, StoreName: {HasStoreName}, StoreAddress: {HasStoreAddress}, IdDocument: {HasIdDocument}",
                 !string.IsNullOrEmpty(fullName), !string.IsNullOrEmpty(email), 
                 !string.IsNullOrEmpty(storeName), !string.IsNullOrEmpty(storeAddress),
                 !string.IsNullOrEmpty(idDocumentFrontPath));
-            ErrorMessage = "Session expired. Please start over.";
-            return RedirectToPage("/Account/RegisterType");
-        }
+                ErrorMessage = "Session expired. Please start over.";
+                return RedirectToPage("/Account/RegisterType");
+            }
         
         // Store front as primary ID document
         var idDocumentPath = idDocumentFrontPath;
 
-        // Validate password
+            // Validate password
         if (!PasswordHelper.IsPasswordMedium(password))
-        {
-            ErrorMessage = "Password must be at least 6 characters";
-            CurrentStep = 3;
-            TempData["OwnerCurrentStep"] = "3";
-            return Page();
-        }
-
-        // Create user
-        var verificationToken = Guid.NewGuid().ToString("N");
-        var user = new User
-        {
-            FullName = fullName,
-            Email = email,
-            StoreName = storeName,
-            StoreAddress = storeAddress,
-            PasswordHash = PasswordHelper.HashPassword(password),
-            IsRenter = false,
-            IsOwner = true,
-            IsAdmin = false,
-            IsEmailVerified = false,
-            EmailVerificationToken = verificationToken,
-            EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24),
-            IdDocumentUrl = idDocumentPath,
-            IdVerified = idVerified,
-            IdVerifiedAt = idVerified ? DateTime.UtcNow : null,
-            AddressVerified = addressVerified,
-            AddressVerifiedAt = addressVerified ? DateTime.UtcNow : null,
-            IdExtractedAddress = idExtractedAddress,
-            IsVerifiedOwner = false, // Requires admin verification
-            VerificationStatus = "Pending",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        // Cross-check store address with ID address if available
-        if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(storeAddress))
-        {
-            var addressMatch = await _idValidationService.CrossCheckAddressAsync(storeAddress, idExtractedAddress);
-            if (!addressMatch)
             {
-                Log.Warning("Address mismatch for owner {Email}: Store address='{StoreAddress}', ID address='{IdAddress}'", 
-                    email, storeAddress, idExtractedAddress);
-                // Don't block registration, but log the mismatch
+                ErrorMessage = "Password must be at least 6 characters";
+                CurrentStep = 3;
+            TempData["OwnerCurrentStep"] = "3";
+                return Page();
             }
-        }
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+            // Create user
+            var verificationToken = Guid.NewGuid().ToString("N");
+            var user = new User
+            {
+                FullName = fullName,
+                Email = email,
+                StoreName = storeName,
+                StoreAddress = storeAddress,
+            PasswordHash = PasswordHelper.HashPassword(password),
+                IsRenter = false,
+                IsOwner = true,
+                IsAdmin = false,
+                IsEmailVerified = false,
+                EmailVerificationToken = verificationToken,
+                EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24),
+                IdDocumentUrl = idDocumentPath,
+                IdVerified = idVerified,
+                IdVerifiedAt = idVerified ? DateTime.UtcNow : null,
+                AddressVerified = addressVerified,
+                AddressVerifiedAt = addressVerified ? DateTime.UtcNow : null,
+                IdExtractedAddress = idExtractedAddress,
+                IsVerifiedOwner = false, // Requires admin verification
+                VerificationStatus = "Pending",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-        // Create wallet and points
-        await _walletService.GetOrCreateWalletAsync(user.UserId);
-        await _pointsService.GetOrCreatePointsAsync(user.UserId);
+            // Cross-check store address with ID address if available
+            if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(storeAddress))
+            {
+                var addressMatch = await _idValidationService.CrossCheckAddressAsync(storeAddress, idExtractedAddress);
+                if (!addressMatch)
+                {
+                    Log.Warning("Address mismatch for owner {Email}: Store address='{StoreAddress}', ID address='{IdAddress}'", 
+                        email, storeAddress, idExtractedAddress);
+                    // Don't block registration, but log the mismatch
+                }
+            }
 
-        // Send verification email
-        try
-        {
-            var verificationLink = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(user.Email)}";
-            await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationLink);
-            TempData["SuccessMessage"] = "Registration successful! Please check your email to verify your account. Your owner account will be reviewed by our team.";
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to send verification email to {Email}", user.Email);
-            TempData["ErrorMessage"] = "Account created but failed to send verification email. Please contact support.";
-        }
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-        return RedirectToPage("/Account/RegistrationSuccess");
+            // Create wallet and points
+            await _walletService.GetOrCreateWalletAsync(user.UserId);
+            await _pointsService.GetOrCreatePointsAsync(user.UserId);
+
+            // Send verification email
+            try
+            {
+                var verificationLink = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(user.Email)}";
+                await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationLink);
+                TempData["SuccessMessage"] = "Registration successful! Please check your email to verify your account. Your owner account will be reviewed by our team.";
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to send verification email to {Email}", user.Email);
+                TempData["ErrorMessage"] = "Account created but failed to send verification email. Please contact support.";
+            }
+
+            return RedirectToPage("/Account/RegistrationSuccess");
     }
 }
 

@@ -13,10 +13,10 @@ namespace BiketaBai.Pages.Bikes;
 public class DetailsModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
-    private readonly BookingManagementService _bookingService;
+    private readonly BookingService _bookingService;
     private readonly OtpService _otpService;
 
-    public DetailsModel(BiketaBaiDbContext context, BookingManagementService bookingService, OtpService otpService)
+    public DetailsModel(BiketaBaiDbContext context, BookingService bookingService, OtpService otpService)
     {
         _context = context;
         _bookingService = bookingService;
@@ -180,7 +180,7 @@ public class DetailsModel : PageModel
             return Page();
         }
 
-        // Create booking using BookingManagementService
+        // Create booking using BookingService (doesn't process payment)
         var result = await _bookingService.CreateBookingAsync(
             userId.Value,
             id,
@@ -188,14 +188,14 @@ public class DetailsModel : PageModel
             Input.EndDate.Value
         );
 
-        if (result.Success)
+        if (result.success)
         {
-            TempData["SuccessMessage"] = result.Message;
-            return RedirectToPage("/Dashboard/Home");
+            // Redirect to payment page with the booking ID
+            return RedirectToPage("/Bookings/Payment", new { bookingId = result.bookingId });
         }
         else
         {
-            TempData["ErrorMessage"] = result.Message;
+            TempData["ErrorMessage"] = result.message;
             // Dates are preserved in Input model, no need to reload
             return Page();
         }

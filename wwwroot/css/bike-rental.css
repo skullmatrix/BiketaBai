@@ -654,6 +654,61 @@
    FORM ELEMENTS
    ============================================ */
 
+/* ============================================
+   QUICK HOUR SELECTION
+   ============================================ */
+
+.quick-hours-section {
+    margin-bottom: 1rem;
+}
+
+.quick-hours-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.btn-quick-hour {
+    flex: 1;
+    min-width: calc(33.333% - 0.5rem);
+    padding: 0.625rem 0.75rem;
+    background: #f8f9fa;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+}
+
+.btn-quick-hour:hover {
+    background: var(--sage-50);
+    border-color: var(--sage-300);
+    color: var(--sage-600);
+    transform: translateY(-1px);
+}
+
+.btn-quick-hour.active {
+    background: var(--sage-500);
+    border-color: var(--sage-500);
+    color: white;
+    box-shadow: 0 2px 4px rgba(107, 142, 95, 0.2);
+}
+
+.btn-quick-hour:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 576px) {
+    .btn-quick-hour {
+        min-width: calc(50% - 0.5rem);
+        font-size: 0.8125rem;
+        padding: 0.5rem 0.625rem;
+    }
+}
+
 .date-inputs {
     display: flex;
     flex-direction: column;

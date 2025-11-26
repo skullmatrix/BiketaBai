@@ -91,18 +91,53 @@ public class RegisterRenterModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Check if we have a current step in TempData (check this first before consuming TempData)
+        var hasCurrentStep = TempData.ContainsKey("RenterCurrentStep");
+        
+        // Restore step from TempData if available
+        if (hasCurrentStep)
+        {
+            CurrentStep = int.TryParse(TempData["RenterCurrentStep"]?.ToString(), out var step) ? step : 1;
+            TempData.Keep("RenterCurrentStep");
+        }
+
         // Check if coming from type selection
         var registrationType = TempData["RegistrationType"]?.ToString();
-        if (registrationType != "Renter")
+        
+        // If we have a current step set (step > 1 or we had it in TempData), we're in the middle of registration
+        // This handles the case where ID validation fails and we redirect back
+        if (CurrentStep > 1 || hasCurrentStep)
+        {
+            // We're in the middle of registration, ensure RegistrationType is set
+            if (string.IsNullOrEmpty(registrationType))
+            {
+                // If RegistrationType is missing but we have a step, set it to Renter
+                registrationType = "Renter";
+                TempData["RegistrationType"] = "Renter";
+            }
+            else
+            {
+                TempData.Keep("RegistrationType");
+            }
+        }
+        else if (!string.IsNullOrEmpty(registrationType))
+        {
+            // Keep RegistrationType in TempData so it persists across redirects
+            TempData.Keep("RegistrationType");
+        }
+        
+        // Only redirect to type selection if we're on step 1 and registration type is wrong or missing
+        if (CurrentStep == 1 && string.IsNullOrEmpty(registrationType))
         {
             // Redirect to type selection if not coming from there
             return RedirectToPage("/Account/RegisterType");
         }
 
-        // Restore step from TempData if available
-        if (TempData.ContainsKey("RenterCurrentStep"))
+        // If we have a step > 1, we're definitely in registration, so don't redirect
+        if (CurrentStep > 1 && registrationType != "Renter")
         {
-            CurrentStep = int.TryParse(TempData["RenterCurrentStep"]?.ToString(), out var step) ? step : 1;
+            // Ensure RegistrationType is set correctly
+            TempData["RegistrationType"] = "Renter";
         }
 
         // Restore step 1 data if on step 1
@@ -122,9 +157,12 @@ public class RegisterRenterModel : PageModel
         }
 
         // Check for error messages from TempData (from POST redirect)
+        // Don't keep error messages - they should only display once
         if (TempData.ContainsKey("RenterErrorMessage"))
         {
             ErrorMessage = TempData["RenterErrorMessage"]?.ToString();
+            // Explicitly remove error message to prevent it from persisting
+            TempData.Remove("RenterErrorMessage");
         }
 
         return Page();
@@ -256,6 +294,7 @@ public class RegisterRenterModel : PageModel
             {
                 TempData["RenterErrorMessage"] = "ID front photo is required";
                 TempData["RenterCurrentStep"] = "3";
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -263,6 +302,7 @@ public class RegisterRenterModel : PageModel
             {
                 TempData["RenterErrorMessage"] = "ID back photo is required";
                 TempData["RenterCurrentStep"] = "3";
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -277,6 +317,7 @@ public class RegisterRenterModel : PageModel
             {
                 TempData["RenterErrorMessage"] = "ID photos must be JPG or PNG images";
                 TempData["RenterCurrentStep"] = "3";
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 
@@ -369,6 +410,8 @@ public class RegisterRenterModel : PageModel
                 // Store error in TempData and redirect to prevent POST resubmission on refresh
                 TempData["RenterErrorMessage"] = idValidation.ErrorMessage ?? "Please upload a valid ID";
                 TempData["RenterCurrentStep"] = "3";
+                // Keep RegistrationType so OnGetAsync doesn't redirect to RegisterType
+                TempData.Keep("RegistrationType");
                 return RedirectToPage();
             }
 

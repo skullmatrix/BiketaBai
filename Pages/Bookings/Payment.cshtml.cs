@@ -60,6 +60,14 @@ public class PaymentModel : PageModel
             CurrentPaymentMethodId = ExistingPayment.PaymentMethodId;
             PaymentMethodId = ExistingPayment.PaymentMethodId; // Pre-select current method
         }
+        else
+        {
+            // Ensure default is set if no existing payment
+            if (PaymentMethodId == 0)
+            {
+                PaymentMethodId = 1; // Default to Wallet
+            }
+        }
 
         return Page();
     }
@@ -108,10 +116,10 @@ public class PaymentModel : PageModel
         {
             // Validate wallet balance
             if (WalletBalance < Booking.TotalAmount)
-            {
-                ErrorMessage = "Insufficient wallet balance. Please top up your wallet or choose another payment method.";
-                return Page();
-            }
+        {
+            ErrorMessage = "Insufficient wallet balance. Please top up your wallet or choose another payment method.";
+            return Page();
+        }
 
             // Process wallet payment
             var result = await _paymentService.ProcessPaymentAsync(
@@ -133,20 +141,20 @@ public class PaymentModel : PageModel
         else if (PaymentMethodId == 4) // Cash
         {
             // Process cash payment
-            var result = await _paymentService.ProcessPaymentAsync(
-                bookingId,
-                PaymentMethodId,
-                Booking.TotalAmount
-            );
+        var result = await _paymentService.ProcessPaymentAsync(
+            bookingId,
+            PaymentMethodId,
+            Booking.TotalAmount
+        );
 
-            if (result.success)
-            {
-                return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
-            }
-            else
-            {
-                ErrorMessage = result.message;
-                return Page();
+        if (result.success)
+        {
+            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+        }
+        else
+        {
+            ErrorMessage = result.message;
+            return Page();
             }
         }
         else // GCash, PayMaya, QRPH, or Card - Gateway payments

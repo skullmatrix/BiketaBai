@@ -98,7 +98,7 @@ public class PaymentService
                 {
                     payment.TransactionReference = paymentIntent.PaymentIntentId;
                     payment.PaymentStatus = "Pending"; // Will be updated via webhook
-                    paymentSuccess = true;
+                paymentSuccess = true;
                     message = $"Payment intent created. Please complete payment via {GetPaymentMethodName(paymentMethodId)}";
                 }
                 else

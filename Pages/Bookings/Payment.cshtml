@@ -89,8 +89,8 @@
 
                         <form method="post">
                             <div class="list-group mb-4">
-                                <label class="list-group-item">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 || (Model.CurrentPaymentMethodId == null && Model.PaymentMethodId == 1) ? "checked" : "") />
+                                <label class="list-group-item" style="cursor: pointer;">
+                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-wallet2 fs-3 me-3 text-eco-green"></i>
                                         <div>
@@ -105,7 +105,7 @@
                                         </div>
                                     </div>
                                 </label>
-                                <label class="list-group-item">
+                                <label class="list-group-item" style="cursor: pointer;">
                                     <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="2" @(Model.PaymentMethodId == 2 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-phone fs-3 me-3 text-primary"></i>
@@ -116,7 +116,7 @@
                                         </div>
                                     </div>
                                 </label>
-                                <label class="list-group-item">
+                                <label class="list-group-item" style="cursor: pointer;">
                                     <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="3" @(Model.PaymentMethodId == 3 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-qr-code fs-3 me-3 text-info"></i>
@@ -127,7 +127,7 @@
                                         </div>
                                     </div>
                                 </label>
-                                <label class="list-group-item">
+                                <label class="list-group-item" style="cursor: pointer;">
                                     <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="5" @(Model.PaymentMethodId == 5 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-phone fs-3 me-3" style="color: #00D9FF;"></i>
@@ -138,7 +138,7 @@
                                         </div>
                                     </div>
                                 </label>
-                                <label class="list-group-item">
+                                <label class="list-group-item" style="cursor: pointer;">
                                     <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="6" @(Model.PaymentMethodId == 6 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-credit-card fs-3 me-3 text-warning"></i>
@@ -149,7 +149,7 @@
                                         </div>
                                     </div>
                                 </label>
-                                <label class="list-group-item">
+                                <label class="list-group-item" style="cursor: pointer;">
                                     <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="4" @(Model.PaymentMethodId == 4 ? "checked" : "") />
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-cash fs-3 me-3 text-success"></i>
@@ -207,27 +207,76 @@
 </div>
 
 <script>
-    // Show/hide card form based on payment method selection
-    document.querySelectorAll('input[name="PaymentMethodId"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const cardForm = document.getElementById('cardPaymentForm');
-            const submitBtn = document.getElementById('submitBtnText');
+    // Ensure radio buttons are clickable and handle selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const radioButtons = document.querySelectorAll('input[name="PaymentMethodId"]');
+        const listGroupItems = document.querySelectorAll('.list-group-item');
+        
+        // Make entire label clickable
+        listGroupItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Don't trigger if clicking directly on the radio button
+                if (e.target.type !== 'radio') {
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio && !radio.disabled) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            });
             
-            if (this.value === '6') {
-                cardForm.style.display = 'block';
-                submitBtn.textContent = 'Pay with Card';
-            } else {
-                cardForm.style.display = 'none';
-                submitBtn.textContent = 'Confirm Payment';
+            // Add visual feedback on hover
+            item.addEventListener('mouseenter', function() {
+                if (!this.querySelector('input[type="radio"]:checked')) {
+                    this.style.backgroundColor = '#f8f9fa';
+                }
+            });
+            
+            item.addEventListener('mouseleave', function() {
+                if (!this.querySelector('input[type="radio"]:checked')) {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+        
+        // Show/hide card form based on payment method selection
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const cardForm = document.getElementById('cardPaymentForm');
+                const submitBtn = document.getElementById('submitBtnText');
+                
+                // Update visual state of selected item
+                listGroupItems.forEach(item => {
+                    if (item.querySelector('input[type="radio"]:checked')) {
+                        item.style.backgroundColor = '#e8f5e9';
+                        item.style.borderColor = '#28a745';
+                    } else {
+                        item.style.backgroundColor = '';
+                        item.style.borderColor = '';
+                    }
+                });
+                
+                if (this.value === '6') {
+                    cardForm.style.display = 'block';
+                    submitBtn.textContent = 'Pay with Card';
+                } else {
+                    cardForm.style.display = 'none';
+                    submitBtn.textContent = 'Confirm Payment';
+                }
+            });
+            
+            // Trigger change event on page load if already checked
+            if (radio.checked) {
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
             }
         });
-    });
 
-    // Format card number input
-    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\s/g, '');
-        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-        e.target.value = formattedValue;
+        // Format card number input
+        document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
     });
 </script>
 

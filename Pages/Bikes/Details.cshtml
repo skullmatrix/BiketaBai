@@ -269,8 +269,23 @@ else
                                             <span>@TempData["SuccessMessage"]</span>
                                         </div>
                                     }
-
+                                    
                                     <form method="post" id="bookingForm">
+                                        <!-- Quick Hour Selection -->
+                                        <div class="quick-hours-section mb-3">
+                                            <label class="mb-2" style="font-size: 0.875rem; font-weight: 500; color: #495057;">
+                                                <i class="bi bi-clock"></i> Quick Select
+                                            </label>
+                                            <div class="quick-hours-buttons">
+                                                <button type="button" class="btn-quick-hour" data-hours="2">2 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="4">4 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="8">8 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="12">12 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="24">1 day</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="48">2 days</button>
+                                            </div>
+                                        </div>
+
                                         <div class="date-inputs">
                                             <div class="date-input-group">
                                                 <label>
@@ -279,6 +294,7 @@ else
                                                 </label>
                                                 <input type="datetime-local" 
                                                        asp-for="Input.StartDate" 
+                                                       id="Input_StartDate"
                                                        class="input-sage" 
                                                        required 
                                                        min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
@@ -291,6 +307,7 @@ else
                                                 </label>
                                                 <input type="datetime-local" 
                                                        asp-for="Input.EndDate" 
+                                                       id="Input_EndDate"
                                                        class="input-sage" 
                                                        required 
                                                        min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
@@ -389,6 +406,34 @@ else
                     $('#currentImage').text(activeIndex);
                     $('.gallery-thumb').removeClass('active');
                     $('.gallery-thumb').eq(activeIndex - 1).addClass('active');
+                });
+
+                // Quick hour selection buttons
+                $('.btn-quick-hour').on('click', function() {
+                    const hours = parseInt($(this).data('hours'));
+                    const now = new Date();
+                    const startDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+                    const endDate = new Date(startDate.getTime() + hours * 60 * 60 * 1000);
+                    
+                    // Format dates for datetime-local input
+                    const formatDateTime = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${year}-${month}-${day}T${hours}:${minutes}`;
+                    };
+                    
+                    $('#Input_StartDate').val(formatDateTime(startDate));
+                    $('#Input_EndDate').val(formatDateTime(endDate));
+                    
+                    // Update active state
+                    $('.btn-quick-hour').removeClass('active');
+                    $(this).addClass('active');
+                    
+                    // Trigger change event to calculate pricing
+                    $('#Input_StartDate, #Input_EndDate').trigger('change');
                 });
 
                 function formatDuration(hours) {
