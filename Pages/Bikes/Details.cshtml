@@ -271,49 +271,89 @@ else
                                     }
                                     
                                     <form method="post" id="bookingForm">
-                                        <!-- Quick Hour Selection -->
-                                        <div class="quick-hours-section mb-3">
-                                            <label class="mb-2" style="font-size: 0.875rem; font-weight: 500; color: #495057;">
-                                                <i class="bi bi-clock"></i> Quick Select
-                                            </label>
-                                            <div class="quick-hours-buttons">
-                                                <button type="button" class="btn-quick-hour" data-hours="2">2 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="4">4 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="8">8 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="12">12 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="24">1 day</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="48">2 days</button>
+                                        <!-- Booking Mode Toggle -->
+                                        <div class="booking-mode-toggle mb-3">
+                                            <div class="btn-group w-100" role="group">
+                                                <input type="radio" class="btn-check" name="bookingMode" id="modeHours" value="hours" checked>
+                                                <label class="btn btn-outline-primary" for="modeHours">
+                                                    <i class="bi bi-clock"></i> By Hours
+                                                </label>
+                                                <input type="radio" class="btn-check" name="bookingMode" id="modeDateTime" value="datetime">
+                                                <label class="btn btn-outline-primary" for="modeDateTime">
+                                                    <i class="bi bi-calendar"></i> Specific Time
+                                                </label>
                                             </div>
                                         </div>
 
-                                        <div class="date-inputs">
-                                            <div class="date-input-group">
-                                                <label>
-                                                    <i class="bi bi-calendar-event"></i>
-                                                    <span>Start</span>
+                                        <!-- Hours Input Mode -->
+                                        <div id="hoursMode" class="booking-mode-content">
+                                            <div class="mb-3">
+                                                <label for="rentalHours" class="form-label" style="font-size: 0.875rem; font-weight: 500; color: #495057;">
+                                                    <i class="bi bi-clock"></i> Rental Duration
                                                 </label>
-                                                <input type="datetime-local" 
-                                                       asp-for="Input.StartDate" 
-                                                       id="Input_StartDate"
-                                                       class="input-sage" 
-                                                       required 
-                                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
-                                                       value="@(Model.Input.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                <div class="input-group">
+                                                    <input type="number" 
+                                                           id="rentalHours" 
+                                                           class="form-control input-sage" 
+                                                           min="1" 
+                                                           max="168" 
+                                                           step="0.5" 
+                                                           value="2"
+                                                           placeholder="Enter hours">
+                                                    <span class="input-group-text">hours</span>
+                                                </div>
+                                                <small class="form-text text-muted">Start time will be now. Booking activates immediately after payment.</small>
                                             </div>
-                                            <div class="date-input-group">
-                                                <label>
-                                                    <i class="bi bi-calendar-x"></i>
-                                                    <span>End</span>
+                                            
+                                            <!-- Quick Hour Selection -->
+                                            <div class="quick-hours-section mb-3">
+                                                <label class="mb-2" style="font-size: 0.875rem; font-weight: 500; color: #495057;">
+                                                    <i class="bi bi-lightning"></i> Quick Select
                                                 </label>
-                                                <input type="datetime-local" 
-                                                       asp-for="Input.EndDate" 
-                                                       id="Input_EndDate"
-                                                       class="input-sage" 
-                                                       required 
-                                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
-                                                       value="@(Model.Input.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                <div class="quick-hours-buttons">
+                                                    <button type="button" class="btn-quick-hour" data-hours="2">2 hrs</button>
+                                                    <button type="button" class="btn-quick-hour" data-hours="4">4 hrs</button>
+                                                    <button type="button" class="btn-quick-hour" data-hours="8">8 hrs</button>
+                                                    <button type="button" class="btn-quick-hour" data-hours="12">12 hrs</button>
+                                                    <button type="button" class="btn-quick-hour" data-hours="24">1 day</button>
+                                                    <button type="button" class="btn-quick-hour" data-hours="48">2 days</button>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <!-- DateTime Input Mode -->
+                                        <div id="datetimeMode" class="booking-mode-content" style="display: none;">
+                                            <div class="date-inputs">
+                                                <div class="date-input-group">
+                                                    <label>
+                                                        <i class="bi bi-calendar-event"></i>
+                                                        <span>Start</span>
+                                                    </label>
+                                                    <input type="datetime-local" 
+                                                           asp-for="Input.StartDate" 
+                                                           id="Input_StartDate"
+                                                           class="input-sage" 
+                                                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
+                                                           value="@(Model.Input.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                </div>
+                                                <div class="date-input-group">
+                                                    <label>
+                                                        <i class="bi bi-calendar-x"></i>
+                                                        <span>End</span>
+                                                    </label>
+                                                    <input type="datetime-local" 
+                                                           asp-for="Input.EndDate" 
+                                                           id="Input_EndDate"
+                                                           class="input-sage" 
+                                                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
+                                                           value="@(Model.Input.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hidden inputs for form submission -->
+                                        <input type="hidden" asp-for="Input.StartDate" id="hidden_StartDate" />
+                                        <input type="hidden" asp-for="Input.EndDate" id="hidden_EndDate" />
 
                                         <div id="pricingPreview" class="pricing-breakdown" style="display: none;">
                                             <div class="pricing-row">
@@ -334,7 +374,7 @@ else
                                             </div>
                                         </div>
 
-                                        <button type="submit" class="btn-sage-primary btn-booking">
+                                        <button type="submit" class="btn-sage-primary btn-booking" id="submitBtn">
                                             <i class="bi bi-calendar-check"></i>
                                             <span>Reserve Now</span>
                                         </button>
@@ -408,12 +448,50 @@ else
                     $('.gallery-thumb').eq(activeIndex - 1).addClass('active');
                 });
 
+                // Booking mode toggle
+                $('input[name="bookingMode"]').on('change', function() {
+                    const mode = $(this).val();
+                    if (mode === 'hours') {
+                        $('#hoursMode').show();
+                        $('#datetimeMode').hide();
+                        $('#Input_StartDate, #Input_EndDate').removeAttr('required');
+                        $('#rentalHours').attr('required', 'required');
+                    } else {
+                        $('#hoursMode').hide();
+                        $('#datetimeMode').show();
+                        $('#rentalHours').removeAttr('required');
+                        $('#Input_StartDate, #Input_EndDate').attr('required', 'required');
+                    }
+                    calculatePricing();
+                });
+
+                // Hours input change handler
+                $('#rentalHours').on('input change', function() {
+                    const hours = parseFloat($(this).val()) || 0;
+                    if (hours > 0) {
+                        updateDatesFromHours(hours);
+                        calculatePricing();
+                    }
+                });
+
                 // Quick hour selection buttons
                 $('.btn-quick-hour').on('click', function() {
-                    const hours = parseInt($(this).data('hours'));
+                    const hours = parseFloat($(this).data('hours'));
+                    $('#rentalHours').val(hours);
+                    updateDatesFromHours(hours);
+                    
+                    // Update active state
+                    $('.btn-quick-hour').removeClass('active');
+                    $(this).addClass('active');
+                    
+                    // Calculate pricing
+                    calculatePricing();
+                });
+
+                function updateDatesFromHours(hours) {
                     const now = new Date();
-                    const startDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-                    const endDate = new Date(startDate.getTime() + hours * 60 * 60 * 1000);
+                    const startDate = new Date(now.getTime()); // Current time
+                    const endDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
                     
                     // Format dates for datetime-local input
                     const formatDateTime = (date) => {
@@ -425,16 +503,47 @@ else
                         return `${year}-${month}-${day}T${hours}:${minutes}`;
                     };
                     
+                    // Update hidden inputs for form submission
+                    $('#hidden_StartDate').val(formatDateTime(startDate));
+                    $('#hidden_EndDate').val(formatDateTime(endDate));
+                    
+                    // Also update visible datetime inputs if in datetime mode
                     $('#Input_StartDate').val(formatDateTime(startDate));
                     $('#Input_EndDate').val(formatDateTime(endDate));
+                }
+
+                // Form submission handler
+                $('#bookingForm').on('submit', function(e) {
+                    const mode = $('input[name="bookingMode"]:checked').val();
                     
-                    // Update active state
-                    $('.btn-quick-hour').removeClass('active');
-                    $(this).addClass('active');
-                    
-                    // Trigger change event to calculate pricing
-                    $('#Input_StartDate, #Input_EndDate').trigger('change');
+                    if (mode === 'hours') {
+                        // Ensure dates are set from hours input
+                        const hours = parseFloat($('#rentalHours').val()) || 0;
+                        if (hours <= 0) {
+                            e.preventDefault();
+                            alert('Please enter a valid number of hours (minimum 1 hour)');
+                            return false;
+                        }
+                        updateDatesFromHours(hours);
+                    } else {
+                        // Validate datetime inputs
+                        const startDate = $('#Input_StartDate').val();
+                        const endDate = $('#Input_EndDate').val();
+                        
+                        if (!startDate || !endDate) {
+                            e.preventDefault();
+                            alert('Please select both start and end dates');
+                            return false;
+                        }
+                        
+                        // Update hidden inputs
+                        $('#hidden_StartDate').val(startDate);
+                        $('#hidden_EndDate').val(endDate);
+                    }
                 });
+
+                // Initialize hours mode on page load
+                updateDatesFromHours(parseFloat($('#rentalHours').val()) || 2);
 
                 function formatDuration(hours) {
                     if (hours < 1) {
@@ -450,19 +559,41 @@ else
                 }
 
                 function calculatePricing() {
-                    const startDateVal = $('#Input_StartDate').val();
-                    const endDateVal = $('#Input_EndDate').val();
+                    let startDate, endDate, hours;
+                    
+                    // Check which mode is active
+                    const mode = $('input[name="bookingMode"]:checked').val();
+                    
+                    if (mode === 'hours') {
+                        // Calculate from hours input
+                        const rentalHours = parseFloat($('#rentalHours').val()) || 0;
+                        if (rentalHours <= 0) {
+                            $('#pricingPreview').hide();
+                            return;
+                        }
+                        hours = rentalHours;
+                    } else {
+                        // Calculate from datetime inputs
+                        const startDateVal = $('#Input_StartDate').val();
+                        const endDateVal = $('#Input_EndDate').val();
 
-                    if (!startDateVal || !endDateVal) {
-                        $('#pricingPreview').hide();
-                        return;
+                        if (!startDateVal || !endDateVal) {
+                            $('#pricingPreview').hide();
+                            return;
+                        }
+
+                        startDate = new Date(startDateVal);
+                        endDate = new Date(endDateVal);
+
+                        if (!startDate || !endDate || endDate <= startDate) {
+                            $('#pricingPreview').hide();
+                            return;
+                        }
+
+                        hours = (endDate - startDate) / (1000 * 60 * 60);
                     }
 
-                    const startDate = new Date(startDateVal);
-                    const endDate = new Date(endDateVal);
-
-                    if (startDate && endDate && endDate > startDate) {
-                        const hours = (endDate - startDate) / (1000 * 60 * 60);
+                    if (hours > 0) {
                         const days = hours / 24;
 
                         let baseRate = 0;
@@ -482,14 +613,19 @@ else
                         $('#serviceFee').text('₱' + serviceFee.toFixed(2));
                         $('#totalAmount').text('₱' + total.toFixed(2));
                         
-                        // Show pricing preview - use show() for immediate display on page load
+                        // Show pricing preview
                         $('#pricingPreview').show();
                     } else {
                         $('#pricingPreview').hide();
                     }
                 }
 
-                $('#Input_StartDate, #Input_EndDate').on('change input', calculatePricing);
+                $('#Input_StartDate, #Input_EndDate').on('change input', function() {
+                    // Update hidden inputs when datetime inputs change
+                    $('#hidden_StartDate').val($('#Input_StartDate').val());
+                    $('#hidden_EndDate').val($('#Input_EndDate').val());
+                    calculatePricing();
+                });
 
                 $('#Input_EndDate').on('change', function() {
                     const startDateVal = $('#Input_StartDate').val();

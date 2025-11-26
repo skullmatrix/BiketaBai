@@ -167,10 +167,14 @@ public class DetailsModel : PageModel
             return Page();
         }
 
-        // Validate that start date is in the future
-        if (Input.StartDate.Value < DateTime.Now)
+        // If start date is very close to current time (within 5 minutes), treat it as "now"
+        var timeDifference = (Input.StartDate.Value - DateTime.Now).TotalMinutes;
+        var isImmediateStart = timeDifference >= -5 && timeDifference <= 5; // Allow 5 minute window
+        
+        // Validate that start date is not too far in the past (allow 5 minute buffer for immediate bookings)
+        if (Input.StartDate.Value < DateTime.Now.AddMinutes(-5))
         {
-            TempData["ErrorMessage"] = "Start date cannot be in the past";
+            TempData["ErrorMessage"] = "Start date cannot be more than 5 minutes in the past";
             return Page();
         }
 

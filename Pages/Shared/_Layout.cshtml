@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
     <meta name="theme-color" content="#28a745" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>@ViewData["Title"] - Bike Ta Bai</title>
@@ -353,7 +354,7 @@
             });
 
             function loadWalletBalance() {
-                $.get('/api/wallet/balance', function(data) {
+                $.get('/Api/Wallet', function(data) {
                     const balance = '₱' + Math.floor(data.balance);
                     $('#walletBalanceSidebar').text(balance);
                 }).fail(function() {
@@ -362,7 +363,7 @@
             }
 
             function loadPointsBalance() {
-                $.get('/api/points/balance', function(data) {
+                $.get('/Api/Points', function(data) {
                     $('#pointsBalanceSidebar').text(data.points);
                 }).fail(function() {
                     $('#pointsBalanceSidebar').text('0');
@@ -370,7 +371,7 @@
             }
 
             function loadNotificationCount() {
-                $.get('/api/notifications/unread-count', function(data) {
+                $.get('/Api/Notifications', function(data) {
                     if (data.count > 0) {
                         const countText = data.count > 9 ? '9+' : data.count;
                         $('#notificationCountSidebar').text(countText).show();

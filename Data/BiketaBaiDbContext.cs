@@ -27,6 +27,7 @@ public class BiketaBaiDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Report> Reports { get; set; }
     public DbSet<PhoneOtp> PhoneOtps { get; set; }
+    public DbSet<LocationTracking> LocationTracking { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,6 +60,10 @@ public class BiketaBaiDbContext : DbContext
 
         modelBuilder.Entity<Booking>()
             .Property(b => b.DistanceSavedKm)
+            .HasPrecision(10, 2);
+
+        modelBuilder.Entity<LocationTracking>()
+            .Property(lt => lt.DistanceFromStoreKm)
             .HasPrecision(10, 2);
 
         modelBuilder.Entity<Payment>()

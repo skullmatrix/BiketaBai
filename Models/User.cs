@@ -108,6 +108,15 @@ public class User
     [Column("store_address")]
     public string? StoreAddress { get; set; }
 
+    [Column("store_latitude")]
+    public double? StoreLatitude { get; set; }
+
+    [Column("store_longitude")]
+    public double? StoreLongitude { get; set; }
+
+    [Column("geofence_radius_km")]
+    public decimal? GeofenceRadiusKm { get; set; }
+
     // ID and Address Verification
     [Column("id_verified")]
     public bool IdVerified { get; set; } = false;

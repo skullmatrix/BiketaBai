@@ -100,5 +100,6 @@ public class Booking
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+    public virtual ICollection<LocationTracking> LocationTracking { get; set; } = new List<LocationTracking>();
 }
 

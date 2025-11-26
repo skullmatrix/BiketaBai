@@ -82,6 +82,21 @@ public class IdValidationService
             Log.Information("OCR extracted text from ID: {TextLength} characters. First 200 chars: {TextPreview}", 
                 fullText.Length, fullText.Substring(0, Math.Min(200, fullText.Length)));
 
+            // CRITICAL VALIDATION: Check if the document contains "Name" or "Pangalan" (Filipino for Name)
+            // This is a hard requirement - valid IDs must have a name field
+            var upperText = fullText.ToUpperInvariant();
+            var hasNameField = upperText.Contains("NAME") || upperText.Contains("PANGALAN");
+            
+            if (!hasNameField)
+            {
+                Log.Warning("ID validation failed: Document does not contain 'Name' or 'Pangalan' field. This is required for valid IDs.");
+                result.IsValid = false;
+                result.ErrorMessage = "Please upload a valid ID. The document must contain a name field.";
+                return result;
+            }
+            
+            Log.Information("ID validation: Document contains 'Name' or 'Pangalan' field - proceeding with validation.");
+
             // Extract information from OCR text
             result.ExtractedName = ExtractName(fullText);
             result.ExtractedAddress = ExtractAddress(fullText);

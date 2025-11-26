@@ -1,0 +1,306 @@
+@page "{bookingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@model TrackLocationModel
+@{
+    ViewData["Title"] = "Location Tracking";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            @if (Model.Booking == null)
+            {
+                <div class="alert alert-danger">Booking not found</div>
+            }
+            else
+            {
+                <div class="card shadow-eco">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="text-eco-green mb-0">
+                                <i class="bi bi-geo-alt-fill"></i> Location Tracking
+                            </h2>
+                            <a href="/Dashboard/Renter" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+
+                        <!-- Booking Info -->
+                        <div class="card bg-eco-light mb-4">
+                            <div class="card-body">
+                                <h5 class="text-eco-green mb-3">Booking Details</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Bike:</strong> @Model.Booking.Bike.Brand @Model.Booking.Bike.Model</p>
+                                        <p><strong>Owner:</strong> @Model.Booking.Bike.Owner.FullName</p>
+                                        <p><strong>Store:</strong> @Model.Booking.Bike.Owner.StoreName</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Start:</strong> @Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p><strong>End:</strong> @Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p><strong>Geofence Radius:</strong> @Model.GeofenceRadiusKm km</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Status -->
+                        <div class="card mb-4" id="locationStatusCard">
+                            <div class="card-body text-center">
+                                <div id="locationStatus" class="mb-3">
+                                    <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #6c757d;"></i>
+                                    <p class="mt-2 text-muted">Requesting location access...</p>
+                                </div>
+                                <div id="locationInfo" style="display: none;">
+                                    <h4 id="statusText" class="mb-3"></h4>
+                                    <p class="mb-2"><strong>Distance from Store:</strong> <span id="distanceText">-</span></p>
+                                    <p class="mb-2"><strong>Your Location:</strong> <span id="coordinatesText">-</span></p>
+                                    <p class="mb-0"><small class="text-muted">Last updated: <span id="lastUpdateText">-</span></small></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map Container -->
+                        <div class="card mb-4">
+                            <div class="card-body p-0">
+                                <div id="map" style="height: 400px; width: 100%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> How Location Tracking Works</h6>
+                            <ul class="mb-0">
+                                <li>Your location is automatically tracked every 2 minutes while this page is open</li>
+                                <li>You must allow location access when prompted by your browser</li>
+                                <li>If you go outside the @Model.GeofenceRadiusKm km radius, you'll receive SMS warnings</li>
+                                <li>Keep this page open during your rental to ensure continuous tracking</li>
+                            </ul>
+                        </div>
+
+                        <!-- Warning Alert -->
+                        <div class="alert alert-warning" id="warningAlert" style="display: none;">
+                            <h6><i class="bi bi-exclamation-triangle"></i> Geofence Warning</h6>
+                            <p class="mb-0" id="warningMessage"></p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Load Leaflet CSS and JS for map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    let map;
+    let renterMarker;
+    let storeMarker;
+    let geofenceCircle;
+    let trackingInterval;
+    const bookingId = @Model.Booking?.BookingId ?? 0;
+    const storeLat = @(Model.StoreLatitude?.ToString() ?? "null");
+    const storeLon = @(Model.StoreLongitude?.ToString() ?? "null");
+    const geofenceRadius = @Model.GeofenceRadiusKm;
+
+    // Initialize map
+    function initMap() {
+        if (storeLat && storeLon) {
+            map = L.map('map').setView([storeLat, storeLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add store marker
+            storeMarker = L.marker([storeLat, storeLon], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34]
+                })
+            }).addTo(map);
+            storeMarker.bindPopup('<b>Store Location</b><br>@Model.Booking?.Bike.Owner.StoreName').openPopup();
+
+            // Add geofence circle
+            geofenceCircle = L.circle([storeLat, storeLon], {
+                color: '#28a745',
+                fillColor: '#28a745',
+                fillOpacity: 0.1,
+                radius: geofenceRadius * 1000 // Convert km to meters
+            }).addTo(map);
+        } else {
+            // Center on Philippines if store location not available
+            map = L.map('map').setView([14.5995, 120.9842], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+    }
+
+    // Track location
+    function trackLocation() {
+        if (!navigator.geolocation) {
+            updateStatus('error', 'Geolocation is not supported by your browser.');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // Update UI
+                document.getElementById('coordinatesText').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                document.getElementById('lastUpdateText').textContent = new Date().toLocaleTimeString();
+
+                // Send to API
+                try {
+                    const response = await fetch('/api/location/track', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            bookingId: bookingId,
+                            latitude: lat,
+                            longitude: lon
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update status
+                        if (result.isWithinGeofence) {
+                            updateStatus('success', `You are within the geofence (${result.distanceKm} km from store)`);
+                            document.getElementById('warningAlert').style.display = 'none';
+                        } else {
+                            updateStatus('warning', `You are outside the geofence (${result.distanceKm} km from store)`);
+                            document.getElementById('warningMessage').textContent = 
+                                `You are ${result.distanceKm} km away from the store. Please return within ${geofenceRadius} km radius.`;
+                            document.getElementById('warningAlert').style.display = 'block';
+                        }
+
+                        document.getElementById('distanceText').textContent = `${result.distanceKm} km`;
+
+                        // Update map
+                        if (renterMarker) {
+                            renterMarker.setLatLng([lat, lon]);
+                        } else {
+                            renterMarker = L.marker([lat, lon], {
+                                icon: L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34]
+                                })
+                            }).addTo(map);
+                            renterMarker.bindPopup('<b>Your Location</b>');
+                        }
+
+                        // Center map on renter location
+                        map.setView([lat, lon], 13);
+                    }
+                } catch (error) {
+                    console.error('Error tracking location:', error);
+                    updateStatus('error', 'Failed to send location update. Please try again.');
+                }
+            },
+            (error) => {
+                let errorMsg = 'Unable to retrieve your location.';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg = 'Location access denied. Please allow location access to use tracking.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg = 'Location information unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg = 'Location request timed out.';
+                        break;
+                }
+                updateStatus('error', errorMsg);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    function updateStatus(type, message) {
+        const statusCard = document.getElementById('locationStatusCard');
+        const statusDiv = document.getElementById('locationStatus');
+        const statusText = document.getElementById('statusText');
+        const locationInfo = document.getElementById('locationInfo');
+
+        statusDiv.innerHTML = '';
+        locationInfo.style.display = 'block';
+
+        let iconClass, iconColor;
+        switch(type) {
+            case 'success':
+                iconClass = 'bi-check-circle-fill';
+                iconColor = '#28a745';
+                statusCard.className = 'card mb-4 border-success';
+                break;
+            case 'warning':
+                iconClass = 'bi-exclamation-triangle-fill';
+                iconColor = '#ffc107';
+                statusCard.className = 'card mb-4 border-warning';
+                break;
+            case 'error':
+                iconClass = 'bi-x-circle-fill';
+                iconColor = '#dc3545';
+                statusCard.className = 'card mb-4 border-danger';
+                break;
+            default:
+                iconClass = 'bi-hourglass-split';
+                iconColor = '#6c757d';
+        }
+
+        statusDiv.innerHTML = `<i class="bi ${iconClass}" style="font-size: 3rem; color: ${iconColor};"></i>`;
+        statusText.textContent = message;
+        statusText.className = `text-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'danger'}`;
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+        
+        // Start tracking immediately
+        trackLocation();
+        
+        // Track every 2 minutes
+        trackingInterval = setInterval(trackLocation, 120000); // 120000ms = 2 minutes
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        if (trackingInterval) {
+            clearInterval(trackingInterval);
+        }
+    });
+</script>
+
+<style>
+    .card.shadow-eco {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: none;
+        border-radius: 10px;
+    }
+    
+    .bg-eco-light {
+        background-color: #f8f9fa;
+    }
+    
+    .text-eco-green {
+        color: #28a745;
+    }
+</style>
+
