@@ -42,17 +42,27 @@ public class SmsService
                 return false;
             }
 
-            // Build API URL with query parameters
+            // Get sender name from configuration (default: "Ka Prets")
+            var senderName = _configuration["AppSettings:IprogSmsSenderName"] ?? "Ka Prets";
+
+            // Build API URL with query parameters (api_token, phone_number, message)
             var apiUrl = $"https://www.iprogsms.com/api/v1/sms_messages" +
                         $"?api_token={Uri.EscapeDataString(apiToken)}" +
                         $"&phone_number={Uri.EscapeDataString(formattedPhone)}" +
                         $"&message={Uri.EscapeDataString(message)}";
 
-            Log.Information("Sending SMS via iProgSMS to {PhoneNumber} (formatted: {FormattedPhone})", 
-                phoneNumber, formattedPhone);
+            // Create form-encoded request body with sender_name
+            var formData = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("sender_name", senderName)
+            };
+            var content = new FormUrlEncodedContent(formData);
 
-            // Send POST request
-            var response = await _httpClient.PostAsync(apiUrl, null);
+            Log.Information("Sending SMS via iProgSMS to {PhoneNumber} (formatted: {FormattedPhone}) with sender: {SenderName}", 
+                phoneNumber, formattedPhone, senderName);
+
+            // Send POST request with body
+            var response = await _httpClient.PostAsync(apiUrl, content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
