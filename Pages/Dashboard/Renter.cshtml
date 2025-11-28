@@ -6,75 +6,100 @@
     ViewData["Title"] = "Renter Dashboard";
 }
 
-<div class="container my-5">
-    <h2 class="text-eco-green mb-4"><i class="bi bi-speedometer2"></i> Renter Dashboard</h2>
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </h1>
+        <p class="page-subtitle">Manage your bike rentals and track your eco impact</p>
+    </div>
 
     <!-- Stats Overview -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="stat-card green">
-                <h3>@Model.ActiveRentalsCount</h3>
-                <p>Active Rentals</p>
+    <div class="grid-minimal grid-minimal-4 mb-5">
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-bicycle"></i>
             </div>
+            <div class="stat-value">@Model.ActiveRentalsCount</div>
+            <div class="stat-label">Active Rentals</div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card blue">
-                <h3>@Model.TotalRentalsCount</h3>
-                <p>Total Rentals</p>
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-clock-history"></i>
             </div>
+            <div class="stat-value">@Model.TotalRentalsCount</div>
+            <div class="stat-label">Total Rentals</div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="stat-card orange">
-                <h3>₱@Model.TotalSpent.ToString("F2")</h3>
-                <p>Total Spent</p>
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-cash-coin"></i>
             </div>
+            <div class="stat-value">₱@Model.TotalSpent.ToString("F0")</div>
+            <div class="stat-label">Total Spent</div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="eco-impact">
-                <h4>Eco Impact</h4>
-                <div class="impact-value">@Model.CO2Saved.ToString("F1")</div>
-                <small>kg CO₂ Saved</small>
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-leaf"></i>
             </div>
+            <div class="stat-value">@Model.CO2Saved.ToString("F0")</div>
+            <div class="stat-label">kg CO₂ Saved</div>
         </div>
     </div>
 
     <!-- Active Rentals -->
     @if (Model.ActiveBookings.Any())
     {
-        <div class="card shadow-eco mb-4">
-            <div class="card-header bg-eco-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-bicycle"></i> Active Rentals</h5>
+        <div class="card-minimal mb-4">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-bicycle"></i> Active Rentals
+                </h2>
             </div>
-            <div class="card-body">
+            <div class="grid-minimal">
                 @foreach (var booking in Model.ActiveBookings)
                 {
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-2">
-                                    @if (booking.Bike.BikeImages.Any())
-                                    {
-                                        <img src="@booking.Bike.BikeImages.First().ImageUrl" class="img-fluid rounded" alt="Bike" />
-                                    }
+                    <div class="card-minimal card-minimal-compact">
+                        <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: var(--space-4); align-items: center;">
+                            <div>
+                                @if (booking.Bike.BikeImages.Any())
+                                {
+                                    <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                         class="img-fluid rounded-minimal" 
+                                         alt="Bike"
+                                         style="width: 100px; height: 100px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div style="width: 100px; height: 100px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
+                                    </div>
+                                }
+                            </div>
+                            <div>
+                                <h5 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-tag"></i> @booking.Bike.BikeType.TypeName
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-person"></i> @booking.Bike.Owner.FullName
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin: 0;">
+                                    <i class="bi bi-calendar-x"></i> Return by: @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: var(--sage-primary); margin-bottom: var(--space-3);">
+                                    ₱@booking.TotalAmount.ToString("F0")
                                 </div>
-                                <div class="col-md-6">
-                                    <h5>@booking.Bike.Brand @booking.Bike.Model</h5>
-                                    <p class="mb-1"><small>Type: @booking.Bike.BikeType.TypeName</small></p>
-                                    <p class="mb-1"><small>Owner: @booking.Bike.Owner.FullName</small></p>
-                                    <p class="mb-0">
-                                        <strong>Return by:</strong> @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
-                                    </p>
-                                </div>
-                                <div class="col-md-2 text-center">
-                                    <div class="price-tag">₱@booking.TotalAmount</div>
-                                </div>
-                                <div class="col-md-2 text-end">
-                                    <a href="/Bookings/TrackLocation/@booking.BookingId" class="btn btn-info btn-sm w-100 mb-2">
-                                        <i class="bi bi-geo-alt-fill"></i> Track Location
+                                <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                                    <a href="/Bookings/TrackLocation/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                        <i class="bi bi-geo-alt-fill"></i> Track
                                     </a>
-                                    <a href="/Bookings/Details/@booking.BookingId" class="btn btn-eco-primary btn-sm w-100 mb-2">View Details</a>
-                                    <form method="post" asp-page-handler="Complete" asp-route-id="@booking.BookingId">
-                                        <button type="submit" class="btn btn-success btn-sm w-100">Mark Returned</button>
+                                    <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-primary btn-minimal-sm">View</a>
+                                    <form method="post" asp-page-handler="Complete" asp-route-id="@booking.BookingId" style="margin: 0;">
+                                        <button type="submit" class="btn-minimal btn-minimal-ghost btn-minimal-sm w-100">
+                                            <i class="bi bi-check-circle"></i> Return
+                                        </button>
                                     </form>
                                 </div>
                             </div>
@@ -86,67 +111,73 @@
     }
 
     <!-- Recent Bookings -->
-    <div class="card shadow-eco mb-4">
-        <div class="card-header bg-eco-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Bookings</h5>
+    <div class="card-minimal">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-clock-history"></i> Recent Bookings
+            </h2>
         </div>
-        <div class="card-body">
-            @if (Model.RecentBookings.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+        @if (Model.RecentBookings.Any())
+        {
+            <div style="overflow-x: auto;">
+                <table class="table-minimal">
+                    <thead>
+                        <tr>
+                            <th>Bike</th>
+                            <th>Dates</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.RecentBookings)
+                        {
                             <tr>
-                                <th>Bike</th>
-                                <th>Dates</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <td><strong>@booking.Bike.Brand @booking.Bike.Model</strong></td>
+                                <td>
+                                    <div style="font-size: 0.875rem;">
+                                        @booking.StartDate.ToString("MMM dd")<br />
+                                        <span style="color: var(--neutral-500);">to @booking.EndDate.ToString("MMM dd")</span>
+                                    </div>
+                                </td>
+                                <td><strong>₱@booking.TotalAmount.ToString("F0")</strong></td>
+                                <td>
+                                    @switch (booking.BookingStatusId)
+                                    {
+                                        case 1:
+                                            <span class="badge-minimal badge-minimal-warning">Pending</span>
+                                            break;
+                                        case 2:
+                                            <span class="badge-minimal badge-minimal-primary">Active</span>
+                                            break;
+                                        case 3:
+                                            <span class="badge-minimal badge-minimal-success">Completed</span>
+                                            break;
+                                        case 4:
+                                            <span class="badge-minimal badge-minimal-danger">Cancelled</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                        View
+                                    </a>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var booking in Model.RecentBookings)
-                            {
-                                <tr>
-                                    <td>@booking.Bike.Brand @booking.Bike.Model</td>
-                                    <td>
-                                        <small>
-                                            @booking.StartDate.ToString("MMM dd")<br />
-                                            to @booking.EndDate.ToString("MMM dd")
-                                        </small>
-                                    </td>
-                                    <td>₱@booking.TotalAmount.ToString("F2")</td>
-                                    <td>
-                                        @switch (booking.BookingStatusId)
-                                        {
-                                            case 1:
-                                                <span class="badge bg-warning">Pending</span>
-                                                break;
-                                            case 2:
-                                                <span class="badge bg-primary">Active</span>
-                                                break;
-                                            case 3:
-                                                <span class="badge bg-success">Completed</span>
-                                                break;
-                                            case 4:
-                                                <span class="badge bg-danger">Cancelled</span>
-                                                break;
-                                        }
-                                    </td>
-                                    <td>
-                                        <a href="/Bookings/Details/@booking.BookingId" class="btn btn-sm btn-outline-primary">View</a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <p class="text-muted text-center py-4">No bookings yet. <a href="/Bikes/Browse">Browse bikes</a> to get started!</p>
-            }
-        </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div style="text-align: center; padding: var(--space-8);">
+                <i class="bi bi-bicycle" style="font-size: 3rem; color: var(--neutral-300); margin-bottom: var(--space-4);"></i>
+                <p style="color: var(--neutral-600); margin-bottom: var(--space-4);">No bookings yet.</p>
+                <a href="/Bikes/Browse" class="btn-minimal btn-minimal-primary">Browse Bikes</a>
+            </div>
+        }
     </div>
 </div>
 

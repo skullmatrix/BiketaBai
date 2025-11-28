@@ -1,0 +1,286 @@
+/* ============================================
+   GLOBAL OVERRIDES - Apply Unified Design System
+   Override existing styles to match minimalist design
+   ============================================ */
+
+/* Override all buttons to use btn-minimal */
+.btn:not(.btn-minimal):not(.btn-check):not(.btn-close):not(.navbar-toggler),
+.btn-primary:not(.btn-minimal),
+.btn-success:not(.btn-minimal),
+.btn-danger:not(.btn-minimal),
+.btn-warning:not(.btn-minimal),
+.btn-info:not(.btn-minimal),
+.btn-outline-primary:not(.btn-minimal),
+.btn-outline-secondary:not(.btn-minimal),
+.btn-outline-success:not(.btn-minimal),
+.btn-outline-danger:not(.btn-minimal),
+.btn-outline-warning:not(.btn-minimal),
+.btn-outline-info:not(.btn-minimal),
+.btn-eco-primary,
+.btn-eco-green,
+.btn-sage-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    transition: all var(--transition-base);
+    cursor: pointer;
+    white-space: nowrap;
+    background: var(--sage-primary);
+    color: white;
+}
+
+.btn-primary:not(.btn-minimal):hover,
+.btn-eco-primary:hover,
+.btn-eco-green:hover,
+.btn-sage-primary:hover {
+    background: var(--sage-dark);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-outline-primary:not(.btn-minimal):hover,
+.btn-outline-secondary:not(.btn-minimal):hover {
+    background: var(--sage-primary);
+    color: white;
+    border-color: var(--sage-primary);
+    transform: translateY(-1px);
+}
+
+.btn-success:not(.btn-minimal) {
+    background: var(--success);
+}
+
+.btn-danger:not(.btn-minimal) {
+    background: var(--error);
+}
+
+.btn-warning:not(.btn-minimal) {
+    background: var(--warning);
+}
+
+.btn-info:not(.btn-minimal) {
+    background: var(--info);
+}
+
+/* Override cards to use card-minimal */
+.card:not(.card-minimal):not(.auth-card-minimal):not(.bike-card-clean):not(.search-card-minimal) {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--neutral-200);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-6);
+    transition: all var(--transition-base);
+}
+
+.card:not(.card-minimal):not(.auth-card-minimal):not(.bike-card-clean):not(.search-card-minimal):hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--neutral-300);
+}
+
+.card-header {
+    background: var(--sage-subtle);
+    border-bottom: 1px solid var(--neutral-200);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.card-body {
+    padding: var(--space-4);
+}
+
+/* Override alerts */
+.alert:not(.alert-minimal):not(.auth-alert-minimal) {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+    border-left: 3px solid;
+}
+
+.alert-success:not(.alert-minimal) {
+    background: var(--sage-subtle);
+    border-color: var(--sage-primary);
+    color: var(--sage-dark);
+}
+
+.alert-danger:not(.alert-minimal) {
+    background: #FEE2E2;
+    border-color: var(--error);
+    color: #991B1B;
+}
+
+.alert-warning:not(.alert-minimal) {
+    background: #FEF3C7;
+    border-color: var(--warning);
+    color: #92400E;
+}
+
+.alert-info:not(.alert-minimal) {
+    background: #DBEAFE;
+    border-color: var(--info);
+    color: #1E40AF;
+}
+
+/* Override badges */
+.badge:not(.badge-minimal) {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.bg-primary:not(.badge-minimal),
+.badge-primary:not(.badge-minimal) {
+    background: var(--sage-subtle);
+    color: var(--sage-dark);
+}
+
+.bg-success:not(.badge-minimal),
+.badge-success:not(.badge-minimal) {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.bg-warning:not(.badge-minimal),
+.badge-warning:not(.badge-minimal) {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.bg-danger:not(.badge-minimal),
+.badge-danger:not(.badge-minimal) {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.bg-info:not(.badge-minimal),
+.badge-info:not(.badge-minimal) {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+/* Override form inputs */
+.form-control:not(.input-minimal):not(.auth-input):not(.input-sage) {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+    font-family: inherit;
+    color: var(--neutral-900);
+    background: white;
+    border: 1.5px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+    outline: none;
+}
+
+.form-control:not(.input-minimal):not(.auth-input):not(.input-sage):focus {
+    border-color: var(--sage-primary);
+    box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.1);
+}
+
+/* Override tables */
+.table:not(.table-minimal) {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.table:not(.table-minimal) thead {
+    background: var(--neutral-50);
+}
+
+.table:not(.table-minimal) th {
+    padding: var(--space-4);
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--neutral-200);
+}
+
+.table:not(.table-minimal) td {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--neutral-200);
+    color: var(--neutral-800);
+}
+
+.table:not(.table-minimal) tbody tr:hover {
+    background: var(--neutral-50);
+}
+
+/* Compact spacing */
+.my-5 {
+    margin-top: var(--space-6) !important;
+    margin-bottom: var(--space-6) !important;
+}
+
+.mb-4 {
+    margin-bottom: var(--space-4) !important;
+}
+
+.mb-3 {
+    margin-bottom: var(--space-3) !important;
+}
+
+.mb-5 {
+    margin-bottom: var(--space-6) !important;
+}
+
+.p-5 {
+    padding: var(--space-6) !important;
+}
+
+/* Text colors */
+.text-eco-green,
+.text-sage {
+    color: var(--sage-primary) !important;
+}
+
+.text-muted {
+    color: var(--neutral-600) !important;
+}
+
+/* Remove old eco colors */
+.bg-eco-primary {
+    background: var(--sage-primary) !important;
+}
+
+.bg-eco-light {
+    background: var(--sage-subtle) !important;
+}
+
+.shadow-eco {
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: var(--space-3);
+        padding-right: var(--space-3);
+    }
+    
+    .card:not(.card-minimal) {
+        padding: var(--space-4);
+    }
+}
+

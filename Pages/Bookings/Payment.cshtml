@@ -6,216 +6,242 @@
     ViewData["Title"] = "Payment";
 }
 
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            @if (Model.Booking == null)
+<div class="page-container">
+    <div style="max-width: 800px; margin: 0 auto;">
+        @if (Model.Booking == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Booking not found</div>
+            </div>
+        }
+        else
+        {
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="bi bi-credit-card"></i> Complete Payment
+                </h1>
+            </div>
+
+            <!-- Booking Summary -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-calendar-check"></i> Booking Summary
+                    </h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Bike</div>
+                        <div style="font-weight: 600;">@Model.Booking.Bike.Brand @Model.Booking.Bike.Model</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Type</div>
+                        <div style="font-weight: 600;">@Model.Booking.Bike.BikeType.TypeName</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Owner</div>
+                        <div style="font-weight: 600;">@Model.Booking.Bike.Owner.FullName</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Duration</div>
+                        <div style="font-weight: 600;">@Model.Booking.RentalHours.ToString("F1") hours</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Details -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-receipt"></i> Pricing Details
+                    </h2>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                    <div style="display: flex; justify-content: space-between; padding-bottom: var(--space-3); border-bottom: 1px solid var(--neutral-200);">
+                        <span>Base Rate</span>
+                        <strong>₱@Model.Booking.BaseRate.ToString("F2")</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-bottom: var(--space-3); border-bottom: 1px solid var(--neutral-200);">
+                        <span>Service Fee (10%)</span>
+                        <strong>₱@Model.Booking.ServiceFee.ToString("F2")</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: var(--space-2);">
+                        <h5 style="margin: 0;">Total Amount</h5>
+                        <h5 style="margin: 0; color: var(--sage-primary);">₱@Model.Booking.TotalAmount.ToString("F2")</h5>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
             {
-                <div class="alert alert-danger">Booking not found</div>
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@Model.ErrorMessage</div>
+                </div>
             }
-            else
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
             {
-                <div class="card shadow-eco">
-                    <div class="card-body p-5">
-                        <h2 class="text-eco-green mb-4">
-                            <i class="bi bi-credit-card"></i> Complete Payment
-                        </h2>
+                <div class="alert-minimal alert-minimal-success mb-4">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>@Model.SuccessMessage</div>
+                </div>
+            }
 
-                        <!-- Booking Summary -->
-                        <div class="card bg-eco-light mb-4">
-                            <div class="card-body">
-                                <h5 class="text-eco-green">Booking Summary</h5>
-                                <hr />
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p><strong>Bike:</strong> @Model.Booking.Bike.Brand @Model.Booking.Bike.Model</p>
-                                        <p><strong>Type:</strong> @Model.Booking.Bike.BikeType.TypeName</p>
-                                        <p><strong>Owner:</strong> @Model.Booking.Bike.Owner.FullName</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p><strong>Start:</strong> @Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</p>
-                                        <p><strong>End:</strong> @Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
-                                        <p><strong>Duration:</strong> @Model.Booking.RentalHours.ToString("F1") hours</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pricing Details -->
-                        <div class="card bg-eco-light mb-4">
-                            <div class="card-body">
-                                <h5 class="text-eco-green">Pricing Details</h5>
-                                <hr />
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Base Rate</span>
-                                    <strong>₱@Model.Booking.BaseRate.ToString("F2")</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Service Fee (10%)</span>
-                                    <strong>₱@Model.Booking.ServiceFee.ToString("F2")</strong>
-                                </div>
-                                <hr />
-                                <div class="d-flex justify-content-between">
-                                    <h5>Total Amount</h5>
-                                    <h5 class="text-eco-green">₱@Model.Booking.TotalAmount.ToString("F2")</h5>
-                                </div>
-                            </div>
-                        </div>
-
-                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                        {
-                            <div class="alert alert-danger">@Model.ErrorMessage</div>
-                        }
-
-                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-                        {
-                            <div class="alert alert-success">@Model.SuccessMessage</div>
-                        }
-
-                        @if (Model.ExistingPayment != null)
-                        {
-                            <div class="alert alert-warning">
-                                <i class="bi bi-info-circle"></i>
-                                <strong>Current Payment Method:</strong> 
-                                @Model.ExistingPayment.PaymentMethod.MethodName 
-                                (@Model.ExistingPayment.PaymentStatus)
-                                <br />
-                                <small>You can change your payment method below. The previous payment will be cancelled.</small>
-                            </div>
-                        }
-
-                        <!-- Payment Methods -->
-                        <h5 class="mb-3">Select Payment Method</h5>
-
-                        <form method="post">
-                            <div class="list-group mb-4">
-                                <label class="list-group-item" style="cursor: pointer;">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 ? "checked" : "") />
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-wallet2 fs-3 me-3 text-eco-green"></i>
-                                        <div>
-                                            <strong>Wallet</strong>
-                                            <br />
-                                            <small class="text-muted">Current Balance: ₱<span id="walletBalance">@Model.WalletBalance.ToString("F2")</span></small>
-                                            @if (Model.WalletBalance < Model.Booking.TotalAmount)
-                                            {
-                                                <br />
-                                                <small class="text-danger">Insufficient balance</small>
-                                            }
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="list-group-item" style="cursor: pointer;">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="2" @(Model.PaymentMethodId == 2 ? "checked" : "") />
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-phone fs-3 me-3 text-primary"></i>
-                                        <div>
-                                            <strong>GCash</strong>
-                                            <br />
-                                            <small class="text-muted">Pay via GCash mobile payment</small>
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="list-group-item" style="cursor: pointer;">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="3" @(Model.PaymentMethodId == 3 ? "checked" : "") />
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-qr-code fs-3 me-3 text-info"></i>
-                                        <div>
-                                            <strong>QRPH</strong>
-                                            <br />
-                                            <small class="text-muted">Pay via QR PH</small>
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="list-group-item" style="cursor: pointer;">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="5" @(Model.PaymentMethodId == 5 ? "checked" : "") />
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-phone fs-3 me-3" style="color: #00D9FF;"></i>
-                                        <div>
-                                            <strong>PayMaya</strong>
-                                            <br />
-                                            <small class="text-muted">Pay via PayMaya mobile payment</small>
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="list-group-item" style="cursor: pointer;">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="6" @(Model.PaymentMethodId == 6 ? "checked" : "") />
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-credit-card fs-3 me-3 text-warning"></i>
-                                        <div>
-                                            <strong>Credit/Debit Card</strong>
-                                            <br />
-                                            <small class="text-muted">Visa, Mastercard, JCB, and more</small>
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="list-group-item" style="cursor: pointer;">
-                                    <input class="form-check-input me-3" type="radio" name="PaymentMethodId" value="4" @(Model.PaymentMethodId == 4 ? "checked" : "") />
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-cash fs-3 me-3 text-success"></i>
-                                        <div>
-                                            <strong>Cash</strong>
-                                            <br />
-                                            <small class="text-muted">Pay directly to the owner</small>
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-
-                            <!-- Card Payment Form (shown when card is selected) -->
-                            <div id="cardPaymentForm" style="display: none;" class="card bg-light p-4 mb-4">
-                                <h6 class="mb-3">Card Details</h6>
-                                <div class="mb-3">
-                                    <label class="form-label">Cardholder Name</label>
-                                    <input type="text" class="form-control" id="cardholderName" placeholder="John Doe" />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Card Number</label>
-                                    <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Expiry Date</label>
-                                        <div class="row">
-                                            <div class="col-6">
-                                                <input type="text" class="form-control" id="expMonth" placeholder="MM" maxlength="2" />
-                                            </div>
-                                            <div class="col-6">
-                                                <input type="text" class="form-control" id="expYear" placeholder="YYYY" maxlength="4" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">CVV</label>
-                                        <input type="text" class="form-control" id="cvv" placeholder="123" maxlength="4" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-eco-primary btn-lg" id="submitBtn">
-                                    <i class="bi bi-check-circle"></i> <span id="submitBtnText">Confirm Payment</span>
-                                </button>
-                                <a href="/Dashboard/Renter" class="btn btn-outline-secondary">Cancel</a>
-                            </div>
-                        </form>
+            @if (Model.ExistingPayment != null)
+            {
+                <div class="alert-minimal alert-minimal-warning mb-4">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <div>
+                        <strong>Current Payment Method:</strong> @Model.ExistingPayment.PaymentMethod.MethodName (@Model.ExistingPayment.PaymentStatus)
+                        <br />
+                        <small>You can change your payment method below. The previous payment will be cancelled.</small>
                     </div>
                 </div>
             }
-        </div>
+
+            <!-- Payment Methods -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-credit-card"></i> Select Payment Method
+                    </h2>
+                </div>
+                <form method="post">
+                    <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
+                               class="payment-method-option @(Model.PaymentMethodId == 1 ? "selected" : "")">
+                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 ? "checked" : "") style="margin: 0;" />
+                            <i class="bi bi-wallet2" style="font-size: 1.5rem; color: var(--sage-primary);"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: var(--space-1);">Wallet</div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                                    Balance: ₱<span id="walletBalance">@Model.WalletBalance.ToString("F2")</span>
+                                    @if (Model.WalletBalance < Model.Booking.TotalAmount)
+                                    {
+                                        <span style="color: var(--error);"> • Insufficient</span>
+                                    }
+                                </div>
+                            </div>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
+                               class="payment-method-option @(Model.PaymentMethodId == 2 ? "selected" : "")">
+                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="2" @(Model.PaymentMethodId == 2 ? "checked" : "") style="margin: 0;" />
+                            <i class="bi bi-phone" style="font-size: 1.5rem; color: #0066CC;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: var(--space-1);">GCash</div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay via GCash mobile payment</div>
+                            </div>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
+                               class="payment-method-option @(Model.PaymentMethodId == 3 ? "selected" : "")">
+                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="3" @(Model.PaymentMethodId == 3 ? "checked" : "") style="margin: 0;" />
+                            <i class="bi bi-qr-code" style="font-size: 1.5rem; color: var(--info);"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: var(--space-1);">QRPH</div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay via QR PH</div>
+                            </div>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
+                               class="payment-method-option @(Model.PaymentMethodId == 5 ? "selected" : "")">
+                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="5" @(Model.PaymentMethodId == 5 ? "checked" : "") style="margin: 0;" />
+                            <i class="bi bi-phone" style="font-size: 1.5rem; color: #00D9FF;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: var(--space-1);">PayMaya</div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay via PayMaya mobile payment</div>
+                            </div>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
+                               class="payment-method-option @(Model.PaymentMethodId == 6 ? "selected" : "")">
+                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="6" @(Model.PaymentMethodId == 6 ? "checked" : "") style="margin: 0;" />
+                            <i class="bi bi-credit-card" style="font-size: 1.5rem; color: var(--warning);"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: var(--space-1);">Credit/Debit Card</div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Visa, Mastercard, JCB, and more</div>
+                            </div>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
+                               class="payment-method-option @(Model.PaymentMethodId == 4 ? "selected" : "")">
+                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="4" @(Model.PaymentMethodId == 4 ? "checked" : "") style="margin: 0;" />
+                            <i class="bi bi-cash" style="font-size: 1.5rem; color: var(--success);"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: var(--space-1);">Cash</div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay directly to the owner</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Card Payment Form (shown when card is selected) -->
+                    <div id="cardPaymentForm" style="display: none;" class="card-minimal card-minimal-compact mt-4">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: var(--space-4);">
+                            <i class="bi bi-credit-card"></i> Card Details
+                        </h3>
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Cardholder Name</label>
+                            <input type="text" class="input-minimal" id="cardholderName" placeholder="John Doe" />
+                        </div>
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Card Number</label>
+                            <input type="text" class="input-minimal" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">Expiry Date</label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);">
+                                    <input type="text" class="input-minimal" id="expMonth" placeholder="MM" maxlength="2" />
+                                    <input type="text" class="input-minimal" id="expYear" placeholder="YYYY" maxlength="4" />
+                                </div>
+                            </div>
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">CVV</label>
+                                <input type="text" class="input-minimal" id="cvv" placeholder="123" maxlength="4" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-6);">
+                        <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg" id="submitBtn">
+                            <i class="bi bi-check-circle"></i> <span id="submitBtnText">Confirm Payment</span>
+                        </button>
+                        <a href="/Dashboard/Renter" class="btn-minimal btn-minimal-ghost">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        }
     </div>
 </div>
 
+<style>
+    .payment-method-option {
+        transition: all var(--transition-base);
+    }
+    
+    .payment-method-option:hover {
+        background: var(--sage-subtle);
+        border-color: var(--sage-primary);
+    }
+    
+    .payment-method-option.selected {
+        background: var(--sage-subtle);
+        border-color: var(--sage-primary);
+        box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.1);
+    }
+</style>
+
 <script>
-    // Ensure radio buttons are clickable and handle selection
     document.addEventListener('DOMContentLoaded', function() {
         const radioButtons = document.querySelectorAll('input[name="PaymentMethodId"]');
-        const listGroupItems = document.querySelectorAll('.list-group-item');
+        const paymentOptions = document.querySelectorAll('.payment-method-option');
         
         // Make entire label clickable
-        listGroupItems.forEach(item => {
-            item.addEventListener('click', function(e) {
-                // Don't trigger if clicking directly on the radio button
+        paymentOptions.forEach(option => {
+            option.addEventListener('click', function(e) {
                 if (e.target.type !== 'radio') {
                     const radio = this.querySelector('input[type="radio"]');
                     if (radio && !radio.disabled) {
@@ -224,35 +250,20 @@
                     }
                 }
             });
-            
-            // Add visual feedback on hover
-            item.addEventListener('mouseenter', function() {
-                if (!this.querySelector('input[type="radio"]:checked')) {
-                    this.style.backgroundColor = '#f8f9fa';
-                }
-            });
-            
-            item.addEventListener('mouseleave', function() {
-                if (!this.querySelector('input[type="radio"]:checked')) {
-                    this.style.backgroundColor = '';
-                }
-            });
         });
         
-        // Show/hide card form based on payment method selection
+        // Show/hide card form and update visual state
         radioButtons.forEach(radio => {
             radio.addEventListener('change', function() {
                 const cardForm = document.getElementById('cardPaymentForm');
                 const submitBtn = document.getElementById('submitBtnText');
                 
-                // Update visual state of selected item
-                listGroupItems.forEach(item => {
-                    if (item.querySelector('input[type="radio"]:checked')) {
-                        item.style.backgroundColor = '#e8f5e9';
-                        item.style.borderColor = '#28a745';
+                // Update visual state
+                paymentOptions.forEach(option => {
+                    if (option.querySelector('input[type="radio"]:checked')) {
+                        option.classList.add('selected');
                     } else {
-                        item.style.backgroundColor = '';
-                        item.style.borderColor = '';
+                        option.classList.remove('selected');
                     }
                 });
                 
@@ -265,7 +276,7 @@
                 }
             });
             
-            // Trigger change event on page load if already checked
+            // Trigger change on page load if already selected
             if (radio.checked) {
                 radio.dispatchEvent(new Event('change', { bubbles: true }));
             }

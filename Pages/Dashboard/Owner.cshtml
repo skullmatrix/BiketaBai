@@ -6,336 +6,301 @@
     ViewData["Title"] = "Owner Dashboard";
 }
 
-<link rel="stylesheet" href="~/css/owner-dashboard.css" asp-append-version="true" />
+<div class="page-container">
+    <div class="page-header">
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </h1>
+                <p class="page-subtitle">Manage your bike rental business</p>
+            </div>
+            <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                <a href="/Owner/AddBike" class="btn-minimal btn-minimal-primary">
+                    <i class="bi bi-plus-circle-fill"></i> Add Bike
+                </a>
+                <a href="/Owner/MyBikes" class="btn-minimal btn-minimal-ghost">
+                    <i class="bi bi-list-ul"></i> Manage
+                </a>
+            </div>
+        </div>
+    </div>
 
-<div class="owner-dashboard-wrapper">
-    <div class="owner-dashboard-container">
-        
-        <!-- Header -->
-        <div class="owner-header">
-            <div class="owner-header-content">
-                <div class="owner-header-text">
-                    <h1><i class="bi bi-speedometer2"></i> Owner Dashboard</h1>
-                    <p>Welcome back! Here's an overview of your bike rental business.</p>
-                </div>
-                <div class="owner-header-actions">
-                    <a href="/Owner/AddBike" class="owner-btn owner-btn-primary">
-                        <i class="bi bi-plus-circle-fill"></i>
-                        <span>Add Bike</span>
-                    </a>
-                    <a href="/Owner/MyBikes" class="owner-btn owner-btn-secondary">
-                        <i class="bi bi-list-ul"></i>
-                        <span>Manage Listings</span>
-                    </a>
-                </div>
+    <!-- Stats Grid -->
+    <div class="grid-minimal grid-minimal-4 mb-5">
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-bicycle"></i>
+            </div>
+            <div class="stat-value">@Model.TotalBikes</div>
+            <div class="stat-label">Total Bikes</div>
+            <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                @{
+                    var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatusId == 1);
+                }
+                <i class="bi bi-check-circle"></i> @availableBikes Available
             </div>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="owner-stats-grid">
-            <div class="owner-stat-card">
-                <div class="owner-stat-icon green">
-                    <i class="bi bi-bicycle"></i>
-                </div>
-                <div class="owner-stat-details">
-                    <div class="owner-stat-value">@Model.TotalBikes</div>
-                    <div class="owner-stat-label">Total Bikes</div>
-                    <div class="owner-stat-meta">
-                        <i class="bi bi-check-circle"></i>
-                        @{
-                            var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatusId == 1);
-                        }
-                        @availableBikes Available
-                    </div>
-                </div>
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-clock-history"></i>
             </div>
-
-            <div class="owner-stat-card">
-                <div class="owner-stat-icon blue">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-                <div class="owner-stat-details">
-                    <div class="owner-stat-value">@Model.ActiveRentalsCount</div>
-                    <div class="owner-stat-label">Active Rentals</div>
-                    <div class="owner-stat-meta">
-                        <i class="bi bi-graph-up-arrow"></i>
-                        Currently Rented
-                    </div>
-                </div>
-            </div>
-
-            <div class="owner-stat-card">
-                <div class="owner-stat-icon orange">
-                    <i class="bi bi-cash-coin"></i>
-                </div>
-                <div class="owner-stat-details">
-                    <div class="owner-stat-value">₱@Model.TotalEarnings.ToString("N2")</div>
-                    <div class="owner-stat-label">Total Earnings</div>
-                    <div class="owner-stat-meta">
-                        <i class="bi bi-calendar-check"></i>
-                        All Time
-                    </div>
-                </div>
-            </div>
-
-            <div class="owner-stat-card">
-                <div class="owner-stat-icon purple">
-                    <i class="bi bi-star-fill"></i>
-                </div>
-                <div class="owner-stat-details">
-                    <div class="owner-stat-value">@Model.AverageRating.ToString("F1")</div>
-                    <div class="owner-stat-label">Average Rating</div>
-                    <div class="owner-rating-stars">
-                        @for (int i = 1; i <= 5; i++)
-                        {
-                            if (i <= Model.AverageRating)
-                            {
-                                <i class="bi bi-star-fill"></i>
-                            }
-                            else
-                            {
-                                <i class="bi bi-star"></i>
-                            }
-                        }
-                    </div>
-                </div>
-            </div>
+            <div class="stat-value">@Model.ActiveRentalsCount</div>
+            <div class="stat-label">Active Rentals</div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="owner-quick-actions">
-            <div class="owner-quick-actions-grid">
-                <a href="/Owner/MyBikes" class="owner-quick-action">
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="stat-value">₱@Model.TotalEarnings.ToString("F0")</div>
+            <div class="stat-label">Total Earnings</div>
+        </div>
+
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-star-fill"></i>
+            </div>
+            <div class="stat-value">@Model.AverageRating.ToString("F1")</div>
+            <div class="stat-label">Average Rating</div>
+            <div style="margin-top: var(--space-2);">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    <i class="bi bi-star-fill @(i <= Model.AverageRating ? "text-sage" : "")" 
+                       style="color: @(i <= Model.AverageRating ? "var(--sage-primary)" : "var(--neutral-300)"); font-size: 0.875rem;"></i>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-lightning-charge"></i> Quick Actions
+            </h2>
+        </div>
+        <div class="grid-minimal grid-minimal-4">
+            <a href="/Owner/MyBikes" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
+                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
                     <i class="bi bi-grid-3x3-gap"></i>
-                    <p>Manage Listings</p>
-                </a>
-                <a href="/Owner/RentalRequests" class="owner-quick-action">
-                    <i class="bi bi-inbox"></i>
-                    <p>View Requests</p>
-                </a>
-                <a href="/Wallet/Index" class="owner-quick-action">
-                    <i class="bi bi-wallet2"></i>
-                    <p>My Wallet</p>
-                </a>
-                <a href="#" class="owner-quick-action">
-                    <i class="bi bi-bar-chart"></i>
-                    <p>Analytics</p>
-                </a>
-            </div>
-        </div>
-
-        <!-- Active Rentals -->
-        @if (Model.ActiveBookings.Any())
-        {
-            <div class="owner-section">
-                <div class="owner-section-header">
-                    <h2 class="owner-section-title">
-                        <i class="bi bi-bicycle"></i>
-                        Active Rentals
-                    </h2>
                 </div>
-                <div class="owner-section-body">
-                    @foreach (var booking in Model.ActiveBookings)
-                    {
-                        <div class="owner-rental-card">
-                            <div class="owner-rental-grid">
-                                <div class="owner-rental-image">
-                                    @if (booking.Bike.BikeImages.Any())
-                                    {
-                                        <img src="@booking.Bike.BikeImages.First().ImageUrl" alt="@booking.Bike.Brand @booking.Bike.Model" />
-                                    }
-                                    else
-                                    {
-                                        <div style="width: 100%; height: 100%; background: var(--neutral-200); display: flex; align-items: center; justify-content: center;">
-                                            <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
-                                        </div>
-                                    }
-                                </div>
-                                <div class="owner-rental-details">
-                                    <h5>@booking.Bike.Brand @booking.Bike.Model</h5>
-                                    <div class="owner-rental-info">
-                                        <p><strong>Renter:</strong> @booking.Renter.FullName</p>
-                                        <p><strong>Phone:</strong> @booking.Renter.Phone</p>
-                                        <p><strong>Return by:</strong> @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
-                                        <p><strong>Earning:</strong> <span class="owner-rental-earning">₱@((booking.TotalAmount * 0.9m).ToString("N2"))</span></p>
+                <div style="font-weight: 600; color: var(--neutral-800);">Manage Listings</div>
+            </a>
+            <a href="/Owner/RentalRequests" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
+                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <div style="font-weight: 600; color: var(--neutral-800);">View Requests</div>
+            </a>
+            <a href="/Wallet/Index" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
+                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div style="font-weight: 600; color: var(--neutral-800);">My Wallet</div>
+            </a>
+            <a href="/Owner/GeofenceSettings" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
+                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </div>
+                <div style="font-weight: 600; color: var(--neutral-800);">Geofence</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Rentals -->
+    @if (Model.ActiveBookings.Any())
+    {
+        <div class="card-minimal mb-5">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-bicycle"></i> Active Rentals
+                </h2>
+            </div>
+            <div class="grid-minimal">
+                @foreach (var booking in Model.ActiveBookings)
+                {
+                    <div class="card-minimal card-minimal-compact">
+                        <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: var(--space-4); align-items: center;">
+                            <div>
+                                @if (booking.Bike.BikeImages.Any())
+                                {
+                                    <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                         alt="@booking.Bike.Brand @booking.Bike.Model"
+                                         style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);" />
+                                }
+                                else
+                                {
+                                    <div style="width: 100px; height: 100px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
                                     </div>
-                                </div>
-                                <div class="owner-rental-actions">
-                                    <a href="/Bookings/Details/@booking.BookingId" class="owner-table-btn owner-table-btn-primary">View Details</a>
-                                </div>
+                                }
+                            </div>
+                            <div>
+                                <h5 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-person"></i> @booking.Renter.FullName
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-telephone"></i> @booking.Renter.Phone
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-calendar-x"></i> Return by: @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin: 0;">
+                                    <strong>Earning:</strong> <span class="text-sage">₱@((booking.TotalAmount * 0.9m).ToString("F0"))</span>
+                                </p>
+                            </div>
+                            <div>
+                                <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                                    View Details
+                                </a>
                             </div>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- My Bikes -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-bicycle"></i> My Bikes
+            </h2>
+            <a href="/Owner/MyBikes" class="btn-minimal btn-minimal-ghost btn-minimal-sm">View All</a>
+        </div>
+        @if (Model.Bikes.Any())
+        {
+            <div style="overflow-x: auto;">
+                <table class="table-minimal">
+                    <thead>
+                        <tr>
+                            <th>Bike</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Rate</th>
+                            <th>Rating</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bike in Model.Bikes.Take(5))
+                        {
+                            <tr>
+                                <td><strong>@bike.Brand @bike.Model</strong></td>
+                                <td><span class="badge-minimal badge-minimal-primary">@bike.BikeType.TypeName</span></td>
+                                <td>
+                                    @switch (bike.AvailabilityStatusId)
+                                    {
+                                        case 1:
+                                            <span class="badge-minimal badge-minimal-success">Available</span>
+                                            break;
+                                        case 2:
+                                            <span class="badge-minimal badge-minimal-primary">Rented</span>
+                                            break;
+                                        case 3:
+                                            <span class="badge-minimal badge-minimal-warning">Maintenance</span>
+                                            break;
+                                        case 4:
+                                            <span class="badge-minimal badge-minimal-danger">Inactive</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>₱@bike.HourlyRate/hr</td>
+                                <td>
+                                    @{
+                                        var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
+                                        for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="bi bi-star-fill" 
+                                               style="color: @(i <= avgRating ? "var(--sage-primary)" : "var(--neutral-300)"); font-size: 0.875rem;"></i>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    <a href="/Owner/EditBike/@bike.BikeId" class="btn-minimal btn-minimal-outline btn-minimal-sm">Edit</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         }
+        else
+        {
+            <div style="text-align: center; padding: var(--space-8);">
+                <i class="bi bi-bicycle" style="font-size: 3rem; color: var(--neutral-300); margin-bottom: var(--space-4);"></i>
+                <p style="color: var(--neutral-600); margin-bottom: var(--space-4);">No bikes listed yet.</p>
+                <a href="/Owner/AddBike" class="btn-minimal btn-minimal-primary">Add Your First Bike</a>
+            </div>
+        }
+    </div>
 
-        <!-- Geofence Settings -->
-        <div class="owner-section">
-            <div class="owner-section-header">
-                <h2 class="owner-section-title">
-                    <i class="bi bi-geo-alt-fill"></i>
-                    Geofence Settings
-                </h2>
-                <a href="/Owner/GeofenceSettings" class="owner-section-action">Configure</a>
-            </div>
-            <div class="owner-section-body">
-                <p class="text-muted">Set up geofencing to monitor renter locations and receive alerts when they go outside your store radius.</p>
-                <a href="/Owner/GeofenceSettings" class="btn btn-outline-primary btn-sm">Configure Geofencing</a>
-            </div>
+    <!-- Recent Bookings -->
+    <div class="card-minimal">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-clock-history"></i> Recent Bookings
+            </h2>
         </div>
-
-        <!-- My Bikes -->
-        <div class="owner-section">
-            <div class="owner-section-header">
-                <h2 class="owner-section-title">
-                    <i class="bi bi-bicycle"></i>
-                    My Bikes
-                </h2>
-                <a href="/Owner/MyBikes" class="owner-section-action">View All</a>
+        @if (Model.RecentBookings.Any())
+        {
+            <div style="overflow-x: auto;">
+                <table class="table-minimal">
+                    <thead>
+                        <tr>
+                            <th>Bike</th>
+                            <th>Renter</th>
+                            <th>Dates</th>
+                            <th>Earning</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.RecentBookings.Take(10))
+                        {
+                            <tr>
+                                <td><strong>@booking.Bike.Brand @booking.Bike.Model</strong></td>
+                                <td>@booking.Renter.FullName</td>
+                                <td>
+                                    <div style="font-size: 0.875rem;">
+                                        @booking.StartDate.ToString("MMM dd")<br />
+                                        <span style="color: var(--neutral-500);">to @booking.EndDate.ToString("MMM dd")</span>
+                                    </div>
+                                </td>
+                                <td><strong class="text-sage">₱@((booking.TotalAmount * 0.9m).ToString("F0"))</strong></td>
+                                <td>
+                                    @switch (booking.BookingStatusId)
+                                    {
+                                        case 1:
+                                            <span class="badge-minimal badge-minimal-warning">Pending</span>
+                                            break;
+                                        case 2:
+                                            <span class="badge-minimal badge-minimal-primary">Active</span>
+                                            break;
+                                        case 3:
+                                            <span class="badge-minimal badge-minimal-success">Completed</span>
+                                            break;
+                                        case 4:
+                                            <span class="badge-minimal badge-minimal-danger">Cancelled</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-            <div class="owner-section-body">
-                @if (Model.Bikes.Any())
-                {
-                    <div class="owner-table-wrapper">
-                        <table class="owner-table">
-                            <thead>
-                                <tr>
-                                    <th>Bike</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Rate</th>
-                                    <th>Rating</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var bike in Model.Bikes.Take(5))
-                                {
-                                    <tr>
-                                        <td><strong>@bike.Brand @bike.Model</strong></td>
-                                        <td><span class="owner-badge owner-badge-type">@bike.BikeType.TypeName</span></td>
-                                        <td>
-                                            @switch (bike.AvailabilityStatusId)
-                                            {
-                                                case 1:
-                                                    <span class="owner-badge available">Available</span>
-                                                    break;
-                                                case 2:
-                                                    <span class="owner-badge rented">Rented</span>
-                                                    break;
-                                                case 3:
-                                                    <span class="owner-badge maintenance">Maintenance</span>
-                                                    break;
-                                                case 4:
-                                                    <span class="owner-badge inactive">Inactive</span>
-                                                    break;
-                                            }
-                                        </td>
-                                        <td>₱@bike.HourlyRate/hr</td>
-                                        <td>
-                                            <div class="owner-rating-stars">
-                                                @{
-                                                    var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
-                                                    for (int i = 1; i <= 5; i++)
-                                                    {
-                                                        if (i <= avgRating)
-                                                        {
-                                                            <i class="bi bi-star-fill"></i>
-                                                        }
-                                                        else
-                                                        {
-                                                            <i class="bi bi-star"></i>
-                                                        }
-                                                    }
-                                                }
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <a href="/Owner/EditBike/@bike.BikeId" class="owner-table-btn owner-table-btn-outline">Edit</a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="owner-empty-state">
-                        <i class="bi bi-bicycle"></i>
-                        <p>No bikes listed yet. <a href="/Owner/AddBike">Add your first bike</a>!</p>
-                    </div>
-                }
+        }
+        else
+        {
+            <div style="text-align: center; padding: var(--space-8);">
+                <i class="bi bi-clock-history" style="font-size: 3rem; color: var(--neutral-300); margin-bottom: var(--space-4);"></i>
+                <p style="color: var(--neutral-600);">No bookings yet</p>
             </div>
-        </div>
-
-        <!-- Recent Bookings -->
-        <div class="owner-section">
-            <div class="owner-section-header">
-                <h2 class="owner-section-title">
-                    <i class="bi bi-clock-history"></i>
-                    Recent Bookings
-                </h2>
-            </div>
-            <div class="owner-section-body">
-                @if (Model.RecentBookings.Any())
-                {
-                    <div class="owner-table-wrapper">
-                        <table class="owner-table">
-                            <thead>
-                                <tr>
-                                    <th>Bike</th>
-                                    <th>Renter</th>
-                                    <th>Dates</th>
-                                    <th>Earning</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var booking in Model.RecentBookings.Take(10))
-                                {
-                                    <tr>
-                                        <td><strong>@booking.Bike.Brand @booking.Bike.Model</strong></td>
-                                        <td>@booking.Renter.FullName</td>
-                                        <td>
-                                            <small>
-                                                @booking.StartDate.ToString("MMM dd") - @booking.EndDate.ToString("MMM dd")
-                                            </small>
-                                        </td>
-                                        <td><strong>₱@((booking.TotalAmount * 0.9m).ToString("N2"))</strong></td>
-                                        <td>
-                                            @switch (booking.BookingStatusId)
-                                            {
-                                                case 1:
-                                                    <span class="owner-badge pending">Pending</span>
-                                                    break;
-                                                case 2:
-                                                    <span class="owner-badge active">Active</span>
-                                                    break;
-                                                case 3:
-                                                    <span class="owner-badge completed">Completed</span>
-                                                    break;
-                                                case 4:
-                                                    <span class="owner-badge cancelled">Cancelled</span>
-                                                    break;
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="owner-empty-state">
-                        <i class="bi bi-clock-history"></i>
-                        <p>No bookings yet</p>
-                    </div>
-                }
-            </div>
-        </div>
-
+        }
     </div>
 </div>
