@@ -88,11 +88,8 @@ public class DetailsModel : PageModel
         if (Bike == null)
             return NotFound();
 
-        // Initialize default rental dates only if not already set
-        if (!Input.StartDate.HasValue)
-            Input.StartDate = DateTime.Now.AddHours(1);
-        if (!Input.EndDate.HasValue)
-            Input.EndDate = DateTime.Now.AddDays(1);
+        // No need to initialize dates - they will be set from hours input on form submission
+        // Booking always starts immediately (current time)
 
         // Note: Phone verification is now handled on a separate page
         // If user needs verification, they'll be redirected when trying to book
@@ -153,28 +150,50 @@ public class DetailsModel : PageModel
             }
         }
 
-        // Validate dates
-        if (!Input.StartDate.HasValue || !Input.EndDate.HasValue)
+        // Get rental hours from form (if not provided via dates)
+        decimal rentalHours = 2; // Default
+        DateTime startDate = DateTime.Now; // Always start immediately
+        DateTime endDate = DateTime.Now;
+
+        // Try to get hours from form data
+        if (Request.Form.ContainsKey("rentalHours") && decimal.TryParse(Request.Form["rentalHours"], out var hours))
         {
-            TempData["ErrorMessage"] = "Please select both start and end dates";
+            rentalHours = hours;
+            if (rentalHours < 1 || rentalHours > 168)
+            {
+                TempData["ErrorMessage"] = "Rental duration must be between 1 and 168 hours (7 days)";
+                return Page();
+            }
+            endDate = startDate.AddHours((double)rentalHours);
+        }
+        else if (Input.StartDate.HasValue && Input.EndDate.HasValue)
+        {
+            // Fallback to date inputs if provided (for backward compatibility)
+            startDate = Input.StartDate.Value;
+            endDate = Input.EndDate.Value;
+            
+            // Ensure start date is current time (booking starts immediately)
+            if (startDate > DateTime.Now.AddMinutes(5))
+            {
+                TempData["ErrorMessage"] = "Booking must start immediately. Future bookings are not allowed.";
+                return Page();
+            }
+            
+            startDate = DateTime.Now; // Force to current time
+            var duration = endDate - Input.StartDate.Value;
+            endDate = startDate.Add(duration);
+            rentalHours = (decimal)duration.TotalHours;
+        }
+        else
+        {
+            TempData["ErrorMessage"] = "Please enter the rental duration in hours";
             return Page();
         }
 
         // Validate that end date is after start date
-        if (Input.EndDate.Value <= Input.StartDate.Value)
+        if (endDate <= startDate)
         {
-            TempData["ErrorMessage"] = "End date must be after start date";
-            return Page();
-        }
-
-        // If start date is very close to current time (within 5 minutes), treat it as "now"
-        var timeDifference = (Input.StartDate.Value - DateTime.Now).TotalMinutes;
-        var isImmediateStart = timeDifference >= -5 && timeDifference <= 5; // Allow 5 minute window
-        
-        // Validate that start date is not too far in the past (allow 5 minute buffer for immediate bookings)
-        if (Input.StartDate.Value < DateTime.Now.AddMinutes(-5))
-        {
-            TempData["ErrorMessage"] = "Start date cannot be more than 5 minutes in the past";
+            TempData["ErrorMessage"] = "Invalid rental duration";
             return Page();
         }
 
@@ -185,11 +204,12 @@ public class DetailsModel : PageModel
         }
 
         // Create booking using BookingService (doesn't process payment)
+        // Booking always starts immediately (current time)
         var result = await _bookingService.CreateBookingAsync(
             userId.Value,
             id,
-            Input.StartDate.Value,
-            Input.EndDate.Value
+            startDate,
+            endDate
         );
 
         if (result.success)

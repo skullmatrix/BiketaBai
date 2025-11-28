@@ -30,7 +30,7 @@ public class GeofencingService
     /// </summary>
     public decimal GetDefaultGeofenceRadius()
     {
-        return _configuration.GetValue<decimal>("AppSettings:GeofenceRadiusKm", 10.0m); // Default 10km
+        return _configuration.GetValue<decimal>("AppSettings:GeofenceRadiusKm", 5.0m); // Default 5km
     }
 
     /// <summary>

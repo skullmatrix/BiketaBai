@@ -34,9 +34,93 @@
             border-radius: 8px !important;
         }
         
+        /* Mobile Responsive Styles */
         @@media (max-width: 992px) {
             .bike-details-grid {
                 grid-template-columns: 1fr !important;
+                gap: 1.5rem !important;
+            }
+            
+            .bike-booking-sidebar {
+                order: -1 !important;
+            }
+        }
+        
+        @@media (max-width: 768px) {
+            .bike-details-page .container {
+                padding: 0 1rem !important;
+            }
+            
+            .bike-details-grid {
+                gap: 1rem !important;
+            }
+            
+            /* Quick hour buttons - wrap on mobile */
+            .quick-hours-buttons {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 0.5rem !important;
+            }
+            
+            .btn-quick-hour {
+                width: 100% !important;
+                padding: 0.625rem 0.75rem !important;
+                font-size: 0.875rem !important;
+            }
+            
+            /* Rental duration input - full width */
+            .booking-body > form > div:first-child > div {
+                flex-direction: column !important;
+                gap: 0.5rem !important;
+            }
+            
+            .booking-body > form > div:first-child > div > input {
+                width: 100% !important;
+            }
+            
+            .booking-body > form > div:first-child > div > span {
+                width: 100% !important;
+                justify-content: center !important;
+                padding: 0.5rem !important;
+            }
+            
+            /* Pricing preview - full width */
+            #pricingPreview {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+            
+            /* Booking button - full width */
+            #submitBtn {
+                width: 100% !important;
+                padding: 1rem !important;
+            }
+        }
+        
+        @@media (max-width: 576px) {
+            .bike-details-page {
+                padding: 0.75rem 0 2rem !important;
+            }
+            
+            .bike-details-page .container {
+                padding: 0 0.75rem !important;
+            }
+            
+            .quick-hours-buttons {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            
+            .booking-header {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+            
+            .price-section {
+                width: 100% !important;
+            }
+            
+            .owner-section {
+                width: 100% !important;
             }
         }
     </style>
@@ -271,88 +355,46 @@ else
                                     }
                                     
                                     <form method="post" id="bookingForm">
-                                        <!-- Booking Mode Toggle -->
-                                        <div class="booking-mode-toggle mb-3">
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);">
-                                                <input type="radio" class="btn-check" name="bookingMode" id="modeHours" value="hours" checked style="display: none;">
-                                                <label class="btn-minimal btn-minimal-ghost" for="modeHours" style="margin: 0; justify-content: center;">
-                                                    <i class="bi bi-clock"></i> By Hours
-                                                </label>
-                                                <input type="radio" class="btn-check" name="bookingMode" id="modeDateTime" value="datetime" style="display: none;">
-                                                <label class="btn-minimal btn-minimal-ghost" for="modeDateTime" style="margin: 0; justify-content: center;">
-                                                    <i class="bi bi-calendar"></i> Specific Time
-                                                </label>
+                                        <!-- Rental Duration Input -->
+                                        <div class="mb-3">
+                                            <label for="rentalHours" class="label-minimal">
+                                                <i class="bi bi-clock"></i> Rental Duration
+                                            </label>
+                                            <div style="display: flex; gap: var(--space-2);">
+                                                <input type="number" 
+                                                       id="rentalHours" 
+                                                       name="rentalHours"
+                                                       class="input-minimal" 
+                                                       min="1" 
+                                                       max="168" 
+                                                       step="0.5" 
+                                                       value="2"
+                                                       placeholder="Enter hours"
+                                                       required
+                                                       style="flex: 1;">
+                                                <span style="display: flex; align-items: center; padding: 0 var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--neutral-600);">hours</span>
+                                            </div>
+                                            <small style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: var(--space-1); display: block;">
+                                                <i class="bi bi-info-circle"></i> Booking starts immediately. Your location will be tracked for geofencing.
+                                            </small>
+                                        </div>
+                                        
+                                        <!-- Quick Hour Selection -->
+                                        <div class="quick-hours-section mb-3">
+                                            <label class="mb-2" style="font-size: 0.875rem; font-weight: 500; color: var(--neutral-700);">
+                                                <i class="bi bi-lightning"></i> Quick Select
+                                            </label>
+                                            <div class="quick-hours-buttons">
+                                                <button type="button" class="btn-quick-hour" data-hours="2">2 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="4">4 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="8">8 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="12">12 hrs</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="24">1 day</button>
+                                                <button type="button" class="btn-quick-hour" data-hours="48">2 days</button>
                                             </div>
                                         </div>
 
-                                        <!-- Hours Input Mode -->
-                                        <div id="hoursMode" class="booking-mode-content">
-                                            <div class="mb-3">
-                                                <label for="rentalHours" class="form-label" style="font-size: 0.875rem; font-weight: 500; color: #495057;">
-                                                    <i class="bi bi-clock"></i> Rental Duration
-                                                </label>
-                                                <div style="display: flex; gap: var(--space-2);">
-                                                    <input type="number" 
-                                                           id="rentalHours" 
-                                                           class="input-minimal" 
-                                                           min="1" 
-                                                           max="168" 
-                                                           step="0.5" 
-                                                           value="2"
-                                                           placeholder="Enter hours"
-                                                           style="flex: 1;">
-                                                    <span style="display: flex; align-items: center; padding: 0 var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--neutral-600);">hours</span>
-                                                </div>
-                                                <small class="form-text text-muted">Start time will be now. Booking activates immediately after payment.</small>
-                                            </div>
-                                            
-                                            <!-- Quick Hour Selection -->
-                                            <div class="quick-hours-section mb-3">
-                                                <label class="mb-2" style="font-size: 0.875rem; font-weight: 500; color: #495057;">
-                                                    <i class="bi bi-lightning"></i> Quick Select
-                                                </label>
-                                                <div class="quick-hours-buttons">
-                                                    <button type="button" class="btn-quick-hour" data-hours="2">2 hrs</button>
-                                                    <button type="button" class="btn-quick-hour" data-hours="4">4 hrs</button>
-                                                    <button type="button" class="btn-quick-hour" data-hours="8">8 hrs</button>
-                                                    <button type="button" class="btn-quick-hour" data-hours="12">12 hrs</button>
-                                                    <button type="button" class="btn-quick-hour" data-hours="24">1 day</button>
-                                                    <button type="button" class="btn-quick-hour" data-hours="48">2 days</button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- DateTime Input Mode -->
-                                        <div id="datetimeMode" class="booking-mode-content" style="display: none;">
-                                            <div class="date-inputs">
-                                                <div class="date-input-group">
-                                                    <label>
-                                                        <i class="bi bi-calendar-event"></i>
-                                                        <span>Start</span>
-                                                    </label>
-                                                    <input type="datetime-local" 
-                                                           asp-for="Input.StartDate" 
-                                                           id="Input_StartDate"
-                                                           class="input-minimal" 
-                                                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
-                                                           value="@(Model.Input.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" />
-                                                </div>
-                                                <div class="date-input-group">
-                                                    <label>
-                                                        <i class="bi bi-calendar-x"></i>
-                                                        <span>End</span>
-                                                    </label>
-                                                    <input type="datetime-local" 
-                                                           asp-for="Input.EndDate" 
-                                                           id="Input_EndDate"
-                                                           class="input-minimal" 
-                                                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
-                                                           value="@(Model.Input.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Hidden inputs for form submission -->
+                                        <!-- Hidden inputs for form submission (always set to current time) -->
                                         <input type="hidden" asp-for="Input.StartDate" id="hidden_StartDate" />
                                         <input type="hidden" asp-for="Input.EndDate" id="hidden_EndDate" />
 
@@ -449,23 +491,6 @@ else
                     $('.gallery-thumb').eq(activeIndex - 1).addClass('active');
                 });
 
-                // Booking mode toggle
-                $('input[name="bookingMode"]').on('change', function() {
-                    const mode = $(this).val();
-                    if (mode === 'hours') {
-                        $('#hoursMode').show();
-                        $('#datetimeMode').hide();
-                        $('#Input_StartDate, #Input_EndDate').removeAttr('required');
-                        $('#rentalHours').attr('required', 'required');
-                    } else {
-                        $('#hoursMode').hide();
-                        $('#datetimeMode').show();
-                        $('#rentalHours').removeAttr('required');
-                        $('#Input_StartDate, #Input_EndDate').attr('required', 'required');
-                    }
-                    calculatePricing();
-                });
-
                 // Hours input change handler
                 $('#rentalHours').on('input change', function() {
                     const hours = parseFloat($(this).val()) || 0;
@@ -491,60 +516,41 @@ else
 
                 function updateDatesFromHours(hours) {
                     const now = new Date();
-                    const startDate = new Date(now.getTime()); // Current time
+                    const startDate = new Date(now.getTime()); // Current time - booking starts immediately
                     const endDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
                     
-                    // Format dates for datetime-local input
+                    // Format dates for form submission (ISO format)
                     const formatDateTime = (date) => {
                         const year = date.getFullYear();
                         const month = String(date.getMonth() + 1).padStart(2, '0');
                         const day = String(date.getDate()).padStart(2, '0');
                         const hours = String(date.getHours()).padStart(2, '0');
                         const minutes = String(date.getMinutes()).padStart(2, '0');
-                        return `${year}-${month}-${day}T${hours}:${minutes}`;
+                        const seconds = String(date.getSeconds()).padStart(2, '0');
+                        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
                     };
                     
                     // Update hidden inputs for form submission
                     $('#hidden_StartDate').val(formatDateTime(startDate));
                     $('#hidden_EndDate').val(formatDateTime(endDate));
-                    
-                    // Also update visible datetime inputs if in datetime mode
-                    $('#Input_StartDate').val(formatDateTime(startDate));
-                    $('#Input_EndDate').val(formatDateTime(endDate));
                 }
 
                 // Form submission handler
                 $('#bookingForm').on('submit', function(e) {
-                    const mode = $('input[name="bookingMode"]:checked').val();
-                    
-                    if (mode === 'hours') {
-                        // Ensure dates are set from hours input
-                        const hours = parseFloat($('#rentalHours').val()) || 0;
-                        if (hours <= 0) {
-                            e.preventDefault();
-                            alert('Please enter a valid number of hours (minimum 1 hour)');
-                            return false;
-                        }
-                        updateDatesFromHours(hours);
-                    } else {
-                        // Validate datetime inputs
-                        const startDate = $('#Input_StartDate').val();
-                        const endDate = $('#Input_EndDate').val();
-                        
-                        if (!startDate || !endDate) {
-                            e.preventDefault();
-                            alert('Please select both start and end dates');
-                            return false;
-                        }
-                        
-                        // Update hidden inputs
-                        $('#hidden_StartDate').val(startDate);
-                        $('#hidden_EndDate').val(endDate);
+                    // Always use hours input - booking starts immediately
+                    const hours = parseFloat($('#rentalHours').val()) || 0;
+                    if (hours <= 0) {
+                        e.preventDefault();
+                        alert('Please enter a valid number of hours (minimum 1 hour)');
+                        return false;
                     }
+                    // Update dates to current time + hours
+                    updateDatesFromHours(hours);
                 });
 
-                // Initialize hours mode on page load
+                // Initialize on page load - set dates based on default hours
                 updateDatesFromHours(parseFloat($('#rentalHours').val()) || 2);
+                calculatePricing();
 
                 function formatDuration(hours) {
                     if (hours < 1) {
@@ -560,39 +566,13 @@ else
                 }
 
                 function calculatePricing() {
-                    let startDate, endDate, hours;
-                    
-                    // Check which mode is active
-                    const mode = $('input[name="bookingMode"]:checked').val();
-                    
-                    if (mode === 'hours') {
-                        // Calculate from hours input
-                        const rentalHours = parseFloat($('#rentalHours').val()) || 0;
-                        if (rentalHours <= 0) {
-                            $('#pricingPreview').hide();
-                            return;
-                        }
-                        hours = rentalHours;
-                    } else {
-                        // Calculate from datetime inputs
-                        const startDateVal = $('#Input_StartDate').val();
-                        const endDateVal = $('#Input_EndDate').val();
-
-                        if (!startDateVal || !endDateVal) {
-                            $('#pricingPreview').hide();
-                            return;
-                        }
-
-                        startDate = new Date(startDateVal);
-                        endDate = new Date(endDateVal);
-
-                        if (!startDate || !endDate || endDate <= startDate) {
-                            $('#pricingPreview').hide();
-                            return;
-                        }
-
-                        hours = (endDate - startDate) / (1000 * 60 * 60);
+                    // Always calculate from hours input (booking starts immediately)
+                    const rentalHours = parseFloat($('#rentalHours').val()) || 0;
+                    if (rentalHours <= 0) {
+                        $('#pricingPreview').hide();
+                        return;
                     }
+                    const hours = rentalHours;
 
                     if (hours > 0) {
                         const days = hours / 24;
@@ -621,12 +601,6 @@ else
                     }
                 }
 
-                $('#Input_StartDate, #Input_EndDate').on('change input', function() {
-                    // Update hidden inputs when datetime inputs change
-                    $('#hidden_StartDate').val($('#Input_StartDate').val());
-                    $('#hidden_EndDate').val($('#Input_EndDate').val());
-                    calculatePricing();
-                });
 
                 $('#Input_EndDate').on('change', function() {
                     const startDateVal = $('#Input_StartDate').val();

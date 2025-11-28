@@ -58,7 +58,42 @@ public class VerifyPhoneModel : PageModel
         PhoneNumber = user.Phone;
         ReturnUrl = returnUrl;
 
-        // Check for messages from TempData
+        // Automatically send OTP when user arrives at the page
+        // Check if there's already a valid OTP first
+        var hasValidOtp = await _otpService.HasValidOtpAsync(user.Phone);
+        
+        if (!hasValidOtp)
+        {
+            // No valid OTP exists, send a new one automatically
+            try
+            {
+                Log.Information("VerifyPhone: Auto-sending OTP to {PhoneNumber} for user {UserId}", user.Phone, userId.Value);
+                var otpSent = await _otpService.GenerateAndSendOtpAsync(user.Phone);
+                if (otpSent)
+                {
+                    SuccessMessage = "OTP code has been sent to your phone! Please check your SMS.";
+                    Log.Information("VerifyPhone: OTP auto-sent successfully to {PhoneNumber}", user.Phone);
+                }
+                else
+                {
+                    ErrorMessage = "Failed to send OTP. Please try clicking 'Resend Code'.";
+                    Log.Warning("VerifyPhone: Failed to auto-send OTP to {PhoneNumber}", user.Phone);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "VerifyPhone: Error auto-sending OTP to {PhoneNumber}", user.Phone);
+                ErrorMessage = $"Error sending OTP: {ex.Message}. Please try clicking 'Resend Code'.";
+            }
+        }
+        else
+        {
+            // Valid OTP already exists, inform user
+            SuccessMessage = "An OTP code has already been sent to your phone. Please check your SMS.";
+            Log.Information("VerifyPhone: Valid OTP already exists for {PhoneNumber}, skipping auto-send", user.Phone);
+        }
+
+        // Check for messages from TempData (these override auto-sent messages)
         if (TempData.ContainsKey("SuccessMessage"))
             SuccessMessage = TempData["SuccessMessage"]?.ToString();
         if (TempData.ContainsKey("ErrorMessage"))

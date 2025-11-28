@@ -92,10 +92,10 @@
                                     ₱@booking.TotalAmount.ToString("F0")
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-                                    <a href="/Bookings/TrackLocation/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                    <a href="/Bookings/TrackLocation/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm w-100">
                                         <i class="bi bi-geo-alt-fill"></i> Track
                                     </a>
-                                    <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-primary btn-minimal-sm">View</a>
+                                    <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-primary btn-minimal-sm w-100">View</a>
                                     <form method="post" asp-page-handler="Complete" asp-route-id="@booking.BookingId" style="margin: 0;">
                                         <button type="submit" class="btn-minimal btn-minimal-ghost btn-minimal-sm w-100">
                                             <i class="bi bi-check-circle"></i> Return
