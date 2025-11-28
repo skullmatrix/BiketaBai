@@ -213,10 +213,13 @@ public class GeofencingService
             .Where(b => b.BookingStatusId == 2) // Active bookings
             .ToListAsync();
 
-        Log.Information("Monitoring {Count} active bookings for geofence violations", activeBookings.Count);
+        Log.Information("Monitoring {Count} active bookings for geofence violations and reminders", activeBookings.Count);
 
         foreach (var booking in activeBookings)
         {
+            // Check for 10-minute reminder
+            await CheckAndSendReturnReminderAsync(booking);
+
             // Get the most recent location
             var latestLocation = await _context.LocationTracking
                 .Where(lt => lt.BookingId == booking.BookingId)
@@ -225,7 +228,7 @@ public class GeofencingService
 
             if (latestLocation == null)
             {
-                // No location tracking yet - skip
+                // No location tracking yet - skip geofence check
                 continue;
             }
 
@@ -261,6 +264,76 @@ public class GeofencingService
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Checks if booking is within 10 minutes of ending and sends reminder SMS
+    /// </summary>
+    private async Task CheckAndSendReturnReminderAsync(Booking booking)
+    {
+        if (string.IsNullOrWhiteSpace(booking.Renter.Phone))
+        {
+            return; // No phone number, skip
+        }
+
+        var now = DateTime.UtcNow;
+        var timeRemaining = (booking.EndDate - now).TotalMinutes;
+
+        // Check if booking is within 10 minutes of ending (between 10 and 0 minutes)
+        // We check between 10 and 8 minutes to ensure we catch it and avoid duplicates
+        if (timeRemaining > 10 || timeRemaining < 8)
+        {
+            return; // Too early or too late (already sent or expired)
+        }
+
+        // Check if we've already sent a reminder for this booking to avoid duplicates
+        var recentReminder = await _context.Notifications
+            .Where(n => n.UserId == booking.RenterId 
+                && n.NotificationType == "Reminder"
+                && n.Title.Contains("Return Reminder")
+                && n.Message.Contains($"Booking #{booking.BookingId}"))
+            .OrderByDescending(n => n.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (recentReminder != null)
+        {
+            return; // Already sent reminder for this booking
+        }
+
+        // Format return time (convert UTC to local time if needed, or use UTC)
+        var returnTime = booking.EndDate.ToString("MMM dd, yyyy hh:mm tt");
+        var minutesLeft = Math.Ceiling(timeRemaining);
+
+        // Send reminder SMS
+        var message = $"⏰ Return Reminder: You have {minutesLeft} minute(s) left. Please return the bike by {returnTime} to avoid penalties. Thank you! - Bike Ta Bai";
+        
+        var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
+        
+        if (smsSent)
+        {
+            // Create notification record
+            var notification = new Notification
+            {
+                UserId = booking.RenterId,
+                Title = "Return Reminder",
+                Message = $"Return reminder sent for Booking #{booking.BookingId}. Return by {returnTime}.",
+                NotificationType = "Reminder",
+                IsRead = false,
+                ActionUrl = $"/Bookings/Details/{booking.BookingId}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            Log.Information("Return reminder SMS sent to renter {RenterId} for booking {BookingId}. Time remaining: {Minutes} minutes", 
+                booking.RenterId, booking.BookingId, minutesLeft);
+        }
+        else
+        {
+            Log.Warning("Failed to send return reminder SMS to renter {RenterId} for booking {BookingId}", 
+                booking.RenterId, booking.BookingId);
         }
     }
 }

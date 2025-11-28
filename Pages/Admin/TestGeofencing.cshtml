@@ -1,0 +1,164 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@model TestGeofencingModel
+@{
+    ViewData["Title"] = "Test Geofencing";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-geo-alt-fill"></i> Test Geofencing System
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.TestResult))
+                    {
+                        <div class="alert alert-info">
+                            <pre style="white-space: pre-wrap; font-family: monospace; margin: 0;">@Model.TestResult</pre>
+                        </div>
+                    }
+
+                    <!-- Test Location Tracking -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="bi bi-pin-map"></i> Test Location Tracking</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" asp-page-handler="TestLocation">
+                                <div class="mb-3">
+                                    <label for="BookingId" class="form-label">Select Active Booking</label>
+                                    <select asp-for="BookingId" class="form-select" required>
+                                        <option value="">-- Select a booking --</option>
+                                        @foreach (var booking in Model.ActiveBookings)
+                                        {
+                                            <option value="@booking.BookingId">
+                                                Booking #@booking.BookingId - @booking.Bike.Brand @booking.Bike.Model 
+                                                (Renter: @booking.Renter.FullName, Owner: @booking.Bike.Owner.FullName)
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="TestLatitude" class="form-label">Test Latitude</label>
+                                        <input type="number" asp-for="TestLatitude" class="form-control" 
+                                               step="0.000001" required placeholder="14.5995">
+                                        <small class="text-muted">Example: 14.5995 (Manila)</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="TestLongitude" class="form-label">Test Longitude</label>
+                                        <input type="number" asp-for="TestLongitude" class="form-control" 
+                                               step="0.000001" required placeholder="120.9842">
+                                        <small class="text-muted">Example: 120.9842 (Manila)</small>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <strong>Test Coordinates (Philippines):</strong><br>
+                                    <strong>Makati:</strong> 14.5547, 121.0244<br>
+                                    <strong>Manila:</strong> 14.5995, 120.9842 (Distance from Makati: ~5.5 km)<br>
+                                    <strong>Quezon City:</strong> 14.6760, 121.0437 (Distance from Makati: ~13 km)
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-play-circle"></i> Test Location Tracking
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Test Distance Calculation -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="bi bi-calculator"></i> Test Distance Calculation</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" asp-page-handler="TestDistance">
+                                <div class="mb-3">
+                                    <label for="BookingId" class="form-label">Select Booking (to get store location)</label>
+                                    <select asp-for="BookingId" class="form-select" required>
+                                        <option value="">-- Select a booking --</option>
+                                        @foreach (var booking in Model.ActiveBookings)
+                                        {
+                                            <option value="@booking.BookingId">
+                                                Booking #@booking.BookingId - Store: @(booking.Bike.Owner.StoreName ?? "N/A")
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="TestLatitude" class="form-label">Test Latitude</label>
+                                        <input type="number" asp-for="TestLatitude" class="form-control" 
+                                               step="0.000001" required placeholder="14.5995">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="TestLongitude" class="form-label">Test Longitude</label>
+                                        <input type="number" asp-for="TestLongitude" class="form-control" 
+                                               step="0.000001" required placeholder="120.9842">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-secondary">
+                                    <i class="bi bi-calculator"></i> Calculate Distance Only
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Quick Reference -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-info-circle"></i> Quick Reference</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>How Geofencing Works:</h6>
+                            <ul>
+                                <li><strong>No separate API needed</strong> - Uses browser Geolocation API</li>
+                                <li><strong>Distance calculation</strong> - Uses Haversine formula (implemented in code)</li>
+                                <li><strong>Geocoding</strong> - Uses Google Geocoding API (already configured)</li>
+                                <li><strong>SMS warnings</strong> - Uses iProgSMS (already configured)</li>
+                            </ul>
+
+                            <h6 class="mt-3">Testing Steps:</h6>
+                            <ol>
+                                <li>Select an active booking</li>
+                                <li>Enter test coordinates (or use provided examples)</li>
+                                <li>Click "Test Location Tracking" to simulate location update</li>
+                                <li>Check if SMS is sent when outside geofence</li>
+                                <li>View logs for detailed information</li>
+                            </ol>
+
+                            <h6 class="mt-3">Check Logs:</h6>
+                            <pre class="bg-light p-2 rounded">tail -f logs/app.log | grep -i "geofence\|reminder"</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

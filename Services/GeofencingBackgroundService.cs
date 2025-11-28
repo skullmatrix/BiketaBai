@@ -7,7 +7,7 @@ namespace BiketaBai.Services;
 public class GeofencingBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(10); // Check every 10 minutes
+    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(2); // Check every 2 minutes for accurate reminders
 
     public GeofencingBackgroundService(IServiceProvider serviceProvider)
     {

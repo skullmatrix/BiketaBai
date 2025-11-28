@@ -355,6 +355,30 @@ else
                                     }
                                     
                                     <form method="post" id="bookingForm">
+                                        <!-- Quantity Input -->
+                                        <div class="mb-3">
+                                            <label for="quantity" class="label-minimal">
+                                                <i class="bi bi-bicycle"></i> Number of Bikes
+                                            </label>
+                                            <div style="display: flex; gap: var(--space-2);">
+                                                <input type="number" 
+                                                       id="quantity" 
+                                                       name="quantity"
+                                                       class="input-minimal" 
+                                                       min="1" 
+                                                       max="10" 
+                                                       step="1" 
+                                                       value="1"
+                                                       placeholder="Enter quantity"
+                                                       required
+                                                       style="flex: 1;">
+                                                <span style="display: flex; align-items: center; padding: 0 var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--neutral-600);">bikes</span>
+                                            </div>
+                                            <small style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: var(--space-1); display: block;">
+                                                <i class="bi bi-info-circle"></i> You can rent multiple bikes at once.
+                                            </small>
+                                        </div>
+                                        
                                         <!-- Rental Duration Input -->
                                         <div class="mb-3">
                                             <label for="rentalHours" class="label-minimal">
@@ -377,21 +401,6 @@ else
                                             <small style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: var(--space-1); display: block;">
                                                 <i class="bi bi-info-circle"></i> Booking starts immediately. Your location will be tracked for geofencing.
                                             </small>
-                                        </div>
-                                        
-                                        <!-- Quick Hour Selection -->
-                                        <div class="quick-hours-section mb-3">
-                                            <label class="mb-2" style="font-size: 0.875rem; font-weight: 500; color: var(--neutral-700);">
-                                                <i class="bi bi-lightning"></i> Quick Select
-                                            </label>
-                                            <div class="quick-hours-buttons">
-                                                <button type="button" class="btn-quick-hour" data-hours="2">2 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="4">4 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="8">8 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="12">12 hrs</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="24">1 day</button>
-                                                <button type="button" class="btn-quick-hour" data-hours="48">2 days</button>
-                                            </div>
                                         </div>
 
                                         <!-- Hidden inputs for form submission (always set to current time) -->
@@ -499,6 +508,11 @@ else
                         calculatePricing();
                     }
                 });
+                
+                // Quantity change handler
+                $('#quantity').on('input change', function() {
+                    calculatePricing();
+                });
 
                 // Quick hour selection buttons
                 $('.btn-quick-hour').on('click', function() {
@@ -568,6 +582,8 @@ else
                 function calculatePricing() {
                     // Always calculate from hours input (booking starts immediately)
                     const rentalHours = parseFloat($('#rentalHours').val()) || 0;
+                    const quantity = parseInt($('#quantity').val()) || 1;
+                    
                     if (rentalHours <= 0) {
                         $('#pricingPreview').hide();
                         return;
@@ -577,20 +593,21 @@ else
                     if (hours > 0) {
                         const days = hours / 24;
 
-                        let baseRate = 0;
+                        let baseRatePerBike = 0;
                         if (days >= 1) {
                             const fullDays = Math.floor(days);
                             const remainingHours = hours - (fullDays * 24);
-                            baseRate = (fullDays * dailyRate) + (remainingHours * hourlyRate);
+                            baseRatePerBike = (fullDays * dailyRate) + (remainingHours * hourlyRate);
                         } else {
-                            baseRate = hours * hourlyRate;
+                            baseRatePerBike = hours * hourlyRate;
                         }
 
-                        const serviceFee = baseRate * 0.1;
-                        const total = baseRate + serviceFee;
+                        const totalBaseRate = baseRatePerBike * quantity;
+                        const serviceFee = totalBaseRate * 0.1;
+                        const total = totalBaseRate + serviceFee;
 
                         $('#rentalDuration').text(formatDuration(hours));
-                        $('#baseRate').text('₱' + baseRate.toFixed(2));
+                        $('#baseRate').text('₱' + totalBaseRate.toFixed(2) + (quantity > 1 ? ` (${quantity} bikes × ₱${baseRatePerBike.toFixed(2)})` : ''));
                         $('#serviceFee').text('₱' + serviceFee.toFixed(2));
                         $('#totalAmount').text('₱' + total.toFixed(2));
                         

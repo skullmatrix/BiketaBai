@@ -5,6 +5,7 @@ using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Configuration;
 
 namespace BiketaBai.Pages.Owner;
 
@@ -12,11 +13,13 @@ public class AddBikeModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
 
-    public AddBikeModel(BiketaBaiDbContext context, IWebHostEnvironment environment)
+    public AddBikeModel(BiketaBaiDbContext context, IWebHostEnvironment environment, IConfiguration configuration)
     {
         _context = context;
         _environment = environment;
+        _configuration = configuration;
     }
 
     [BindProperty]
@@ -69,6 +72,17 @@ public class AddBikeModel : PageModel
                     TempData["ErrorMessage"] = "⚠️ Your owner account must be verified by an admin before you can list bikes. Please wait for approval or contact support.";
                     return RedirectToPage("/Account/Profile");
                 }
+                
+                // Check bike limit
+                var maxBikes = _configuration.GetValue<int>("AppSettings:MaxBikesPerOwner", 10);
+                var currentBikeCount = await _context.Bikes
+                    .CountAsync(b => b.OwnerId == userId.Value && !b.IsDeleted);
+                
+                if (currentBikeCount >= maxBikes)
+                {
+                    TempData["ErrorMessage"] = $"⚠️ You have reached the maximum limit of {maxBikes} bikes. Please remove or delete a bike before adding a new one.";
+                    return RedirectToPage("/Owner/MyBikes");
+                }
             }
         }
 
@@ -95,6 +109,17 @@ public class AddBikeModel : PageModel
             {
                 TempData["ErrorMessage"] = "⚠️ Your owner account must be verified by an admin before you can list bikes. Please wait for approval or contact support.";
                 return RedirectToPage("/Account/Profile");
+            }
+            
+            // Check bike limit
+            var maxBikes = _configuration.GetValue<int>("AppSettings:MaxBikesPerOwner", 10);
+            var currentBikeCount = await _context.Bikes
+                .CountAsync(b => b.OwnerId == userId.Value && !b.IsDeleted);
+            
+            if (currentBikeCount >= maxBikes)
+            {
+                TempData["ErrorMessage"] = $"⚠️ You have reached the maximum limit of {maxBikes} bikes. Please remove or delete a bike before adding a new one.";
+                return RedirectToPage("/Owner/MyBikes");
             }
         }
 

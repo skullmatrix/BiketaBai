@@ -64,17 +64,6 @@ public class BookingService
         string? pickupLocation = null,
         string? returnLocation = null)
     {
-        // Check maximum concurrent bookings per renter
-        var maxConcurrentBookings = _configuration.GetValue<int>("AppSettings:MaxConcurrentBookingsPerRenter", 3);
-        var activeBookingsCount = await _context.Bookings
-            .CountAsync(b => b.RenterId == renterId && 
-                            (b.BookingStatusId == 1 || b.BookingStatusId == 2)); // Pending or Active
-        
-        if (activeBookingsCount >= maxConcurrentBookings)
-        {
-            return (false, 0, $"You can only have {maxConcurrentBookings} active booking(s) at a time. Please complete or cancel an existing booking first.");
-        }
-
         // Validate availability
         if (!await CheckBikeAvailabilityAsync(bikeId, startDate, endDate))
             return (false, 0, "Bike is not available for the selected dates");

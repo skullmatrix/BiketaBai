@@ -333,7 +333,7 @@ public class RegisterOwnerModel : PageModel
             {
                 Log.Error(ex, "Error compressing front ID image. Saving original.");
                 // Fallback: save original if compression fails
-                using (var stream = new FileStream(frontFilePath, FileMode.Create))
+            using (var stream = new FileStream(frontFilePath, FileMode.Create))
             {
                 await IdDocumentFront.CopyToAsync(stream);
                 }
@@ -356,7 +356,7 @@ public class RegisterOwnerModel : PageModel
             {
                 Log.Error(ex, "Error compressing back ID image. Saving original.");
                 // Fallback: save original if compression fails
-                using (var stream = new FileStream(backFilePath, FileMode.Create))
+            using (var stream = new FileStream(backFilePath, FileMode.Create))
             {
                 await IdDocumentBack.CopyToAsync(stream);
                 }

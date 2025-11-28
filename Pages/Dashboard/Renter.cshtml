@@ -83,9 +83,12 @@
                                 <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
                                     <i class="bi bi-person"></i> @booking.Bike.Owner.FullName
                                 </p>
-                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin: 0;">
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
                                     <i class="bi bi-calendar-x"></i> Return by: @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
                                 </p>
+                                <div style="font-size: 0.875rem; font-weight: 600; color: var(--sage-primary);">
+                                    <i class="bi bi-clock"></i> <span class="time-remaining" data-end-date="@booking.EndDate.ToString("yyyy-MM-ddTHH:mm:ss")">Calculating...</span>
+                                </div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 1.25rem; font-weight: 700; color: var(--sage-primary); margin-bottom: var(--space-3);">
@@ -180,4 +183,44 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Time remaining countdown
+        function updateTimeRemaining() {
+            document.querySelectorAll('.time-remaining').forEach(function(element) {
+                const endDateStr = element.getAttribute('data-end-date');
+                if (!endDateStr) return;
+                
+                const endDate = new Date(endDateStr);
+                const now = new Date();
+                const diff = endDate - now;
+                
+                if (diff <= 0) {
+                    element.textContent = 'Time expired';
+                    element.style.color = 'var(--danger)';
+                    return;
+                }
+                
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                if (hours > 0) {
+                    element.textContent = hours + 'h ' + minutes + 'm remaining';
+                } else if (minutes > 0) {
+                    element.textContent = minutes + 'm ' + seconds + 's remaining';
+                    element.style.color = 'var(--warning)';
+                } else {
+                    element.textContent = seconds + 's remaining';
+                    element.style.color = 'var(--danger)';
+                }
+            });
+        }
+        
+        // Update immediately and then every second
+        updateTimeRemaining();
+        setInterval(updateTimeRemaining, 1000);
+    </script>
+}
 

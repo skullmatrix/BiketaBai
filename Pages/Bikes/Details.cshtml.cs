@@ -150,10 +150,22 @@ public class DetailsModel : PageModel
             }
         }
 
-        // Get rental hours from form (if not provided via dates)
+        // Get quantity and rental hours from form
+        int quantity = 1; // Default
         decimal rentalHours = 2; // Default
         DateTime startDate = DateTime.Now; // Always start immediately
         DateTime endDate = DateTime.Now;
+
+        // Get quantity
+        if (Request.Form.ContainsKey("quantity") && int.TryParse(Request.Form["quantity"], out var qty))
+        {
+            quantity = qty;
+            if (quantity < 1 || quantity > 10)
+            {
+                TempData["ErrorMessage"] = "Quantity must be between 1 and 10 bikes";
+                return Page();
+            }
+        }
 
         // Try to get hours from form data
         if (Request.Form.ContainsKey("rentalHours") && decimal.TryParse(Request.Form["rentalHours"], out var hours))
@@ -197,30 +209,56 @@ public class DetailsModel : PageModel
             return Page();
         }
 
+        // Check bike availability for quantity
+        var availableBikes = await _context.Bikes
+            .Where(b => b.BikeId == id && b.AvailabilityStatusId == 1 && !b.IsDeleted)
+            .CountAsync();
+        
+        if (availableBikes < quantity)
+        {
+            TempData["ErrorMessage"] = $"Only {availableBikes} bike(s) available. Please reduce the quantity.";
+            return Page();
+        }
+
         if (!ModelState.IsValid)
         {
             await LoadBikeDataAsync(id);
             return Page();
         }
 
-        // Create booking using BookingService (doesn't process payment)
-        // Booking always starts immediately (current time)
-        var result = await _bookingService.CreateBookingAsync(
-            userId.Value,
-            id,
-            startDate,
-            endDate
-        );
-
-        if (result.success)
+        // Create bookings for each bike (if quantity > 1, we need to find available bikes of same type)
+        // For now, we'll create multiple bookings for the same bike if quantity > 1
+        // In a real scenario, you'd want to find different bikes of the same type
+        var bookingIds = new List<int>();
+        for (int i = 0; i < quantity; i++)
         {
-            // Redirect to payment page with the booking ID
-            return RedirectToPage("/Bookings/Payment", new { bookingId = result.bookingId });
+            var result = await _bookingService.CreateBookingAsync(
+                userId.Value,
+                id,
+                startDate,
+                endDate
+            );
+
+            if (result.success)
+            {
+                bookingIds.Add(result.bookingId);
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Failed to create booking {i + 1} of {quantity}: {result.message}";
+                return Page();
+            }
+        }
+
+        if (bookingIds.Any())
+        {
+            // Redirect to payment page with the first booking ID
+            // Note: In a full implementation, you might want to handle multiple bookings differently
+            return RedirectToPage("/Bookings/Payment", new { bookingId = bookingIds.First() });
         }
         else
         {
-            TempData["ErrorMessage"] = result.message;
-            // Dates are preserved in Input model, no need to reload
+            TempData["ErrorMessage"] = "Failed to create bookings";
             return Page();
         }
     }
