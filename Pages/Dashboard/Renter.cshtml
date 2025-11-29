@@ -1,5 +1,6 @@
 @page
 @using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
 @attribute [Authorize]
 @model RenterDashboardModel
 @{
@@ -84,10 +85,10 @@
                                     <i class="bi bi-person"></i> @booking.Bike.Owner.FullName
                                 </p>
                                 <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
-                                    <i class="bi bi-calendar-x"></i> Return by: @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
+                                    <i class="bi bi-calendar-x"></i> Return by: @TimeZoneHelper.FormatPhilippineTime(booking.EndDate)
                                 </p>
                                 <div style="font-size: 0.875rem; font-weight: 600; color: var(--sage-primary);">
-                                    <i class="bi bi-clock"></i> <span class="time-remaining" data-end-date="@booking.EndDate.ToString("yyyy-MM-ddTHH:mm:ss")">Calculating...</span>
+                                    <i class="bi bi-clock"></i> <span class="time-remaining" data-end-date="@TimeZoneHelper.FormatPhilippineTimeIso(booking.EndDate)">Calculating...</span>
                                 </div>
                             </div>
                             <div style="text-align: right;">
@@ -140,8 +141,8 @@
                                 <td><strong>@booking.Bike.Brand @booking.Bike.Model</strong></td>
                                 <td>
                                     <div style="font-size: 0.875rem;">
-                                        @booking.StartDate.ToString("MMM dd")<br />
-                                        <span style="color: var(--neutral-500);">to @booking.EndDate.ToString("MMM dd")</span>
+                                        @TimeZoneHelper.FormatPhilippineTime(booking.StartDate, "MMM dd")<br />
+                                        <span style="color: var(--neutral-500);">to @TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd")</span>
                                     </div>
                                 </td>
                                 <td><strong>₱@booking.TotalAmount.ToString("F0")</strong></td>
@@ -186,15 +187,66 @@
 
 @section Scripts {
     <script>
-        // Time remaining countdown
+        // Helper function to get current Philippine time (UTC+8)
+        function getPhilippineTime() {
+            const now = new Date();
+            // Get current time in Philippine timezone
+            const phTimeStr = now.toLocaleString('en-US', { 
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // Parse the string to create a Date object
+            // Format: "MM/DD/YYYY, HH:MM:SS"
+            const parts = phTimeStr.split(', ');
+            const dateParts = parts[0].split('/');
+            const timeParts = parts[1].split(':');
+            
+            // Create date in local timezone but representing Philippine time
+            const phDate = new Date(
+                parseInt(dateParts[2]), // year
+                parseInt(dateParts[0]) - 1, // month (0-indexed)
+                parseInt(dateParts[1]), // day
+                parseInt(timeParts[0]), // hour
+                parseInt(timeParts[1]), // minute
+                parseInt(timeParts[2]) // second
+            );
+            
+            return phDate;
+        }
+        
+        // Time remaining countdown - uses Philippine time (UTC+8)
         function updateTimeRemaining() {
             document.querySelectorAll('.time-remaining').forEach(function(element) {
                 const endDateStr = element.getAttribute('data-end-date');
                 if (!endDateStr) return;
                 
-                const endDate = new Date(endDateStr);
-                const now = new Date();
-                const diff = endDate - now;
+                // Parse the end date - it's in Philippine time format (YYYY-MM-DDTHH:mm:ss)
+                const endDateParts = endDateStr.split('T');
+                const dateParts = endDateParts[0].split('-');
+                const timeParts = endDateParts[1].split(':');
+                
+                // Create end date in local timezone but representing Philippine time values
+                const endDate = new Date(
+                    parseInt(dateParts[0]), // year
+                    parseInt(dateParts[1]) - 1, // month (0-indexed)
+                    parseInt(dateParts[2]), // day
+                    parseInt(timeParts[0]), // hour
+                    parseInt(timeParts[1]), // minute
+                    parseInt(timeParts[2]) // second
+                );
+                
+                // Get current Philippine time
+                const nowPhilippine = getPhilippineTime();
+                
+                // Calculate difference in milliseconds
+                const diff = endDate.getTime() - nowPhilippine.getTime();
                 
                 if (diff <= 0) {
                     element.textContent = 'Time expired';
@@ -202,15 +254,21 @@
                     return;
                 }
                 
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                const totalSeconds = Math.floor(diff / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                // Reset color to default
+                element.style.color = 'var(--sage-primary)';
                 
                 if (hours > 0) {
                     element.textContent = hours + 'h ' + minutes + 'm remaining';
                 } else if (minutes > 0) {
                     element.textContent = minutes + 'm ' + seconds + 's remaining';
-                    element.style.color = 'var(--warning)';
+                    if (minutes < 60) {
+                        element.style.color = 'var(--warning)';
+                    }
                 } else {
                     element.textContent = seconds + 's remaining';
                     element.style.color = 'var(--danger)';
