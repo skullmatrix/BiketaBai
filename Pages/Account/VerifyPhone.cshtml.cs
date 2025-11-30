@@ -172,6 +172,14 @@ public class VerifyPhoneModel : PageModel
                 Log.Information("VerifyPhone: OTP verified successfully for user {UserId}, phone {PhoneNumber}", userId.Value, user.Phone);
                 TempData["SuccessMessage"] = "Phone number verified successfully!";
                 
+                // Restore booking details from TempData if they exist
+                if (TempData.ContainsKey("BookingQuantity"))
+                    TempData.Keep("BookingQuantity");
+                if (TempData.ContainsKey("BookingHours"))
+                    TempData.Keep("BookingHours");
+                if (TempData.ContainsKey("BikeId"))
+                    TempData.Keep("BikeId");
+                
                 // Redirect to return URL or home
                 if (!string.IsNullOrEmpty(returnUrl))
                     return Redirect(returnUrl);

@@ -26,6 +26,41 @@
         </div>
     </div>
 
+    <!-- Alerts Section -->
+    @if (Model.PendingRequestsCount > 0 || Model.OverdueCount > 0 || Model.UnreadNotifications > 0)
+    {
+        <div class="card-minimal mb-5" style="border-left: 4px solid var(--sage-primary);">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-bell-fill" style="color: var(--sage-primary);"></i> Alerts & Notifications
+                </h2>
+            </div>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                @if (Model.PendingRequestsCount > 0)
+                {
+                    <a href="/Owner/RentalRequests" class="alert-badge alert-badge-warning" style="text-decoration: none;">
+                        <i class="bi bi-clock-history"></i>
+                        <strong>@Model.PendingRequestsCount</strong> Pending Request(s)
+                    </a>
+                }
+                @if (Model.OverdueCount > 0)
+                {
+                    <a href="/Owner/MyBikes?filter=active" class="alert-badge alert-badge-danger" style="text-decoration: none;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>@Model.OverdueCount</strong> Overdue Return(s)
+                    </a>
+                }
+                @if (Model.UnreadNotifications > 0)
+                {
+                    <a href="/Notifications/Index" class="alert-badge alert-badge-info" style="text-decoration: none;">
+                        <i class="bi bi-bell-fill"></i>
+                        <strong>@Model.UnreadNotifications</strong> Unread Notification(s)
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
     <!-- Stats Grid -->
     <div class="grid-minimal grid-minimal-4 mb-5">
         <div class="stat-card-minimal">
@@ -48,6 +83,12 @@
             </div>
             <div class="stat-value">@Model.ActiveRentalsCount</div>
             <div class="stat-label">Active Rentals</div>
+            @if (Model.PendingRequestsCount > 0)
+            {
+                <div style="font-size: 0.75rem; color: var(--warning); margin-top: var(--space-2);">
+                    <i class="bi bi-exclamation-circle"></i> @Model.PendingRequestsCount Pending
+                </div>
+            }
         </div>
 
         <div class="stat-card-minimal">
@@ -56,6 +97,12 @@
             </div>
             <div class="stat-value">₱@Model.TotalEarnings.ToString("F0")</div>
             <div class="stat-label">Total Earnings</div>
+            @if (Model.PendingEarnings > 0)
+            {
+                <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                    <i class="bi bi-hourglass-split"></i> ₱@Model.PendingEarnings.ToString("F0") Pending
+                </div>
+            }
         </div>
 
         <div class="stat-card-minimal">
@@ -108,6 +155,116 @@
             </a>
         </div>
     </div>
+
+    <!-- Pending Bookings (Need Approval) -->
+    @if (Model.PendingBookings.Any())
+    {
+        <div class="card-minimal mb-5" style="border-left: 4px solid var(--warning);">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-clock-history" style="color: var(--warning);"></i> Pending Approval (@Model.PendingRequestsCount)
+                </h2>
+                <a href="/Owner/RentalRequests" class="btn-minimal btn-minimal-primary btn-minimal-sm">Review All</a>
+            </div>
+            <div class="grid-minimal">
+                @foreach (var booking in Model.PendingBookings.Take(3))
+                {
+                    <div class="card-minimal card-minimal-compact" style="background: #fffbf0;">
+                        <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: var(--space-4); align-items: center;">
+                            <div>
+                                @if (booking.Bike.BikeImages.Any())
+                                {
+                                    <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                         alt="@booking.Bike.Brand @booking.Bike.Model"
+                                         style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);" />
+                                }
+                                else
+                                {
+                                    <div style="width: 100px; height: 100px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
+                                    </div>
+                                }
+                            </div>
+                            <div>
+                                <h5 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-person"></i> @booking.Renter.FullName
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-calendar"></i> @booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-hash"></i> Quantity: @booking.Quantity
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin: 0;">
+                                    <strong>Amount:</strong> <span class="text-sage">₱@booking.TotalAmount.ToString("F0")</span>
+                                </p>
+                            </div>
+                            <div>
+                                <a href="/Owner/RentalRequests" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                                    Review
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Overdue Rentals -->
+    @if (Model.OverdueBookings.Any())
+    {
+        <div class="card-minimal mb-5" style="border-left: 4px solid var(--danger);">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-exclamation-triangle-fill" style="color: var(--danger);"></i> Overdue Returns (@Model.OverdueCount)
+                </h2>
+                <a href="/Owner/MyBikes?filter=active" class="btn-minimal btn-minimal-danger btn-minimal-sm">View All</a>
+            </div>
+            <div class="grid-minimal">
+                @foreach (var booking in Model.OverdueBookings.Take(3))
+                {
+                    var overdueTime = DateTime.UtcNow - booking.EndDate;
+                    <div class="card-minimal card-minimal-compact" style="background: #fee2e2;">
+                        <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: var(--space-4); align-items: center;">
+                            <div>
+                                @if (booking.Bike.BikeImages.Any())
+                                {
+                                    <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                         alt="@booking.Bike.Brand @booking.Bike.Model"
+                                         style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);" />
+                                }
+                                else
+                                {
+                                    <div style="width: 100px; height: 100px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
+                                    </div>
+                                }
+                            </div>
+                            <div>
+                                <h5 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2); color: var(--danger);">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-person"></i> @booking.Renter.FullName
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--danger); margin-bottom: var(--space-1); font-weight: 600;">
+                                    <i class="bi bi-calendar-x"></i> Was due: @BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTime(booking.EndDate)
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--danger); margin: 0; font-weight: 600;">
+                                    <i class="bi bi-clock"></i> Overdue by: @((int)overdueTime.TotalHours)h @((int)overdueTime.TotalMinutes % 60)m
+                                </p>
+                            </div>
+                            <div>
+                                <a href="/Owner/MyBikes?filter=active" class="btn-minimal btn-minimal-danger btn-minimal-sm">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 
     <!-- Active Rentals -->
     @if (Model.ActiveBookings.Any())
@@ -304,3 +461,39 @@
         }
     </div>
 </div>
+
+<style>
+    .alert-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all var(--transition-base);
+    }
+    
+    .alert-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .alert-badge-warning {
+        background: #fffbf0;
+        color: #f57c00;
+        border: 1px solid #ffcc80;
+    }
+    
+    .alert-badge-danger {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+    }
+    
+    .alert-badge-info {
+        background: #e0f2fe;
+        color: #0284c7;
+        border: 1px solid #7dd3fc;
+    }
+</style>

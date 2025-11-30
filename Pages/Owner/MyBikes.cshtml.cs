@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
+using BiketaBai.Services;
 
 namespace BiketaBai.Pages.Owner;
 
@@ -19,8 +20,11 @@ public class MyBikesModel : PageModel
     public List<Bike> Bikes { get; set; } = new();
     public Dictionary<int, double> BikeRatings { get; set; } = new();
     public List<Booking> ActiveBookings { get; set; } = new();
+    public Dictionary<int, int> AvailableQuantities { get; set; } = new(); // BikeId -> Available Quantity
+    public Dictionary<int, List<Booking>> BikeActiveBookings { get; set; } = new(); // BikeId -> List of Active Bookings
+    public Dictionary<int, bool> OverdueBookings { get; set; } = new(); // BookingId -> Is Overdue
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(string filter = "all")
     {
         var userId = AuthHelper.GetCurrentUserId(User);
         if (!userId.HasValue)
@@ -29,13 +33,51 @@ public class MyBikesModel : PageModel
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
 
-        Bikes = await _context.Bikes
+        // Get all bikes for this owner
+        var allBikes = await _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.AvailabilityStatus)
             .Include(b => b.BikeImages)
-            .Where(b => b.OwnerId == userId.Value)
-            .OrderByDescending(b => b.CreatedAt)
+            .Where(b => b.OwnerId == userId.Value && !b.IsDeleted)
             .ToListAsync();
+
+        // Get active bookings with renter info
+        ActiveBookings = await _context.Bookings
+            .Include(b => b.Renter)
+            .Include(b => b.Bike)
+            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatusId == 2) // Active
+            .OrderBy(b => b.EndDate)
+            .ToListAsync();
+
+        // Group active bookings by bike
+        foreach (var bike in allBikes)
+        {
+            var bikeActiveBookings = ActiveBookings.Where(b => b.BikeId == bike.BikeId).ToList();
+            BikeActiveBookings[bike.BikeId] = bikeActiveBookings;
+
+            // Calculate available quantity: Total Quantity - Sum of active bookings quantity
+            var rentedQuantity = bikeActiveBookings.Sum(b => b.Quantity);
+            AvailableQuantities[bike.BikeId] = Math.Max(0, bike.Quantity - rentedQuantity);
+
+            // Check for overdue bookings
+            var now = DateTime.UtcNow;
+            foreach (var booking in bikeActiveBookings)
+            {
+                OverdueBookings[booking.BookingId] = booking.EndDate < now;
+            }
+        }
+
+        // Filter bikes based on filter parameter
+        if (filter == "active")
+        {
+            // Only show bikes with active bookings
+            var bikesWithActiveBookings = allBikes.Where(b => BikeActiveBookings.ContainsKey(b.BikeId) && BikeActiveBookings[b.BikeId].Any()).ToList();
+            Bikes = bikesWithActiveBookings.OrderByDescending(b => b.CreatedAt).ToList();
+        }
+        else
+        {
+            Bikes = allBikes.OrderByDescending(b => b.CreatedAt).ToList();
+        }
 
         // Calculate ratings
         foreach (var bike in Bikes)
@@ -47,11 +89,6 @@ public class MyBikesModel : PageModel
             
             BikeRatings[bike.BikeId] = ratings.Any() ? ratings.Average() : 0;
         }
-
-        // Get active bookings
-        ActiveBookings = await _context.Bookings
-            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatusId == 2) // Active
-            .ToListAsync();
 
         return Page();
     }
@@ -128,6 +165,64 @@ public class MyBikesModel : PageModel
         catch (Exception ex)
         {
             TempData["ErrorMessage"] = $"Error deleting bike: {ex.Message}";
+            return RedirectToPage();
+        }
+    }
+
+    public async Task<IActionResult> OnPostConfirmReturnAsync(int bookingId)
+    {
+        try
+        {
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "You must be logged in";
+                return RedirectToPage("/Account/Login");
+            }
+
+            var booking = await _context.Bookings
+                .Include(b => b.Bike)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+
+            if (booking == null)
+            {
+                TempData["ErrorMessage"] = "Booking not found or you don't have permission";
+                return RedirectToPage();
+            }
+
+            if (booking.BookingStatusId != 2) // Must be Active
+            {
+                TempData["ErrorMessage"] = "This booking is not active";
+                return RedirectToPage();
+            }
+
+            // Mark booking as completed
+            booking.BookingStatusId = 3; // Completed
+            booking.ActualReturnDate = DateTime.UtcNow;
+            booking.OwnerConfirmedAt = DateTime.UtcNow;
+            booking.UpdatedAt = DateTime.UtcNow;
+
+            // The bike quantity is automatically available again (no need to change AvailabilityStatusId)
+            // because availability is calculated dynamically based on active bookings
+
+            await _context.SaveChangesAsync();
+
+            // Send notification to renter
+            var notificationService = HttpContext.RequestServices.GetRequiredService<NotificationService>();
+            await notificationService.CreateNotificationAsync(
+                booking.RenterId,
+                "Bike Return Confirmed",
+                $"Your bike return for booking #{bookingId} has been confirmed by the owner.",
+                $"/Bookings/Details/{bookingId}"
+            );
+
+            TempData["SuccessMessage"] = $"Bike return confirmed for booking #{bookingId}";
+            return RedirectToPage();
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Error confirming return: {ex.Message}";
             return RedirectToPage();
         }
     }

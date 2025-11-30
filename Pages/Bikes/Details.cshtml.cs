@@ -142,6 +142,22 @@ public class DetailsModel : PageModel
 
                 if (!hasVerifiedOtp)
                 {
+                    // Store booking details in TempData before redirecting
+                    // Get quantity and hours from form first
+                    int quantity = 1;
+                    decimal rentalHours = 2;
+                    
+                    if (Request.Form.ContainsKey("quantity") && int.TryParse(Request.Form["quantity"], out var qty))
+                        quantity = qty;
+                    
+                    if (Request.Form.ContainsKey("rentalHours") && decimal.TryParse(Request.Form["rentalHours"], out var hours))
+                        rentalHours = hours;
+                    
+                    // Store in TempData
+                    TempData["BookingQuantity"] = quantity.ToString();
+                    TempData["BookingHours"] = rentalHours.ToString();
+                    TempData["BikeId"] = id.ToString();
+                    
                     // Redirect to phone verification page with return URL
                     var returnUrl = $"/Bikes/Details/{id}";
                     TempData["ErrorMessage"] = "Please verify your phone number to complete your first booking.";
@@ -150,33 +166,45 @@ public class DetailsModel : PageModel
             }
         }
 
-        // Get quantity and rental hours from form
-        int quantity = 1; // Default
-        decimal rentalHours = 2; // Default
+        // Get quantity and rental hours from form or TempData (if returning from OTP verification)
+        int bookingQuantity = 1; // Default
+        decimal bookingRentalHours = 2; // Default
         DateTime startDate = DateTime.Now; // Always start immediately
         DateTime endDate = DateTime.Now;
 
-        // Get quantity
-        if (Request.Form.ContainsKey("quantity") && int.TryParse(Request.Form["quantity"], out var qty))
+        // First, try to get from TempData (if returning from OTP verification)
+        if (TempData.ContainsKey("BookingQuantity") && int.TryParse(TempData["BookingQuantity"]?.ToString(), out var tempQty))
         {
-            quantity = qty;
-            if (quantity < 1 || quantity > 10)
-            {
-                TempData["ErrorMessage"] = "Quantity must be between 1 and 10 bikes";
-                return Page();
-            }
+            bookingQuantity = tempQty;
+            TempData.Remove("BookingQuantity");
+        }
+        else if (Request.Form.ContainsKey("quantity") && int.TryParse(Request.Form["quantity"], out var qty))
+        {
+            bookingQuantity = qty;
         }
 
-        // Try to get hours from form data
-        if (Request.Form.ContainsKey("rentalHours") && decimal.TryParse(Request.Form["rentalHours"], out var hours))
+        if (bookingQuantity < 1 || bookingQuantity > 10)
         {
-            rentalHours = hours;
-            if (rentalHours < 1 || rentalHours > 168)
+            TempData["ErrorMessage"] = "Quantity must be between 1 and 10 bikes";
+            return Page();
+        }
+
+        // Get hours from TempData or form
+        if (TempData.ContainsKey("BookingHours") && decimal.TryParse(TempData["BookingHours"]?.ToString(), out var tempHours))
+        {
+            bookingRentalHours = tempHours;
+            TempData.Remove("BookingHours");
+            endDate = startDate.AddHours((double)bookingRentalHours);
+        }
+        else if (Request.Form.ContainsKey("rentalHours") && decimal.TryParse(Request.Form["rentalHours"], out var hours))
+        {
+            bookingRentalHours = hours;
+            if (bookingRentalHours < 1 || bookingRentalHours > 168)
             {
                 TempData["ErrorMessage"] = "Rental duration must be between 1 and 168 hours (7 days)";
                 return Page();
             }
-            endDate = startDate.AddHours((double)rentalHours);
+            endDate = startDate.AddHours((double)bookingRentalHours);
         }
         else if (Input.StartDate.HasValue && Input.EndDate.HasValue)
         {
@@ -194,7 +222,7 @@ public class DetailsModel : PageModel
             startDate = DateTime.Now; // Force to current time
             var duration = endDate - Input.StartDate.Value;
             endDate = startDate.Add(duration);
-            rentalHours = (decimal)duration.TotalHours;
+            bookingRentalHours = (decimal)duration.TotalHours;
         }
         else
         {
@@ -217,7 +245,7 @@ public class DetailsModel : PageModel
         }
 
         // Check if requested quantity is available
-        if (quantity > Bike.Quantity)
+        if (bookingQuantity > Bike.Quantity)
         {
             TempData["ErrorMessage"] = $"This listing only has {Bike.Quantity} bike(s) available. Please reduce the quantity.";
             return Page();
@@ -235,7 +263,7 @@ public class DetailsModel : PageModel
             id,
             startDate,
             endDate,
-            quantity
+            bookingQuantity
         );
 
         if (result.success)

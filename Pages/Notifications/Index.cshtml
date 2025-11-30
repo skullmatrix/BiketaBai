@@ -1,0 +1,236 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<style>
+    .notifications-wrapper {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f8faf7 0%, #ffffff 100%);
+        padding: 2rem 1rem;
+    }
+
+    .notifications-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .notifications-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .notifications-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0;
+    }
+
+    .notifications-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .notification-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .notification-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .notification-card.unread {
+        background: #f0f9ff;
+        border-left: 4px solid #87A96B;
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-title {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1a1a1a;
+        margin: 0;
+    }
+
+    .notification-time {
+        font-size: 0.8125rem;
+        color: #6a6a6a;
+    }
+
+    .notification-message {
+        font-size: 0.9375rem;
+        color: #4a4a4a;
+        margin: 0.5rem 0;
+        line-height: 1.5;
+    }
+
+    .notification-type-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+
+    .notification-type-badge.booking {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .notification-type-badge.payment {
+        background: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .notification-type-badge.alert {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .notification-type-badge.overdue {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        color: #6a6a6a;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: #9ca3af;
+    }
+</style>
+
+<div class="notifications-wrapper">
+    <div class="notifications-container">
+        <div class="notifications-header">
+            <h1>
+                <i class="bi bi-bell"></i> Notifications
+                @if (Model.UnreadCount > 0)
+                {
+                    <span class="badge bg-danger" style="font-size: 0.75rem; margin-left: 0.5rem;">@Model.UnreadCount</span>
+                }
+            </h1>
+            @if (Model.Notifications.Any())
+            {
+                <div class="notifications-actions">
+                    <form method="post" asp-page-handler="MarkAllAsRead" style="display: inline;">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-check-all"></i> Mark All as Read
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+
+        @if (Model.Notifications.Any())
+        {
+            <div class="notifications-list">
+                @foreach (var notification in Model.Notifications)
+                {
+                    <div class="notification-card @(!notification.IsRead ? "unread" : "")" 
+                         @if (!string.IsNullOrEmpty(notification.ActionUrl))
+                         {
+                             <text>onclick="window.location.href='@notification.ActionUrl'"</text>
+                         }>
+                        <div class="notification-header">
+                            <h3 class="notification-title">@notification.Title</h3>
+                            <span class="notification-time">
+                                @notification.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                            </span>
+                        </div>
+                        <p class="notification-message">@notification.Message</p>
+                        <span class="notification-type-badge @notification.NotificationType.ToLower()">
+                            @notification.NotificationType
+                        </span>
+                        @if (!notification.IsRead)
+                        {
+                            <form method="post" asp-page-handler="MarkAsRead" asp-route-notificationId="@notification.NotificationId" style="display: inline; margin-left: 0.5rem;">
+                                <button type="submit" class="btn btn-sm btn-link" style="padding: 0; font-size: 0.75rem;" onclick="event.stopPropagation();">
+                                    Mark as read
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-bell-slash"></i>
+                <h3>No Notifications</h3>
+                <p>You're all caught up! You'll see notifications here when there's activity.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh notification count
+        function updateNotificationCount() {
+            fetch('/api/notifications/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    const count = data.count || 0;
+                    const badge = document.querySelector('.notifications-header .badge');
+                    if (count > 0) {
+                        if (badge) {
+                            badge.textContent = count;
+                        } else {
+                            const h1 = document.querySelector('.notifications-header h1');
+                            const newBadge = document.createElement('span');
+                            newBadge.className = 'badge bg-danger';
+                            newBadge.style.cssText = 'font-size: 0.75rem; margin-left: 0.5rem;';
+                            newBadge.textContent = count;
+                            h1.appendChild(newBadge);
+                        }
+                    } else if (badge) {
+                        badge.remove();
+                    }
+                })
+                .catch(err => console.error('Error updating notification count:', err));
+        }
+
+        // Update every 30 seconds
+        setInterval(updateNotificationCount, 30000);
+    </script>
+}
+

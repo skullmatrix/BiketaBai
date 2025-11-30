@@ -43,6 +43,12 @@ public class HomeModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Redirect admins to admin dashboard
+        if (AuthHelper.IsAdmin(User))
+        {
+            return RedirectToPage("/Admin/Dashboard");
+        }
+
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
         
         CurrentUser = await _context.Users

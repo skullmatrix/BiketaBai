@@ -92,6 +92,69 @@
             </div>
         </div>
 
+        <!-- Quick Actions -->
+        <div class="admin-quick-actions">
+            <h3 class="admin-section-title">
+                <i class="bi bi-lightning-charge"></i> Quick Actions
+            </h3>
+            <div class="admin-actions-grid">
+                <a href="/Admin/VerifyOwners" class="admin-action-card">
+                    <div class="admin-action-icon warning">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="admin-action-content">
+                        <h4>Verify Owners</h4>
+                        <p>@Model.PendingOwnerVerifications pending</p>
+                    </div>
+                </a>
+                <a href="/Admin/ManageUsers" class="admin-action-card">
+                    <div class="admin-action-icon blue">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="admin-action-content">
+                        <h4>Manage Users</h4>
+                        <p>@Model.TotalUsers total users</p>
+                    </div>
+                </a>
+                <a href="/Admin/ManageListings" class="admin-action-card">
+                    <div class="admin-action-icon sage">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                    <div class="admin-action-content">
+                        <h4>Manage Listings</h4>
+                        <p>@Model.TotalBikes total bikes</p>
+                    </div>
+                </a>
+                <a href="/Admin/Reviews" class="admin-action-card">
+                    <div class="admin-action-icon amber">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div class="admin-action-content">
+                        <h4>Reviews</h4>
+                        <p>Manage reviews</p>
+                    </div>
+                </a>
+                <a href="/Admin/Reports" class="admin-action-card">
+                    <div class="admin-action-icon emerald">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div class="admin-action-content">
+                        <h4>Reports</h4>
+                        <p>View analytics</p>
+                    </div>
+                </a>
+                <a href="/Admin/Profile" class="admin-action-card">
+                    <div class="admin-action-icon neutral">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="admin-action-content">
+                        <h4>Profile</h4>
+                        <p>Account settings</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
         <!-- Secondary Stats - Compact Row -->
         <div class="admin-secondary-stats">
             <!-- Wallet Balance -->
@@ -551,6 +614,104 @@
 
     </div>
 </div>
+
+<style>
+    .admin-quick-actions {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+    
+    .admin-section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .admin-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .admin-action-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f8faf7;
+        border-radius: 0.75rem;
+        text-decoration: none;
+        transition: all 0.3s;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .admin-action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #87A96B;
+    }
+    
+    .admin-action-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    .admin-action-icon.warning {
+        background: #fffbf0;
+        color: #f57c00;
+    }
+    
+    .admin-action-icon.blue {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .admin-action-icon.sage {
+        background: #E8F0E3;
+        color: #87A96B;
+    }
+    
+    .admin-action-icon.amber {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+    
+    .admin-action-icon.emerald {
+        background: #e8f5e9;
+        color: #388e3c;
+    }
+    
+    .admin-action-icon.neutral {
+        background: #f5f5f5;
+        color: #6a6a6a;
+    }
+    
+    .admin-action-content h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0 0 0.25rem 0;
+    }
+    
+    .admin-action-content p {
+        font-size: 0.875rem;
+        color: #6a6a6a;
+        margin: 0;
+    }
+</style>
 
 <style>
     .text-end {

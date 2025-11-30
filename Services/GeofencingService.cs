@@ -10,17 +10,20 @@ public class GeofencingService
 {
     private readonly BiketaBaiDbContext _context;
     private readonly SmsService _smsService;
+    private readonly NotificationService _notificationService;
     private readonly AddressValidationService _addressValidationService;
     private readonly IConfiguration _configuration;
 
     public GeofencingService(
         BiketaBaiDbContext context,
         SmsService smsService,
+        NotificationService notificationService,
         AddressValidationService addressValidationService,
         IConfiguration configuration)
     {
         _context = context;
         _smsService = smsService;
+        _notificationService = notificationService;
         _addressValidationService = addressValidationService;
         _configuration = configuration;
     }
@@ -217,6 +220,9 @@ public class GeofencingService
 
         foreach (var booking in activeBookings)
         {
+            // Check for overdue bookings and send SMS
+            await CheckAndSendOverdueNotificationAsync(booking);
+
             // Check for 10-minute reminder
             await CheckAndSendReturnReminderAsync(booking);
 
@@ -333,6 +339,91 @@ public class GeofencingService
         else
         {
             Log.Warning("Failed to send return reminder SMS to renter {RenterId} for booking {BookingId}", 
+                booking.RenterId, booking.BookingId);
+        }
+    }
+
+    /// <summary>
+    /// Checks if booking is overdue and sends SMS notification to renter
+    /// </summary>
+    private async Task CheckAndSendOverdueNotificationAsync(Booking booking)
+    {
+        if (string.IsNullOrWhiteSpace(booking.Renter.Phone))
+        {
+            return; // No phone number, skip
+        }
+
+        var now = DateTime.UtcNow;
+        
+        // Check if booking is overdue (EndDate has passed)
+        if (booking.EndDate >= now)
+        {
+            return; // Not overdue yet
+        }
+
+        var overdueMinutes = (now - booking.EndDate).TotalMinutes;
+
+        // Check if we've already sent an overdue notification recently (within last 30 minutes)
+        var recentOverdueNotification = await _context.Notifications
+            .Where(n => n.UserId == booking.RenterId 
+                && n.NotificationType == "Overdue"
+                && n.Title.Contains("Overdue Return")
+                && n.Message.Contains($"Booking #{booking.BookingId}"))
+            .OrderByDescending(n => n.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (recentOverdueNotification != null)
+        {
+            var minutesSinceNotification = (now - recentOverdueNotification.CreatedAt).TotalMinutes;
+            if (minutesSinceNotification < 30)
+            {
+                return; // Already sent notification recently
+            }
+        }
+
+        // Format return time
+        var returnTime = booking.EndDate.ToString("MMM dd, yyyy hh:mm tt");
+        var overdueHours = Math.Floor(overdueMinutes / 60);
+        var overdueMins = Math.Floor(overdueMinutes % 60);
+
+        // Send overdue SMS
+        var message = $"⚠️ OVERDUE: Your bike rental (Booking #{booking.BookingId}) was due back on {returnTime}. " +
+                     $"You are {overdueHours}h {overdueMins}m overdue. Please return the bike(s) immediately to avoid additional penalties. - Bike Ta Bai";
+        
+        var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
+        
+        if (smsSent)
+        {
+            // Create notification record
+            var notification = new Notification
+            {
+                UserId = booking.RenterId,
+                Title = "Overdue Return",
+                Message = $"Your bike rental (Booking #{booking.BookingId}) is overdue. Please return immediately.",
+                NotificationType = "Overdue",
+                IsRead = false,
+                ActionUrl = $"/Bookings/Details/{booking.BookingId}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            // Also notify the owner about overdue return
+            await _notificationService.CreateNotificationAsync(
+                booking.Bike.OwnerId,
+                "Bike Return Overdue",
+                $"Booking #{booking.BookingId} for {booking.Bike.Brand} {booking.Bike.Model} is overdue. Renter: {booking.Renter.FullName}. Overdue by {overdueHours}h {overdueMins}m.",
+                "Overdue",
+                $"/Owner/MyBikes"
+            );
+
+            Log.Information("Overdue notification SMS sent to renter {RenterId} for booking {BookingId}. Overdue by {Minutes} minutes", 
+                booking.RenterId, booking.BookingId, overdueMinutes);
+        }
+        else
+        {
+            Log.Warning("Failed to send overdue notification SMS to renter {RenterId} for booking {BookingId}", 
                 booking.RenterId, booking.BookingId);
         }
     }

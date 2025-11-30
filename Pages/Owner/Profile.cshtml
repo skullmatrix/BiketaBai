@@ -4,6 +4,8 @@
     ViewData["Title"] = "Owner Profile";
 }
 
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
 <div class="container my-5">
     <!-- Header -->
     <div class="dashboard-header mb-4">
@@ -197,18 +199,15 @@
                             <textarea asp-for="Input.Address" class="form-control" rows="3" required></textarea>
                         </div>
                         
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-check-circle"></i> Update Profile
-                        </button>
+                        <div class="btn-group-premium" style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                            <button type="submit" class="btn-premium btn-premium-primary" style="flex: 1;">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="/Account/ChangePassword" class="btn-premium btn-premium-outline" style="flex: 1;">
+                                <i class="bi bi-key"></i> Change Password
+                            </a>
+                        </div>
                     </form>
-                    
-                    <hr class="my-4" />
-                    
-                    <div class="text-center">
-                        <a href="/Account/ChangePassword" class="btn btn-outline-secondary">
-                            <i class="bi bi-key"></i> Change Password
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -333,6 +332,68 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Premium Buttons - Same as Account/Profile */
+    .btn-premium {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.875rem 1.75rem;
+        border-radius: 0.75rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+    }
+
+    .btn-premium-primary {
+        background: linear-gradient(135deg, #87A96B 0%, #6B8E5F 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(135, 169, 107, 0.3);
+    }
+
+    .btn-premium-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(135, 169, 107, 0.4);
+        color: white;
+    }
+
+    .btn-premium-primary:active {
+        transform: translateY(0);
+    }
+
+    .btn-premium-outline {
+        background: white;
+        color: #87A96B;
+        border: 2px solid #87A96B;
+    }
+
+    .btn-premium-outline:hover {
+        background: #E8F0E3;
+        transform: translateY(-2px);
+        color: #87A96B;
+    }
+
+    .btn-group-premium {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    @@media (max-width: 768px) {
+        .btn-group-premium {
+            flex-direction: column;
+        }
+
+        .btn-premium {
+            width: 100%;
+        }
+    }
+</style>
 
 @section Scripts {
     <script>

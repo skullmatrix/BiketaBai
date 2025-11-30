@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Models;
+using BiketaBai.Helpers;
 
 namespace BiketaBai.Pages;
 
@@ -28,6 +29,11 @@ public class IndexModel : PageModel
         // Redirect authenticated users to personalized home page
         if (User.Identity?.IsAuthenticated == true)
         {
+            // Redirect admins to admin dashboard
+            if (AuthHelper.IsAdmin(User))
+            {
+                return RedirectToPage("/Admin/Dashboard");
+            }
             return RedirectToPage("/Dashboard/Home");
         }
         BikeTypes = await _context.BikeTypes.ToListAsync();

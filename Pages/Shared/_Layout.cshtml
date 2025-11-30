@@ -347,11 +347,20 @@
                 loadPointsBalance();
                 loadNotificationCount();
                 
-                // Refresh every 30 seconds
+                // Refresh notifications more frequently for owners (every 15 seconds)
+                if (isOwner === "true") {
+                    setInterval(function() {
+                        loadNotificationCount();
+                    }, 15000); // Check every 15 seconds for owners
+                }
+                
+                // Refresh wallet and points every 30 seconds
                 setInterval(function() {
                     loadWalletBalance();
                     loadPointsBalance();
-                    loadNotificationCount();
+                    if (isOwner !== "true") {
+                        loadNotificationCount();
+                    }
                 }, 30000);
             });
 
@@ -372,17 +381,71 @@
                 });
             }
 
+            let previousNotificationCount = 0;
+            const isOwner = @(User.Identity?.IsAuthenticated == true && AuthHelper.IsOwner(User) ? "true" : "false");
+            
             function loadNotificationCount() {
                 $.get('/Api/Notifications', function(data) {
-                    if (data.count > 0) {
-                        const countText = data.count > 9 ? '9+' : data.count;
+                    const currentCount = data.count || 0;
+                    const countText = currentCount > 9 ? '9+' : currentCount;
+                    
+                    if (currentCount > 0) {
                         $('#notificationCountSidebar').text(countText).show();
+                        
+                        // Play sound notification for owners when new notification arrives
+                        if (isOwner === "true" && currentCount > previousNotificationCount && previousNotificationCount >= 0) {
+                            playNotificationSound();
+                        }
                     } else {
                         $('#notificationCountSidebar').hide();
                     }
+                    
+                    previousNotificationCount = currentCount;
                 }).fail(function() {
                     $('#notificationCountSidebar').hide();
                 });
+            }
+            
+            function playNotificationSound() {
+                try {
+                    // Create audio context for notification sound
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    // Set sound properties - pleasant notification tone
+                    oscillator.frequency.value = 800; // Higher pitch
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    
+                    // Play a second tone for emphasis
+                    setTimeout(() => {
+                        const oscillator2 = audioContext.createOscillator();
+                        const gainNode2 = audioContext.createGain();
+                        
+                        oscillator2.connect(gainNode2);
+                        gainNode2.connect(audioContext.destination);
+                        
+                        oscillator2.frequency.value = 1000;
+                        oscillator2.type = 'sine';
+                        
+                        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        
+                        oscillator2.start(audioContext.currentTime);
+                        oscillator2.stop(audioContext.currentTime + 0.2);
+                    }, 150);
+                } catch (e) {
+                    console.log('Sound notification not available:', e);
+                }
             }
         </script>
     }

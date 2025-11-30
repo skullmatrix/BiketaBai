@@ -76,6 +76,7 @@
                 
                 <select class="select-premium" id="statusFilter">
                     <option value="all">All Status</option>
+                    <option value="active">Active Rentals</option>
                     <option value="1">Available</option>
                     <option value="2">Rented</option>
                     <option value="3">Maintenance</option>
@@ -97,8 +98,10 @@
                     var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
                     var statusClass = bike.AvailabilityStatusId switch { 1 => "available", 2 => "rented", 3 => "maintenance", 4 => "inactive", _ => "inactive" };
                     var statusText = bike.AvailabilityStatusId switch { 1 => "Available", 2 => "Rented", 3 => "Maintenance", 4 => "Inactive", _ => "Unknown" };
-                    var activeRentals = Model.ActiveBookings.Count(b => b.BikeId == bike.BikeId);
+                    var bikeActiveBookings = Model.BikeActiveBookings.ContainsKey(bike.BikeId) ? Model.BikeActiveBookings[bike.BikeId] : new List<Booking>();
+                    var activeRentals = bikeActiveBookings.Count;
                     var hasActiveBookings = activeRentals > 0;
+                    var availableQty = Model.AvailableQuantities.ContainsKey(bike.BikeId) ? Model.AvailableQuantities[bike.BikeId] : bike.Quantity;
                     
                     <div class="bike-card-premium" 
                          data-id="@bike.BikeId"
@@ -141,13 +144,59 @@
                                     <span class="hourly">₱@bike.HourlyRate<small>/hr</small></span>
                                     <span class="daily">₱@bike.DailyRate/day</span>
                                 </div>
-                                @if (activeRentals > 0)
-                                {
-                                    <div class="rental-badge">
-                                        <i class="bi bi-clock-fill"></i> @activeRentals active
-                                    </div>
-                                }
+                                <div class="quantity-info">
+                                    <small>Available: @availableQty / @bike.Quantity</small>
+                                </div>
                             </div>
+                            
+                            @if (hasActiveBookings)
+                            {
+                                <div class="active-rentals-section" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb;">
+                                    <div class="rental-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <strong style="font-size: 0.875rem; color: #87A96B;">
+                                            <i class="bi bi-clock-fill"></i> Active Rentals (@activeRentals)
+                                        </strong>
+                                    </div>
+                                    @foreach (var booking in bikeActiveBookings)
+                                    {
+                                        var isOverdue = Model.OverdueBookings.ContainsKey(booking.BookingId) && Model.OverdueBookings[booking.BookingId];
+                                        var endDatePh = BiketaBai.Helpers.TimeZoneHelper.ToPhilippineTime(booking.EndDate);
+                                        <div class="rental-item" style="background: @(isOverdue ? "#fee2e2" : "#f0f9ff"); border-left: 3px solid @(isOverdue ? "#dc2626" : "#3b82f6"); padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.375rem;">
+                                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                <div style="flex: 1;">
+                                                    <div style="font-size: 0.8125rem; font-weight: 500; color: #1a1a1a;">
+                                                        @booking.Renter.FullName
+                                                        @if (booking.Quantity > 1)
+                                                        {
+                                                            <span class="badge bg-info" style="font-size: 0.75rem; margin-left: 0.25rem;">@booking.Quantity bikes</span>
+                                                        }
+                                                    </div>
+                                                    <div style="font-size: 0.75rem; color: #6a6a6a; margin-top: 0.25rem;">
+                                                        <i class="bi bi-calendar"></i> Return by: @endDatePh.ToString("MMM dd, yyyy hh:mm tt")
+                                                    </div>
+                                                    <div class="remaining-time" 
+                                                         data-end-date="@BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTimeIso(booking.EndDate)"
+                                                         style="font-size: 0.75rem; color: @(isOverdue ? "#dc2626" : "#3b82f6"); margin-top: 0.25rem; font-weight: 500;">
+                                                        @if (isOverdue)
+                                                        {
+                                                            <i class="bi bi-exclamation-triangle-fill"></i> <span>OVERDUE</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-hourglass-split"></i> <span class="time-remaining">Calculating...</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <form method="post" asp-page-handler="ConfirmReturn" asp-route-bookingId="@booking.BookingId" style="margin-left: 0.5rem;">
+                                                    <button type="submit" class="btn btn-sm btn-success" style="white-space: nowrap;">
+                                                        <i class="bi bi-check-circle"></i> Confirm Return
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
                             
                             <!-- Compact Actions -->
                             <div class="bike-actions-premium">
@@ -236,9 +285,18 @@
                     const $bike = $(bike);
                     const name = $bike.data('name').toLowerCase();
                     const bikeStatus = $bike.data('status').toString();
+                    const hasActive = $bike.find('.active-rentals-section').length > 0;
                     
                     const matchSearch = name.includes(search);
-                    const matchStatus = status === 'all' || bikeStatus === status;
+                    let matchStatus = true;
+                    
+                    if (status === 'all') {
+                        matchStatus = true;
+                    } else if (status === 'active') {
+                        matchStatus = hasActive;
+                    } else {
+                        matchStatus = bikeStatus === status;
+                    }
                     
                     $bike.toggle(matchSearch && matchStatus);
                 });
@@ -263,6 +321,44 @@
             }
             
             $('#searchInput, #statusFilter, #sortSelect').on('input change', filterBikes);
+            
+            // Update remaining time for active rentals
+            function updateRemainingTimes() {
+                $('.remaining-time').each(function() {
+                    const $el = $(this);
+                    const endDateStr = $el.closest('.rental-item').find('.remaining-time').data('end-date');
+                    if (!endDateStr) return;
+                    
+                    const endDate = new Date(endDateStr);
+                    const now = new Date();
+                    const diff = endDate - now;
+                    
+                    if (diff <= 0) {
+                        $el.html('<i class="bi bi-exclamation-triangle-fill"></i> <span>OVERDUE</span>');
+                        $el.css('color', '#dc2626');
+                        $el.closest('.rental-item').css('background', '#fee2e2').css('border-left-color', '#dc2626');
+                    } else {
+                        const hours = Math.floor(diff / (1000 * 60 * 60));
+                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                        
+                        let timeStr = '';
+                        if (hours > 0) {
+                            timeStr = `${hours}h ${minutes}m`;
+                        } else if (minutes > 0) {
+                            timeStr = `${minutes}m ${seconds}s`;
+                        } else {
+                            timeStr = `${seconds}s`;
+                        }
+                        
+                        $el.find('.time-remaining').text(`${timeStr} remaining`);
+                    }
+                });
+            }
+            
+            // Update every second
+            updateRemainingTimes();
+            setInterval(updateRemainingTimes, 1000);
             
             // Auto-dismiss alerts
             setTimeout(() => {
