@@ -138,16 +138,28 @@
                                         <i class="bi bi-calendar-event"></i>
                                         <div>
                                             <span class="date-label">Start</span>
-                                            <span class="date-value">@booking.StartDate.ToString("MMM dd, yyyy h:mm tt")</span>
+                                            <span class="date-value">@BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTime(booking.StartDate)</span>
                                         </div>
                                     </div>
                                     <div class="date-item">
                                         <i class="bi bi-calendar-x"></i>
                                         <div>
                                             <span class="date-label">End</span>
-                                            <span class="date-value">@booking.EndDate.ToString("MMM dd, yyyy h:mm tt")</span>
+                                            <span class="date-value">@BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTime(booking.EndDate)</span>
                                         </div>
                                     </div>
+                                    @if (booking.BookingStatus.StatusName == "Active")
+                                    {
+                                        <div class="date-item" style="margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--neutral-200);">
+                                            <i class="bi bi-clock" style="color: var(--sage-primary);"></i>
+                                            <div>
+                                                <span class="date-label">Time Remaining</span>
+                                                <span class="date-value" style="color: var(--sage-primary); font-weight: 600;">
+                                                    <span class="time-remaining" data-end-date="@BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTimeIso(booking.EndDate)">Calculating...</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                                 
                                 <div class="booking-actions">
@@ -345,6 +357,92 @@
 
 @section Scripts {
     <script>
+        // Helper function to get current Philippine time (UTC+8)
+        function getPhilippineTime() {
+            const now = new Date();
+            // Get current time in Philippine timezone
+            const phTimeStr = now.toLocaleString('en-US', { 
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // Parse the string to create a Date object
+            // Format: "MM/DD/YYYY, HH:MM:SS"
+            const parts = phTimeStr.split(', ');
+            const dateParts = parts[0].split('/');
+            const timeParts = parts[1].split(':');
+            
+            // Create date in local timezone but representing Philippine time
+            const phDate = new Date(
+                parseInt(dateParts[2]), // year
+                parseInt(dateParts[0]) - 1, // month (0-indexed)
+                parseInt(dateParts[1]), // day
+                parseInt(timeParts[0]), // hour
+                parseInt(timeParts[1]), // minute
+                parseInt(timeParts[2]) // second
+            );
+            
+            return phDate;
+        }
+        
+        // Time remaining countdown - uses Philippine time (UTC+8)
+        function updateTimeRemaining() {
+            $('.time-remaining').each(function() {
+                const $element = $(this);
+                const endDateStr = $element.data('end-date');
+                if (!endDateStr) return;
+                
+                // Parse the end date - it's in Philippine time format (YYYY-MM-DDTHH:mm:ss)
+                const endDateParts = endDateStr.split('T');
+                const dateParts = endDateParts[0].split('-');
+                const timeParts = endDateParts[1].split(':');
+                
+                // Create end date in local timezone but representing Philippine time values
+                const endDate = new Date(
+                    parseInt(dateParts[0]), // year
+                    parseInt(dateParts[1]) - 1, // month (0-indexed)
+                    parseInt(dateParts[2]), // day
+                    parseInt(timeParts[0]), // hour
+                    parseInt(timeParts[1]), // minute
+                    parseInt(timeParts[2] || 0) // second
+                );
+                
+                // Get current Philippine time
+                const nowPHT = getPhilippineTime();
+                
+                // Calculate difference
+                const diffMs = endDate.getTime() - nowPHT.getTime();
+
+                if (diffMs <= 0) {
+                    $element.text('Time Expired');
+                    $element.css('color', 'var(--danger)');
+                } else {
+                    const diffSeconds = Math.floor(diffMs / 1000);
+                    const hours = Math.floor(diffSeconds / 3600);
+                    const minutes = Math.floor((diffSeconds % 3600) / 60);
+                    const seconds = diffSeconds % 60;
+                    
+                    if (hours > 0) {
+                        $element.text(`${hours}h ${minutes}m ${seconds}s`);
+                    } else if (minutes > 0) {
+                        $element.text(`${minutes}m ${seconds}s`);
+                    } else {
+                        $element.text(`${seconds}s`);
+                    }
+                }
+            });
+        }
+        
+        // Update countdown every second
+        setInterval(updateTimeRemaining, 1000);
+        updateTimeRemaining(); // Initial call
+
         $(document).ready(function() {
             // Tab switching
             $('.tab-btn').on('click', function() {

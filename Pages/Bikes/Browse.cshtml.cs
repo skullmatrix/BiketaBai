@@ -37,11 +37,12 @@ public class BrowseModel : PageModel
 
         BikeTypes = await _context.BikeTypes.ToListAsync();
 
+        // Get all bikes that are marked as available (not deleted, not maintenance, etc.)
         var query = _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Where(b => b.AvailabilityStatusId == 1) // Available only
+            .Where(b => b.AvailabilityStatusId == 1 && !b.IsDeleted) // Available and not deleted
             .AsQueryable();
 
         // Apply filters
@@ -69,7 +70,32 @@ public class BrowseModel : PageModel
             _ => query.OrderByDescending(b => b.CreatedAt)
         };
 
-        Bikes = await query.ToListAsync();
+        var allBikes = await query.ToListAsync();
+
+        // Calculate available quantity for each bike and filter out bikes with 0 available
+        var bikesWithAvailability = new List<Bike>();
+        foreach (var bike in allBikes)
+        {
+            // Get active and pending bookings for this bike
+            var activeBookings = await _context.Bookings
+                .Where(b => b.BikeId == bike.BikeId && 
+                           (b.BookingStatusId == 1 || b.BookingStatusId == 2)) // Pending or Active
+                .ToListAsync();
+            
+            // Calculate rented quantity
+            var rentedQuantity = activeBookings.Sum(b => b.Quantity);
+            
+            // Calculate available quantity
+            var availableQuantity = bike.Quantity - rentedQuantity;
+            
+            // Only include bikes with available quantity > 0
+            if (availableQuantity > 0)
+            {
+                bikesWithAvailability.Add(bike);
+            }
+        }
+
+        Bikes = bikesWithAvailability;
 
         // Calculate ratings for bikes using BookingManagementService
         foreach (var bike in Bikes)

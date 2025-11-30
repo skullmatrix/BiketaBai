@@ -125,10 +125,7 @@
                                 <button class="btn btn-minimal-account d-none d-lg-block" type="button" id="openSidebarBtn" style="position: relative;">
                                     <i class="bi bi-person-circle"></i>
                                     <span class="ms-1">@User.Identity.Name</span>
-                                    @if (AuthHelper.IsOwner(User))
-                                    {
-                                        <span class="notification-badge-header" id="notificationCountHeader"></span>
-                                    }
+                                    <span class="notification-badge-header" id="notificationCountHeader" style="display: none;"></span>
                                 </button>
                             </li>
                         }
@@ -351,20 +348,17 @@
                 loadPointsBalance();
                 loadNotificationCount();
                 
-                // Refresh notifications more frequently for owners (every 15 seconds)
-                if (isOwner === "true") {
+                // Refresh notifications for all authenticated users (every 15 seconds)
+                if (isAuthenticated === "true") {
                     setInterval(function() {
                         loadNotificationCount();
-                    }, 15000); // Check every 15 seconds for owners
+                    }, 15000); // Check every 15 seconds
                 }
                 
                 // Refresh wallet and points every 30 seconds
                 setInterval(function() {
                     loadWalletBalance();
                     loadPointsBalance();
-                    if (isOwner !== "true") {
-                        loadNotificationCount();
-                    }
                 }, 30000);
             });
 
@@ -386,23 +380,25 @@
             }
 
             let previousNotificationCount = 0;
-            const isOwner = @(User.Identity?.IsAuthenticated == true && AuthHelper.IsOwner(User) ? "true" : "false");
+            const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
             
             function loadNotificationCount() {
                 $.get('/Api/Notifications', function(data) {
                     const currentCount = data.count || 0;
-                    const countText = currentCount > 9 ? '9+' : currentCount;
+                    // Ensure countText is always a string
+                    const countText = currentCount > 9 ? '9+' : String(currentCount);
                     
                     if (currentCount > 0) {
                         // Update sidebar badge
                         $('#notificationCountSidebar').text(countText).show();
                         
-                        // Update header badge for owners
-                        if (isOwner === "true") {
+                        // Update header badge for all authenticated users
+                        if (isAuthenticated === "true") {
                             const $headerBadge = $('#notificationCountHeader');
                             $headerBadge.text(countText);
                             
                             // Toggle class based on whether it's a single digit or multiple
+                            // countText is now guaranteed to be a string, so .length is safe
                             if (currentCount > 9 || countText.length > 1) {
                                 $headerBadge.addClass('badge-multiple');
                             } else {
@@ -412,13 +408,13 @@
                             $headerBadge.css('display', 'flex'); // Show as flex to center content
                         }
                         
-                        // Play sound notification for owners when new notification arrives
-                        if (isOwner === "true" && currentCount > previousNotificationCount && previousNotificationCount >= 0) {
+                        // Play sound notification for all authenticated users when new notification arrives
+                        if (isAuthenticated === "true" && currentCount > previousNotificationCount && previousNotificationCount >= 0) {
                             playNotificationSound();
                         }
                     } else {
                         $('#notificationCountSidebar').hide();
-                        if (isOwner === "true") {
+                        if (isAuthenticated === "true") {
                             $('#notificationCountHeader').hide().removeClass('badge-multiple');
                         }
                     }
@@ -426,7 +422,7 @@
                     previousNotificationCount = currentCount;
                 }).fail(function() {
                     $('#notificationCountSidebar').hide();
-                    if (isOwner === "true") {
+                    if (isAuthenticated === "true") {
                         $('#notificationCountHeader').hide().removeClass('badge-multiple');
                     }
                 });
