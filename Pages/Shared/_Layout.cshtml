@@ -122,9 +122,13 @@
                         {
                             <!-- Desktop: User Name Button - Opens Sidebar -->
                             <li class="nav-item d-none d-lg-block">
-                                <button class="btn btn-minimal-account d-none d-lg-block" type="button" id="openSidebarBtn">
+                                <button class="btn btn-minimal-account d-none d-lg-block" type="button" id="openSidebarBtn" style="position: relative;">
                                     <i class="bi bi-person-circle"></i>
                                     <span class="ms-1">@User.Identity.Name</span>
+                                    @if (AuthHelper.IsOwner(User))
+                                    {
+                                        <span class="notification-badge-header" id="notificationCountHeader"></span>
+                                    }
                                 </button>
                             </li>
                         }
@@ -390,7 +394,23 @@
                     const countText = currentCount > 9 ? '9+' : currentCount;
                     
                     if (currentCount > 0) {
+                        // Update sidebar badge
                         $('#notificationCountSidebar').text(countText).show();
+                        
+                        // Update header badge for owners
+                        if (isOwner === "true") {
+                            const $headerBadge = $('#notificationCountHeader');
+                            $headerBadge.text(countText);
+                            
+                            // Toggle class based on whether it's a single digit or multiple
+                            if (currentCount > 9 || countText.length > 1) {
+                                $headerBadge.addClass('badge-multiple');
+                            } else {
+                                $headerBadge.removeClass('badge-multiple');
+                            }
+                            
+                            $headerBadge.css('display', 'flex'); // Show as flex to center content
+                        }
                         
                         // Play sound notification for owners when new notification arrives
                         if (isOwner === "true" && currentCount > previousNotificationCount && previousNotificationCount >= 0) {
@@ -398,11 +418,17 @@
                         }
                     } else {
                         $('#notificationCountSidebar').hide();
+                        if (isOwner === "true") {
+                            $('#notificationCountHeader').hide().removeClass('badge-multiple');
+                        }
                     }
                     
                     previousNotificationCount = currentCount;
                 }).fail(function() {
                     $('#notificationCountSidebar').hide();
+                    if (isOwner === "true") {
+                        $('#notificationCountHeader').hide().removeClass('badge-multiple');
+                    }
                 });
             }
             
