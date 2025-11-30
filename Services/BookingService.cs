@@ -20,10 +20,15 @@ public class BookingService
 
     public async Task<bool> CheckBikeAvailabilityAsync(int bikeId, DateTime startDate, DateTime endDate, int requestedQuantity = 1)
     {
-        // Check if bike is available in general
+        // Check if bike exists and is not deleted
         var bike = await _context.Bikes.FindAsync(bikeId);
-        if (bike == null || bike.AvailabilityStatusId != 1) // 1 = Available
+        if (bike == null || bike.IsDeleted)
             return false;
+
+        // Allow bikes with AvailabilityStatusId = 1 (Available) OR 2 (Partially Rented)
+        // Status 2 means some bikes are rented but there may still be available bikes
+        if (bike.AvailabilityStatusId != 1 && bike.AvailabilityStatusId != 2)
+            return false; // Only allow Available or Partially Rented bikes
 
         // Check for conflicting bookings and count how many bikes are already booked
         var conflictingBookings = await _context.Bookings
@@ -37,8 +42,11 @@ public class BookingService
         // Sum up the quantity of bikes already booked during this period
         var bookedQuantity = conflictingBookings.Sum(b => b.Quantity);
 
+        // Calculate available quantity (ensure Quantity is at least 1 for backward compatibility)
+        var bikeQuantity = bike.Quantity > 0 ? bike.Quantity : 1;
+        var availableQuantity = bikeQuantity - bookedQuantity;
+
         // Check if there are enough bikes available
-        var availableQuantity = bike.Quantity - bookedQuantity;
         return availableQuantity >= requestedQuantity;
     }
 
@@ -141,7 +149,7 @@ public class BookingService
     private async Task<int> GetAvailableQuantityAsync(int bikeId, DateTime startDate, DateTime endDate)
     {
         var bike = await _context.Bikes.FindAsync(bikeId);
-        if (bike == null) return 0;
+        if (bike == null || bike.IsDeleted) return 0;
 
         var conflictingBookings = await _context.Bookings
             .Where(b => b.BikeId == bikeId &&
@@ -152,7 +160,10 @@ public class BookingService
             .ToListAsync();
 
         var bookedQuantity = conflictingBookings.Sum(b => b.Quantity);
-        return Math.Max(0, bike.Quantity - bookedQuantity);
+        
+        // Calculate available quantity (ensure Quantity is at least 1 for backward compatibility)
+        var bikeQuantity = bike.Quantity > 0 ? bike.Quantity : 1;
+        return Math.Max(0, bikeQuantity - bookedQuantity);
     }
 
     public async Task<(bool success, string message)> CancelBookingAsync(int bookingId, int userId, string? reason = null)
