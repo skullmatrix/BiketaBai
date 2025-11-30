@@ -107,11 +107,13 @@ public class BrowseModel : PageModel
             
             // Calculate available quantity
             // If Quantity is 0 or not set, default to 1 (for backward compatibility with old bikes)
-            var bikeQuantity = bike.Quantity > 0 ? bike.Quantity : 1;
+            // Ensure Quantity is at least 1 to prevent division issues
+            var bikeQuantity = Math.Max(1, bike.Quantity);
             var availableQuantity = bikeQuantity - rentedQuantity;
             
             // Only include bikes with available quantity > 0
             // This ensures bikes that are fully rented don't appear
+            // But bikes with at least 1 available will show
             if (availableQuantity > 0)
             {
                 bikesWithAvailability.Add(bike);

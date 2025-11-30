@@ -129,12 +129,14 @@ public class RentalRequestsModel : PageModel
 
             await _context.SaveChangesAsync();
 
-            // Send notification to renter
+            // Send notification to renter with geofencing link
+            var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
             await _notificationService.CreateNotificationAsync(
                 booking.RenterId,
-                "Booking Accepted",
-                $"Your rental request for {booking.Bike.Brand} {booking.Bike.Model} has been accepted! Pickup: {booking.StartDate:MMM dd, yyyy}",
-                "/Bookings/Details/" + booking.BookingId
+                "Booking Accepted - Rental Active",
+                $"Your rental request for {booking.Bike.Brand} {booking.Bike.Model} has been accepted! Your rental is now active and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                "Booking",
+                $"/Bookings/TrackLocation/{booking.BookingId}"
             );
 
             _logger.LogInformation($"Booking {booking.BookingId} accepted by owner {userId}");
@@ -303,14 +305,14 @@ public class RentalRequestsModel : PageModel
 
             await _context.SaveChangesAsync();
 
-            // Send notification to renter
+            // Send notification to renter with geofencing link
             var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
             await _notificationService.CreateNotificationAsync(
                 booking.RenterId,
                 "Payment Verified - Rental Started",
-                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental has started and will end on {endDatePHT}.",
+                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental has started and will end on {endDatePHT}. Please start location tracking for geofencing.",
                 "Payment",
-                $"/Bookings/Details/{booking.BookingId}"
+                $"/Bookings/TrackLocation/{booking.BookingId}"
             );
 
             _logger.LogInformation($"Cash payment verified for booking {booking.BookingId} by owner {userId}. Rental started at {verificationTime:yyyy-MM-dd HH:mm:ss} UTC, ends at {booking.EndDate:yyyy-MM-dd HH:mm:ss} UTC");

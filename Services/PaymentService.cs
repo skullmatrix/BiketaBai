@@ -1,5 +1,6 @@
 using BiketaBai.Data;
 using BiketaBai.Models;
+using BiketaBai.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -170,18 +171,22 @@ public class PaymentService
             }
             else
             {
+                // For non-cash payments, booking is immediately active - send notification with geofencing link
+                var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
                 await _notificationService.CreateNotificationAsync(
                     booking.RenterId,
-                    "Payment Successful",
-                    $"Your payment of ₱{amount:F2} for booking #{bookingId} has been processed",
-                    "Payment"
+                    "Payment Successful - Rental Active",
+                    $"Your payment of ₱{amount:F2} for booking #{bookingId} has been processed. Your rental is now active and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                    "Payment",
+                    $"/Bookings/TrackLocation/{bookingId}"
                 );
 
                 await _notificationService.CreateNotificationAsync(
                     booking.Bike.OwnerId,
                     "New Booking",
                     $"Your bike {booking.Bike.Brand} {booking.Bike.Model} has been booked",
-                    "Booking"
+                    "Booking",
+                    $"/Owner/RentalRequests"
                 );
             }
 
@@ -406,19 +411,22 @@ public class PaymentService
 
                 await _context.SaveChangesAsync();
 
-                // Send notifications
+                // Send notifications with geofencing link
+                var endDatePHT = TimeZoneHelper.FormatPhilippineTime(payment.Booking.EndDate);
                 await _notificationService.CreateNotificationAsync(
                     payment.Booking.RenterId,
-                    "Payment Successful",
-                    $"Your payment of ₱{payment.Amount:F2} has been processed",
-                    "/Bookings/Confirmation"
+                    "Payment Successful - Rental Active",
+                    $"Your payment of ₱{payment.Amount:F2} has been processed. Your rental is now active and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                    "Payment",
+                    $"/Bookings/TrackLocation/{payment.Booking.BookingId}"
                 );
 
                 await _notificationService.CreateNotificationAsync(
                     payment.Booking.Bike.OwnerId,
                     "New Booking",
                     $"Your bike {payment.Booking.Bike.Brand} {payment.Booking.Bike.Model} has been booked",
-                    "/Owner/RentalRequests"
+                    "Booking",
+                    $"/Owner/RentalRequests"
                 );
 
                 return (true, "Payment confirmed successfully");
