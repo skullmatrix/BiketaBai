@@ -396,14 +396,35 @@
                         console.log("Booking update received:", update);
                         
                         if (update.updateType === "approved" || update.updateType === "payment_verified") {
-                            // Show confirmation message
-                            if (confirm(update.message + "\n\nWould you like to go to geofencing now?")) {
-                                if (update.redirectUrl) {
+                            // Auto-redirect to geofencing without confirmation
+                            if (update.redirectUrl) {
+                                // Show a brief notification before redirecting
+                                showBookingUpdateNotification(update.message);
+                                
+                                // Auto-redirect after 2 seconds
+                                setTimeout(function() {
                                     window.location.href = update.redirectUrl;
-                                }
+                                }, 2000);
                             }
                         }
                     });
+                    
+                    function showBookingUpdateNotification(message) {
+                        // Create a temporary notification banner
+                        const notification = document.createElement('div');
+                        notification.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--sage-primary); color: white; padding: 1rem 2rem; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 10000; max-width: 90%; text-align: center;';
+                        notification.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + message + '<br><small>Redirecting to geofencing...</small>';
+                        document.body.appendChild(notification);
+                        
+                        // Remove after 3 seconds
+                        setTimeout(function() {
+                            notification.style.transition = 'opacity 0.3s';
+                            notification.style.opacity = '0';
+                            setTimeout(function() {
+                                document.body.removeChild(notification);
+                            }, 300);
+                        }, 3000);
+                    }
                     
                     // Handle connection events
                     connection.onreconnecting(function() {
