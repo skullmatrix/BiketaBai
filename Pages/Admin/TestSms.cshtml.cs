@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using BiketaBai.Services;
@@ -5,6 +6,7 @@ using Serilog;
 
 namespace BiketaBai.Pages.Admin;
 
+[Authorize(Roles = "Admin")]
 public class TestSmsModel : PageModel
 {
     private readonly SmsService _smsService;

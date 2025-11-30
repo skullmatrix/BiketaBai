@@ -44,6 +44,12 @@ public class Payment
     [Column("notes")]
     public string? Notes { get; set; }
 
+    [Column("owner_verified_at")]
+    public DateTime? OwnerVerifiedAt { get; set; } // When owner verified cash payment
+
+    [Column("owner_verified_by")]
+    public int? OwnerVerifiedBy { get; set; } // Owner user ID who verified
+
     // Navigation properties
     [ForeignKey("BookingId")]
     public virtual Booking Booking { get; set; } = null!;

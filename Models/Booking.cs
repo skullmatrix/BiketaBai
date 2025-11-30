@@ -32,6 +32,9 @@ public class Booking
     [Column("rental_hours")]
     public decimal RentalHours { get; set; }
 
+    [Column("quantity")]
+    public int Quantity { get; set; } = 1; // Number of bikes rented in this booking
+
     [Column("base_rate")]
     public decimal BaseRate { get; set; }
 

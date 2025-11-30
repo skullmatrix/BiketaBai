@@ -52,6 +52,11 @@ public class AddBikeModel : PageModel
         [Range(1, 50000, ErrorMessage = "Daily rate must be between ₱1 and ₱50,000")]
         public decimal? DailyRate { get; set; }
 
+        [Required(ErrorMessage = "Quantity is required")]
+        [Display(Name = "Number of Bikes")]
+        [Range(1, 100, ErrorMessage = "Quantity must be between 1 and 100")]
+        public int Quantity { get; set; } = 1;
+
         public List<IFormFile>? Images { get; set; }
     }
 
@@ -140,6 +145,7 @@ public class AddBikeModel : PageModel
                 Description = Input.Description ?? string.Empty,
                 HourlyRate = Input.HourlyRate ?? 0,
                 DailyRate = Input.DailyRate ?? 0,
+                Quantity = Input.Quantity,
                 AvailabilityStatusId = 1, // Available
                 ViewCount = 0,
                 BookingCount = 0,

@@ -43,6 +43,9 @@ public class Bike
     [Column("daily_rate")]
     public decimal DailyRate { get; set; }
 
+    [Column("quantity")]
+    public int Quantity { get; set; } = 1; // Number of bikes available for this listing
+
     [Required]
     [Column("availability_status_id")]
     public int AvailabilityStatusId { get; set; } = 1; // Default to "Available"

@@ -110,8 +110,8 @@ public class PaymentService
 
             case 4: // Cash
                 paymentSuccess = true;
-                payment.PaymentStatus = "Pending"; // Will be confirmed when owner receives cash
-                message = "Booking confirmed. Please pay cash to the owner";
+                payment.PaymentStatus = "Pending"; // Will be confirmed when owner verifies cash payment
+                message = "Booking created. Please pay cash to the owner. The booking will start once the owner verifies payment.";
                 break;
 
             default:
@@ -123,30 +123,62 @@ public class PaymentService
             payment.PaymentStatus = paymentMethodId == 4 ? "Pending" : "Completed";
             _context.Payments.Add(payment);
             
-            // Update booking status
-            booking.BookingStatusId = 2; // Active
+            // For cash payments, keep booking as Pending until owner verifies
+            // For other payments, activate booking immediately
+            if (paymentMethodId == 4) // Cash
+            {
+                // Booking stays Pending (status 1) until owner verifies payment
+                booking.BookingStatusId = 1; // Pending
+                // Bike status remains Available until payment is verified
+                // Don't change bike status here
+            }
+            else
+            {
+                // For non-cash payments, activate booking immediately
+                booking.BookingStatusId = 2; // Active
+                // Update bike status to Rented
+                booking.Bike.AvailabilityStatusId = 2; // Rented
+                booking.Bike.UpdatedAt = DateTime.UtcNow;
+            }
+            
             booking.UpdatedAt = DateTime.UtcNow;
-
-            // Update bike status
-            booking.Bike.AvailabilityStatusId = 2; // Rented
-            booking.Bike.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
             // Send notifications
-            await _notificationService.CreateNotificationAsync(
-                booking.RenterId,
-                "Payment Successful",
-                $"Your payment of ₱{amount:F2} for booking #{bookingId} has been processed",
-                "Payment"
-            );
+            if (paymentMethodId == 4) // Cash
+            {
+                await _notificationService.CreateNotificationAsync(
+                    booking.RenterId,
+                    "Booking Created - Cash Payment",
+                    $"Your booking #{bookingId} has been created. Please pay ₱{amount:F2} cash to the owner. The booking will start once payment is verified.",
+                    "Payment"
+                );
 
-            await _notificationService.CreateNotificationAsync(
-                booking.Bike.OwnerId,
-                "New Booking",
-                $"Your bike {booking.Bike.Brand} {booking.Bike.Model} has been booked",
-                "Booking"
-            );
+                await _notificationService.CreateNotificationAsync(
+                    booking.Bike.OwnerId,
+                    "New Booking - Cash Payment Required",
+                    $"You have a new booking #{bookingId} for {booking.Bike.Brand} {booking.Bike.Model}. Please verify cash payment of ₱{amount:F2} to activate the booking.",
+                    "Booking",
+                    $"/Owner/RentalRequests"
+                );
+            }
+            else
+            {
+                await _notificationService.CreateNotificationAsync(
+                    booking.RenterId,
+                    "Payment Successful",
+                    $"Your payment of ₱{amount:F2} for booking #{bookingId} has been processed",
+                    "Payment"
+                );
+
+                await _notificationService.CreateNotificationAsync(
+                    booking.Bike.OwnerId,
+                    "New Booking",
+                    $"Your bike {booking.Bike.Brand} {booking.Bike.Model} has been booked",
+                    "Booking"
+                );
+            }
 
             return (true, message);
         }

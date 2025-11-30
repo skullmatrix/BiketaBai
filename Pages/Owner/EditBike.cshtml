@@ -142,6 +142,21 @@
                             <small class="field-hint">Recommended: ₱200-800</small>
                             <span asp-validation-for="Input.DailyRate" class="field-error"></span>
                         </div>
+
+                        <div class="field-premium">
+                            <label>Number of Bikes<span class="req">*</span></label>
+                            <div class="input-wrapper-premium">
+                                <i class="bi bi-123"></i>
+                                <input asp-for="Input.Quantity" 
+                                       type="number" 
+                                       min="1"
+                                       max="100"
+                                       placeholder="1" 
+                                       required />
+                            </div>
+                            <small class="field-hint">How many bikes of this type do you have?</small>
+                            <span asp-validation-for="Input.Quantity" class="field-error"></span>
+                        </div>
                     </div>
 
                     <!-- Pricing Tip -->

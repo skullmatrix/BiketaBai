@@ -57,6 +57,10 @@ public class EditBikeModel : PageModel
         [Range(0.01, 50000)]
         public decimal? DailyRate { get; set; }
 
+        [Required(ErrorMessage = "Quantity is required")]
+        [Range(1, 100, ErrorMessage = "Quantity must be between 1 and 100")]
+        public int Quantity { get; set; } = 1;
+
         [Required(ErrorMessage = "Availability status is required")]
         public int AvailabilityStatusId { get; set; }
 
@@ -105,6 +109,7 @@ public class EditBikeModel : PageModel
         Input.Description = CurrentBike.Description;
         Input.HourlyRate = CurrentBike.HourlyRate;
         Input.DailyRate = CurrentBike.DailyRate;
+        Input.Quantity = CurrentBike.Quantity;
         Input.AvailabilityStatusId = CurrentBike.AvailabilityStatusId;
 
         return Page();
@@ -140,7 +145,7 @@ public class EditBikeModel : PageModel
             // Only validate the fields we're actually updating
             if (string.IsNullOrWhiteSpace(Input.Brand) || string.IsNullOrWhiteSpace(Input.Model) ||
                 Input.BikeTypeId <= 0 || !Input.HourlyRate.HasValue || Input.HourlyRate <= 0 || 
-                !Input.DailyRate.HasValue || Input.DailyRate <= 0)
+                !Input.DailyRate.HasValue || Input.DailyRate <= 0 || Input.Quantity < 1 || Input.Quantity > 100)
             {
                 ErrorMessage = "Please fill in all required fields correctly";
                 return Page();
@@ -153,6 +158,7 @@ public class EditBikeModel : PageModel
             CurrentBike.Description = Input.Description;
             CurrentBike.HourlyRate = Input.HourlyRate.Value;
             CurrentBike.DailyRate = Input.DailyRate.Value;
+            CurrentBike.Quantity = Input.Quantity;
             CurrentBike.AvailabilityStatusId = Input.AvailabilityStatusId;
             CurrentBike.UpdatedAt = DateTime.Now;
             // Location, Mileage, Latitude, Longitude remain unchanged

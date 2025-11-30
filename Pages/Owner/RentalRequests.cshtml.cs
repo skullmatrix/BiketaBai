@@ -56,6 +56,8 @@ public class RentalRequestsModel : PageModel
             .Include(b => b.Bike)
                 .ThenInclude(b => b.BikeType)
             .Include(b => b.Renter)
+            .Include(b => b.Payments)
+                .ThenInclude(p => p.PaymentMethod)
             .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatusId == 1)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -227,6 +229,89 @@ public class RentalRequestsModel : PageModel
         {
             _logger.LogError(ex, $"Error rejecting booking {booking.BookingId}");
             TempData["ErrorMessage"] = "An error occurred while rejecting the booking.";
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostVerifyPaymentAsync(int id)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Get the booking with payment
+        var booking = await _context.Bookings
+            .Include(b => b.Bike)
+            .Include(b => b.Renter)
+            .Include(b => b.Payments)
+                .ThenInclude(p => p.PaymentMethod)
+            .FirstOrDefaultAsync(b => b.BookingId == id);
+
+        if (booking == null)
+        {
+            TempData["ErrorMessage"] = "Booking not found.";
+            return RedirectToPage();
+        }
+
+        // Verify this booking is for a bike owned by the current user
+        if (booking.Bike.OwnerId != userId)
+        {
+            TempData["ErrorMessage"] = "You do not have permission to verify payment for this booking.";
+            return RedirectToPage();
+        }
+
+        // Check if booking is pending
+        if (booking.BookingStatusId != 1)
+        {
+            TempData["ErrorMessage"] = "This booking has already been processed.";
+            return RedirectToPage();
+        }
+
+        // Find cash payment
+        var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethodId == 4 && p.PaymentStatus == "Pending");
+        if (cashPayment == null)
+        {
+            TempData["ErrorMessage"] = "No pending cash payment found for this booking.";
+            return RedirectToPage();
+        }
+
+        try
+        {
+            // Verify payment
+            cashPayment.PaymentStatus = "Completed";
+            cashPayment.OwnerVerifiedAt = DateTime.UtcNow;
+            cashPayment.OwnerVerifiedBy = userId;
+            cashPayment.PaymentDate = DateTime.UtcNow;
+
+            // Activate booking
+            booking.BookingStatusId = 2; // Active
+            booking.UpdatedAt = DateTime.UtcNow;
+
+            // Update bike status to Rented
+            booking.Bike.AvailabilityStatusId = 2; // Rented
+            booking.Bike.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Send notification to renter
+            await _notificationService.CreateNotificationAsync(
+                booking.RenterId,
+                "Payment Verified - Booking Active",
+                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental is now active!",
+                "Payment",
+                $"/Bookings/Details/{booking.BookingId}"
+            );
+
+            _logger.LogInformation($"Cash payment verified for booking {booking.BookingId} by owner {userId}");
+            TempData["SuccessMessage"] = $"Cash payment verified! Booking #{booking.BookingId} is now active.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error verifying payment for booking {booking.BookingId}");
+            TempData["ErrorMessage"] = "An error occurred while verifying payment.";
         }
 
         return RedirectToPage();

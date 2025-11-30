@@ -18,22 +18,28 @@ public class BookingService
         _configuration = configuration;
     }
 
-    public async Task<bool> CheckBikeAvailabilityAsync(int bikeId, DateTime startDate, DateTime endDate)
+    public async Task<bool> CheckBikeAvailabilityAsync(int bikeId, DateTime startDate, DateTime endDate, int requestedQuantity = 1)
     {
         // Check if bike is available in general
         var bike = await _context.Bikes.FindAsync(bikeId);
         if (bike == null || bike.AvailabilityStatusId != 1) // 1 = Available
             return false;
 
-        // Check for conflicting bookings
-        var hasConflict = await _context.Bookings
-            .AnyAsync(b => b.BikeId == bikeId &&
-                          (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active
-                          ((startDate >= b.StartDate && startDate < b.EndDate) ||
-                           (endDate > b.StartDate && endDate <= b.EndDate) ||
-                           (startDate <= b.StartDate && endDate >= b.EndDate)));
+        // Check for conflicting bookings and count how many bikes are already booked
+        var conflictingBookings = await _context.Bookings
+            .Where(b => b.BikeId == bikeId &&
+                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active
+                       ((startDate >= b.StartDate && startDate < b.EndDate) ||
+                        (endDate > b.StartDate && endDate <= b.EndDate) ||
+                        (startDate <= b.StartDate && endDate >= b.EndDate)))
+            .ToListAsync();
 
-        return !hasConflict;
+        // Sum up the quantity of bikes already booked during this period
+        var bookedQuantity = conflictingBookings.Sum(b => b.Quantity);
+
+        // Check if there are enough bikes available
+        var availableQuantity = bike.Quantity - bookedQuantity;
+        return availableQuantity >= requestedQuantity;
     }
 
     public decimal CalculateRentalCost(decimal hourlyRate, decimal dailyRate, DateTime startDate, DateTime endDate)
@@ -60,27 +66,32 @@ public class BookingService
         int bikeId, 
         DateTime startDate, 
         DateTime endDate, 
+        int quantity = 1,
         decimal? distanceSavedKm = null,
         string? pickupLocation = null,
         string? returnLocation = null)
     {
-        // Validate availability
-        if (!await CheckBikeAvailabilityAsync(bikeId, startDate, endDate))
-            return (false, 0, "Bike is not available for the selected dates");
+        // Validate availability with quantity
+        if (!await CheckBikeAvailabilityAsync(bikeId, startDate, endDate, quantity))
+            return (false, 0, $"Not enough bikes available. Only {await GetAvailableQuantityAsync(bikeId, startDate, endDate)} bike(s) available for the selected dates.");
 
         var bike = await _context.Bikes.FindAsync(bikeId);
         if (bike == null)
             return (false, 0, "Bike not found");
 
-        // Calculate costs
+        if (quantity > bike.Quantity)
+            return (false, 0, $"Cannot book {quantity} bikes. This listing only has {bike.Quantity} bike(s).");
+
+        // Calculate costs (per bike, then multiply by quantity)
         var duration = endDate - startDate;
         var rentalHours = (decimal)duration.TotalHours;
-        var baseRate = CalculateRentalCost(bike.HourlyRate, bike.DailyRate, startDate, endDate);
+        var baseRatePerBike = CalculateRentalCost(bike.HourlyRate, bike.DailyRate, startDate, endDate);
+        var baseRate = baseRatePerBike * quantity; // Total for all bikes
         var serviceFeePercentage = _configuration.GetValue<decimal>("AppSettings:ServiceFeePercentage");
         var serviceFee = baseRate * (serviceFeePercentage / 100);
         var totalAmount = baseRate + serviceFee;
 
-        // Create booking
+        // Create booking with quantity
         var booking = new Booking
         {
             RenterId = renterId,
@@ -88,6 +99,7 @@ public class BookingService
             StartDate = startDate,
             EndDate = endDate,
             RentalHours = rentalHours,
+            Quantity = quantity,
             BaseRate = baseRate,
             ServiceFee = serviceFee,
             TotalAmount = totalAmount,
@@ -103,6 +115,23 @@ public class BookingService
         await _context.SaveChangesAsync();
 
         return (true, booking.BookingId, "Booking created successfully");
+    }
+
+    private async Task<int> GetAvailableQuantityAsync(int bikeId, DateTime startDate, DateTime endDate)
+    {
+        var bike = await _context.Bikes.FindAsync(bikeId);
+        if (bike == null) return 0;
+
+        var conflictingBookings = await _context.Bookings
+            .Where(b => b.BikeId == bikeId &&
+                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active
+                       ((startDate >= b.StartDate && startDate < b.EndDate) ||
+                        (endDate > b.StartDate && endDate <= b.EndDate) ||
+                        (startDate <= b.StartDate && endDate >= b.EndDate)))
+            .ToListAsync();
+
+        var bookedQuantity = conflictingBookings.Sum(b => b.Quantity);
+        return Math.Max(0, bike.Quantity - bookedQuantity);
     }
 
     public async Task<(bool success, string message)> CancelBookingAsync(int bookingId, int userId, string? reason = null)

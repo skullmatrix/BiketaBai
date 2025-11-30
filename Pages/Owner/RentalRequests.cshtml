@@ -87,6 +87,12 @@
                                     <!-- Bike & Renter Info -->
                                     <div class="col-md-4">
                                         <h5 class="mb-2">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                        @if (booking.Quantity > 1)
+                                        {
+                                            <p class="mb-1">
+                                                <span class="badge bg-info">@booking.Quantity bikes</span>
+                                            </p>
+                                        }
                                         <p class="mb-1">
                                             <strong><i class="bi bi-person"></i> Renter:</strong> @booking.Renter.FullName
                                         </p>
@@ -135,15 +141,44 @@
                                         <div class="earnings-box mb-3">
                                             <p class="mb-1 text-muted small">Total Amount</p>
                                             <h4 class="text-success mb-0">₱@booking.TotalAmount.ToString("N2")</h4>
-                                            <small class="text-muted">You earn: ₱@((booking.TotalAmount * 0.9m).ToString("N2"))</small>
+                                            @if (booking.Quantity > 1)
+                                            {
+                                                <small class="text-muted">@booking.Quantity bikes × ₱@((booking.TotalAmount / booking.Quantity).ToString("N2"))</small>
+                                            }
+                                            <small class="text-muted d-block">You earn: ₱@((booking.TotalAmount * 0.9m).ToString("N2"))</small>
                                         </div>
 
+                                        @{
+                                            var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethodId == 4);
+                                            var isCashPayment = cashPayment != null;
+                                            var needsVerification = isCashPayment && cashPayment.PaymentStatus == "Pending";
+                                        }
+
+                                        @if (needsVerification)
+                                        {
+                                            <div class="alert alert-warning mb-3">
+                                                <i class="bi bi-cash"></i> <strong>Cash Payment Pending</strong><br>
+                                                <small>Please verify that you received ₱@booking.TotalAmount.ToString("N2") in cash.</small>
+                                            </div>
+                                        }
+
                                         <div class="request-actions">
-                                            <form method="post" asp-page-handler="Accept" asp-route-id="@booking.BookingId" class="d-inline">
-                                                <button type="submit" class="btn btn-success w-100 mb-2">
-                                                    <i class="bi bi-check-circle"></i> Accept Request
-                                                </button>
-                                            </form>
+                                            @if (needsVerification)
+                                            {
+                                                <form method="post" asp-page-handler="VerifyPayment" asp-route-id="@booking.BookingId" class="d-inline mb-2">
+                                                    <button type="submit" class="btn btn-success w-100 mb-2" onclick="return confirm('Have you received ₱@booking.TotalAmount.ToString("N2") in cash from @booking.Renter.FullName?')">
+                                                        <i class="bi bi-check-circle"></i> Verify Payment & Activate
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <form method="post" asp-page-handler="Accept" asp-route-id="@booking.BookingId" class="d-inline">
+                                                    <button type="submit" class="btn btn-success w-100 mb-2">
+                                                        <i class="bi bi-check-circle"></i> Accept Request
+                                                    </button>
+                                                </form>
+                                            }
                                             <button type="button" class="btn btn-outline-danger w-100" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#rejectModal@(booking.BookingId)">

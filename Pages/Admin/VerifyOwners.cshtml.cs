@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using BiketaBai.Helpers;
 
 namespace BiketaBai.Pages.Admin;
 
+[Authorize(Roles = "Admin")]
 public class VerifyOwnersModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;

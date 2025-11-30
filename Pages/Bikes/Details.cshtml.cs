@@ -210,13 +210,16 @@ public class DetailsModel : PageModel
         }
 
         // Check bike availability for quantity
-        var availableBikes = await _context.Bikes
-            .Where(b => b.BikeId == id && b.AvailabilityStatusId == 1 && !b.IsDeleted)
-            .CountAsync();
-        
-        if (availableBikes < quantity)
+        if (Bike == null)
         {
-            TempData["ErrorMessage"] = $"Only {availableBikes} bike(s) available. Please reduce the quantity.";
+            TempData["ErrorMessage"] = "Bike not found.";
+            return Page();
+        }
+
+        // Check if requested quantity is available
+        if (quantity > Bike.Quantity)
+        {
+            TempData["ErrorMessage"] = $"This listing only has {Bike.Quantity} bike(s) available. Please reduce the quantity.";
             return Page();
         }
 
@@ -226,39 +229,23 @@ public class DetailsModel : PageModel
             return Page();
         }
 
-        // Create bookings for each bike (if quantity > 1, we need to find available bikes of same type)
-        // For now, we'll create multiple bookings for the same bike if quantity > 1
-        // In a real scenario, you'd want to find different bikes of the same type
-        var bookingIds = new List<int>();
-        for (int i = 0; i < quantity; i++)
-        {
-            var result = await _bookingService.CreateBookingAsync(
-                userId.Value,
-                id,
-                startDate,
-                endDate
-            );
+        // Create a single booking with quantity
+        var result = await _bookingService.CreateBookingAsync(
+            userId.Value,
+            id,
+            startDate,
+            endDate,
+            quantity
+        );
 
-            if (result.success)
-            {
-                bookingIds.Add(result.bookingId);
-            }
-            else
-            {
-                TempData["ErrorMessage"] = $"Failed to create booking {i + 1} of {quantity}: {result.message}";
-                return Page();
-            }
-        }
-
-        if (bookingIds.Any())
+        if (result.success)
         {
-            // Redirect to payment page with the first booking ID
-            // Note: In a full implementation, you might want to handle multiple bookings differently
-            return RedirectToPage("/Bookings/Payment", new { bookingId = bookingIds.First() });
+            return RedirectToPage("/Bookings/Payment", new { bookingId = result.bookingId });
         }
         else
         {
-            TempData["ErrorMessage"] = "Failed to create bookings";
+            TempData["ErrorMessage"] = result.message;
+            await LoadBikeDataAsync(id);
             return Page();
         }
     }

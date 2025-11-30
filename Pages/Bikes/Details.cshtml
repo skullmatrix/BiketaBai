@@ -366,7 +366,7 @@ else
                                                        name="quantity"
                                                        class="input-minimal" 
                                                        min="1" 
-                                                       max="10" 
+                                                       max="@Model.Bike.Quantity" 
                                                        step="1" 
                                                        value="1"
                                                        placeholder="Enter quantity"
@@ -375,7 +375,7 @@ else
                                                 <span style="display: flex; align-items: center; padding: 0 var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--neutral-600);">bikes</span>
                                             </div>
                                             <small style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: var(--space-1); display: block;">
-                                                <i class="bi bi-info-circle"></i> You can rent multiple bikes at once.
+                                                <i class="bi bi-info-circle"></i> @Model.Bike.Quantity bike(s) available. You can rent up to @Model.Bike.Quantity bike(s) at once.
                                             </small>
                                         </div>
                                         

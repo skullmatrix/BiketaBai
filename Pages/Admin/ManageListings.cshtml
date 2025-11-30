@@ -1,244 +1,249 @@
 @page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
 @model ManageListingsModel
 @{
     ViewData["Title"] = "Manage Listings";
 }
 
-<div class="container my-5">
+<div class="page-container">
     <!-- Header -->
-    <div class="dashboard-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h2 class="text-eco-green mb-2">
+    <div class="page-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+                <h1 class="page-title">
                     <i class="bi bi-bicycle"></i> Manage Bike Listings
-                </h2>
-                <p class="text-muted mb-0">Review, approve, flag, or remove bike listings from the platform</p>
+                </h1>
+                <p class="page-subtitle">Review, approve, flag, or remove bike listings from the platform</p>
             </div>
-            <div class="col-md-4 text-md-end">
-                <a href="/Dashboard/Admin" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
+            <a href="/Admin/Dashboard" class="btn-minimal btn-minimal-ghost">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 
     <!-- Success/Error Messages -->
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-minimal alert-minimal-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>@Model.SuccessMessage</div>
         </div>
     }
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-minimal alert-minimal-error">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>@Model.ErrorMessage</div>
         </div>
     }
 
     <!-- Statistics Row -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-primary">
+    <div class="grid-minimal grid-minimal-4 mb-5">
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
                 <i class="bi bi-bicycle"></i>
-                <div>
-                    <h3>@Model.TotalListings</h3>
-                    <p>Total Listings</p>
-                </div>
             </div>
+            <div class="stat-value">@Model.TotalListings</div>
+            <div class="stat-label">Total Listings</div>
         </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-success">
+        <div class="stat-card-minimal">
+            <div class="stat-icon" style="background: #D1FAE5; color: #065F46;">
                 <i class="bi bi-check-circle"></i>
-                <div>
-                    <h3>@Model.AvailableListings</h3>
-                    <p>Available</p>
-                </div>
             </div>
+            <div class="stat-value">@Model.AvailableListings</div>
+            <div class="stat-label">Available</div>
         </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-info">
+        <div class="stat-card-minimal">
+            <div class="stat-icon" style="background: #DBEAFE; color: #1E40AF;">
                 <i class="bi bi-clock-history"></i>
-                <div>
-                    <h3>@Model.RentedListings</h3>
-                    <p>Currently Rented</p>
-                </div>
             </div>
+            <div class="stat-value">@Model.RentedListings</div>
+            <div class="stat-label">Currently Rented</div>
         </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card bg-warning">
+        <div class="stat-card-minimal">
+            <div class="stat-icon" style="background: #FEF3C7; color: #92400E;">
                 <i class="bi bi-flag"></i>
-                <div>
-                    <h3>@Model.FlaggedListings</h3>
-                    <p>Flagged/Maintenance</p>
-                </div>
             </div>
+            <div class="stat-value">@Model.FlaggedListings</div>
+            <div class="stat-label">Flagged/Maintenance</div>
         </div>
     </div>
 
     <!-- Search and Filters -->
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body">
-            <form method="get">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label"><i class="bi bi-search"></i> Search Bikes</label>
-                        <input type="text" name="searchQuery" value="@Model.SearchQuery" class="form-control" placeholder="Brand, model, location, or owner..." />
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label"><i class="bi bi-funnel"></i> Status</label>
-                        <select name="statusFilter" class="form-select">
-                            <option value="">All Statuses</option>
-                            <option value="1" selected="@(Model.StatusFilter == "1")">Available</option>
-                            <option value="2" selected="@(Model.StatusFilter == "2")">Rented</option>
-                            <option value="3" selected="@(Model.StatusFilter == "3")">Inactive</option>
-                            <option value="4" selected="@(Model.StatusFilter == "4")">Under Maintenance</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label"><i class="bi bi-filter"></i> Bike Type</label>
-                        <select name="typeFilter" class="form-select">
-                            <option value="">All Types</option>
-                            @foreach (var type in Model.BikeTypes)
-                            {
-                                <option value="@type.BikeTypeId" selected="@(Model.TypeFilter == type.BikeTypeId.ToString())">@type.TypeName</option>
-                            }
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-search"></i> Search
-                        </button>
-                    </div>
+    <div class="card-minimal mb-5">
+        <form method="get">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: var(--space-4); align-items: end;">
+                <div class="form-group-minimal">
+                    <label class="label-minimal">
+                        <i class="bi bi-search"></i> Search Bikes
+                    </label>
+                    <input type="text" name="searchQuery" value="@Model.SearchQuery" class="input-minimal" placeholder="Brand, model, location, or owner..." />
                 </div>
-            </form>
-        </div>
+                
+                <div class="form-group-minimal">
+                    <label class="label-minimal">
+                        <i class="bi bi-funnel"></i> Status
+                    </label>
+                    <select name="statusFilter" class="select-minimal">
+                        <option value="">All Statuses</option>
+                        <option value="1" selected="@(Model.StatusFilter == "1")">Available</option>
+                        <option value="2" selected="@(Model.StatusFilter == "2")">Rented</option>
+                        <option value="3" selected="@(Model.StatusFilter == "3")">Inactive</option>
+                        <option value="4" selected="@(Model.StatusFilter == "4")">Under Maintenance</option>
+                    </select>
+                </div>
+                
+                <div class="form-group-minimal">
+                    <label class="label-minimal">
+                        <i class="bi bi-filter"></i> Bike Type
+                    </label>
+                    <select name="typeFilter" class="select-minimal">
+                        <option value="">All Types</option>
+                        @foreach (var type in Model.BikeTypes)
+                        {
+                            <option value="@type.BikeTypeId" selected="@(Model.TypeFilter == type.BikeTypeId.ToString())">@type.TypeName</option>
+                        }
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-minimal btn-minimal-primary">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Bikes Grid -->
-    <div class="row">
-        @if (Model.FilteredBikes.Any())
-        {
+    @if (Model.FilteredBikes.Any())
+    {
+        <div class="grid-minimal grid-minimal-3">
             @foreach (var bike in Model.FilteredBikes)
             {
-                <div class="col-lg-6 col-xl-4 mb-4">
-                    <div class="card h-100 shadow-sm border-0 listing-card">
-                        <div class="position-relative">
-                            @if (bike.BikeImages.Any())
-                            {
-                                <img src="@bike.BikeImages.First().ImageUrl" class="card-img-top listing-image" alt="@bike.Brand @bike.Model" />
-                            }
-                            else
-                            {
-                                <div class="placeholder-listing-image">
-                                    <i class="bi bi-bicycle"></i>
-                                </div>
-                            }
-                            <span class="position-absolute top-0 end-0 m-2 badge @Model.GetStatusBadgeClass(bike.AvailabilityStatusId)">
-                                @bike.AvailabilityStatus.StatusName
-                            </span>
+                <div class="card-minimal">
+                    <div style="position: relative; margin-bottom: var(--space-4);">
+                        @if (bike.BikeImages.Any())
+                        {
+                            <img src="@bike.BikeImages.First().ImageUrl" 
+                                 alt="@bike.Brand @bike.Model" 
+                                 style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-md);" />
+                        }
+                        else
+                        {
+                            <div style="width: 100%; height: 200px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-bicycle" style="font-size: 3rem; color: var(--neutral-400);"></i>
+                            </div>
+                        }
+                        <span class="badge-minimal @(bike.AvailabilityStatusId == 1 ? "badge-minimal-success" : bike.AvailabilityStatusId == 2 ? "badge-minimal-primary" : bike.AvailabilityStatusId == 4 ? "badge-minimal-warning" : "badge-minimal-info")" 
+                              style="position: absolute; top: var(--space-2); right: var(--space-2);">
+                            @bike.AvailabilityStatus.StatusName
+                        </span>
+                    </div>
+                    
+                    <h5 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">@bike.Brand @bike.Model</h5>
+                    <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                        <i class="bi bi-tag"></i> @bike.BikeType.TypeName
+                    </p>
+                    <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-3);">
+                        <i class="bi bi-person"></i> Owner: <strong>@bike.Owner.FullName</strong>
+                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--neutral-200);">
+                        <div>
+                            <span style="font-size: 1.25rem; font-weight: 700; color: var(--sage-primary);">₱@bike.HourlyRate</span>
+                            <small style="color: var(--neutral-500);">/hr</small>
                         </div>
+                        <small style="color: var(--neutral-500);">
+                            <i class="bi bi-clock"></i> @bike.CreatedAt.ToString("MMM dd, yyyy")
+                        </small>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div style="display: flex; gap: var(--space-2);">
+                        <a href="/Bikes/Details/@bike.BikeId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="flex: 1;">
+                            <i class="bi bi-eye"></i> View
+                        </a>
                         
-                        <div class="card-body">
-                            <h5 class="card-title mb-2">@bike.Brand @bike.Model</h5>
-                            <p class="text-muted small mb-2">
-                                <i class="bi bi-tag"></i> @bike.BikeType.TypeName
-                            </p>
-                            <p class="text-muted small mb-2">
-                                <i class="bi bi-person"></i> Owner: <strong>@bike.Owner.FullName</strong>
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="price-tag-small">
-                                    <span class="text-success fw-bold">₱@bike.HourlyRate</span>
-                                    <small class="text-muted">/hr</small>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="bi bi-clock"></i> Listed @bike.CreatedAt.ToString("MMM dd, yyyy")
-                                </small>
-                            </div>
-                            
-                            <!-- Actions -->
-                            <div class="btn-group w-100" role="group">
-                                <a href="/Bikes/Details/@bike.BikeId" class="btn btn-sm btn-outline-info">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
-                                
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                        <i class="bi bi-gear"></i> Actions
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><h6 class="dropdown-header">Change Status</h6></li>
-                                        <li>
-                                            <form method="post" asp-page-handler="SetStatus" asp-route-bikeId="@bike.BikeId" asp-route-statusId="1" class="d-inline">
-                                                <button type="submit" class="dropdown-item">
-                                                    <i class="bi bi-check-circle text-success"></i> Mark Available
-                                                </button>
-                                            </form>
-                                        </li>
-                                        <li>
-                                            <form method="post" asp-page-handler="SetStatus" asp-route-bikeId="@bike.BikeId" asp-route-statusId="4" class="d-inline">
-                                                <button type="submit" class="dropdown-item">
-                                                    <i class="bi bi-flag text-warning"></i> Flag/Maintenance
-                                                </button>
-                                            </form>
-                                        </li>
-                                        <li>
-                                            <form method="post" asp-page-handler="SetStatus" asp-route-bikeId="@bike.BikeId" asp-route-statusId="3" class="d-inline">
-                                                <button type="submit" class="dropdown-item">
-                                                    <i class="bi bi-pause-circle text-secondary"></i> Set Inactive
-                                                </button>
-                                            </form>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <form method="post" asp-page-handler="Delete" asp-route-bikeId="@bike.BikeId" class="d-inline">
-                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Permanently delete this bike listing? This cannot be undone.')">
-                                                    <i class="bi bi-trash"></i> Delete Listing
-                                                </button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
+                        <div class="dropdown" style="flex: 1;">
+                            <button class="btn-minimal btn-minimal-ghost btn-minimal-sm w-100" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><h6 class="dropdown-header">Change Status</h6></li>
+                                <li>
+                                    <form method="post" asp-page-handler="SetStatus" asp-route-bikeId="@bike.BikeId" asp-route-statusId="1" class="d-inline">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-check-circle" style="color: var(--success);"></i> Mark Available
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="post" asp-page-handler="SetStatus" asp-route-bikeId="@bike.BikeId" asp-route-statusId="4" class="d-inline">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-flag" style="color: var(--warning);"></i> Flag/Maintenance
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="post" asp-page-handler="SetStatus" asp-route-bikeId="@bike.BikeId" asp-route-statusId="3" class="d-inline">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-pause-circle" style="color: var(--neutral-500);"></i> Set Inactive
+                                        </button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" asp-page-handler="Delete" asp-route-bikeId="@bike.BikeId" class="d-inline">
+                                        <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Permanently delete this bike listing? This cannot be undone.')">
+                                            <i class="bi bi-trash"></i> Delete Listing
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="empty-state">
-                    <i class="bi bi-bicycle"></i>
-                    <h4>No Listings Found</h4>
-                    <p class="text-muted">Try adjusting your search or filter criteria</p>
-                    <a href="/Admin/ManageListings" class="btn btn-outline-success">
-                        <i class="bi bi-arrow-clockwise"></i> Reset Filters
-                    </a>
-                </div>
-            </div>
-        }
-    </div>
+        </div>
+    }
+    else
+    {
+        <div class="card-minimal text-center" style="padding: var(--space-12);">
+            <i class="bi bi-bicycle" style="font-size: 4rem; color: var(--neutral-300); margin-bottom: var(--space-4);"></i>
+            <h4 style="margin-bottom: var(--space-2);">No Listings Found</h4>
+            <p style="color: var(--neutral-600); margin-bottom: var(--space-4);">Try adjusting your search or filter criteria</p>
+            <a href="/Admin/ManageListings" class="btn-minimal btn-minimal-primary">
+                <i class="bi bi-arrow-clockwise"></i> Reset Filters
+            </a>
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script>
         // Auto-dismiss alerts
         window.setTimeout(function() {
-            $(".alert").fadeTo(500, 0).slideUp(500, function(){
-                $(this).remove(); 
+            document.querySelectorAll('.alert-minimal').forEach(function(alert) {
+                alert.style.transition = 'opacity 0.5s ease-out';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
             });
         }, 5000);
     </script>
+}
+
+@section Styles {
+    <style>
+        @@media (max-width: 768px) {
+            .page-container form > div {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
 }
 

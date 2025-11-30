@@ -1,6 +1,6 @@
 @page
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 @model AdminDashboardModel
 @{
     ViewData["Title"] = "Admin Dashboard";
