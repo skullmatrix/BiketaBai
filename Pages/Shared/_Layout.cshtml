@@ -395,17 +395,21 @@
                         // Update header badge for all authenticated users
                         if (isAuthenticated === "true") {
                             const $headerBadge = $('#notificationCountHeader');
-                            $headerBadge.text(countText);
                             
-                            // Toggle class based on whether it's a single digit or multiple
-                            // countText is now guaranteed to be a string, so .length is safe
-                            if (currentCount > 9 || countText.length > 1) {
-                                $headerBadge.addClass('badge-multiple');
-                            } else {
-                                $headerBadge.removeClass('badge-multiple');
+                            // Check if element exists before accessing it
+                            if ($headerBadge.length > 0) {
+                                $headerBadge.text(countText);
+                                
+                                // Toggle class based on whether it's a single digit or multiple
+                                // countText is now guaranteed to be a string, so .length is safe
+                                if (currentCount > 9 || countText.length > 1) {
+                                    $headerBadge.addClass('badge-multiple');
+                                } else {
+                                    $headerBadge.removeClass('badge-multiple');
+                                }
+                                
+                                $headerBadge.css({'display': 'flex', 'visibility': 'visible'}); // Show as flex to center content
                             }
-                            
-                            $headerBadge.css('display', 'flex'); // Show as flex to center content
                         }
                         
                         // Play sound notification for all authenticated users when new notification arrives
@@ -466,7 +470,7 @@
                         oscillator2.stop(audioContext.currentTime + 0.2);
                     }, 150);
                 } catch (e) {
-                    console.log('Sound notification not available:', e);
+                    // Silently fail if sound is not available
                 }
             }
         </script>

@@ -72,21 +72,34 @@ public class BrowseModel : PageModel
 
         var allBikes = await query.ToListAsync();
 
+        // If no bikes found, return early
+        if (!allBikes.Any())
+        {
+            Bikes = new List<Bike>();
+            return;
+        }
+
         // Calculate available quantity for each bike and filter out bikes with 0 available
+        // Get all active and pending bookings for all bikes in one query (optimize N+1)
+        // Include ALL pending bookings regardless of start date to prevent double-booking
+        var bikeIds = allBikes.Select(b => b.BikeId).ToList();
+        var allActiveBookings = await _context.Bookings
+            .Where(b => bikeIds.Contains(b.BikeId) && 
+                       (b.BookingStatusId == 1 || b.BookingStatusId == 2)) // Pending or Active
+            .GroupBy(b => b.BikeId)
+            .Select(g => new { BikeId = g.Key, RentedQuantity = g.Sum(b => b.Quantity) })
+            .ToDictionaryAsync(x => x.BikeId, x => x.RentedQuantity);
+        
         var bikesWithAvailability = new List<Bike>();
         foreach (var bike in allBikes)
         {
-            // Get active and pending bookings for this bike
-            var activeBookings = await _context.Bookings
-                .Where(b => b.BikeId == bike.BikeId && 
-                           (b.BookingStatusId == 1 || b.BookingStatusId == 2)) // Pending or Active
-                .ToListAsync();
-            
-            // Calculate rented quantity
-            var rentedQuantity = activeBookings.Sum(b => b.Quantity);
+            // Get rented quantity for this bike (default to 0 if no bookings)
+            var rentedQuantity = allActiveBookings.GetValueOrDefault(bike.BikeId, 0);
             
             // Calculate available quantity
-            var availableQuantity = bike.Quantity - rentedQuantity;
+            // If Quantity is 0 or not set, default to 1 (for backward compatibility with old bikes)
+            var bikeQuantity = bike.Quantity > 0 ? bike.Quantity : 1;
+            var availableQuantity = bikeQuantity - rentedQuantity;
             
             // Only include bikes with available quantity > 0
             if (availableQuantity > 0)
