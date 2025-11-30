@@ -83,13 +83,22 @@ public class BrowseModel : PageModel
         // Get all active and pending bookings for all bikes in one query (optimize N+1)
         // Include ALL pending bookings regardless of start date to prevent double-booking
         var bikeIds = allBikes.Select(b => b.BikeId).ToList();
-        var allActiveBookings = await _context.Bookings
-            .Where(b => bikeIds.Contains(b.BikeId) && 
-                       (b.BookingStatusId == 1 || b.BookingStatusId == 2)) // Pending or Active
-            .GroupBy(b => b.BikeId)
-            .Select(g => new { BikeId = g.Key, RentedQuantity = g.Sum(b => b.Quantity) })
-            .ToDictionaryAsync(x => x.BikeId, x => x.RentedQuantity);
         
+        // Only query bookings if there are bikes to check
+        Dictionary<int, int> allActiveBookings = new Dictionary<int, int>();
+        if (bikeIds.Any())
+        {
+            allActiveBookings = await _context.Bookings
+                .Where(b => bikeIds.Contains(b.BikeId) && 
+                           (b.BookingStatusId == 1 || b.BookingStatusId == 2)) // Pending or Active
+                .GroupBy(b => b.BikeId)
+                .Select(g => new { BikeId = g.Key, RentedQuantity = g.Sum(b => b.Quantity) })
+                .ToDictionaryAsync(x => x.BikeId, x => x.RentedQuantity);
+        }
+        
+        // Calculate available quantity for each bike
+        // Show all bikes that are marked as available, but we'll calculate and display available quantity
+        // This ensures bikes with some available quantity are still shown
         var bikesWithAvailability = new List<Bike>();
         foreach (var bike in allBikes)
         {
@@ -102,6 +111,7 @@ public class BrowseModel : PageModel
             var availableQuantity = bikeQuantity - rentedQuantity;
             
             // Only include bikes with available quantity > 0
+            // This ensures bikes that are fully rented don't appear
             if (availableQuantity > 0)
             {
                 bikesWithAvailability.Add(bike);

@@ -473,6 +473,33 @@
                     // Silently fail if sound is not available
                 }
             }
+            
+            // Test function for notification sound and badge (for debugging/testing)
+            // Usage: Open browser console (F12) and type: testNotification()
+            window.testNotification = function() {
+                const testCount = (previousNotificationCount || 0) + 1;
+                const oldCount = previousNotificationCount;
+                previousNotificationCount = 0;
+                
+                const countText = testCount > 9 ? '9+' : String(testCount);
+                $('#notificationCountSidebar').text(countText).show();
+                
+                if (isAuthenticated === "true") {
+                    const $headerBadge = $('#notificationCountHeader');
+                    if ($headerBadge.length > 0) {
+                        $headerBadge.text(countText);
+                        if (testCount > 9 || countText.length > 1) {
+                            $headerBadge.addClass('badge-multiple');
+                        } else {
+                            $headerBadge.removeClass('badge-multiple');
+                        }
+                        $headerBadge.css({'display': 'flex', 'visibility': 'visible'});
+                    }
+                }
+                
+                playNotificationSound();
+                previousNotificationCount = oldCount;
+            };
         </script>
     }
     
