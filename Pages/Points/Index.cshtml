@@ -6,115 +6,171 @@
     ViewData["Title"] = "My Points";
 }
 
-<div class="container my-5">
-    <h2 class="text-eco-green mb-4"><i class="bi bi-star-fill"></i> My Loyalty Points</h2>
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="bi bi-star-fill"></i> My Loyalty Points
+        </h1>
+    </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-minimal alert-minimal-success mb-4">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>@TempData["SuccessMessage"]</div>
         </div>
     }
 
-    <div class="row mb-4">
-        <!-- Points Balance -->
-        <div class="col-md-6 mb-3">
-            <div class="card shadow-eco" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: #333;">
-                <div class="card-body p-4">
-                    <h4><i class="bi bi-star-fill"></i> Total Points</h4>
-                    <h1 class="display-3 fw-bold">@Model.PointsBalance</h1>
-                    <p class="mb-0">≈ ₱@((Model.PointsBalance * 0.1m).ToString("F2")) wallet credit</p>
+    <!-- Points Balance & Redeem -->
+    <div class="grid-minimal grid-minimal-2 mb-5">
+        <!-- Points Balance Card -->
+        <div class="card-minimal" style="background: linear-gradient(135deg, #fff9e6 0%, #ffe6cc 100%); border: 2px solid #ffc107;">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-star-fill" style="color: #ff9800;"></i> Total Points
+                </h2>
+            </div>
+            <div style="text-align: center; padding: var(--space-4) 0;">
+                <div style="font-size: 3.5rem; font-weight: 700; color: #ff9800; margin-bottom: var(--space-2);">
+                    @Model.PointsBalance
                 </div>
+                <p style="color: var(--neutral-600); margin: 0;">
+                    ≈ ₱@((Model.PointsBalance * 0.1m).ToString("F2")) wallet credit
+                </p>
             </div>
         </div>
 
         <!-- Redeem Options -->
-        <div class="col-md-6 mb-3">
-            <div class="card shadow-eco h-100">
-                <div class="card-body">
-                    <h5 class="text-eco-green mb-3">Redeem Points</h5>
-                    <form method="post" asp-page-handler="Redeem">
-                        <div class="mb-3">
-                            <label class="form-label">Points to Redeem</label>
-                            <input type="number" name="pointsToRedeem" class="form-control" min="100" step="100" max="@Model.PointsBalance" required />
-                            <small class="form-text text-muted">Minimum 100 points. 100 points = ₱10</small>
-                        </div>
-                        <button type="submit" class="btn btn-eco-primary w-100" @(Model.PointsBalance < 100 ? "disabled" : "")>
-                            <i class="bi bi-gift"></i> Redeem for Wallet Credit
-                        </button>
-                    </form>
-                </div>
+        <div class="card-minimal">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-gift"></i> Redeem Points
+                </h2>
             </div>
+            <form method="post" asp-page-handler="Redeem">
+                <div class="form-group-minimal">
+                    <label class="label-minimal">Points to Redeem</label>
+                    <input type="number" 
+                           name="pointsToRedeem" 
+                           class="input-minimal" 
+                           min="100" 
+                           step="100" 
+                           max="@Model.PointsBalance" 
+                           required 
+                           placeholder="Minimum 100 points" />
+                    <small style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: var(--space-1); display: block;">
+                        Minimum 100 points. 100 points = ₱10
+                    </small>
+                </div>
+                <button type="submit" 
+                        class="btn-minimal btn-minimal-primary w-100" 
+                        @(Model.PointsBalance < 100 ? "disabled" : "")>
+                    <i class="bi bi-gift"></i> Redeem for Wallet Credit
+                </button>
+            </form>
         </div>
     </div>
 
     <!-- How to Earn Points -->
-    <div class="card shadow-eco mb-4">
-        <div class="card-header bg-eco-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-lightbulb"></i> How to Earn Points</h5>
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-lightbulb"></i> How to Earn Points
+            </h2>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>On-time Return:</strong> +10 points</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>Eco-commute:</strong> +1 point per km saved</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>First Rental:</strong> +50 points</li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>Long-term Rental (7+ days):</strong> +20 points</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>5-Star Rating:</strong> +5 points</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>Referral:</strong> +100 points</li>
-                    </ul>
-                </div>
-            </div>
+        <div class="grid-minimal grid-minimal-2">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+                    <i class="bi bi-check-circle-fill" style="color: var(--success); font-size: 1.25rem;"></i>
+                    <div>
+                        <strong>On-time Return:</strong> <span style="color: var(--sage-primary);">+10 points</span>
+                    </div>
+                </li>
+                <li style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+                    <i class="bi bi-check-circle-fill" style="color: var(--success); font-size: 1.25rem;"></i>
+                    <div>
+                        <strong>Eco-commute:</strong> <span style="color: var(--sage-primary);">+1 point per km saved</span>
+                    </div>
+                </li>
+                <li style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+                    <i class="bi bi-check-circle-fill" style="color: var(--success); font-size: 1.25rem;"></i>
+                    <div>
+                        <strong>First Rental:</strong> <span style="color: var(--sage-primary);">+50 points</span>
+                    </div>
+                </li>
+            </ul>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+                    <i class="bi bi-check-circle-fill" style="color: var(--success); font-size: 1.25rem;"></i>
+                    <div>
+                        <strong>Long-term Rental (7+ days):</strong> <span style="color: var(--sage-primary);">+20 points</span>
+                    </div>
+                </li>
+                <li style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+                    <i class="bi bi-check-circle-fill" style="color: var(--success); font-size: 1.25rem;"></i>
+                    <div>
+                        <strong>5-Star Rating:</strong> <span style="color: var(--sage-primary);">+5 points</span>
+                    </div>
+                </li>
+                <li style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+                    <i class="bi bi-check-circle-fill" style="color: var(--success); font-size: 1.25rem;"></i>
+                    <div>
+                        <strong>Referral:</strong> <span style="color: var(--sage-primary);">+100 points</span>
+                    </div>
+                </li>
+            </ul>
         </div>
     </div>
 
     <!-- Points History -->
-    <div class="card shadow-eco">
-        <div class="card-header bg-eco-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Points History</h5>
+    <div class="card-minimal">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-clock-history"></i> Points History
+            </h2>
         </div>
-        <div class="card-body">
-            @if (Model.PointsHistory.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+        @if (Model.PointsHistory.Any())
+        {
+            <div style="overflow-x: auto;">
+                <table class="table-minimal">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Activity</th>
+                            <th style="text-align: right;">Points</th>
+                            <th style="text-align: right;">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var history in Model.PointsHistory)
+                        {
                             <tr>
-                                <th>Date</th>
-                                <th>Activity</th>
-                                <th class="text-end">Points</th>
-                                <th class="text-end">Balance</th>
+                                <td>@history.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                <td>@history.Reason</td>
+                                <td style="text-align: right;">
+                                    <span style="color: @(history.PointsChange > 0 ? "var(--success)" : "var(--error)"); font-weight: 600;">
+                                        @(history.PointsChange > 0 ? "+" : "")@history.PointsChange
+                                    </span>
+                                </td>
+                                <td style="text-align: right; font-weight: 600;">@history.PointsAfter</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var history in Model.PointsHistory)
-                            {
-                                <tr>
-                                    <td>@history.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</td>
-                                    <td>@history.Reason</td>
-                                    <td class="text-end">
-                                        <span class="@(history.PointsChange > 0 ? "text-success" : "text-danger")">
-                                            @(history.PointsChange > 0 ? "+" : "")@history.PointsChange
-                                        </span>
-                                    </td>
-                                    <td class="text-end">@history.PointsAfter</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state-premium">
+                <div class="empty-icon">
+                    <i class="bi bi-star"></i>
                 </div>
-            }
-            else
-            {
-                <p class="text-muted text-center py-4">No points history yet. Start renting to earn points!</p>
-            }
-        </div>
+                <h3>No Points History Yet</h3>
+                <p>Start renting to earn points! Your points history will appear here.</p>
+                <a href="/Bikes/Browse" class="btn-minimal btn-minimal-primary">
+                    <i class="bi bi-bicycle"></i> Browse Bikes
+                </a>
+            </div>
+        }
     </div>
 </div>
-

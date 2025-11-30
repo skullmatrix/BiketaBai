@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Services;
+using BiketaBai.Helpers;
 using System.Security.Claims;
 
 namespace BiketaBai.Pages.Owner;
@@ -286,6 +287,12 @@ public class RentalRequestsModel : PageModel
             cashPayment.OwnerVerifiedBy = userId;
             cashPayment.PaymentDate = DateTime.UtcNow;
 
+            // For cash payments, rental time starts NOW when owner verifies payment
+            var verificationTime = DateTime.UtcNow;
+            booking.StartDate = verificationTime; // Rental starts when payment is verified
+            booking.EndDate = verificationTime.AddHours((double)booking.RentalHours); // End date = start + rental hours
+            booking.OwnerConfirmedAt = verificationTime; // Record when owner confirmed
+
             // Activate booking
             booking.BookingStatusId = 2; // Active
             booking.UpdatedAt = DateTime.UtcNow;
@@ -297,16 +304,17 @@ public class RentalRequestsModel : PageModel
             await _context.SaveChangesAsync();
 
             // Send notification to renter
+            var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
             await _notificationService.CreateNotificationAsync(
                 booking.RenterId,
-                "Payment Verified - Booking Active",
-                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental is now active!",
+                "Payment Verified - Rental Started",
+                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental has started and will end on {endDatePHT}.",
                 "Payment",
                 $"/Bookings/Details/{booking.BookingId}"
             );
 
-            _logger.LogInformation($"Cash payment verified for booking {booking.BookingId} by owner {userId}");
-            TempData["SuccessMessage"] = $"Cash payment verified! Booking #{booking.BookingId} is now active.";
+            _logger.LogInformation($"Cash payment verified for booking {booking.BookingId} by owner {userId}. Rental started at {verificationTime:yyyy-MM-dd HH:mm:ss} UTC, ends at {booking.EndDate:yyyy-MM-dd HH:mm:ss} UTC");
+            TempData["SuccessMessage"] = $"Cash payment verified! Booking #{booking.BookingId} is now active. Rental time has started.";
         }
         catch (Exception ex)
         {

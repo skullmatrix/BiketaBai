@@ -111,7 +111,11 @@ public class PaymentService
             case 4: // Cash
                 paymentSuccess = true;
                 payment.PaymentStatus = "Pending"; // Will be confirmed when owner verifies cash payment
-                message = "Booking created. Please pay cash to the owner. The booking will start once the owner verifies payment.";
+                message = "Booking created. Please pay cash to the owner. The rental time will start once the owner verifies your payment.";
+                
+                // For cash payments, don't set StartDate/EndDate yet - they will be set when owner verifies
+                // The RentalHours is already stored in the booking, so we can calculate dates later
+                // Keep the existing StartDate/EndDate as placeholder (they'll be updated on verification)
                 break;
 
             default:
@@ -151,8 +155,9 @@ public class PaymentService
                 await _notificationService.CreateNotificationAsync(
                     booking.RenterId,
                     "Booking Created - Cash Payment",
-                    $"Your booking #{bookingId} has been created. Please pay ₱{amount:F2} cash to the owner. The booking will start once payment is verified.",
-                    "Payment"
+                    $"Your booking #{bookingId} has been created. Please pay ₱{amount:F2} cash to the owner. The rental time will start once the owner verifies your payment.",
+                    "Payment",
+                    $"/Bookings/Details/{bookingId}"
                 );
 
                 await _notificationService.CreateNotificationAsync(
