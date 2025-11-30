@@ -30,6 +30,9 @@ builder.Host.UseSerilog();
 // Add services to the container.
 builder.Services.AddRazorPages();
 
+// Add SignalR
+builder.Services.AddSignalR();
+
 // Configure MySQL Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (!string.IsNullOrEmpty(connectionString))
@@ -157,6 +160,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+
+// Map SignalR hub
+app.MapHub<BiketaBai.Hubs.NotificationHub>("/notificationHub");
 
 // Create database and apply migrations on startup
 using (var scope = app.Services.CreateScope())

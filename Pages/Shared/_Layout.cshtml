@@ -307,6 +307,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     
     <!-- Loading Animation Script -->
     <script>
@@ -342,18 +343,25 @@
     @if (User.Identity?.IsAuthenticated == true)
     {
         <script>
-            // Load wallet and points balance
+            // SignalR connection for real-time notifications and booking updates
+            let connection = null;
+            const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
+            
+            // Initialize SignalR connection
             $(document).ready(function() {
+                if (isAuthenticated === "true") {
+                    initializeSignalR();
+                }
+                
+                // Load wallet and points balance
                 loadWalletBalance();
                 loadPointsBalance();
                 loadNotificationCount();
                 
-                // Refresh notifications for all authenticated users (every 15 seconds)
-                if (isAuthenticated === "true") {
-                    setInterval(function() {
-                        loadNotificationCount();
-                    }, 15000); // Check every 15 seconds
-                }
+                // Fallback: Refresh notifications every 30 seconds if SignalR fails
+                setInterval(function() {
+                    loadNotificationCount();
+                }, 30000);
                 
                 // Refresh wallet and points every 30 seconds
                 setInterval(function() {
@@ -361,6 +369,98 @@
                     loadPointsBalance();
                 }, 30000);
             });
+            
+            function initializeSignalR() {
+                try {
+                    connection = new signalR.HubConnectionBuilder()
+                        .withUrl("/notificationHub")
+                        .withAutomaticReconnect()
+                        .build();
+                    
+                    // Listen for new notifications
+                    connection.on("ReceiveNotification", function (notification) {
+                        console.log("New notification received:", notification);
+                        
+                        // Update notification count
+                        updateNotificationBadge(notification.unreadCount);
+                        
+                        // Play notification sound
+                        playNotificationSound();
+                        
+                        // Show toast notification (optional)
+                        showNotificationToast(notification);
+                    });
+                    
+                    // Listen for booking updates (e.g., when owner approves)
+                    connection.on("ReceiveBookingUpdate", function (update) {
+                        console.log("Booking update received:", update);
+                        
+                        if (update.updateType === "approved" || update.updateType === "payment_verified") {
+                            // Show confirmation message
+                            if (confirm(update.message + "\n\nWould you like to go to geofencing now?")) {
+                                if (update.redirectUrl) {
+                                    window.location.href = update.redirectUrl;
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Handle connection events
+                    connection.onreconnecting(function() {
+                        console.log("SignalR reconnecting...");
+                    });
+                    
+                    connection.onreconnected(function() {
+                        console.log("SignalR reconnected");
+                        loadNotificationCount(); // Refresh count after reconnection
+                    });
+                    
+                    connection.onclose(function() {
+                        console.log("SignalR connection closed");
+                    });
+                    
+                    // Start the connection
+                    connection.start()
+                        .then(function() {
+                            console.log("SignalR connected successfully");
+                            loadNotificationCount(); // Initial load
+                        })
+                        .catch(function(err) {
+                            console.error("SignalR connection error:", err);
+                            // Fallback to polling if SignalR fails
+                        });
+                } catch (error) {
+                    console.error("Error initializing SignalR:", error);
+                }
+            }
+            
+            function updateNotificationBadge(count) {
+                const countText = count > 9 ? '9+' : String(count);
+                
+                if (count > 0) {
+                    $('#notificationCountSidebar').text(countText).show();
+                    
+                    const $headerBadge = $('#notificationCountHeader');
+                    if ($headerBadge.length > 0) {
+                        $headerBadge.text(countText);
+                        if (count > 9 || countText.length > 1) {
+                            $headerBadge.addClass('badge-multiple');
+                        } else {
+                            $headerBadge.removeClass('badge-multiple');
+                        }
+                        $headerBadge.css({'display': 'flex', 'visibility': 'visible'});
+                    }
+                } else {
+                    $('#notificationCountSidebar').hide();
+                    $('#notificationCountHeader').hide().removeClass('badge-multiple');
+                }
+            }
+            
+            function showNotificationToast(notification) {
+                // Optional: Show a toast notification
+                // You can implement a toast library here if needed
+                console.log("Notification:", notification.title, "-", notification.message);
+            }
 
             function loadWalletBalance() {
                 $.get('/Api/Wallet', function(data) {
@@ -380,55 +480,21 @@
             }
 
             let previousNotificationCount = 0;
-            const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
             
             function loadNotificationCount() {
                 $.get('/Api/Notifications', function(data) {
                     const currentCount = data.count || 0;
-                    // Ensure countText is always a string
-                    const countText = currentCount > 9 ? '9+' : String(currentCount);
+                    updateNotificationBadge(currentCount);
                     
-                    if (currentCount > 0) {
-                        // Update sidebar badge
-                        $('#notificationCountSidebar').text(countText).show();
-                        
-                        // Update header badge for all authenticated users
-                        if (isAuthenticated === "true") {
-                            const $headerBadge = $('#notificationCountHeader');
-                            
-                            // Check if element exists before accessing it
-                            if ($headerBadge.length > 0) {
-                                $headerBadge.text(countText);
-                                
-                                // Toggle class based on whether it's a single digit or multiple
-                                // countText is now guaranteed to be a string, so .length is safe
-                                if (currentCount > 9 || countText.length > 1) {
-                                    $headerBadge.addClass('badge-multiple');
-                                } else {
-                                    $headerBadge.removeClass('badge-multiple');
-                                }
-                                
-                                $headerBadge.css({'display': 'flex', 'visibility': 'visible'}); // Show as flex to center content
-                            }
-                        }
-                        
-                        // Play sound notification for all authenticated users when new notification arrives
-                        if (isAuthenticated === "true" && currentCount > previousNotificationCount && previousNotificationCount >= 0) {
-                            playNotificationSound();
-                        }
-                    } else {
-                        $('#notificationCountSidebar').hide();
-                        if (isAuthenticated === "true") {
-                            $('#notificationCountHeader').hide().removeClass('badge-multiple');
-                        }
+                    // Play sound if count increased
+                    if (currentCount > previousNotificationCount && previousNotificationCount >= 0) {
+                        playNotificationSound();
                     }
                     
                     previousNotificationCount = currentCount;
                 }).fail(function() {
                     $('#notificationCountSidebar').hide();
-                    if (isAuthenticated === "true") {
-                        $('#notificationCountHeader').hide().removeClass('badge-multiple');
-                    }
+                    $('#notificationCountHeader').hide().removeClass('badge-multiple');
                 });
             }
             

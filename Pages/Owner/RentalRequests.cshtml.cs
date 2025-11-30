@@ -139,6 +139,15 @@ public class RentalRequestsModel : PageModel
                 $"/Bookings/TrackLocation/{booking.BookingId}"
             );
 
+            // Send real-time booking update via SignalR to redirect renter to geofencing
+            await _notificationService.SendBookingUpdateAsync(
+                booking.RenterId,
+                booking.BookingId,
+                "approved",
+                $"Your rental request has been accepted! Your rental is now active and will end on {endDatePHT}.",
+                $"/Bookings/TrackLocation/{booking.BookingId}"
+            );
+
             _logger.LogInformation($"Booking {booking.BookingId} accepted by owner {userId}");
             TempData["SuccessMessage"] = $"Rental request from {booking.Renter.FullName} has been accepted!";
         }
@@ -312,6 +321,15 @@ public class RentalRequestsModel : PageModel
                 "Payment Verified - Rental Started",
                 $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental has started and will end on {endDatePHT}. Please start location tracking for geofencing.",
                 "Payment",
+                $"/Bookings/TrackLocation/{booking.BookingId}"
+            );
+
+            // Send real-time booking update via SignalR to redirect renter to geofencing
+            await _notificationService.SendBookingUpdateAsync(
+                booking.RenterId,
+                booking.BookingId,
+                "payment_verified",
+                $"Your cash payment has been verified! Your rental has started and will end on {endDatePHT}.",
                 $"/Bookings/TrackLocation/{booking.BookingId}"
             );
 

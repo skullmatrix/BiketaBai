@@ -37,12 +37,14 @@ public class BrowseModel : PageModel
 
         BikeTypes = await _context.BikeTypes.ToListAsync();
 
-        // Get all bikes that are marked as available (not deleted, not maintenance, etc.)
+        // Get all bikes that are available (not deleted, not maintenance, etc.)
+        // Include bikes with AvailabilityStatusId = 1 (Available) OR 2 (Rented but may have available quantity)
+        // We'll filter by available quantity later
         var query = _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Where(b => b.AvailabilityStatusId == 1 && !b.IsDeleted) // Available and not deleted
+            .Where(b => (b.AvailabilityStatusId == 1 || b.AvailabilityStatusId == 2) && !b.IsDeleted) // Available or Partially Rented, not deleted
             .AsQueryable();
 
         // Apply filters
@@ -108,12 +110,14 @@ public class BrowseModel : PageModel
             // Calculate available quantity
             // If Quantity is 0 or not set, default to 1 (for backward compatibility with old bikes)
             // Ensure Quantity is at least 1 to prevent division issues
-            var bikeQuantity = Math.Max(1, bike.Quantity);
+            // Handle null or zero values properly - use the actual Quantity from database
+            var bikeQuantity = bike.Quantity > 0 ? bike.Quantity : 1;
             var availableQuantity = bikeQuantity - rentedQuantity;
             
             // Only include bikes with available quantity > 0
             // This ensures bikes that are fully rented don't appear
             // But bikes with at least 1 available will show
+            // IMPORTANT: Show bike if it has ANY available quantity (even if Quantity field is 0, we default to 1)
             if (availableQuantity > 0)
             {
                 bikesWithAvailability.Add(bike);

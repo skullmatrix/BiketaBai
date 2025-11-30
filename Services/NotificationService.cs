@@ -1,16 +1,20 @@
 using BiketaBai.Data;
 using BiketaBai.Models;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using BiketaBai.Hubs;
 
 namespace BiketaBai.Services;
 
 public class NotificationService
 {
     private readonly BiketaBaiDbContext _context;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public NotificationService(BiketaBaiDbContext context)
+    public NotificationService(BiketaBaiDbContext context, IHubContext<NotificationHub> hubContext)
     {
         _context = context;
+        _hubContext = hubContext;
     }
 
     public async Task CreateNotificationAsync(int userId, string title, string message, string notificationType, string? actionUrl = null)
@@ -28,6 +32,31 @@ public class NotificationService
 
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
+
+        // Send real-time notification via SignalR
+        var unreadCount = await GetUnreadCountAsync(userId);
+        await _hubContext.Clients.Group($"user_{userId}").SendAsync("ReceiveNotification", new
+        {
+            notificationId = notification.NotificationId,
+            title = title,
+            message = message,
+            type = notificationType,
+            actionUrl = actionUrl,
+            unreadCount = unreadCount,
+            createdAt = notification.CreatedAt
+        });
+    }
+
+    public async Task SendBookingUpdateAsync(int userId, int bookingId, string updateType, string message, string? redirectUrl = null)
+    {
+        // Send booking update via SignalR (e.g., when booking is approved)
+        await _hubContext.Clients.Group($"user_{userId}").SendAsync("ReceiveBookingUpdate", new
+        {
+            bookingId = bookingId,
+            updateType = updateType, // "approved", "rejected", "payment_verified", etc.
+            message = message,
+            redirectUrl = redirectUrl
+        });
     }
 
     public async Task<List<Notification>> GetUserNotificationsAsync(int userId, int pageNumber = 1, int pageSize = 20)
