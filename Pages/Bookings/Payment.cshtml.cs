@@ -69,6 +69,12 @@ public class PaymentModel : PageModel
             }
         }
 
+        // If location permission is already granted, show success message
+        if (Booking.LocationPermissionGranted)
+        {
+            SuccessMessage = "Location permission granted. You can proceed with payment.";
+        }
+
         return Page();
     }
 
@@ -89,6 +95,26 @@ public class PaymentModel : PageModel
 
         if (Booking == null)
             return NotFound();
+
+        // Validate location permission is granted before allowing payment
+        if (!Booking.LocationPermissionGranted)
+        {
+            ErrorMessage = "Location permission is required to proceed with payment. Please enable location access first.";
+            WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
+            
+            // Check for existing pending payment
+            ExistingPayment = Booking.Payments
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefault(p => p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed");
+            
+            if (ExistingPayment != null)
+            {
+                CurrentPaymentMethodId = ExistingPayment.PaymentMethodId;
+                PaymentMethodId = ExistingPayment.PaymentMethodId;
+            }
+            
+            return Page();
+        }
 
         WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
 

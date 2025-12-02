@@ -125,6 +125,12 @@ public class PaymentService
 
         if (paymentSuccess)
         {
+            // Validate location permission is granted before processing payment
+            if (!booking.LocationPermissionGranted)
+            {
+                return (false, "Location permission is required to proceed with payment. Please enable location access first.");
+            }
+
             payment.PaymentStatus = paymentMethodId == 4 ? "Pending" : "Completed";
             _context.Payments.Add(payment);
             
@@ -164,7 +170,7 @@ public class PaymentService
                 await _notificationService.CreateNotificationAsync(
                     booking.Bike.OwnerId,
                     "New Booking - Cash Payment Required",
-                    $"You have a new booking #{bookingId} for {booking.Bike.Brand} {booking.Bike.Model}. Please verify cash payment of ₱{amount:F2} to activate the booking.",
+                    $"Booking #{bookingId.ToString("D6")} - Renter: {booking.Renter.FullName} | Bike: {booking.Bike.Brand} {booking.Bike.Model} | Amount: ₱{amount:F2} | Please verify cash payment to activate. Location permission has been granted.",
                     "Booking",
                     $"/Owner/RentalRequests"
                 );
@@ -184,7 +190,7 @@ public class PaymentService
                 await _notificationService.CreateNotificationAsync(
                     booking.Bike.OwnerId,
                     "New Booking",
-                    $"Your bike {booking.Bike.Brand} {booking.Bike.Model} has been booked",
+                    $"Your bike {booking.Bike.Brand} {booking.Bike.Model} has been booked. Location permission has been granted.",
                     "Booking",
                     $"/Owner/RentalRequests"
                 );

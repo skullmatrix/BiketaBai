@@ -20,6 +20,7 @@ public class MyBikesModel : PageModel
     public List<Bike> Bikes { get; set; } = new();
     public Dictionary<int, double> BikeRatings { get; set; } = new();
     public List<Booking> ActiveBookings { get; set; } = new();
+    public List<Booking> LostBookings { get; set; } = new();
     public Dictionary<int, int> AvailableQuantities { get; set; } = new(); // BikeId -> Available Quantity
     public Dictionary<int, List<Booking>> BikeActiveBookings { get; set; } = new(); // BikeId -> List of Active Bookings
     public Dictionary<int, bool> OverdueBookings { get; set; } = new(); // BookingId -> Is Overdue
@@ -41,12 +42,20 @@ public class MyBikesModel : PageModel
             .Where(b => b.OwnerId == userId.Value && !b.IsDeleted)
             .ToListAsync();
 
-        // Get active bookings with renter info
+        // Get active bookings with renter info (excluding reported lost)
         ActiveBookings = await _context.Bookings
             .Include(b => b.Renter)
             .Include(b => b.Bike)
-            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatusId == 2) // Active
+            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatusId == 2 && !b.IsReportedLost) // Active and not reported lost
             .OrderBy(b => b.EndDate)
+            .ToListAsync();
+
+        // Get lost/not returned bookings
+        LostBookings = await _context.Bookings
+            .Include(b => b.Renter)
+            .Include(b => b.Bike)
+            .Where(b => b.Bike.OwnerId == userId.Value && b.IsReportedLost)
+            .OrderByDescending(b => b.ReportedLostAt)
             .ToListAsync();
 
         // Group active bookings by bike
@@ -223,6 +232,61 @@ public class MyBikesModel : PageModel
         catch (Exception ex)
         {
             TempData["ErrorMessage"] = $"Error confirming return: {ex.Message}";
+            return RedirectToPage();
+        }
+    }
+
+    public async Task<IActionResult> OnPostReportLostAsync(int bookingId)
+    {
+        try
+        {
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "You must be logged in";
+                return RedirectToPage("/Account/Login");
+            }
+
+            var booking = await _context.Bookings
+                .Include(b => b.Bike)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+
+            if (booking == null)
+            {
+                TempData["ErrorMessage"] = "Booking not found or you don't have permission";
+                return RedirectToPage();
+            }
+
+            if (booking.BookingStatusId != 2) // Must be Active
+            {
+                TempData["ErrorMessage"] = "This booking is not active";
+                return RedirectToPage();
+            }
+
+            // Mark booking as reported lost
+            booking.IsReportedLost = true;
+            booking.ReportedLostAt = DateTime.UtcNow;
+            booking.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Send notification to renter
+            var notificationService = HttpContext.RequestServices.GetRequiredService<NotificationService>();
+            await notificationService.CreateNotificationAsync(
+                booking.RenterId,
+                "Bike Reported as Lost",
+                $"The owner has reported the bike from booking #{bookingId.ToString("D6")} as lost/not returned. Please contact the owner immediately.",
+                "Booking",
+                $"/Bookings/Details/{bookingId}"
+            );
+
+            TempData["SuccessMessage"] = $"Bike reported as lost for booking #{bookingId.ToString("D6")}. You can view details in Lost Bikes section.";
+            return RedirectToPage();
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Error reporting lost bike: {ex.Message}";
             return RedirectToPage();
         }
     }

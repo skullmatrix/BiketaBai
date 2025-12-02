@@ -1,0 +1,285 @@
+@page "{bookingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model LostBikeDetailsModel
+@{
+    ViewData["Title"] = "Lost Bike Details";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 1200px; margin: 0 auto;">
+        @if (Model.Booking == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Booking not found or you don't have permission to view this</div>
+            </div>
+        }
+        else
+        {
+            <div class="page-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+                    <div>
+                        <h1 class="page-title" style="color: var(--error);">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Lost Bike Report
+                        </h1>
+                        <p class="page-subtitle">Booking #@Model.Booking.BookingId.ToString("D6")</p>
+                    </div>
+                    <a href="/Owner/MyBikes" class="btn-minimal btn-minimal-ghost">
+                        <i class="bi bi-arrow-left"></i> Back to My Bikes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Warning Alert -->
+            <div class="alert-minimal alert-minimal-error mb-4">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                    <strong>Bike Reported as Lost/Not Returned</strong>
+                    <p class="mb-0">This bike was reported as lost on @TimeZoneHelper.FormatPhilippineTime(Model.Booking.ReportedLostAt ?? DateTime.UtcNow).</p>
+                </div>
+            </div>
+
+            <!-- Booking Information -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-calendar-check"></i> Booking Information
+                    </h2>
+                </div>
+                <div class="grid-minimal grid-minimal-2">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Booking ID</div>
+                        <div style="font-weight: 600; color: var(--sage-primary); margin-bottom: var(--space-3);">#@Model.Booking.BookingId.ToString("D6")</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Bike</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.Bike.Brand @Model.Booking.Bike.Model</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Rental Start</div>
+                        <div style="font-weight: 600;">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate)</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Expected Return</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate)</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Rental Duration</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.RentalHours.ToString("F1") hours</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Reported Lost</div>
+                        <div style="font-weight: 600; color: var(--error);">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.ReportedLostAt ?? DateTime.UtcNow)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Renter Information -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-person-fill"></i> Renter Information
+                    </h2>
+                </div>
+                <div class="grid-minimal grid-minimal-2">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Full Name</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.Renter.FullName</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Email</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.Renter.Email</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Phone Number</div>
+                        <div style="font-weight: 600;">@(Model.Booking.Renter.Phone ?? "Not provided")</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Address</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@(Model.Booking.Renter.Address ?? "Not provided")</div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Booking.Renter.IdDocumentUrl))
+                        {
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">ID Document (Front)</div>
+                            <div style="margin-bottom: var(--space-2);">
+                                <a href="@Model.Booking.Renter.IdDocumentUrl" target="_blank" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                    <i class="bi bi-image"></i> View ID Front
+                                </a>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Model.Booking.Renter.IdDocumentBackUrl))
+                        {
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">ID Document (Back)</div>
+                            <div>
+                                <a href="@Model.Booking.Renter.IdDocumentBackUrl" target="_blank" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                    <i class="bi bi-image"></i> View ID Back
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Last Known Location -->
+            @if (Model.LastLocation != null)
+            {
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-geo-alt-fill"></i> Last Known Location
+                        </h2>
+                    </div>
+                    <div class="grid-minimal grid-minimal-2">
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Last Tracked</div>
+                            <div style="font-weight: 600; margin-bottom: var(--space-3);">@TimeZoneHelper.FormatPhilippineTime(Model.LastLocation.TrackedAt)</div>
+                            
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Distance from Store</div>
+                            <div style="font-weight: 600; margin-bottom: var(--space-3);">
+                                <span style="color: @(Model.LastLocation.IsWithinGeofence ? "var(--success)" : "var(--error)");">
+                                    @Model.LastLocation.DistanceFromStoreKm?.ToString("F2") km
+                                </span>
+                            </div>
+                            
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Status</div>
+                            <div style="font-weight: 600;">
+                                @if (Model.LastLocation.IsWithinGeofence)
+                                {
+                                    <span style="color: var(--success);">
+                                        <i class="bi bi-check-circle"></i> Within Geofence
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--error);">
+                                        <i class="bi bi-exclamation-triangle"></i> Outside Geofence
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Coordinates</div>
+                            <div style="font-weight: 600; font-family: monospace; margin-bottom: var(--space-3);">
+                                @Model.LastLocation.Latitude.ToString("F6"), @Model.LastLocation.Longitude.ToString("F6")
+                            </div>
+                            
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Map</div>
+                            <div id="map" style="height: 300px; width: 100%; border-radius: var(--radius-md); overflow: hidden;"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-geo-alt-fill"></i> Last Known Location
+                        </h2>
+                    </div>
+                    <div class="alert-minimal alert-minimal-warning">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <div>No location tracking data available for this booking.</div>
+                    </div>
+                </div>
+            }
+
+            <!-- Actions -->
+            <div class="card-minimal">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-tools"></i> Actions
+                    </h2>
+                </div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                    <a href="tel:@Model.Booking.Renter.Phone" class="btn-minimal btn-minimal-primary">
+                        <i class="bi bi-telephone"></i> Call Renter
+                    </a>
+                    <a href="mailto:@Model.Booking.Renter.Email" class="btn-minimal btn-minimal-primary">
+                        <i class="bi bi-envelope"></i> Email Renter
+                    </a>
+                    <a href="/Bookings/Details/@Model.Booking.BookingId" class="btn-minimal btn-minimal-outline">
+                        <i class="bi bi-eye"></i> View Full Booking Details
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.Booking != null && Model.LastLocation != null)
+{
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const lat = @Model.LastLocation.Latitude;
+            const lng = @Model.LastLocation.Longitude;
+            const storeLat = @(Model.StoreLatitude?.ToString("F6") ?? "14.5995");
+            const storeLng = @(Model.StoreLongitude?.ToString("F6") ?? "120.9842");
+            const radius = @(Model.GeofenceRadiusKm ?? 5.0m) * 1000; // Convert km to meters
+
+            // Create map
+            const map = L.map('map').setView([lat, lng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add store marker
+            @if (Model.StoreLatitude.HasValue && Model.StoreLongitude.HasValue)
+            {
+                <text>
+                L.marker([storeLat, storeLng], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    })
+                }).addTo(map).bindPopup('Store Location');
+                </text>
+            }
+
+            // Add geofence circle
+            @if (Model.StoreLatitude.HasValue && Model.StoreLongitude.HasValue)
+            {
+                <text>
+                L.circle([storeLat, storeLng], {
+                    color: '#87A96B',
+                    fillColor: '#E8F0E3',
+                    fillOpacity: 0.3,
+                    radius: radius
+                }).addTo(map);
+                </text>
+            }
+
+            // Add last known location marker
+            L.marker([lat, lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-@(Model.LastLocation.IsWithinGeofence ? "blue" : "red").png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map).bindPopup(`
+                <strong>Last Known Location</strong><br>
+                @Model.Booking.Renter.FullName<br>
+                @TimeZoneHelper.FormatPhilippineTime(Model.LastLocation.TrackedAt)<br>
+                Distance: @Model.LastLocation.DistanceFromStoreKm?.ToString("F2") km
+            `);
+
+            // Fit map to show both markers
+            if (@(Model.StoreLatitude.HasValue ? "true" : "false")) {
+                const bounds = L.latLngBounds([[lat, lng], [storeLat, storeLng]]);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            } else {
+                map.setView([lat, lng], 15);
+            }
+        });
+    </script>
+}
+

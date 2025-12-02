@@ -25,6 +25,17 @@
                         <h1 class="page-title-minimal mb-3">Booking Confirmed!</h1>
                         <p class="text-muted-minimal mb-4">Your booking has been successfully created and payment processed.</p>
 
+                        <!-- Booking ID/Number -->
+                        <div class="alert-minimal alert-minimal-info mb-4" style="background: var(--sage-subtle); border: 2px solid var(--sage-primary);">
+                            <div style="text-align: center;">
+                                <p class="text-muted-minimal mb-2" style="font-size: 0.875rem;">Booking Reference Number</p>
+                                <h2 class="mb-0" style="color: var(--sage-primary); font-weight: 700; letter-spacing: 1px;">
+                                    #@Model.Booking.BookingId.ToString("D6")
+                                </h2>
+                                <p class="text-muted-minimal mt-2 mb-0" style="font-size: 0.75rem;">Please save this number for your records</p>
+                            </div>
+                        </div>
+
                         <!-- Booking Details -->
                         <div class="card-minimal card-minimal-secondary mb-4">
                             <div class="card-body-minimal">
@@ -33,6 +44,9 @@
                                 
                                 <div class="row text-start">
                                     <div class="col-md-6 mb-3">
+                                        <p class="text-muted-minimal mb-1"><strong>Booking ID:</strong></p>
+                                        <p class="mb-3" style="font-weight: 600; color: var(--sage-primary);">#@Model.Booking.BookingId.ToString("D6")</p>
+                                        
                                         <p class="text-muted-minimal mb-1"><strong>Bike:</strong></p>
                                         <p class="mb-3">@Model.Booking.Bike.Brand @Model.Booking.Bike.Model</p>
                                         
@@ -73,6 +87,18 @@
                             </div>
                         </div>
 
+                        <!-- Payment Waiting Status (for Cash Payments) -->
+                        @if (Model.Booking.BookingStatusId == 1 && Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending")
+                        {
+                            <div class="alert-minimal alert-minimal-info mb-4" id="paymentWaitingAlert">
+                                <i class="bi bi-hourglass-split"></i>
+                                <div>
+                                    <strong>Waiting for Payment Verification</strong>
+                                    <p class="mb-0" id="paymentWaitingText">Your cash payment is pending verification by the owner. Once verified, your rental will automatically start and you'll be redirected to location tracking.</p>
+                                </div>
+                            </div>
+                        }
+
                         <!-- Location Tracking Info -->
                         @if (Model.Booking.BookingStatusId == 2) // Active
                         {
@@ -89,7 +115,7 @@
                         <div class="d-grid gap-2">
                             @if (Model.Booking.BookingStatusId == 2) // Active
                             {
-                                <a href="/Bookings/TrackLocation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-primary">
+                                <a href="/Bookings/TrackLocation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-primary" id="trackLocationBtn">
                                     <i class="bi bi-geo-alt-fill"></i> Track Location
                                 </a>
                             }
@@ -104,82 +130,182 @@
     </div>
 </div>
 
-@if (Model.Booking != null && Model.Booking.BookingStatusId == 2)
+@if (Model.Booking != null)
 {
+    <!-- SignalR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@7.0.0/dist/browser/signalr.min.js"></script>
+    
     <script>
-        // Automatically capture user location when booking becomes active
         document.addEventListener('DOMContentLoaded', function() {
             const bookingId = @Model.Booking.BookingId;
-            const locationStatusText = document.getElementById('locationStatusText');
-            const locationStatusAlert = document.getElementById('locationStatusAlert');
+            const bookingStatusId = @Model.Booking.BookingStatusId;
+            const isPendingCashPayment = bookingStatusId === 1 && @(Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending" ? "true" : "false");
+            
+            // Initialize SignalR connection for real-time updates
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/notificationHub")
+                .withAutomaticReconnect()
+                .build();
 
-            if (!navigator.geolocation) {
-                locationStatusText.textContent = 'Geolocation is not supported by your browser. Please use the Track Location page.';
-                locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
-                return;
-            }
-
-            // Request location permission and capture initial location
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-
-                    try {
-                        // Send location to API to start tracking
-                        const response = await fetch('/api/location/track', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                bookingId: bookingId,
-                                latitude: lat,
-                                longitude: lon
-                            })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            locationStatusText.innerHTML = '<strong>Location captured successfully!</strong> Geofencing is now active. Your location will be monitored during the rental.';
-                            locationStatusAlert.className = 'alert-minimal alert-minimal-success mb-4';
+            // Listen for booking updates (e.g., payment verification)
+            connection.on("ReceiveBookingUpdate", function(data) {
+                console.log("Received booking update:", data);
+                
+                // Check if this update is for the current booking and is a payment verification
+                if (data.bookingId === bookingId && data.updateType === "payment_verified") {
+                    console.log("Payment verified! Redirecting to geofencing...");
+                    
+                    // Update UI to show success message
+                    const paymentWaitingAlert = document.getElementById('paymentWaitingAlert');
+                    if (paymentWaitingAlert) {
+                        paymentWaitingAlert.className = 'alert-minimal alert-minimal-success mb-4';
+                        paymentWaitingAlert.innerHTML = `
+                            <i class="bi bi-check-circle-fill"></i>
+                            <div>
+                                <strong>Payment Verified!</strong>
+                                <p class="mb-0">Your rental has started. Redirecting to location tracking...</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Redirect to geofencing page after a short delay
+                    setTimeout(function() {
+                        if (data.redirectUrl) {
+                            window.location.href = data.redirectUrl;
                         } else {
-                            locationStatusText.textContent = 'Location captured but tracking setup failed. Please use the Track Location page.';
-                            locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
+                            window.location.href = `/Bookings/TrackLocation/${bookingId}`;
                         }
-                    } catch (error) {
-                        console.error('Error sending location:', error);
-                        locationStatusText.textContent = 'Failed to send location. Please use the Track Location page to start tracking.';
+                    }, 2000); // 2 second delay to show success message
+                }
+            });
+
+            // Start SignalR connection
+            connection.start()
+                .then(function() {
+                    console.log("SignalR connected. Listening for payment verification...");
+                })
+                .catch(function(err) {
+                    console.error("SignalR connection error:", err);
+                });
+
+            // Handle connection state changes
+            connection.onreconnecting(function() {
+                console.log("SignalR reconnecting...");
+            });
+
+            connection.onreconnected(function() {
+                console.log("SignalR reconnected");
+            });
+
+            connection.onclose(function() {
+                console.log("SignalR connection closed");
+            });
+
+            // Automatically capture user location when booking becomes active (non-cash payments)
+            if (bookingStatusId === 2 && !isPendingCashPayment) {
+                const locationStatusText = document.getElementById('locationStatusText');
+                const locationStatusAlert = document.getElementById('locationStatusAlert');
+
+                if (!navigator.geolocation) {
+                    if (locationStatusText) {
+                        locationStatusText.textContent = 'Geolocation is not supported by your browser. Please use the Track Location page.';
                         locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
                     }
-                },
-                (error) => {
-                    console.error('Geolocation error:', error);
-                    let errorMessage = 'Unable to get your location. ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += 'Location permission denied. Please allow location access and use the Track Location page.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += 'Location information unavailable. Please use the Track Location page.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += 'Location request timed out. Please use the Track Location page.';
-                            break;
-                        default:
-                            errorMessage += 'An unknown error occurred. Please use the Track Location page.';
-                            break;
-                    }
-                    locationStatusText.textContent = errorMessage;
-                    locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
+                    return;
                 }
-            );
+
+                // Request location permission and capture initial location
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        try {
+                            // Send location to API to start tracking
+                            const response = await fetch('/api/location/track', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    bookingId: bookingId,
+                                    latitude: lat,
+                                    longitude: lon
+                                })
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success && locationStatusText) {
+                                locationStatusText.innerHTML = '<strong>Location captured successfully!</strong> Geofencing is now active. Your location will be monitored during the rental.';
+                                locationStatusAlert.className = 'alert-minimal alert-minimal-success mb-4';
+                            } else if (locationStatusText) {
+                                locationStatusText.textContent = 'Location captured but tracking setup failed. Please use the Track Location page.';
+                                locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
+                            }
+                        } catch (error) {
+                            console.error('Error sending location:', error);
+                            if (locationStatusText) {
+                                locationStatusText.textContent = 'Failed to send location. Please use the Track Location page to start tracking.';
+                                locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
+                            }
+                        }
+                    },
+                    async (error) => {
+                        console.error('Geolocation error:', error);
+                        let errorMessage = 'Unable to get your location. ';
+                        let isPermissionDenied = false;
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Location permission denied. Please allow location access and use the Track Location page.';
+                                isPermissionDenied = true;
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information unavailable. Please use the Track Location page.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Location request timed out. Please use the Track Location page.';
+                                break;
+                            default:
+                                errorMessage += 'An unknown error occurred. Please use the Track Location page.';
+                                break;
+                        }
+                        
+                        if (locationStatusText) {
+                            locationStatusText.textContent = errorMessage;
+                            locationStatusAlert.className = 'alert-minimal alert-minimal-warning mb-4';
+                        }
+                        
+                        // Notify owner if location permission is denied
+                        if (isPermissionDenied) {
+                            try {
+                                const response = await fetch('/Api/LocationPermissionDenied', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        bookingId: bookingId
+                                    })
+                                });
+                                
+                                const result = await response.json();
+                                if (result.success) {
+                                    console.log('Owner notified about location permission denial');
+                                }
+                            } catch (err) {
+                                console.error('Error notifying owner:', err);
+                            }
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            }
         });
     </script>
 }

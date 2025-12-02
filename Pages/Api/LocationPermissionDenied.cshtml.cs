@@ -1,30 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.SignalR;
-using BiketaBai.Services;
-using BiketaBai.Helpers;
 using BiketaBai.Data;
-using BiketaBai.Hubs;
+using BiketaBai.Helpers;
+using BiketaBai.Services;
 using Serilog;
 
 namespace BiketaBai.Pages.Api;
 
 [IgnoreAntiforgeryToken]
-public class LocationTrackingModel : PageModel
+public class LocationPermissionDeniedModel : PageModel
 {
-    private readonly GeofencingService _geofencingService;
     private readonly BiketaBaiDbContext _context;
-    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly NotificationService _notificationService;
 
-    public LocationTrackingModel(
-        GeofencingService geofencingService,
+    public LocationPermissionDeniedModel(
         BiketaBaiDbContext context,
-        IHubContext<NotificationHub> hubContext)
+        NotificationService notificationService)
     {
-        _geofencingService = geofencingService;
         _context = context;
-        _hubContext = hubContext;
+        _notificationService = notificationService;
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -44,7 +39,7 @@ public class LocationTrackingModel : PageModel
             using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8);
             var body = await reader.ReadToEndAsync();
 
-            var request = System.Text.Json.JsonSerializer.Deserialize<LocationTrackingRequest>(
+            var request = System.Text.Json.JsonSerializer.Deserialize<LocationPermissionDeniedRequest>(
                 body,
                 new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -58,6 +53,9 @@ public class LocationTrackingModel : PageModel
 
             // Validate booking belongs to user
             var booking = await _context.Bookings
+                .Include(b => b.Bike)
+                    .ThenInclude(bike => bike.Owner)
+                .Include(b => b.Renter)
                 .FirstOrDefaultAsync(b => b.BookingId == request.BookingId && b.RenterId == userId.Value);
 
             if (booking == null)
@@ -68,54 +66,34 @@ public class LocationTrackingModel : PageModel
                 return new EmptyResult();
             }
 
-            // Mark location permission as granted (first time location is sent)
-            if (!booking.LocationPermissionGranted)
+            // Check if already denied (avoid duplicate notifications)
+            if (!booking.LocationPermissionDeniedAt.HasValue)
             {
-                booking.LocationPermissionGranted = true;
+                // Mark location permission as denied
+                booking.LocationPermissionGranted = false;
+                booking.LocationPermissionDeniedAt = DateTime.UtcNow;
                 booking.UpdatedAt = DateTime.UtcNow;
+
                 await _context.SaveChangesAsync();
-            }
 
-            // Track location
-            var (isWithin, distanceKm, warningMessage) = await _geofencingService.TrackLocationAsync(
-                request.BookingId,
-                request.Latitude,
-                request.Longitude);
+                // Notify owner about location permission denial
+                await _notificationService.CreateNotificationAsync(
+                    booking.Bike.OwnerId,
+                    "Location Permission Denied",
+                    $"Renter {booking.Renter.FullName} denied location access for booking #{booking.BookingId} ({booking.Bike.Brand} {booking.Bike.Model}). The rental cannot be fully validated without location tracking.",
+                    "Booking",
+                    $"/Owner/RentalRequests"
+                );
 
-            // Get booking with owner info for SignalR broadcast
-            var bookingWithOwner = await _context.Bookings
-                .Include(b => b.Bike)
-                    .ThenInclude(bike => bike.Owner)
-                .Include(b => b.Renter)
-                .FirstOrDefaultAsync(b => b.BookingId == request.BookingId);
-
-            // Broadcast location update to owner via SignalR
-            if (bookingWithOwner != null)
-            {
-                var ownerId = bookingWithOwner.Bike.OwnerId;
-                await _hubContext.Clients.Group($"user_{ownerId}").SendAsync("ReceiveLocationUpdate", new
-                {
-                    bookingId = request.BookingId,
-                    latitude = request.Latitude,
-                    longitude = request.Longitude,
-                    distanceKm = Math.Round(distanceKm, 2),
-                    isWithinGeofence = isWithin,
-                    renterName = bookingWithOwner.Renter.FullName,
-                    bikeName = $"{bookingWithOwner.Bike.Brand} {bookingWithOwner.Bike.Model}",
-                    trackedAt = DateTime.UtcNow
-                });
-
-                Log.Information("Location update broadcasted to owner {OwnerId} for booking {BookingId}", 
-                    ownerId, request.BookingId);
+                Log.Warning("Location permission denied for booking {BookingId} by renter {RenterId}. Owner {OwnerId} notified.",
+                    booking.BookingId, booking.RenterId, booking.Bike.OwnerId);
             }
 
             Response.ContentType = "application/json";
             var response = new
             {
                 success = true,
-                isWithinGeofence = isWithin,
-                distanceKm = Math.Round(distanceKm, 2),
-                warningMessage = warningMessage
+                message = "Owner notified about location permission denial"
             };
 
             await Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
@@ -123,7 +101,7 @@ public class LocationTrackingModel : PageModel
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error tracking location");
+            Log.Error(ex, "Error handling location permission denial");
             Response.StatusCode = 500;
             Response.ContentType = "application/json";
             await Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { error = "Internal server error" }));
@@ -131,11 +109,9 @@ public class LocationTrackingModel : PageModel
         }
     }
 
-    private class LocationTrackingRequest
+    private class LocationPermissionDeniedRequest
     {
         public int BookingId { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
     }
 }
 

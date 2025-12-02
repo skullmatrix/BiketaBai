@@ -91,6 +91,22 @@ public class Booking
     [Column("special_instructions")]
     public string? SpecialInstructions { get; set; }
 
+    [Column("location_permission_granted")]
+    public bool LocationPermissionGranted { get; set; } = false;
+
+    [Column("location_permission_denied_at")]
+    public DateTime? LocationPermissionDeniedAt { get; set; }
+
+    [Column("is_reported_lost")]
+    public bool IsReportedLost { get; set; } = false;
+
+    [Column("reported_lost_at")]
+    public DateTime? ReportedLostAt { get; set; }
+
+    [MaxLength(500)]
+    [Column("lost_report_notes")]
+    public string? LostReportNotes { get; set; }
+
     // Navigation properties
     [ForeignKey("RenterId")]
     public virtual User Renter { get; set; } = null!;

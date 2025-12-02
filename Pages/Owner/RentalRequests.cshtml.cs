@@ -290,6 +290,23 @@ public class RentalRequestsModel : PageModel
             return RedirectToPage();
         }
 
+        // Check if location permission is granted before verifying payment
+        if (!booking.LocationPermissionGranted)
+        {
+            TempData["ErrorMessage"] = $"Cannot verify payment. Renter {booking.Renter.FullName} has not granted location permission. Please advise them to enable location access before you can verify the payment and release the bike.";
+            
+            // Notify renter that they need to enable location
+            await _notificationService.CreateNotificationAsync(
+                booking.RenterId,
+                "Location Permission Required",
+                $"To complete your booking #{booking.BookingId}, please enable location access. The owner cannot verify your payment until location permission is granted.",
+                "Booking",
+                $"/Bookings/Payment/{booking.BookingId}"
+            );
+            
+            return RedirectToPage();
+        }
+
         try
         {
             // Verify payment

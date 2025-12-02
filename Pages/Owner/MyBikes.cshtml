@@ -192,11 +192,18 @@
                                                         }
                                                     </div>
                                                 </div>
-                                                <form method="post" asp-page-handler="ConfirmReturn" asp-route-bookingId="@booking.BookingId" style="margin-left: 0.5rem;">
-                                                    <button type="submit" class="btn btn-sm btn-success" style="white-space: nowrap;">
-                                                        <i class="bi bi-check-circle"></i> Confirm Return
-                                                    </button>
-                                                </form>
+                                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                                    <form method="post" asp-page-handler="ConfirmReturn" asp-route-bookingId="@booking.BookingId">
+                                                        <button type="submit" class="btn btn-sm btn-success" style="white-space: nowrap;">
+                                                            <i class="bi bi-check-circle"></i> Confirm Return
+                                                        </button>
+                                                    </form>
+                                                    <form method="post" asp-page-handler="ReportLost" asp-route-bookingId="@booking.BookingId" class="report-lost-form" data-booking-id="@booking.BookingId" data-renter-name="@booking.Renter.FullName">
+                                                        <button type="submit" class="btn btn-sm btn-danger" style="white-space: nowrap;">
+                                                            <i class="bi bi-exclamation-triangle"></i> Report Lost
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </div>
                                         </div>
                                     }
@@ -393,5 +400,57 @@
         $('#deleteForm').submit(function() {
             $('#confirmDeleteBtn').html('<span class="spinner-border spinner-border-sm me-2"></span>Deleting...').prop('disabled', true);
         });
+
+        // Report lost form confirmation
+        $('.report-lost-form').submit(function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const bookingId = form.data('booking-id');
+            const renterName = form.data('renter-name');
+            const bookingIdFormatted = String(bookingId).padStart(6, '0');
+            
+            if (confirm('Are you sure you want to report this bike as lost/not returned?\\n\\nBooking #' + bookingIdFormatted + '\\nRenter: ' + renterName + '\\n\\nThis will mark the bike as lost and you will be able to view the renter\'s information and last known location.')) {
+                form.off('submit').submit();
+            }
+        });
     </script>
+
+    <!-- Lost Bikes Section -->
+    @if (Model.LostBookings != null && Model.LostBookings.Any())
+    {
+        <div class="card-minimal mb-4" style="border-left: 4px solid var(--error); margin-top: var(--space-6);">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title" style="color: var(--error);">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Lost/Not Returned Bikes (@Model.LostBookings.Count)
+                </h2>
+            </div>
+            <div class="grid-minimal">
+                @foreach (var booking in Model.LostBookings)
+                {
+                    <div class="card-minimal card-minimal-compact" style="border-left: 3px solid var(--error);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-4);">
+                            <div style="flex: 1;">
+                                <div class="mb-2">
+                                    <span class="badge bg-danger">Booking #@booking.BookingId.ToString("D6")</span>
+                                    <span class="badge bg-warning">Reported Lost</span>
+                                </div>
+                                <h5 style="font-weight: 600; margin-bottom: var(--space-2);">
+                                    @booking.Bike.Brand @booking.Bike.Model
+                                </h5>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                                    <p style="margin: 0;"><strong>Renter:</strong> @booking.Renter.FullName</p>
+                                    <p style="margin: 0;"><strong>Reported:</strong> @TimeZoneHelper.FormatPhilippineTime(booking.ReportedLostAt ?? DateTime.UtcNow)</p>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="/Owner/LostBikeDetails/@booking.BookingId" class="btn-minimal btn-minimal-danger btn-minimal-sm">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 }

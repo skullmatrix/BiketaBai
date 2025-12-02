@@ -90,11 +90,10 @@
                 <div>
                     <strong>How Location Tracking Works</strong>
                     <ul style="margin: var(--space-2) 0 0 0; padding-left: var(--space-5);">
-                        <li>Your location is tracked in <strong>real-time</strong> (updates every 5-30 seconds) while this page is open</li>
+                        <li>Your location is automatically tracked every 2 minutes while this page is open</li>
                         <li>You must allow location access when prompted by your browser</li>
-                        <li>The map shows your live location and movement trail</li>
                         <li>If you go outside the @Model.GeofenceRadiusKm km radius, you'll receive SMS warnings</li>
-                        <li>Keep this page open during your rental to ensure continuous real-time tracking</li>
+                        <li>Keep this page open during your rental to ensure continuous tracking</li>
                     </ul>
                 </div>
             </div>
@@ -125,16 +124,41 @@
 
     // Initialize map when page loads
     document.addEventListener('DOMContentLoaded', function() {
+        const bookingId = @Model.Booking.BookingId;
+        
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     initMap(position.coords.latitude, position.coords.longitude);
                     startTracking();
                 },
-                function(error) {
-                    document.getElementById('locationStatus').innerHTML = 
+                async function(error) {
+                    const locationStatusEl = document.getElementById('locationStatus');
+                    locationStatusEl.innerHTML = 
                         '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
                         '<p class="mt-2" style="color: var(--error);">Location access denied. Please enable location services.</p>';
+                    
+                    // Notify owner if location permission is denied
+                    if (error.code === error.PERMISSION_DENIED) {
+                        try {
+                            const response = await fetch('/Api/LocationPermissionDenied', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    bookingId: bookingId
+                                })
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                console.log('Owner notified about location permission denial');
+                            }
+                        } catch (err) {
+                            console.error('Error notifying owner:', err);
+                        }
+                    }
                 }
             );
         } else {
@@ -196,69 +220,36 @@
     }
 
     function startTracking() {
-        // Update location every 30 seconds for real-time tracking
+        // Update location every 2 minutes
         updateInterval = setInterval(function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     updateLocation,
                     function(error) {
                         console.error('Error getting location:', error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0 // Always get fresh location
                     }
                 );
             }
-        }, 30000); // 30 seconds for real-time updates
+        }, 120000); // 2 minutes
 
-        // Watch position continuously with high accuracy for real-time map updates
-        watchId = navigator.geolocation.watchPosition(
-            function(position) {
-                updateLocation(position);
-                updateMapInRealTime(position.coords.latitude, position.coords.longitude);
-            },
-            function(error) {
-                console.error('Error watching location:', error);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 5000 // Update every 5 seconds for real-time tracking
-            }
-        );
-    }
-    
-    function updateMapInRealTime(lat, lng) {
-        // Smoothly animate marker movement for real-time feel
-        if (renterMarker) {
-            renterMarker.setLatLng([lat, lng], {
-                animate: true,
-                duration: 1.0 // Smooth animation
-            });
-            
-            // Update marker popup
-            renterMarker.setPopupContent('Your Location<br>' + lat.toFixed(6) + ', ' + lng.toFixed(6));
-            
-            // Optionally pan map to keep user in view (uncomment if desired)
-            // map.panTo([lat, lng], { animate: true, duration: 1.0 });
-        }
-        
-        // Draw a trail/path of user movement (optional visual feature)
-        if (typeof window.userPath === 'undefined') {
-            window.userPath = L.polyline([], {
-                color: '#3B82F6',
-                weight: 3,
-                opacity: 0.6
-            }).addTo(map);
-        }
-        window.userPath.addLatLng([lat, lng]);
+        // Also watch position continuously
+        watchId = navigator.geolocation.watchPosition(updateLocation, function(error) {
+            console.error('Error watching location:', error);
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        });
     }
 
     function updateLocation(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+
+        // Update marker
+        if (renterMarker) {
+            renterMarker.setLatLng([lat, lng]);
+        }
 
         // Calculate distance from store
         const storeLat = @(Model.StoreLatitude?.ToString("F6") ?? "14.5995");
@@ -286,21 +277,8 @@
             statusText.textContent = '⚠️ Outside Geofence';
             statusText.style.color = 'var(--error)';
             distanceText.style.color = 'var(--error)';
-            if (warningAlert) {
-                warningAlert.style.display = 'block';
-                if (warningMessage) {
-                    warningMessage.textContent = `You are ${(distance - radius).toFixed(2)} km outside the allowed radius. Please return to the geofence area.`;
-                }
-            }
-            
-            // Update geofence circle color to red when outside
-            if (geofenceCircle) {
-                geofenceCircle.setStyle({
-                    color: '#EF4444',
-                    fillColor: '#FEE2E2',
-                    fillOpacity: 0.3
-                });
-            }
+            warningAlert.style.display = 'block';
+            warningMessage.textContent = `You are ${(distance - radius).toFixed(2)} km outside the allowed radius. Please return to the geofence area.`;
             
             // Send location to server
             sendLocationToServer(lat, lng, distance, true);
@@ -308,18 +286,7 @@
             statusText.textContent = '✓ Within Geofence';
             statusText.style.color = 'var(--success)';
             distanceText.style.color = 'var(--sage-primary)';
-            if (warningAlert) {
-                warningAlert.style.display = 'none';
-            }
-            
-            // Update geofence circle color to green when inside
-            if (geofenceCircle) {
-                geofenceCircle.setStyle({
-                    color: '#87A96B',
-                    fillColor: '#E8F0E3',
-                    fillOpacity: 0.3
-                });
-            }
+            warningAlert.style.display = 'none';
             
             // Send location to server
             sendLocationToServer(lat, lng, distance, false);

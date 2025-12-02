@@ -73,6 +73,18 @@
                 </div>
             </div>
 
+            <!-- Location Permission Required Alert -->
+            <div class="alert-minimal alert-minimal-warning mb-4" id="locationPermissionAlert" style="display: none;">
+                <i class="bi bi-geo-alt-fill"></i>
+                <div>
+                    <strong>Location Permission Required</strong>
+                    <p class="mb-2">For security purposes, you must enable location access before completing payment. This allows us to track the bike during your rental.</p>
+                    <button type="button" class="btn-minimal btn-minimal-primary btn-sm" id="requestLocationBtn">
+                        <i class="bi bi-geo-alt-fill"></i> Enable Location Access
+                    </button>
+                </div>
+            </div>
+
             @if (!string.IsNullOrEmpty(Model.ErrorMessage))
             {
                 <div class="alert-minimal alert-minimal-error mb-4">
@@ -206,7 +218,7 @@
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-6);">
-                        <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg" id="submitBtn">
+                        <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg" id="submitBtn" disabled>
                             <i class="bi bi-check-circle"></i> <span id="submitBtnText">Confirm Payment</span>
                         </button>
                         <a href="/Dashboard/Renter" class="btn-minimal btn-minimal-ghost">Cancel</a>
@@ -236,6 +248,95 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const bookingId = @Model.Booking.BookingId;
+        const locationPermissionAlert = document.getElementById('locationPermissionAlert');
+        const requestLocationBtn = document.getElementById('requestLocationBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.querySelector('form');
+        let locationPermissionGranted = false;
+
+        // Check location permission status
+        checkLocationPermission();
+
+        function checkLocationPermission() {
+            if (!navigator.geolocation) {
+                locationPermissionAlert.style.display = 'block';
+                locationPermissionAlert.className = 'alert-minimal alert-minimal-error mb-4';
+                locationPermissionAlert.querySelector('div').innerHTML = `
+                    <strong>Location Not Supported</strong>
+                    <p class="mb-0">Your browser does not support geolocation. Please use a different browser or device.</p>
+                `;
+                return;
+            }
+
+            // Request location permission
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    // Location permission granted
+                    locationPermissionGranted = true;
+                    locationPermissionAlert.style.display = 'none';
+                    submitBtn.disabled = false;
+                    
+                    // Send location to API to mark permission as granted
+                    try {
+                        const response = await fetch('/Api/LocationPermissionGranted', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                bookingId: bookingId,
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            console.log('Location permission granted and recorded');
+                        }
+                    } catch (err) {
+                        console.error('Error recording location permission:', err);
+                    }
+                },
+                function(error) {
+                    // Location permission denied or error
+                    locationPermissionGranted = false;
+                    locationPermissionAlert.style.display = 'block';
+                    submitBtn.disabled = true;
+                    
+                    let errorMessage = 'Location access is required to proceed with payment. ';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMessage += 'Please click "Enable Location Access" and allow location when prompted.';
+                    } else {
+                        errorMessage += 'Please enable location services in your browser settings.';
+                    }
+                    
+                    locationPermissionAlert.querySelector('p').textContent = errorMessage;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // Request location button click
+        requestLocationBtn.addEventListener('click', function() {
+            checkLocationPermission();
+        });
+
+        // Prevent form submission if location not granted
+        form.addEventListener('submit', function(e) {
+            if (!locationPermissionGranted) {
+                e.preventDefault();
+                locationPermissionAlert.style.display = 'block';
+                alert('Please enable location access before proceeding with payment.');
+                return false;
+            }
+        });
+
         const radioButtons = document.querySelectorAll('input[name="PaymentMethodId"]');
         const paymentOptions = document.querySelectorAll('.payment-method-option');
         
@@ -256,7 +357,7 @@
         radioButtons.forEach(radio => {
             radio.addEventListener('change', function() {
                 const cardForm = document.getElementById('cardPaymentForm');
-                const submitBtn = document.getElementById('submitBtnText');
+                const submitBtnText = document.getElementById('submitBtnText');
                 
                 // Update visual state
                 paymentOptions.forEach(option => {
@@ -269,10 +370,10 @@
                 
                 if (this.value === '6') {
                     cardForm.style.display = 'block';
-                    submitBtn.textContent = 'Pay with Card';
+                    submitBtnText.textContent = 'Pay with Card';
                 } else {
                     cardForm.style.display = 'none';
-                    submitBtn.textContent = 'Confirm Payment';
+                    submitBtnText.textContent = 'Confirm Payment';
                 }
             });
             

@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202142515_AddLocationPermissionTracking")]
+    partial class AddLocationPermissionTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -315,10 +318,6 @@ namespace BiketaBai.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_deleted");
 
-                    b.Property<bool>("IsReportedLost")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("is_reported_lost");
-
                     b.Property<DateTime?>("LocationPermissionDeniedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("location_permission_denied_at");
@@ -326,11 +325,6 @@ namespace BiketaBai.Migrations
                     b.Property<bool>("LocationPermissionGranted")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("location_permission_granted");
-
-                    b.Property<string>("LostReportNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("lost_report_notes");
 
                     b.Property<DateTime?>("OwnerConfirmedAt")
                         .HasColumnType("datetime(6)")
@@ -361,10 +355,6 @@ namespace BiketaBai.Migrations
                     b.Property<int>("RenterId")
                         .HasColumnType("int")
                         .HasColumnName("renter_id");
-
-                    b.Property<DateTime?>("ReportedLostAt")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("reported_lost_at");
 
                     b.Property<string>("ReturnLocation")
                         .HasMaxLength(255)

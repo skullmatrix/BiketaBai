@@ -83,9 +83,9 @@
                                 
                                 @if (hasLocation)
                                 {
-                                    <div style="margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-bg); border-radius: var(--radius-md);">
+                                    <div class="location-display" style="margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-bg); border-radius: var(--radius-md);">
                                         <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--text-primary);">
-                                            <i class="bi bi-geo-alt"></i> Last Known Location
+                                            <i class="bi bi-geo-alt"></i> Current Location <span style="color: var(--success); font-size: 0.75rem;">● Live</span>
                                         </p>
                                         <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
                                             <strong>Distance from store:</strong> 
@@ -131,6 +131,14 @@
                                         <i class="bi bi-map"></i> View on Map
                                     </button>
                                 }
+                                else
+                                {
+                                    <button type="button" 
+                                            class="btn-minimal btn-minimal-outline btn-minimal-sm" 
+                                            disabled>
+                                        <i class="bi bi-hourglass-split"></i> Waiting for Location
+                                    </button>
+                                }
                                 <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
                                     <i class="bi bi-eye"></i> View Details
                                 </a>
@@ -156,20 +164,55 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@7.0.0/dist/browser/signalr.min.js"></script>
 <script>
     let map;
     let markers = {};
     let storeMarker;
     let geofenceCircles = {};
+    let locationData = {}; // Store location data for each booking
 
-    // Initialize map
-    document.addEventListener('DOMContentLoaded', function() {
-        // Default center (Manila)
-        map = L.map('map').setView([14.5995, 120.9842], 13);
+        // Initialize map
+        document.addEventListener('DOMContentLoaded', function() {
+        // Default center (Manila) or store location
+        const storeLat = @(Model.StoreLatitude?.ToString("F6") ?? "14.5995");
+        const storeLng = @(Model.StoreLongitude?.ToString("F6") ?? "120.9842");
+        const initialZoom = @(Model.StoreLatitude.HasValue ? "13" : "13");
+        
+        map = L.map('map').setView([parseFloat(storeLat), parseFloat(storeLng)], parseInt(initialZoom));
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+
+        // Add store marker and geofence circle if store location is available
+        @if (Model.StoreLatitude.HasValue && Model.StoreLongitude.HasValue)
+        {
+            var radius = Model.GeofenceRadiusKm ?? 5.0m;
+            <text>
+            // Add store marker
+            storeMarker = L.marker([@Model.StoreLatitude.Value.ToString("F6"), @Model.StoreLongitude.Value.ToString("F6")], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map).bindPopup('@(Model.StoreName ?? "Store Location")');
+
+            // Add geofence circle
+            const geofenceRadius = @radius * 1000; // Convert km to meters
+            const geofenceCircle = L.circle([@Model.StoreLatitude.Value.ToString("F6"), @Model.StoreLongitude.Value.ToString("F6")], {
+                color: '#87A96B',
+                fillColor: '#E8F0E3',
+                fillOpacity: 0.3,
+                radius: geofenceRadius
+            }).addTo(map);
+            geofenceCircles['store'] = geofenceCircle;
+            </text>
+        }
 
         // Load all active bookings with locations
         @foreach (var booking in Model.ActiveBookings)
@@ -178,20 +221,159 @@
             if (latestLocation != null)
             {
                 <text>
+                locationData[@booking.BookingId] = {
+                    latitude: @latestLocation.Latitude,
+                    longitude: @latestLocation.Longitude,
+                    renterName: '@booking.Renter.FullName',
+                    bikeName: '@booking.Bike.Brand @booking.Bike.Model',
+                    distance: @latestLocation.DistanceFromStoreKm,
+                    isWithinGeofence: @latestLocation.IsWithinGeofence.ToString().ToLower(),
+                    trackedAt: '@latestLocation.TrackedAt.ToString("yyyy-MM-ddTHH:mm:ss")'
+                };
                 addRenterMarker(@booking.BookingId, @latestLocation.Latitude, @latestLocation.Longitude, '@booking.Renter.FullName', '@booking.Bike.Brand @booking.Bike.Model', @latestLocation.DistanceFromStoreKm, @latestLocation.IsWithinGeofence.ToString().ToLower());
                 </text>
             }
         }
+
+        // Fit map to show all markers
+        if (Object.keys(markers).length > 0 || storeMarker) {
+            const bounds = L.latLngBounds([]);
+            if (storeMarker) {
+                bounds.extend(storeMarker.getLatLng());
+            }
+            Object.values(markers).forEach(m => bounds.extend(m.getLatLng()));
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+
+        // Initialize SignalR connection for real-time location updates
+        initializeSignalR();
     });
 
+    function initializeSignalR() {
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .withAutomaticReconnect()
+            .build();
+
+        // Listen for location updates
+        connection.on("ReceiveLocationUpdate", function(data) {
+            console.log("Received location update:", data);
+            
+            // Update location data
+            locationData[data.bookingId] = {
+                latitude: data.latitude,
+                longitude: data.longitude,
+                renterName: data.renterName,
+                bikeName: data.bikeName,
+                distance: data.distanceKm,
+                isWithinGeofence: data.isWithinGeofence,
+                trackedAt: new Date(data.trackedAt).toISOString()
+            };
+
+            // Update marker on map
+            updateRenterMarker(
+                data.bookingId,
+                data.latitude,
+                data.longitude,
+                data.renterName,
+                data.bikeName,
+                data.distanceKm,
+                data.isWithinGeofence
+            );
+
+            // Update location display in the booking card
+            updateLocationDisplay(data.bookingId, data.distanceKm, data.isWithinGeofence, data.trackedAt);
+        });
+
+        // Start SignalR connection
+        connection.start()
+            .then(function() {
+                console.log("SignalR connected. Listening for location updates...");
+            })
+            .catch(function(err) {
+                console.error("SignalR connection error:", err);
+            });
+
+        // Handle connection state changes
+        connection.onreconnecting(function() {
+            console.log("SignalR reconnecting...");
+        });
+
+        connection.onreconnected(function() {
+            console.log("SignalR reconnected");
+        });
+
+        connection.onclose(function() {
+            console.log("SignalR connection closed");
+        });
+    }
+
+    function updateLocationDisplay(bookingId, distance, isWithinGeofence, trackedAt) {
+        const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
+        if (!bookingCard) return;
+
+        // Find or create location display section
+        let locationSection = bookingCard.querySelector('.location-display');
+        if (!locationSection) {
+            // Create location display if it doesn't exist
+            const cardContent = bookingCard.querySelector('div > div:first-child');
+            if (cardContent) {
+                locationSection = document.createElement('div');
+                locationSection.className = 'location-display';
+                locationSection.style.cssText = 'margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-bg); border-radius: var(--radius-md);';
+                cardContent.appendChild(locationSection);
+            } else {
+                return;
+            }
+        }
+
+        // Update location display
+        const phTime = new Date(trackedAt).toLocaleString('en-US', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        locationSection.innerHTML = `
+            <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--text-primary);">
+                <i class="bi bi-geo-alt"></i> Current Location <span style="color: var(--success); font-size: 0.75rem;">● Live</span>
+            </p>
+            <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                <strong>Distance from store:</strong> 
+                <span style="color: ${isWithinGeofence ? 'var(--success)' : 'var(--error)'}; font-weight: 600;">
+                    ${distance.toFixed(2)} km
+                </span>
+            </p>
+            <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                <strong>Status:</strong> 
+                ${isWithinGeofence 
+                    ? '<span style="color: var(--success); font-weight: 600;"><i class="bi bi-check-circle"></i> Within Geofence</span>'
+                    : '<span style="color: var(--error); font-weight: 600;"><i class="bi bi-exclamation-triangle"></i> Outside Geofence</span>'
+                }
+            </p>
+            <p style="margin: 0; font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                Last updated: ${phTime}
+            </p>
+        `;
+    }
+
     function addRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence) {
+        updateRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence);
+    }
+
+    function updateRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence) {
         // Remove existing marker if any
         if (markers[bookingId]) {
             map.removeLayer(markers[bookingId]);
         }
 
         // Create marker with color based on geofence status
-        const markerColor = isWithinGeofence ? '#3B82F6' : '#EF4444';
         const markerIcon = L.icon({
             iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${isWithinGeofence ? 'blue' : 'red'}.png`,
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -201,16 +383,35 @@
             shadowSize: [41, 41]
         });
 
-        const marker = L.marker([lat, lng], { icon: markerIcon })
-            .addTo(map)
-            .bindPopup(`
-                <strong>${renterName}</strong><br>
-                ${bikeName}<br>
-                Distance: ${distance.toFixed(2)} km<br>
-                Status: ${isWithinGeofence ? '<span style="color: green;">✓ Within Geofence</span>' : '<span style="color: red;">⚠ Outside Geofence</span>'}
-            `);
+        const marker = L.marker([lat, lng], { 
+            icon: markerIcon,
+            title: `${renterName} - ${bikeName}`
+        })
+        .addTo(map)
+        .bindPopup(`
+            <strong>${renterName}</strong><br>
+            ${bikeName}<br>
+            Distance: ${distance.toFixed(2)} km<br>
+            Status: ${isWithinGeofence ? '<span style="color: green;">✓ Within Geofence</span>' : '<span style="color: red;">⚠ Outside Geofence</span>'}<br>
+            <small style="color: #666;">Updated: ${new Date().toLocaleTimeString()}</small>
+        `);
 
         markers[bookingId] = marker;
+
+        // Smoothly animate marker movement if it already exists
+        if (markers[bookingId] && markers[bookingId].getLatLng) {
+            const currentPos = markers[bookingId].getLatLng();
+            if (currentPos.lat !== lat || currentPos.lng !== lng) {
+                // Animate marker movement
+                marker.setLatLng([lat, lng], { animate: true, duration: 0.5 });
+            }
+        }
+
+        // Fit map to show all markers
+        if (Object.keys(markers).length > 0) {
+            const bounds = L.latLngBounds(Object.values(markers).map(m => m.getLatLng()));
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
     }
 
     function showLocationOnMap(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence) {

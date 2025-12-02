@@ -20,12 +20,26 @@ public class TrackRentersModel : PageModel
 
     public List<Booking> ActiveBookings { get; set; } = new();
     public Dictionary<int, LocationTracking?> LatestLocations { get; set; } = new();
+    public double? StoreLatitude { get; set; }
+    public double? StoreLongitude { get; set; }
+    public decimal? GeofenceRadiusKm { get; set; }
+    public string? StoreName { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
         var userId = AuthHelper.GetCurrentUserId(User);
         if (!userId.HasValue)
             return RedirectToPage("/Account/Login");
+
+        // Get owner information for store location
+        var owner = await _context.Users.FindAsync(userId.Value);
+        if (owner != null)
+        {
+            StoreLatitude = owner.StoreLatitude;
+            StoreLongitude = owner.StoreLongitude;
+            GeofenceRadiusKm = owner.GeofenceRadiusKm;
+            StoreName = owner.StoreName;
+        }
 
         // Get all active bookings for this owner's bikes
         ActiveBookings = await _context.Bookings
