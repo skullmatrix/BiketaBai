@@ -62,22 +62,7 @@ public class RenterDashboardModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostCompleteAsync(int id)
-    {
-        var userId = AuthHelper.GetCurrentUserId(User);
-        if (!userId.HasValue)
-            return RedirectToPage("/Account/Login");
-
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.BookingId == id && b.RenterId == userId.Value);
-
-        if (booking == null)
-            return NotFound();
-
-        await _bookingService.CompleteBookingAsync(id);
-        
-        TempData["SuccessMessage"] = "Booking marked as completed. Please rate your experience!";
-        return RedirectToPage();
-    }
+    // Removed OnPostCompleteAsync - renters can no longer mark bikes as returned
+    // Only owners can confirm bike returns
 }
 

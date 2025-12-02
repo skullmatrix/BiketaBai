@@ -28,7 +28,12 @@ public class HomeModel : PageModel
     // Renter Specific
     public List<Booking> ActiveRentals { get; set; } = new();
     public List<Booking> RecentRentals { get; set; } = new();
+    public List<Booking> RecentBookings { get; set; } = new();
     public int TotalRentals { get; set; }
+    public int ActiveRentalsCount { get; set; }
+    public int TotalRentalsCount { get; set; }
+    public decimal TotalSpent { get; set; }
+    public decimal CO2Saved { get; set; }
     
     // Owner Specific
     public List<Bike> MyBikes { get; set; } = new();
@@ -103,21 +108,36 @@ public class HomeModel : PageModel
         // Renter specific data
         if (AuthHelper.IsRenter(User))
         {
+            // Get active bookings (status 2 = Active)
             ActiveRentals = await _context.Bookings
                 .Include(b => b.Bike)
                     .ThenInclude(b => b.BikeImages)
+                .Include(b => b.Bike)
+                    .ThenInclude(b => b.Owner)
+                .Include(b => b.Bike)
+                    .ThenInclude(b => b.BikeType)
                 .Include(b => b.BookingStatus)
-                .Where(b => b.RenterId == userId && 
-                           (b.BookingStatus.StatusName == "Confirmed" || b.BookingStatus.StatusName == "Active"))
+                .Where(b => b.RenterId == userId && b.BookingStatusId == 2) // Active
                 .OrderByDescending(b => b.StartDate)
-                .Take(3)
                 .ToListAsync();
 
+            ActiveRentalsCount = ActiveRentals.Count;
+
+            // Get recent bookings (all statuses, latest first)
+            RecentBookings = await _context.Bookings
+                .Include(b => b.Bike)
+                .Include(b => b.BookingStatus)
+                .Where(b => b.RenterId == userId)
+                .OrderByDescending(b => b.CreatedAt)
+                .Take(10)
+                .ToListAsync();
+
+            // Get completed rentals for stats
             RecentRentals = await _context.Bookings
                 .Include(b => b.Bike)
                     .ThenInclude(b => b.BikeImages)
                 .Include(b => b.BookingStatus)
-                .Where(b => b.RenterId == userId && b.BookingStatus.StatusName == "Completed")
+                .Where(b => b.RenterId == userId && b.BookingStatusId == 3) // Completed
                 .OrderByDescending(b => b.EndDate)
                 .Take(3)
                 .ToListAsync();
@@ -125,6 +145,19 @@ public class HomeModel : PageModel
             TotalRentals = await _context.Bookings
                 .Where(b => b.RenterId == userId)
                 .CountAsync();
+            
+            TotalRentalsCount = await _context.Bookings
+                .Where(b => b.RenterId == userId && b.BookingStatusId == 3) // Completed
+                .CountAsync();
+            
+            TotalSpent = await _context.Bookings
+                .Where(b => b.RenterId == userId && b.BookingStatusId == 3) // Completed
+                .SumAsync(b => b.TotalAmount);
+
+            var totalKmSaved = await _context.Bookings
+                .Where(b => b.RenterId == userId && b.DistanceSavedKm.HasValue)
+                .SumAsync(b => b.DistanceSavedKm ?? 0);
+            CO2Saved = totalKmSaved * 0.2m;
         }
 
         // Owner specific data

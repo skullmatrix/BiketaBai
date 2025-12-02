@@ -22,6 +22,10 @@ public class VerifyOwnersModel : PageModel
     public int TotalPending { get; set; }
     public int TotalApproved { get; set; }
     public int TotalRejected { get; set; }
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public int TotalPages { get; set; }
+    public string? SearchQuery { get; set; }
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -29,24 +33,48 @@ public class VerifyOwnersModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(int page = 1, string? search = null)
     {
         if (!AuthHelper.IsAdmin(User))
             return RedirectToPage("/Account/AccessDenied");
 
-        // Get pending owner verifications
-        PendingOwners = await _context.Users
-            .Where(u => u.IsOwner && u.VerificationStatus == "Pending")
+        CurrentPage = page;
+        SearchQuery = search;
+
+        // Build query with optional search
+        var query = _context.Users
+            .Where(u => u.IsOwner && u.VerificationStatus == "Pending" && !u.IsDeleted)
+            .AsQueryable();
+
+        // Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(u => 
+                u.FullName.Contains(search) || 
+                u.Email.Contains(search) || 
+                (u.Phone != null && u.Phone.Contains(search)) ||
+                (u.StoreName != null && u.StoreName.Contains(search)));
+        }
+
+        // Get total count for pagination
+        var totalCount = await query.CountAsync();
+        TotalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
+
+        // Get paginated results - load full entities (needed for all fields)
+        PendingOwners = await query
             .OrderBy(u => u.CreatedAt)
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
-        // Get statistics
-        TotalPending = PendingOwners.Count;
+        // Get statistics (cached counts for better performance)
+        TotalPending = totalCount;
         TotalApproved = await _context.Users
-            .Where(u => u.IsOwner && u.VerificationStatus == "Approved")
+            .Where(u => u.IsOwner && u.VerificationStatus == "Approved" && !u.IsDeleted)
             .CountAsync();
         TotalRejected = await _context.Users
-            .Where(u => u.IsOwner && u.VerificationStatus == "Rejected")
+            .Where(u => u.IsOwner && u.VerificationStatus == "Rejected" && !u.IsDeleted)
             .CountAsync();
 
         return Page();

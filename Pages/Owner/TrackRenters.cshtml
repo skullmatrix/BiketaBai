@@ -1,0 +1,287 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model TrackRentersModel
+@{
+    ViewData["Title"] = "Track Renters";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div class="page-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-geo-alt-fill"></i> Track Active Renters
+                </h1>
+                <p class="page-subtitle">Monitor the location of renters with active bookings</p>
+            </div>
+            <a href="/Owner/MyBikes" class="btn-minimal btn-minimal-ghost">
+                <i class="bi bi-arrow-left"></i> Back to My Bikes
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.ActiveBookings.Any())
+    {
+        <div class="card-minimal">
+            <div style="text-align: center; padding: var(--space-8);">
+                <i class="bi bi-bicycle" style="font-size: 4rem; color: var(--neutral-300); margin-bottom: var(--space-4);"></i>
+                <h3 style="color: var(--text-primary); margin-bottom: var(--space-2);">No Active Rentals</h3>
+                <p style="color: var(--neutral-600);">You don't have any active rentals at the moment.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Active Rentals List -->
+        <div class="card-minimal mb-4">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-bicycle"></i> Active Rentals (@Model.ActiveBookings.Count)
+                </h2>
+            </div>
+            <div class="grid-minimal">
+                @foreach (var booking in Model.ActiveBookings)
+                {
+                    var latestLocation = Model.LatestLocations.GetValueOrDefault(booking.BookingId);
+                    var hasLocation = latestLocation != null;
+                    var isOverdue = TimeZoneHelper.ToPhilippineTime(booking.EndDate) < TimeZoneHelper.GetPhilippineTimeNow();
+                    
+                    <div class="card-minimal card-minimal-compact" data-booking-id="@booking.BookingId">
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: start;">
+                            <div>
+                                <h5 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">
+                                    @booking.Bike.Brand @booking.Bike.Model
+                                </h5>
+                                <div style="display: flex; flex-direction: column; gap: var(--space-1); font-size: 0.875rem; color: var(--neutral-600);">
+                                    <p style="margin: 0;">
+                                        <i class="bi bi-person"></i> <strong>Renter:</strong> @booking.Renter.FullName
+                                    </p>
+                                    <p style="margin: 0;">
+                                        <i class="bi bi-hash"></i> <strong>Quantity:</strong> @booking.Quantity bike(s)
+                                    </p>
+                                    <p style="margin: 0;">
+                                        <i class="bi bi-calendar-x"></i> <strong>Return by:</strong> @TimeZoneHelper.FormatPhilippineTime(booking.EndDate)
+                                    </p>
+                                    <p style="margin: 0;">
+                                        <i class="bi bi-clock"></i> <strong>Time remaining:</strong> 
+                                        <span class="time-remaining" data-end-date="@TimeZoneHelper.FormatPhilippineTimeIso(booking.EndDate)">
+                                            Calculating...
+                                        </span>
+                                    </p>
+                                    @if (isOverdue)
+                                    {
+                                        <p style="margin: 0; color: var(--error); font-weight: 600;">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> OVERDUE
+                                        </p>
+                                    }
+                                </div>
+                                
+                                @if (hasLocation)
+                                {
+                                    <div style="margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-bg); border-radius: var(--radius-md);">
+                                        <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--text-primary);">
+                                            <i class="bi bi-geo-alt"></i> Last Known Location
+                                        </p>
+                                        <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                                            <strong>Distance from store:</strong> 
+                                            <span style="color: @(latestLocation.IsWithinGeofence ? "var(--success)" : "var(--error)"); font-weight: 600;">
+                                                @latestLocation.DistanceFromStoreKm?.ToString("F2") km
+                                            </span>
+                                        </p>
+                                        <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                                            <strong>Status:</strong> 
+                                            @if (latestLocation.IsWithinGeofence)
+                                            {
+                                                <span style="color: var(--success); font-weight: 600;">
+                                                    <i class="bi bi-check-circle"></i> Within Geofence
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color: var(--error); font-weight: 600;">
+                                                    <i class="bi bi-exclamation-triangle"></i> Outside Geofence
+                                                </span>
+                                            }
+                                        </p>
+                                        <p style="margin: 0; font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                                            Last updated: @TimeZoneHelper.FormatPhilippineTime(latestLocation.TrackedAt)
+                                        </p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div style="margin-top: var(--space-3); padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">
+                                        <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                                            <i class="bi bi-info-circle"></i> Location tracking not available yet. The renter needs to start location tracking.
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                                @if (hasLocation)
+                                {
+                                    <button type="button" 
+                                            class="btn-minimal btn-minimal-primary btn-minimal-sm" 
+                                            onclick="showLocationOnMap(@booking.BookingId, @latestLocation.Latitude, @latestLocation.Longitude, '@booking.Renter.FullName', '@booking.Bike.Brand @booking.Bike.Model', @latestLocation.DistanceFromStoreKm, @latestLocation.IsWithinGeofence.ToString().ToLower())">
+                                        <i class="bi bi-map"></i> View on Map
+                                    </button>
+                                }
+                                <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="card-minimal">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-map"></i> Location Map
+                </h2>
+            </div>
+            <div style="padding: 0; border-radius: var(--radius-lg); overflow: hidden;">
+                <div id="map" style="height: 500px; width: 100%;"></div>
+            </div>
+        </div>
+    }
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    let map;
+    let markers = {};
+    let storeMarker;
+    let geofenceCircles = {};
+
+    // Initialize map
+    document.addEventListener('DOMContentLoaded', function() {
+        // Default center (Manila)
+        map = L.map('map').setView([14.5995, 120.9842], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Load all active bookings with locations
+        @foreach (var booking in Model.ActiveBookings)
+        {
+            var latestLocation = Model.LatestLocations.GetValueOrDefault(booking.BookingId);
+            if (latestLocation != null)
+            {
+                <text>
+                addRenterMarker(@booking.BookingId, @latestLocation.Latitude, @latestLocation.Longitude, '@booking.Renter.FullName', '@booking.Bike.Brand @booking.Bike.Model', @latestLocation.DistanceFromStoreKm, @latestLocation.IsWithinGeofence.ToString().ToLower());
+                </text>
+            }
+        }
+    });
+
+    function addRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence) {
+        // Remove existing marker if any
+        if (markers[bookingId]) {
+            map.removeLayer(markers[bookingId]);
+        }
+
+        // Create marker with color based on geofence status
+        const markerColor = isWithinGeofence ? '#3B82F6' : '#EF4444';
+        const markerIcon = L.icon({
+            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${isWithinGeofence ? 'blue' : 'red'}.png`,
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        const marker = L.marker([lat, lng], { icon: markerIcon })
+            .addTo(map)
+            .bindPopup(`
+                <strong>${renterName}</strong><br>
+                ${bikeName}<br>
+                Distance: ${distance.toFixed(2)} km<br>
+                Status: ${isWithinGeofence ? '<span style="color: green;">✓ Within Geofence</span>' : '<span style="color: red;">⚠ Outside Geofence</span>'}
+            `);
+
+        markers[bookingId] = marker;
+    }
+
+    function showLocationOnMap(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence) {
+        // Add or update marker
+        addRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence);
+
+        // Center map on this location
+        map.setView([lat, lng], 15);
+
+        // Open popup
+        if (markers[bookingId]) {
+            markers[bookingId].openPopup();
+        }
+    }
+
+    // Time remaining countdown
+    function getPhilippineTime() {
+        const now = new Date();
+        const phTimeStr = now.toLocaleString('en-US', { 
+            timeZone: 'Asia/Manila',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+        const parts = phTimeStr.split(', ');
+        const dateParts = parts[0].split('/');
+        const timeParts = parts[1].split(':');
+        return new Date(
+            parseInt(dateParts[2]), parseInt(dateParts[0]) - 1, parseInt(dateParts[1]),
+            parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2])
+        );
+    }
+
+    function updateTimeRemaining() {
+        document.querySelectorAll('.time-remaining').forEach(function(element) {
+            const endDateStr = element.getAttribute('data-end-date');
+            if (!endDateStr) return;
+            
+            const endDateParts = endDateStr.split('T');
+            const dateParts = endDateParts[0].split('-');
+            const timeParts = endDateParts[1].split(':');
+            
+            const endDate = new Date(
+                parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]),
+                parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2])
+            );
+            
+            const nowPhilippine = getPhilippineTime();
+            const diff = endDate.getTime() - nowPhilippine.getTime();
+            
+            if (diff <= 0) {
+                element.textContent = 'OVERDUE';
+                element.style.color = 'var(--error)';
+            } else {
+                const totalSeconds = Math.floor(diff / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                if (hours > 0) {
+                    element.textContent = `${hours}h ${minutes}m remaining`;
+                } else if (minutes > 0) {
+                    element.textContent = `${minutes}m ${seconds}s remaining`;
+                } else {
+                    element.textContent = `${seconds}s remaining`;
+                }
+            }
+        });
+    }
+
+    updateTimeRemaining();
+    setInterval(updateTimeRemaining, 1000);
+</script>
+

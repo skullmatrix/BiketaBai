@@ -51,6 +51,10 @@ public class User
     [Column("id_document_url")]
     public string? IdDocumentUrl { get; set; }
 
+    [MaxLength(255)]
+    [Column("id_document_back_url")]
+    public string? IdDocumentBackUrl { get; set; }
+
     [Column("is_verified_owner")]
     public bool IsVerifiedOwner { get; set; } = false;
 

@@ -145,16 +145,27 @@
                                 {
                                     <div class="home-rental-image">
                                         <img src="@rental.Bike.BikeImages.FirstOrDefault()?.ImageUrl" alt="@rental.Bike.Brand @rental.Bike.Model" />
-                                        <span class="home-rental-badge active">@rental.BookingStatus.StatusName</span>
+                                        <span class="home-rental-badge active">Active</span>
                                     </div>
                                 }
                                 <div class="home-rental-info">
                                     <h4>@rental.Bike.Brand @rental.Bike.Model</h4>
                                     <div class="home-rental-dates">
-                                        <i class="bi bi-calendar"></i>
-                                        @rental.StartDate.ToString("MMM dd") - @rental.EndDate.ToString("MMM dd")
+                                        <i class="bi bi-person"></i> @rental.Bike.Owner.FullName
+                                    </div>
+                                    <div class="home-rental-dates">
+                                        <i class="bi bi-calendar-x"></i> Return by: @TimeZoneHelper.FormatPhilippineTime(rental.EndDate)
+                                    </div>
+                                    <div style="font-size: 0.875rem; font-weight: 600; color: var(--sage-primary); margin-top: var(--space-2);">
+                                        <i class="bi bi-clock"></i> <span class="time-remaining" data-end-date="@TimeZoneHelper.FormatPhilippineTimeIso(rental.EndDate)">Calculating...</span>
                                     </div>
                                     <div class="home-rental-price">₱@rental.TotalAmount.ToString("N2")</div>
+                                    <div style="display: flex; gap: var(--space-2); margin-top: var(--space-3);">
+                                        <a href="/Bookings/TrackLocation/@rental.BookingId" class="home-btn-small" style="flex: 1; text-align: center;">
+                                            <i class="bi bi-geo-alt-fill"></i> Track
+                                        </a>
+                                        <a href="/Bookings/Details/@rental.BookingId" class="home-btn-small" style="flex: 1; text-align: center;">View</a>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -214,34 +225,103 @@
                 }
             </div>
 
+            <!-- Stats Overview -->
             <div class="home-section">
                 <div class="home-section-header">
                     <h2><i class="bi bi-graph-up"></i> Your Stats</h2>
                 </div>
-                <div class="home-renter-stats">
+                <div class="home-renter-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
                     <div class="home-stat-box">
                         <i class="bi bi-bicycle"></i>
                         <div>
-                            <div class="home-stat-number">@Model.TotalRentals</div>
+                            <div class="home-stat-number">@Model.ActiveRentalsCount</div>
+                            <div class="home-stat-text">Active Rentals</div>
+                        </div>
+                    </div>
+                    <div class="home-stat-box">
+                        <i class="bi bi-clock-history"></i>
+                        <div>
+                            <div class="home-stat-number">@Model.TotalRentalsCount</div>
                             <div class="home-stat-text">Total Rentals</div>
                         </div>
                     </div>
                     <div class="home-stat-box">
-                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-cash-coin"></i>
                         <div>
-                            <div class="home-stat-number">@Model.PointsBalance</div>
-                            <div class="home-stat-text">Reward Points</div>
+                            <div class="home-stat-number">₱@Model.TotalSpent.ToString("F0")</div>
+                            <div class="home-stat-text">Total Spent</div>
                         </div>
                     </div>
                     <div class="home-stat-box">
-                        <i class="bi bi-wallet2"></i>
+                        <i class="bi bi-leaf"></i>
                         <div>
-                            <div class="home-stat-number">₱@Model.WalletBalance.ToString("N0")</div>
-                            <div class="home-stat-text">Available Balance</div>
+                            <div class="home-stat-number">@Model.CO2Saved.ToString("F0")</div>
+                            <div class="home-stat-text">kg CO₂ Saved</div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Recent Bookings Table -->
+            @if (Model.RecentBookings.Any())
+            {
+                <div class="home-section">
+                    <div class="home-section-header">
+                        <h2><i class="bi bi-clock-history"></i> Recent Bookings</h2>
+                        <a href="/Renter/RentalHistory" class="home-link-more">View All →</a>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="table-minimal" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Bike</th>
+                                    <th>Dates</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var booking in Model.RecentBookings)
+                                {
+                                    <tr>
+                                        <td><strong>@booking.Bike.Brand @booking.Bike.Model</strong></td>
+                                        <td>
+                                            <div style="font-size: 0.875rem;">
+                                                @TimeZoneHelper.FormatPhilippineTime(booking.StartDate, "MMM dd")<br />
+                                                <span style="color: var(--neutral-500);">to @TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd")</span>
+                                            </div>
+                                        </td>
+                                        <td><strong>₱@booking.TotalAmount.ToString("F0")</strong></td>
+                                        <td>
+                                            @switch (booking.BookingStatusId)
+                                            {
+                                                case 1:
+                                                    <span class="badge-minimal badge-minimal-warning">Pending</span>
+                                                    break;
+                                                case 2:
+                                                    <span class="badge-minimal badge-minimal-primary">Active</span>
+                                                    break;
+                                                case 3:
+                                                    <span class="badge-minimal badge-minimal-success">Completed</span>
+                                                    break;
+                                                case 4:
+                                                    <span class="badge-minimal badge-minimal-danger">Cancelled</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            <a href="/Bookings/Details/@booking.BookingId" class="home-btn-small">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
         }
 
         <!-- Suggested Bikes Section (For Both) -->
@@ -337,3 +417,76 @@
 
     </div>
 </div>
+
+@if (AuthHelper.IsRenter(User))
+{
+    @section Scripts {
+        <script>
+            // Helper function to get current Philippine time (UTC+8)
+            function getPhilippineTime() {
+                const now = new Date();
+                const phTimeStr = now.toLocaleString('en-US', { 
+                    timeZone: 'Asia/Manila',
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    hour12: false
+                });
+                const parts = phTimeStr.split(', ');
+                const dateParts = parts[0].split('/');
+                const timeParts = parts[1].split(':');
+                return new Date(
+                    parseInt(dateParts[2]), parseInt(dateParts[0]) - 1, parseInt(dateParts[1]),
+                    parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2])
+                );
+            }
+            
+            // Time remaining countdown - uses Philippine time (UTC+8)
+            function updateTimeRemaining() {
+                document.querySelectorAll('.time-remaining').forEach(function(element) {
+                    const endDateStr = element.getAttribute('data-end-date');
+                    if (!endDateStr) return;
+                    
+                    const endDateParts = endDateStr.split('T');
+                    const dateParts = endDateParts[0].split('-');
+                    const timeParts = endDateParts[1].split(':');
+                    
+                    const endDate = new Date(
+                        parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]),
+                        parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2])
+                    );
+                    
+                    const nowPhilippine = getPhilippineTime();
+                    const diff = endDate.getTime() - nowPhilippine.getTime();
+                    
+                    if (diff <= 0) {
+                        element.textContent = 'Time expired';
+                        element.style.color = 'var(--danger)';
+                        return;
+                    }
+                    
+                    const totalSeconds = Math.floor(diff / 1000);
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    const seconds = totalSeconds % 60;
+                    
+                    element.style.color = 'var(--sage-primary)';
+                    
+                    if (hours > 0) {
+                        element.textContent = hours + 'h ' + minutes + 'm remaining';
+                    } else if (minutes > 0) {
+                        element.textContent = minutes + 'm ' + seconds + 's remaining';
+                        if (minutes < 60) {
+                            element.style.color = 'var(--warning)';
+                        }
+                    } else {
+                        element.textContent = seconds + 's remaining';
+                        element.style.color = 'var(--danger)';
+                    }
+                });
+            }
+            
+            updateTimeRemaining();
+            setInterval(updateTimeRemaining, 1000);
+        </script>
+    }
+}

@@ -17,9 +17,14 @@
                 <h2>My Bikes</h2>
                 <p>@Model.Bikes.Count listings</p>
             </div>
-            <a href="/Owner/AddBike" class="btn-add-premium">
-                <i class="bi bi-plus-lg"></i> Add Bike
-            </a>
+            <div style="display: flex; gap: var(--space-2);">
+                <a href="/Owner/TrackRenters" class="btn-add-premium" style="background: var(--sage-primary);">
+                    <i class="bi bi-geo-alt-fill"></i> Track Renters
+                </a>
+                <a href="/Owner/AddBike" class="btn-add-premium">
+                    <i class="bi bi-plus-lg"></i> Add Bike
+                </a>
+            </div>
         </div>
 
         <!-- Alerts -->
