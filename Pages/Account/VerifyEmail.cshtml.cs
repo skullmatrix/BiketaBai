@@ -10,14 +10,12 @@ public class VerifyEmailModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly EmailService _emailService;
-    private readonly PointsService _pointsService;
     private readonly IConfiguration _configuration;
 
-    public VerifyEmailModel(BiketaBaiDbContext context, EmailService emailService, PointsService pointsService, IConfiguration configuration)
+    public VerifyEmailModel(BiketaBaiDbContext context, EmailService emailService, IConfiguration configuration)
     {
         _context = context;
         _emailService = emailService;
-        _pointsService = pointsService;
         _configuration = configuration;
     }
 
@@ -63,10 +61,6 @@ public class VerifyEmailModel : PageModel
         user.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-
-        // Award complete profile points
-        var completeProfilePoints = _configuration.GetValue<int>("PointsRules:CompleteProfile");
-        await _pointsService.AwardPointsAsync(user.UserId, completeProfilePoints, "Email verified and profile completed", "EmailVerification");
 
         // Send welcome email
         try

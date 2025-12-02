@@ -14,6 +14,9 @@ public class Bike
     [Column("owner_id")]
     public int OwnerId { get; set; }
 
+    [Column("store_id")]
+    public int? StoreId { get; set; } // Optional: link to store if normalized
+
     [Required]
     [Column("bike_type_id")]
     public int BikeTypeId { get; set; }
@@ -75,6 +78,9 @@ public class Bike
 
     [ForeignKey("AvailabilityStatusId")]
     public virtual AvailabilityStatus AvailabilityStatus { get; set; } = null!;
+
+    [ForeignKey("StoreId")]
+    public virtual Store? Store { get; set; }
 
     public virtual ICollection<BikeImage> BikeImages { get; set; } = new List<BikeImage>();
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();

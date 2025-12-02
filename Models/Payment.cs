@@ -56,5 +56,8 @@ public class Payment
 
     [ForeignKey("PaymentMethodId")]
     public virtual PaymentMethod PaymentMethod { get; set; } = null!;
+
+    [ForeignKey("OwnerVerifiedBy")]
+    public virtual User? OwnerVerifier { get; set; }
 }
 

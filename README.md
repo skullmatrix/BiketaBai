@@ -54,14 +54,6 @@ A comprehensive two-sided marketplace bike rental web application built with ASP
   - Average rating calculations
   - Verified booking badges
 
-- **Loyalty Points System**
-  - Points for on-time returns (+10)
-  - Eco-commute bonus (+1 per km)
-  - First rental bonus (+50)
-  - Long-term rental bonus (+20)
-  - 5-star rating bonus (+5)
-  - Points redemption for wallet credits
-
 - **Dashboards**
   - Renter dashboard with active rentals and statistics
   - Owner dashboard with bike management and earnings
@@ -158,12 +150,10 @@ BiketaBai3.0/
 │   ├── Payment.cs
 │   ├── Wallet.cs
 │   ├── Rating.cs
-│   ├── Points.cs
 │   └── ...
 ├── Services/                      # Business logic services
 │   ├── BookingService.cs
 │   ├── WalletService.cs
-│   ├── PointsService.cs
 │   ├── RatingService.cs
 │   ├── PaymentService.cs
 │   └── NotificationService.cs
@@ -187,14 +177,11 @@ BiketaBai3.0/
 │   ├── Wallet/                    # Wallet features
 │   │   ├── Index.cshtml
 │   │   └── Load.cshtml
-│   ├── Points/                    # Points system
-│   │   └── Index.cshtml
 │   ├── Dashboard/                 # User dashboards
 │   │   ├── Renter.cshtml
 │   │   └── Owner.cshtml
 │   └── Api/                       # API endpoints
 │       ├── Wallet.cshtml
-│       ├── Points.cshtml
 │       └── Notifications.cshtml
 ├── wwwroot/                       # Static files
 │   ├── css/
@@ -215,22 +202,12 @@ Edit `appsettings.json` to configure:
 {
   "AppSettings": {
     "ServiceFeePercentage": 10.0,
-    "PointsConversionRate": 0.1,
     "SessionTimeoutMinutes": 20,
     "MinimumRentalHours": 1,
     "MaximumAdvanceBookingDays": 30,
     "CancellationFreeHours": 24,
     "CancellationPartialRefundPercentage": 50,
     "GoogleCloudVisionApiKey": "YOUR_GOOGLE_CLOUD_VISION_API_KEY_HERE"
-  },
-  "PointsRules": {
-    "OnTimeReturn": 10,
-    "EcoCommuteBonusPerKm": 1,
-    "FirstRental": 50,
-    "Referral": 100,
-    "LongTermRental": 20,
-    "HighlyRated": 5,
-    "CompleteProfile": 20
   }
 }
 ```
@@ -250,18 +227,6 @@ Users can register as both Renter and Owner simultaneously.
 3. **QRPH** - Simulated QR payment
 4. **Cash** - Direct payment to owner
 
-## 🎯 Loyalty Points Rules
-
-- **On-time Return**: +10 points
-- **Eco-commute**: +1 point per km saved
-- **First Rental**: +50 points (one-time)
-- **Long-term Rental** (7+ days): +20 points
-- **5-Star Rating**: +5 points
-- **Complete Profile**: +20 points (one-time)
-- **Referral**: +100 points
-
-**Redemption**: 100 points = ₱10 wallet credit
-
 ## 📊 Database Schema
 
 The application uses the following main tables:
@@ -274,8 +239,6 @@ The application uses the following main tables:
 - `wallets` - User wallets
 - `credit_transactions` - Wallet transactions
 - `ratings` - Reviews and ratings
-- `points` - User points
-- `points_history` - Points transactions
 - `notifications` - User notifications
 
 ## 🔐 Security Features
@@ -296,7 +259,7 @@ The application uses the following main tables:
 - Bootstrap 5 components
 - Interactive bike image carousels
 - Real-time pricing calculator
-- Live wallet/points balance updates
+- Live wallet balance updates
 - Notification badges
 - Loading animations
 

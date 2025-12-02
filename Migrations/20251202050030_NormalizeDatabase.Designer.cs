@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202050030_NormalizeDatabase")]
+    partial class NormalizeDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -734,6 +737,82 @@ namespace BiketaBai.Migrations
                     b.ToTable("phone_otps");
                 });
 
+            modelBuilder.Entity("BiketaBai.Models.Points", b =>
+                {
+                    b.Property<int>("PointsId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("points_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("TotalPoints")
+                        .HasColumnType("int")
+                        .HasColumnName("total_points");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("PointsId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("points");
+                });
+
+            modelBuilder.Entity("BiketaBai.Models.PointsHistory", b =>
+                {
+                    b.Property<int>("HistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("history_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("PointsAfter")
+                        .HasColumnType("int")
+                        .HasColumnName("points_after");
+
+                    b.Property<int>("PointsBefore")
+                        .HasColumnType("int")
+                        .HasColumnName("points_before");
+
+                    b.Property<int>("PointsChange")
+                        .HasColumnType("int")
+                        .HasColumnName("points_change");
+
+                    b.Property<int>("PointsId")
+                        .HasColumnType("int")
+                        .HasColumnName("points_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("ReferenceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("reference_id");
+
+                    b.HasKey("HistoryId");
+
+                    b.HasIndex("PointsId");
+
+                    b.ToTable("points_history");
+                });
+
             modelBuilder.Entity("BiketaBai.Models.Rating", b =>
                 {
                     b.Property<int>("RatingId")
@@ -1360,6 +1439,28 @@ namespace BiketaBai.Migrations
                     b.Navigation("PaymentMethod");
                 });
 
+            modelBuilder.Entity("BiketaBai.Models.Points", b =>
+                {
+                    b.HasOne("BiketaBai.Models.User", "User")
+                        .WithOne("Points")
+                        .HasForeignKey("BiketaBai.Models.Points", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BiketaBai.Models.PointsHistory", b =>
+                {
+                    b.HasOne("BiketaBai.Models.Points", "Points")
+                        .WithMany("PointsHistory")
+                        .HasForeignKey("PointsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Points");
+                });
+
             modelBuilder.Entity("BiketaBai.Models.Rating", b =>
                 {
                     b.HasOne("BiketaBai.Models.Bike", "Bike")
@@ -1488,6 +1589,11 @@ namespace BiketaBai.Migrations
                     b.Navigation("Payments");
                 });
 
+            modelBuilder.Entity("BiketaBai.Models.Points", b =>
+                {
+                    b.Navigation("PointsHistory");
+                });
+
             modelBuilder.Entity("BiketaBai.Models.Store", b =>
                 {
                     b.Navigation("Bikes");
@@ -1507,6 +1613,8 @@ namespace BiketaBai.Migrations
                     b.Navigation("Notifications");
 
                     b.Navigation("PaymentsVerified");
+
+                    b.Navigation("Points");
 
                     b.Navigation("RatingsGiven");
 

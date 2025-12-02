@@ -117,7 +117,7 @@
                         </div>
                     </div>
                     
-                    <!-- Wallet & Points -->
+                    <!-- Wallet -->
                     <div class="row mt-3">
                         <div class="col-md-6">
                             <div class="wallet-display-card">
@@ -127,16 +127,6 @@
                                     <h5 class="mb-0 text-success">₱@(Model.UserWallet?.Balance.ToString("N2") ?? "0.00")</h5>
                                 </div>
                                 <a href="/Wallet/Index" class="btn btn-sm btn-outline-success">Manage</a>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="wallet-display-card">
-                                <i class="bi bi-star-fill text-warning"></i>
-                                <div>
-                                    <small class="text-muted">Loyalty Points</small>
-                                    <h5 class="mb-0 text-warning">@(Model.UserPoints?.TotalPoints ?? 0) pts</h5>
-                                </div>
-                                <a href="/Points/Index" class="btn btn-sm btn-outline-warning">View</a>
                             </div>
                         </div>
                     </div>

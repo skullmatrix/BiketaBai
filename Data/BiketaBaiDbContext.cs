@@ -22,12 +22,11 @@ public class BiketaBaiDbContext : DbContext
     public DbSet<TransactionType> TransactionTypes { get; set; }
     public DbSet<CreditTransaction> CreditTransactions { get; set; }
     public DbSet<Rating> Ratings { get; set; }
-    public DbSet<Points> Points { get; set; }
-    public DbSet<PointsHistory> PointsHistory { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Report> Reports { get; set; }
     public DbSet<PhoneOtp> PhoneOtps { get; set; }
     public DbSet<LocationTracking> LocationTracking { get; set; }
+    public DbSet<Store> Stores { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,12 +96,6 @@ public class BiketaBaiDbContext : DbContext
             .HasForeignKey<Wallet>(w => w.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Points)
-            .WithOne(p => p.User)
-            .HasForeignKey<Points>(p => p.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         modelBuilder.Entity<Booking>()
             .HasOne(b => b.Renter)
             .WithMany(u => u.BookingsAsRenter)
@@ -120,6 +113,24 @@ public class BiketaBaiDbContext : DbContext
             .WithMany(u => u.RatingsReceived)
             .HasForeignKey(r => r.RatedUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Payment>()
+            .HasOne(p => p.OwnerVerifier)
+            .WithMany(u => u.PaymentsVerified)
+            .HasForeignKey(p => p.OwnerVerifiedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Store>()
+            .HasOne(s => s.Owner)
+            .WithMany(u => u.Stores)
+            .HasForeignKey(s => s.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Bike>()
+            .HasOne(b => b.Store)
+            .WithMany(s => s.Bikes)
+            .HasForeignKey(b => b.StoreId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Seed data for lookup tables
         modelBuilder.Entity<BikeType>().HasData(

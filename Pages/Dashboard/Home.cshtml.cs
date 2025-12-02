@@ -43,7 +43,6 @@ public class HomeModel : PageModel
     
     // Shared Stats
     public decimal WalletBalance { get; set; }
-    public int PointsBalance { get; set; }
     public int UnreadNotifications { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
@@ -58,7 +57,6 @@ public class HomeModel : PageModel
         
         CurrentUser = await _context.Users
             .Include(u => u.Wallet)
-            .Include(u => u.Points)
             .FirstOrDefaultAsync(u => u.UserId == userId);
 
         if (CurrentUser == null)
@@ -66,9 +64,8 @@ public class HomeModel : PageModel
             return RedirectToPage("/Account/Login");
         }
 
-        // Get wallet and points balance
+        // Get wallet balance
         WalletBalance = CurrentUser.Wallet?.Balance ?? 0;
-                   PointsBalance = CurrentUser.Points?.TotalPoints ?? 0;
 
         // Get unread notifications count
         UnreadNotifications = await _context.Notifications

@@ -144,7 +144,8 @@ public class User
     public virtual ICollection<Rating> RatingsGiven { get; set; } = new List<Rating>();
     public virtual ICollection<Rating> RatingsReceived { get; set; } = new List<Rating>();
     public virtual Wallet? Wallet { get; set; }
-    public virtual Points? Points { get; set; }
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual ICollection<Store> Stores { get; set; } = new List<Store>();
+    public virtual ICollection<Payment> PaymentsVerified { get; set; } = new List<Payment>();
 }
 

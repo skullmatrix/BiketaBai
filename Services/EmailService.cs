@@ -417,10 +417,6 @@ public class EmailService
                     Add funds and enjoy seamless booking experiences.
                 </div>
                 <div class='feature'>
-                    <strong>⭐ Earn Loyalty Points</strong><br>
-                    Get rewarded with every rental and unlock special benefits.
-                </div>
-                <div class='feature'>
                     <strong>🌱 Track Your Impact</strong><br>
                     See your CO₂ savings and contribute to a greener planet.
                 </div>

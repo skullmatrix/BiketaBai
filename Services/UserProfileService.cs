@@ -20,7 +20,6 @@ public class UserProfileService
     {
         return await _context.Users
             .Include(u => u.Wallet)
-            .Include(u => u.Points)
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }
 
@@ -137,8 +136,7 @@ public class UserProfileService
 
         var stats = new UserStatistics
         {
-            WalletBalance = user.Wallet?.Balance ?? 0,
-            LoyaltyPoints = user.Points?.TotalPoints ?? 0
+            WalletBalance = user.Wallet?.Balance ?? 0
         };
 
         if (user.IsRenter)
@@ -302,7 +300,6 @@ public class UserStatistics
 {
     // Common stats
     public decimal WalletBalance { get; set; }
-    public int LoyaltyPoints { get; set; }
     public double AverageRating { get; set; }
     public int TotalReviews { get; set; }
 

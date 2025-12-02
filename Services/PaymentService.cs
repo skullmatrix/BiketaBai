@@ -325,7 +325,7 @@ public class PaymentService
                 _ => "gcash"
             };
 
-            // Get renter email for Xendit invoice
+            // Get renter email for PayMongo payment intent
             var renter = await _context.Users.FindAsync(booking.RenterId);
             var renterEmail = renter?.Email ?? "";
             var renterName = renter?.FullName ?? "Customer";
@@ -360,10 +360,12 @@ public class PaymentService
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
 
-                // Xendit returns invoice URL in ClientKey
-                var redirectUrl = paymentIntent.ClientKey; // This is the invoice URL
+                // PayMongo returns public key in ClientKey for frontend integration
+                // For e-wallet payments, redirect to PayMongo checkout
+                var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000";
+                var redirectUrl = $"{baseUrl}/Bookings/PaymentGateway?bookingId={bookingId}&paymentIntentId={paymentIntent.PaymentIntentId}";
 
-                return (true, paymentIntent.PaymentIntentId, redirectUrl, paymentIntent.ClientKey, "Payment invoice created successfully");
+                return (true, paymentIntent.PaymentIntentId, redirectUrl, paymentIntent.ClientKey, "Payment intent created successfully");
             }
 
             return (false, null, null, null, paymentIntent.ErrorMessage ?? "Failed to create payment intent");
@@ -395,8 +397,8 @@ public class PaymentService
             if (payment == null)
                 return (false, "Payment record not found");
 
-            // Xendit statuses: PENDING, PAID, SETTLED, EXPIRED, CANCELLED
-            if (paymentStatus.Status == "PAID" || paymentStatus.Status == "SETTLED" || paymentStatus.Status == "succeeded")
+            // PayMongo statuses: awaiting_payment_method, awaiting_next_action, processing, succeeded, payment_failed
+            if (paymentStatus.Status == "succeeded")
             {
                 payment.PaymentStatus = "Completed";
                 payment.PaymentDate = DateTime.UtcNow;
@@ -431,7 +433,7 @@ public class PaymentService
 
                 return (true, "Payment confirmed successfully");
             }
-            else if (paymentStatus.Status == "awaiting_payment_method" || paymentStatus.Status == "awaiting_next_action")
+            else if (paymentStatus.Status == "awaiting_payment_method" || paymentStatus.Status == "awaiting_next_action" || paymentStatus.Status == "processing")
             {
                 return (false, "Payment is still pending. Please complete the payment.");
             }

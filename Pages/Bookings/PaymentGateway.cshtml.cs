@@ -30,6 +30,7 @@ public class PaymentGatewayModel : PageModel
     public string? ClientKey { get; set; }
     public string? ErrorMessage { get; set; }
     public string? SuccessMessage { get; set; }
+    public int? PaymentMethodId { get; set; } // To determine if it's e-wallet or card
 
     [BindProperty]
     public CardPaymentModel CardPayment { get; set; } = new();
@@ -43,7 +44,7 @@ public class PaymentGatewayModel : PageModel
         public string Cvc { get; set; } = string.Empty;
     }
 
-    public async Task<IActionResult> OnGetAsync(int bookingId, string? paymentIntentId, string? action)
+    public async Task<IActionResult> OnGetAsync(int bookingId, string? paymentIntentId, string? action, int? paymentMethodId)
     {
         var userId = AuthHelper.GetCurrentUserId(User);
         if (!userId.HasValue)
@@ -54,23 +55,25 @@ public class PaymentGatewayModel : PageModel
             .ThenInclude(bike => bike.BikeType)
             .Include(b => b.Bike)
             .ThenInclude(bike => bike.Owner)
+            .Include(b => b.Renter)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
         if (Booking == null)
             return NotFound();
 
-        // Handle redirect from Xendit after payment
+        // Handle redirect from PayMongo after payment
         if (action == "confirm")
         {
-            // Get invoice ID from query string (Xendit passes it as invoice_id)
-            var invoiceId = Request.Query["invoice_id"].FirstOrDefault() 
+            // Get payment intent ID from query string (PayMongo passes it as payment_intent_id)
+            var intentId = Request.Query["payment_intent_id"].FirstOrDefault() 
+                ?? Request.Query["payment_intent"].FirstOrDefault()
                 ?? paymentIntentId 
                 ?? TempData["PaymentIntentId"]?.ToString();
             
-            if (!string.IsNullOrEmpty(invoiceId))
+            if (!string.IsNullOrEmpty(intentId))
             {
                 // Confirm payment
-                var result = await _paymentService.ConfirmGatewayPaymentAsync(invoiceId);
+                var result = await _paymentService.ConfirmGatewayPaymentAsync(intentId);
                 
                 if (result.success)
                 {
@@ -85,7 +88,7 @@ public class PaymentGatewayModel : PageModel
             }
             else
             {
-                // If no invoice ID, try to find the latest pending payment for this booking
+                // If no payment intent ID, try to find the latest pending payment for this booking
                 var latestPayment = await _context.Payments
                     .Where(p => p.BookingId == bookingId && p.PaymentStatus == "Pending")
                     .OrderByDescending(p => p.PaymentDate)
@@ -109,6 +112,11 @@ public class PaymentGatewayModel : PageModel
 
         PaymentIntentId = paymentIntentId ?? TempData["PaymentIntentId"]?.ToString();
         ClientKey = TempData["ClientKey"]?.ToString();
+        PaymentMethodId = paymentMethodId;
+        if (!PaymentMethodId.HasValue && TempData["PaymentMethodId"] != null && int.TryParse(TempData["PaymentMethodId"]?.ToString(), out var methodId))
+        {
+            PaymentMethodId = methodId;
+        }
 
         if (string.IsNullOrEmpty(PaymentIntentId))
         {
@@ -133,7 +141,7 @@ public class PaymentGatewayModel : PageModel
 
         try
         {
-            // For Xendit, create token and charge directly
+            // For PayMongo, create payment method and attach to payment intent
             var cardDetails = new PaymentGatewayService.CardDetails
             {
                 CardNumber = CardPayment.CardNumber.Replace(" ", ""),
@@ -143,17 +151,7 @@ public class PaymentGatewayModel : PageModel
                 CardholderName = CardPayment.CardholderName
             };
 
-            // Create payment method (token)
-            var paymentMethodResult = await _paymentGatewayService.CreatePaymentMethodAsync("card", cardDetails);
-
-            if (!paymentMethodResult.Success || string.IsNullOrEmpty(paymentMethodResult.PaymentMethodId))
-            {
-                ErrorMessage = paymentMethodResult.ErrorMessage ?? "Failed to process card details";
-                PaymentIntentId = paymentIntentId;
-                return Page();
-            }
-
-            // Charge the card using the token
+            // Get booking details
             var booking = await _context.Bookings
                 .Include(b => b.Bike)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId);
@@ -164,21 +162,23 @@ public class PaymentGatewayModel : PageModel
                 return Page();
             }
 
-            var chargeResult = await _paymentGatewayService.ChargeCardAsync(
-                paymentMethodResult.PaymentMethodId,
-                booking.TotalAmount,
-                "PHP",
-                $"Booking payment for {booking.Bike.Brand} {booking.Bike.Model}",
-                new Dictionary<string, string>
-                {
-                    { "booking_id", bookingId.ToString() },
-                    { "renter_id", booking.RenterId.ToString() },
-                    { "cardholder_name", CardPayment.CardholderName },
-                    { "cvv", CardPayment.Cvc }
-                }
+            // Create payment method
+            var paymentMethodResult = await _paymentGatewayService.CreatePaymentMethodAsync("card", cardDetails);
+
+            if (!paymentMethodResult.Success || string.IsNullOrEmpty(paymentMethodResult.PaymentMethodId))
+            {
+                ErrorMessage = paymentMethodResult.ErrorMessage ?? "Failed to process card details";
+                PaymentIntentId = paymentIntentId;
+                return Page();
+            }
+
+            // Attach payment method to payment intent
+            var attachResult = await _paymentGatewayService.AttachPaymentMethodAsync(
+                paymentIntentId,
+                paymentMethodResult.PaymentMethodId
             );
 
-            if (chargeResult.Success)
+            if (attachResult.Success && attachResult.Status == "succeeded")
             {
                 // Create payment record
                 var payment = new Payment
@@ -187,7 +187,7 @@ public class PaymentGatewayModel : PageModel
                     PaymentMethodId = 6, // Credit/Debit Card
                     Amount = booking.TotalAmount,
                     PaymentStatus = "Completed",
-                    TransactionReference = chargeResult.TransactionReference ?? paymentMethodResult.PaymentMethodId,
+                    TransactionReference = attachResult.TransactionReference ?? paymentIntentId,
                     PaymentDate = DateTime.UtcNow
                 };
 
@@ -207,7 +207,7 @@ public class PaymentGatewayModel : PageModel
             }
             else
             {
-                ErrorMessage = chargeResult.ErrorMessage ?? "Payment failed. Please check your card details and try again.";
+                ErrorMessage = attachResult.ErrorMessage ?? "Payment failed. Please check your card details and try again.";
                 PaymentIntentId = paymentIntentId;
                 return Page();
             }

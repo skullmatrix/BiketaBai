@@ -1,126 +1,239 @@
 @page "{bookingId:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @attribute [Authorize]
 @model PaymentGatewayModel
 @{
     ViewData["Title"] = "Complete Payment";
+    var isCardPayment = Model.PaymentMethodId == 6;
+    var isEwalletPayment = Model.PaymentMethodId == 2 || Model.PaymentMethodId == 3 || Model.PaymentMethodId == 5;
+    var publicKey = Configuration["AppSettings:PayMongoPublicKey"] ?? "";
+    var paymentMethodName = Model.PaymentMethodId switch
+    {
+        2 => "GCash",
+        3 => "QRPH",
+        5 => "PayMaya",
+        6 => "Credit/Debit Card",
+        _ => "Payment"
+    };
 }
 
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            @if (Model.Booking == null)
+<div class="page-container">
+    <div style="max-width: 800px; margin: 0 auto;">
+        @if (Model.Booking == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Booking not found</div>
+            </div>
+        }
+        else
+        {
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="bi bi-credit-card"></i> Complete Payment
+                </h1>
+            </div>
+
+            <!-- Booking Summary -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-calendar-check"></i> Booking Summary
+                    </h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Bike</div>
+                        <div style="font-weight: 600;">@Model.Booking.Bike.Brand @Model.Booking.Bike.Model</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Total Amount</div>
+                        <div style="font-weight: 600; color: var(--sage-primary); font-size: 1.25rem;">₱@Model.Booking.TotalAmount.ToString("F2")</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Payment Method</div>
+                        <div style="font-weight: 600;">@paymentMethodName</div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
             {
-                <div class="alert alert-danger">Booking not found</div>
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@Model.ErrorMessage</div>
+                </div>
             }
-            else
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
             {
-                <div class="card shadow-eco">
-                    <div class="card-body p-5">
-                        <h2 class="text-eco-green mb-4">
-                            <i class="bi bi-credit-card"></i> Complete Payment
+                <div class="alert-minimal alert-minimal-success mb-4">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>@Model.SuccessMessage</div>
+                </div>
+            }
+
+            @if (isEwalletPayment)
+            {
+                <!-- E-Wallet Payment (GCash, PayMaya, QRPH) -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-phone"></i> Pay with @paymentMethodName
                         </h2>
-
-                        <!-- Booking Summary -->
-                        <div class="card bg-eco-light mb-4">
-                            <div class="card-body">
-                                <h5 class="text-eco-green">Booking Summary</h5>
-                                <hr />
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p><strong>Bike:</strong> @Model.Booking.Bike.Brand @Model.Booking.Bike.Model</p>
-                                        <p><strong>Total Amount:</strong> <strong class="text-eco-green">₱@Model.Booking.TotalAmount.ToString("F2")</strong></p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p><strong>Start:</strong> @Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</p>
-                                        <p><strong>End:</strong> @Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
-                                    </div>
-                                </div>
+                    </div>
+                    <div id="ewalletPaymentContainer">
+                        <div style="text-align: center; padding: var(--space-6);">
+                            <div class="spinner-border text-primary" role="status" style="margin-bottom: var(--space-4);">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
+                            <p>Preparing @paymentMethodName payment...</p>
                         </div>
-
-                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                        {
-                            <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
-                            </div>
-                        }
-
-                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-                        {
-                            <div class="alert alert-success">
-                                <i class="bi bi-check-circle"></i> @Model.SuccessMessage
-                            </div>
-                        }
-
-                        <!-- Card Payment Form -->
-                        <form method="post" asp-page-handler="ProcessCard">
-                            <input type="hidden" name="paymentIntentId" value="@Model.PaymentIntentId" />
-                            
-                            <h5 class="mb-3">Card Details</h5>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Cardholder Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" asp-for="CardPayment.CardholderName" 
-                                       placeholder="John Doe" required />
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Card Number <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" asp-for="CardPayment.CardNumber" 
-                                       placeholder="1234 5678 9012 3456" maxlength="19" required 
-                                       id="cardNumber" />
-                                <small class="text-muted">Visa, Mastercard, JCB, and more</small>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Expiry Date <span class="text-danger">*</span></label>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <input type="number" class="form-control" asp-for="CardPayment.ExpMonth" 
-                                                   placeholder="MM" min="1" max="12" required />
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="number" class="form-control" asp-for="CardPayment.ExpYear" 
-                                                   placeholder="YYYY" min="@DateTime.Now.Year" required />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">CVV <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" asp-for="CardPayment.Cvc" 
-                                           placeholder="123" maxlength="4" required />
-                                </div>
-                            </div>
-
-                            <div class="alert alert-info">
-                                <i class="bi bi-shield-lock"></i>
-                                <small>Your payment is secured and encrypted. We do not store your card details.</small>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-eco-primary btn-lg">
-                                    <i class="bi bi-lock-fill"></i> Pay ₱@Model.Booking.TotalAmount.ToString("F2")
-                                </button>
-                                <a href="/Bookings/Payment/@Model.Booking.BookingId" class="btn btn-outline-secondary">
-                                    <i class="bi bi-arrow-left"></i> Back to Payment Methods
-                                </a>
-                            </div>
-                        </form>
                     </div>
                 </div>
             }
-        </div>
+            else if (isCardPayment)
+            {
+                <!-- Card Payment Form -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-credit-card"></i> Card Details
+                        </h2>
+                    </div>
+                    <form method="post" asp-page-handler="ProcessCard" id="cardPaymentForm">
+                        <input type="hidden" name="paymentIntentId" value="@Model.PaymentIntentId" />
+                        
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Cardholder Name <span class="text-danger">*</span></label>
+                            <input type="text" class="input-minimal" asp-for="CardPayment.CardholderName" 
+                                   placeholder="John Doe" required />
+                        </div>
+
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Card Number <span class="text-danger">*</span></label>
+                            <input type="text" class="input-minimal" asp-for="CardPayment.CardNumber" 
+                                   placeholder="1234 5678 9012 3456" maxlength="19" required 
+                                   id="cardNumber" />
+                            <small style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: var(--space-1); display: block;">
+                                Visa, Mastercard, JCB, and more
+                            </small>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">Expiry Date <span class="text-danger">*</span></label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);">
+                                    <input type="number" class="input-minimal" asp-for="CardPayment.ExpMonth" 
+                                           placeholder="MM" min="1" max="12" required />
+                                    <input type="number" class="input-minimal" asp-for="CardPayment.ExpYear" 
+                                           placeholder="YYYY" min="@DateTime.Now.Year" required />
+                                </div>
+                            </div>
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">CVV <span class="text-danger">*</span></label>
+                                <input type="text" class="input-minimal" asp-for="CardPayment.Cvc" 
+                                       placeholder="123" maxlength="4" required />
+                            </div>
+                        </div>
+
+                        <div class="alert-minimal alert-minimal-info" style="margin-top: var(--space-4);">
+                            <i class="bi bi-shield-lock"></i>
+                            <div>
+                                <small>Your payment is secured and encrypted. We do not store your card details.</small>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-6);">
+                            <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg">
+                                <i class="bi bi-lock-fill"></i> Pay ₱@Model.Booking.TotalAmount.ToString("F2")
+                            </button>
+                            <a href="/Bookings/Payment/@Model.Booking.BookingId" class="btn-minimal btn-minimal-ghost">
+                                <i class="bi bi-arrow-left"></i> Back to Payment Methods
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            }
+        }
     </div>
 </div>
 
-<script>
-    // Format card number input
-    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\s/g, '');
-        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-        e.target.value = formattedValue;
-    });
-</script>
+@if (isEwalletPayment && !string.IsNullOrEmpty(publicKey) && !string.IsNullOrEmpty(Model.PaymentIntentId))
+{
+    <!-- PayMongo JS SDK for E-Wallet Payments -->
+    <script src="https://js.paymongo.com/v1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const publicKey = '@publicKey';
+            const paymentIntentId = '@Model.PaymentIntentId';
+            const paymentMethod = '@(Model.PaymentMethodId == 2 ? "gcash" : Model.PaymentMethodId == 5 ? "paymaya" : "grab_pay")';
+            
+            if (!publicKey || !paymentIntentId) {
+                document.getElementById('ewalletPaymentContainer').innerHTML = 
+                    '<div class="alert-minimal alert-minimal-error"><i class="bi bi-exclamation-triangle-fill"></i><div>Payment configuration error. Please contact support.</div></div>';
+                return;
+            }
+
+            // Initialize PayMongo
+            const paymongo = Paymongo(publicKey);
+            
+            // Create payment method for e-wallet
+            const container = document.getElementById('ewalletPaymentContainer');
+            container.innerHTML = '<div style="text-align: center; padding: var(--space-6);"><div class="spinner-border text-primary" role="status" style="margin-bottom: var(--space-4);"><span class="visually-hidden">Loading...</span></div><p>Processing @paymentMethodName payment...</p></div>';
+
+            // For e-wallet payments, PayMongo requires creating a payment method and attaching it
+            // This is typically done through their payment form or redirect
+            // For now, we'll create a payment method and attach it
+            paymongo.paymentMethods.create({
+                type: paymentMethod,
+                billing: {
+                    name: '@Model.Booking.Renter.FullName',
+                    email: '@Model.Booking.Renter.Email'
+                }
+            }).then(function(paymentMethod) {
+                // Attach payment method to payment intent
+                return paymongo.paymentIntents.attach(paymentIntentId, paymentMethod.id);
+            }).then(function(result) {
+                if (result.status === 'succeeded') {
+                    // Payment successful - redirect to confirmation
+                    window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
+                } else if (result.status === 'awaiting_next_action') {
+                    // Redirect to payment provider
+                    if (result.next_action && result.next_action.redirect) {
+                        window.location.href = result.next_action.redirect.url;
+                    }
+                } else {
+                    container.innerHTML = '<div class="alert-minimal alert-minimal-error"><i class="bi bi-exclamation-triangle-fill"></i><div>Payment processing. Please wait...</div></div>';
+                    // Poll for status update
+                    setTimeout(function() {
+                        window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
+                    }, 3000);
+                }
+            }).catch(function(error) {
+                console.error('PayMongo error:', error);
+                container.innerHTML = 
+                    '<div class="alert-minimal alert-minimal-error">' +
+                    '<i class="bi bi-exclamation-triangle-fill"></i>' +
+                    '<div>Payment failed: ' + (error.message || 'Unknown error') + '</div>' +
+                    '<a href="/Bookings/Payment/@Model.Booking.BookingId" class="btn-minimal btn-minimal-outline mt-3">Try Again</a>' +
+                    '</div>';
+            });
+        });
+    </script>
+}
+
+@if (isCardPayment)
+{
+    <script>
+        // Format card number input
+        document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
+    </script>
+}
 

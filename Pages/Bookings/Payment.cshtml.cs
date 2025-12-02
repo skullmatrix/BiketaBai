@@ -172,22 +172,16 @@ public class PaymentModel : PageModel
                 TempData["PaymentIntentId"] = gatewayResult.paymentIntentId;
                 TempData["BookingId"] = bookingId.ToString();
 
-                // For card payments, redirect to payment gateway page
-                if (PaymentMethodId == 6)
-                {
-                    TempData["PaymentIntentId"] = gatewayResult.paymentIntentId;
-                    return RedirectToPage("/Bookings/PaymentGateway", new { bookingId = bookingId });
-                }
-                // For GCash/PayMaya/QRPH, redirect to Xendit invoice page
-                else if (!string.IsNullOrEmpty(gatewayResult.redirectUrl))
-                {
-                    return Redirect(gatewayResult.redirectUrl);
-                }
-                else
-                {
-                    // Fallback: redirect to confirmation page
-                    return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
-                }
+                // For all gateway payments (GCash, PayMaya, GrabPay, Card), redirect to payment gateway page
+                // PayMongo requires frontend integration for all payment methods
+                TempData["PaymentIntentId"] = gatewayResult.paymentIntentId;
+                TempData["ClientKey"] = gatewayResult.clientKey; // Public key for PayMongo JS SDK
+                TempData["PaymentMethodId"] = PaymentMethodId.ToString();
+                return RedirectToPage("/Bookings/PaymentGateway", new { 
+                    bookingId = bookingId, 
+                    paymentIntentId = gatewayResult.paymentIntentId,
+                    paymentMethodId = PaymentMethodId
+                });
             }
             else
             {

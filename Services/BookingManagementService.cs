@@ -8,18 +8,15 @@ public class BookingManagementService
 {
     private readonly BiketaBaiDbContext _context;
     private readonly NotificationService _notificationService;
-    private readonly PointsService _pointsService;
     private readonly ILogger<BookingManagementService> _logger;
 
     public BookingManagementService(
         BiketaBaiDbContext context,
         NotificationService notificationService,
-        PointsService pointsService,
         ILogger<BookingManagementService> logger)
     {
         _context = context;
         _notificationService = notificationService;
-        _pointsService = pointsService;
         _logger = logger;
     }
 

@@ -14,16 +14,14 @@ public class RegisterModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly WalletService _walletService;
-    private readonly PointsService _pointsService;
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
 
-    public RegisterModel(BiketaBaiDbContext context, WalletService walletService, PointsService pointsService, EmailService emailService, IConfiguration configuration, IWebHostEnvironment environment)
+    public RegisterModel(BiketaBaiDbContext context, WalletService walletService, EmailService emailService, IConfiguration configuration, IWebHostEnvironment environment)
     {
         _context = context;
         _walletService = walletService;
-        _pointsService = pointsService;
         _emailService = emailService;
         _configuration = configuration;
         _environment = environment;
@@ -176,9 +174,8 @@ public class RegisterModel : PageModel
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        // Create wallet and points for new user
+        // Create wallet for new user
         await _walletService.GetOrCreateWalletAsync(user.UserId);
-        await _pointsService.GetOrCreatePointsAsync(user.UserId);
 
         // Send verification email
         try

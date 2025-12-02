@@ -6,32 +6,33 @@ using System.Text.Json;
 namespace BiketaBai.Services;
 
 /// <summary>
-/// Payment Gateway Service for processing payments via Xendit
-/// Supports: GCash, PayMaya, QRPH, Credit/Debit Cards
+/// Payment Gateway Service for processing payments via PayMongo
+/// Supports: GCash, PayMaya, GrabPay, Credit/Debit Cards
+/// Uses PayMongo Sandbox for testing
 /// </summary>
 public class PaymentGatewayService
 {
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
-    private readonly string _baseUrl = "https://api.xendit.co";
+    private readonly string _baseUrl = "https://api.paymongo.com";
     private readonly string _secretKey;
 
     public PaymentGatewayService(IConfiguration configuration, HttpClient httpClient)
     {
         _configuration = configuration;
         _httpClient = httpClient;
-        _secretKey = _configuration["AppSettings:XenditSecretKey"] ?? "";
+        _secretKey = _configuration["AppSettings:PayMongoSecretKey"] ?? "";
 
         // Configure HTTP client
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _httpClient.DefaultRequestHeaders.Clear();
-        // Xendit uses Basic Auth with secret key
+        // PayMongo uses Basic Auth with secret key (sk_test_xxx for sandbox)
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(_secretKey + ":"))}");
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }
 
     /// <summary>
-    /// Creates an invoice for GCash, PayMaya, or QRPH
+    /// Creates a payment intent for GCash, PayMaya, GrabPay, or Card payments
     /// </summary>
     public async Task<PaymentIntentResult> CreatePaymentIntentAsync(
         decimal amount, 
@@ -44,7 +45,7 @@ public class PaymentGatewayService
         {
             if (string.IsNullOrEmpty(_secretKey))
             {
-                Log.Warning("Xendit secret key not configured");
+                Log.Warning("PayMongo secret key not configured");
                 return new PaymentIntentResult
                 {
                     Success = false,
@@ -52,95 +53,92 @@ public class PaymentGatewayService
                 };
             }
 
-            // Map payment method type to Xendit channels
-            // Xendit supports multiple payment methods in one invoice
-            var enabledChannels = paymentMethodType.ToLower() switch
-            {
-                "gcash" => new[] { "GCASH" },
-                "paymaya" => new[] { "PAYMAYA" },
-                "qrph" => new[] { "QRIS" }, // Xendit uses QRIS for QR codes
-                _ => new[] { "GCASH", "PAYMAYA", "QRIS" } // Default: enable all
-            };
-
             // Get base URL for redirects
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000";
             var bookingId = metadata?.GetValueOrDefault("booking_id", "");
             
-            // Create invoice for e-wallet payments (GCash, PayMaya, QRPH)
+            // Convert amount to cents (PayMongo uses smallest currency unit)
+            var amountInCents = (long)(amount * 100);
+            
+            // Create payment intent (PayMongo structure)
             var payload = new
             {
-                external_id = $"booking_{bookingId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                amount = (double)amount,
-                description = description,
-                invoice_duration = 3600, // 1 hour expiry
-                customer = new
+                data = new
                 {
-                    given_names = metadata?.GetValueOrDefault("customer_name", "Customer"),
-                    email = metadata?.GetValueOrDefault("customer_email", "")
-                },
-                customer_notification_preference = new
-                {
-                    invoice_created = new[] { "email", "sms" },
-                    invoice_reminder = new[] { "email", "sms" },
-                    invoice_paid = new[] { "email", "sms" },
-                    invoice_expired = new[] { "email", "sms" }
-                },
-                success_redirect_url = $"{baseUrl}/Bookings/PaymentGateway?bookingId={bookingId}&action=confirm",
-                failure_redirect_url = $"{baseUrl}/Bookings/Payment?bookingId={bookingId}",
-                currency = currency,
-                items = new[]
-                {
-                    new
+                    attributes = new
                     {
-                        name = description,
-                        quantity = 1,
-                        price = (double)amount
+                        amount = amountInCents,
+                        currency = currency,
+                        payment_method_allowed = paymentMethodType.ToLower() switch
+                        {
+                            "gcash" => new[] { "gcash" },
+                            "paymaya" => new[] { "paymaya" },
+                            "grabpay" => new[] { "grab_pay" },
+                            "card" => new[] { "card" },
+                            _ => new[] { "gcash", "paymaya", "grab_pay", "card" } // Default: enable all
+                        },
+                        payment_method_options = new
+                        {
+                            card = new
+                            {
+                                request_three_d_secure = "automatic"
+                            }
+                        },
+                        description = description,
+                        statement_descriptor = "Bike Ta Bai",
+                        metadata = metadata ?? new Dictionary<string, string>()
                     }
-                },
-                // Enable specific payment channels
-                enabled_payment_methods = enabledChannels
+                }
             };
 
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            Log.Information("Creating Xendit invoice: Amount={Amount}, Channels={Channels}", amount, string.Join(", ", enabledChannels));
+            Log.Information("Creating PayMongo payment intent: Amount={Amount}, Method={Method}", amount, paymentMethodType);
 
-            var response = await _httpClient.PostAsync("/v2/invoices", content);
+            var response = await _httpClient.PostAsync("/v1/payment_intents", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var result = JsonSerializer.Deserialize<XenditInvoiceResponse>(responseContent, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<PayMongoPaymentIntentResponse>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (result != null && !string.IsNullOrEmpty(result.Id))
+                if (result?.Data != null && !string.IsNullOrEmpty(result.Data.Id))
                 {
-                    Log.Information("Xendit invoice created: {InvoiceId}", result.Id);
+                    Log.Information("PayMongo payment intent created: {PaymentIntentId}", result.Data.Id);
+                    
+                    // Get client key for frontend
+                    var clientKey = _configuration["AppSettings:PayMongoPublicKey"] ?? "";
+                    
                     return new PaymentIntentResult
                     {
                         Success = true,
-                        PaymentIntentId = result.Id,
-                        ClientKey = result.InvoiceUrl, // Xendit provides invoice URL
-                        NextAction = new { InvoiceUrl = result.InvoiceUrl, Status = result.Status }
+                        PaymentIntentId = result.Data.Id,
+                        ClientKey = clientKey, // Public key for frontend
+                        NextAction = new { 
+                            PaymentIntentId = result.Data.Id, 
+                            ClientKey = clientKey,
+                            Status = result.Data.Attributes.Status 
+                        }
                     };
                 }
             }
 
-            Log.Error("Failed to create Xendit invoice. Status: {StatusCode}, Response: {Response}", 
+            Log.Error("Failed to create PayMongo payment intent. Status: {StatusCode}, Response: {Response}", 
                 response.StatusCode, responseContent);
             
             return new PaymentIntentResult
             {
                 Success = false,
-                ErrorMessage = $"Failed to create payment invoice: {responseContent}"
+                ErrorMessage = $"Failed to create payment intent: {responseContent}"
             };
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error creating Xendit invoice");
+            Log.Error(ex, "Error creating PayMongo payment intent");
             return new PaymentIntentResult
             {
                 Success = false,
@@ -167,44 +165,53 @@ public class PaymentGatewayService
                 };
             }
 
-            // Xendit uses tokenization for cards
-            // First, create a token
-            var tokenPayload = new
+            // PayMongo payment method creation
+            var payload = new
             {
-                card_data = new
+                data = new
                 {
-                    account_number = cardDetails.CardNumber.Replace(" ", ""),
-                    exp_month = cardDetails.ExpMonth.ToString().PadLeft(2, '0'),
-                    exp_year = cardDetails.ExpYear.ToString(),
-                    cvn = cardDetails.Cvc
-                },
-                is_single_use = true
+                    attributes = new
+                    {
+                        type = "card",
+                        details = new
+                        {
+                            card_number = cardDetails.CardNumber.Replace(" ", ""),
+                            exp_month = cardDetails.ExpMonth,
+                            exp_year = cardDetails.ExpYear,
+                            cvc = cardDetails.Cvc,
+                            billing = new
+                            {
+                                name = cardDetails.CardholderName
+                            }
+                        }
+                    }
+                }
             };
 
-            var json = JsonSerializer.Serialize(tokenPayload);
+            var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/v2/credit_card_tokens", content);
+            var response = await _httpClient.PostAsync("/v1/payment_methods", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var result = JsonSerializer.Deserialize<XenditTokenResponse>(responseContent, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<PayMongoPaymentMethodResponse>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (result != null && !string.IsNullOrEmpty(result.Id))
+                if (result?.Data != null && !string.IsNullOrEmpty(result.Data.Id))
                 {
                     return new PaymentMethodResult
                     {
                         Success = true,
-                        PaymentMethodId = result.Id
+                        PaymentMethodId = result.Data.Id
                     };
                 }
             }
 
-            Log.Error("Failed to create card token. Status: {StatusCode}, Response: {Response}", 
+            Log.Error("Failed to create payment method. Status: {StatusCode}, Response: {Response}", 
                 response.StatusCode, responseContent);
 
             return new PaymentMethodResult
@@ -225,67 +232,101 @@ public class PaymentGatewayService
     }
 
     /// <summary>
-    /// Charges a card using a token
+    /// Attaches a payment method to a payment intent (PayMongo pattern)
     /// </summary>
-    public async Task<PaymentResult> ChargeCardAsync(
-        string tokenId,
-        decimal amount,
-        string currency,
-        string description,
-        Dictionary<string, string>? metadata = null)
+    public async Task<PaymentResult> AttachPaymentMethodAsync(
+        string paymentIntentId, 
+        string paymentMethodId)
     {
         try
         {
             var payload = new
             {
-                token_id = tokenId,
-                external_id = $"booking_{metadata?.GetValueOrDefault("booking_id", Guid.NewGuid().ToString())}",
-                amount = (double)amount,
-                currency = currency,
-                authentication_id = metadata?.GetValueOrDefault("authentication_id", ""),
-                card_cvn = metadata?.GetValueOrDefault("cvv", ""),
-                descriptor = description,
-                billing_details = new
+                data = new
                 {
-                    given_names = metadata?.GetValueOrDefault("cardholder_name", ""),
-                    email = metadata?.GetValueOrDefault("customer_email", "")
-                },
-                metadata = metadata
+                    attributes = new
+                    {
+                        payment_method = paymentMethodId
+                    }
+                }
             };
 
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/v2/charges", content);
+            var response = await _httpClient.PostAsync($"/v1/payment_intents/{paymentIntentId}/attach", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var result = JsonSerializer.Deserialize<XenditChargeResponse>(responseContent, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<PayMongoPaymentIntentResponse>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (result != null)
+                if (result?.Data != null)
                 {
+                    var status = result.Data.Attributes.Status;
+                    var isSuccess = status == "succeeded" || status == "awaiting_next_action";
+
                     return new PaymentResult
                     {
-                        Success = result.Status == "CAPTURED" || result.Status == "VERIFIED",
-                        PaymentIntentId = result.Id,
-                        Status = result.Status,
-                        TransactionReference = result.Id
+                        Success = isSuccess,
+                        PaymentIntentId = result.Data.Id,
+                        Status = status,
+                        TransactionReference = result.Data.Id
                     };
                 }
             }
 
-            Log.Error("Failed to charge card. Status: {StatusCode}, Response: {Response}", 
+            Log.Error("Failed to attach payment method. Status: {StatusCode}, Response: {Response}", 
                 response.StatusCode, responseContent);
 
             return new PaymentResult
             {
                 Success = false,
-                ErrorMessage = "Payment failed"
+                ErrorMessage = "Failed to attach payment method"
             };
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error attaching payment method");
+            return new PaymentResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Charges a card using a payment method (legacy method for compatibility)
+    /// </summary>
+    public async Task<PaymentResult> ChargeCardAsync(
+        string paymentMethodId,
+        decimal amount,
+        string currency,
+        string description,
+        Dictionary<string, string>? metadata = null)
+    {
+        // For PayMongo, we need to create a payment intent first, then attach the payment method
+        // This is a simplified version - in practice, use CreatePaymentIntentAsync + AttachPaymentMethodAsync
+        try
+        {
+            // Create payment intent
+            var intentResult = await CreatePaymentIntentAsync(amount, currency, "card", description, metadata);
+            
+            if (!intentResult.Success || string.IsNullOrEmpty(intentResult.PaymentIntentId))
+            {
+                return new PaymentResult
+                {
+                    Success = false,
+                    ErrorMessage = "Failed to create payment intent"
+                };
+            }
+
+            // Attach payment method
+            return await AttachPaymentMethodAsync(intentResult.PaymentIntentId, paymentMethodId);
         }
         catch (Exception ex)
         {
@@ -299,49 +340,33 @@ public class PaymentGatewayService
     }
 
     /// <summary>
-    /// Attaches a payment method to a payment intent (for compatibility)
-    /// </summary>
-    public async Task<PaymentResult> AttachPaymentMethodAsync(
-        string paymentIntentId, 
-        string paymentMethodId)
-    {
-        // Xendit doesn't use this pattern - cards are charged directly
-        // This is kept for compatibility but should use ChargeCardAsync instead
-        return new PaymentResult
-        {
-            Success = false,
-            ErrorMessage = "Use ChargeCardAsync for Xendit card payments"
-        };
-    }
-
-    /// <summary>
-    /// Retrieves invoice/payment status
+    /// Retrieves payment intent status
     /// </summary>
     public async Task<PaymentResult> GetPaymentIntentStatusAsync(string paymentIntentId)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/v2/invoices/{paymentIntentId}");
+            var response = await _httpClient.GetAsync($"/v1/payment_intents/{paymentIntentId}");
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var result = JsonSerializer.Deserialize<XenditInvoiceResponse>(responseContent, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<PayMongoPaymentIntentResponse>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (result != null)
+                if (result?.Data != null)
                 {
-                    var status = result.Status.ToUpper();
-                    var isSuccess = status == "PAID" || status == "SETTLED";
+                    var status = result.Data.Attributes.Status;
+                    var isSuccess = status == "succeeded";
 
                     return new PaymentResult
                     {
                         Success = isSuccess,
                         PaymentIntentId = paymentIntentId,
-                        Status = result.Status,
-                        TransactionReference = result.Id
+                        Status = status,
+                        TransactionReference = result.Data.Id
                     };
                 }
             }
@@ -398,27 +423,49 @@ public class PaymentGatewayService
         public string CardholderName { get; set; } = string.Empty;
     }
 
-    // Xendit API Response Models
-    private class XenditInvoiceResponse
+    // PayMongo API Response Models
+    private class PayMongoPaymentIntentResponse
     {
-        public string Id { get; set; } = string.Empty;
-        public string InvoiceUrl { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public double Amount { get; set; }
-        public string Currency { get; set; } = string.Empty;
+        public PayMongoPaymentIntentData? Data { get; set; }
     }
 
-    private class XenditTokenResponse
+    private class PayMongoPaymentIntentData
     {
         public string Id { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
+        public PayMongoPaymentIntentAttributes Attributes { get; set; } = new();
     }
 
-    private class XenditChargeResponse
+    private class PayMongoPaymentIntentAttributes
+    {
+        public long Amount { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<string> PaymentMethodAllowed { get; set; } = new();
+    }
+
+    private class PayMongoPaymentMethodResponse
+    {
+        public PayMongoPaymentMethodData? Data { get; set; }
+    }
+
+    private class PayMongoPaymentMethodData
     {
         public string Id { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public string Currency { get; set; } = string.Empty;
-        public double Amount { get; set; }
+        public PayMongoPaymentMethodAttributes Attributes { get; set; } = new();
+    }
+
+    private class PayMongoPaymentMethodAttributes
+    {
+        public string Type { get; set; } = string.Empty;
+        public PayMongoCardDetails? Details { get; set; }
+    }
+
+    private class PayMongoCardDetails
+    {
+        public string CardNumber { get; set; } = string.Empty;
+        public int ExpMonth { get; set; }
+        public int ExpYear { get; set; }
+        public string Cvc { get; set; } = string.Empty;
     }
 }

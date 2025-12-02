@@ -28,9 +28,8 @@ namespace BiketaBai.Pages.Renter
         public double AverageRating { get; set; }
         public int TotalReviews { get; set; }
 
-        // Wallet & Points
+        // Wallet
         public BiketaBai.Models.Wallet? UserWallet { get; set; }
-        public BiketaBai.Models.Points? UserPoints { get; set; }
 
         // Recent Activity
         public List<Booking> RecentBookings { get; set; } = new List<Booking>();
@@ -83,9 +82,8 @@ namespace BiketaBai.Pages.Renter
                 .Where(b => b.BookingStatus.StatusName == "Completed" || b.BookingStatus.StatusName == "Active")
                 .Sum(b => b.TotalAmount);
 
-            // Load wallet and points
+            // Load wallet
             UserWallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
-            UserPoints = await _context.Points.FirstOrDefaultAsync(p => p.UserId == userId);
 
             // Load ratings given by others to this renter (owner rating renter)
             var ratingsReceived = await _context.Ratings

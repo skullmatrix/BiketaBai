@@ -14,7 +14,6 @@ public class RegisterRenterModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly WalletService _walletService;
-    private readonly PointsService _pointsService;
     private readonly EmailService _emailService;
     private readonly AddressValidationService _addressValidationService;
     private readonly IdValidationService _idValidationService;
@@ -24,7 +23,6 @@ public class RegisterRenterModel : PageModel
     public RegisterRenterModel(
         BiketaBaiDbContext context, 
         WalletService walletService, 
-        PointsService pointsService, 
         EmailService emailService,
         AddressValidationService addressValidationService,
         IdValidationService idValidationService,
@@ -33,7 +31,6 @@ public class RegisterRenterModel : PageModel
     {
         _context = context;
         _walletService = walletService;
-        _pointsService = pointsService;
         _emailService = emailService;
         _addressValidationService = addressValidationService;
         _idValidationService = idValidationService;
@@ -526,9 +523,8 @@ public class RegisterRenterModel : PageModel
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        // Create wallet and points
+        // Create wallet
         await _walletService.GetOrCreateWalletAsync(user.UserId);
-        await _pointsService.GetOrCreatePointsAsync(user.UserId);
 
         // Send verification email
         try

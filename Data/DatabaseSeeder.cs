@@ -89,16 +89,6 @@ namespace BiketaBai.Data
 
                 _context.Wallets.Add(wallet);
 
-                // Create points for admin
-                var points = new Points
-                {
-                    UserId = adminUser.UserId,
-                    TotalPoints = 1000, // Give admin some initial points
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Points.Add(points);
-
                 await _context.SaveChangesAsync();
 
                 Console.WriteLine($"✅ Super Admin account initialized");
@@ -106,7 +96,6 @@ namespace BiketaBai.Data
                 Console.WriteLine($"   Password: BiketaBai@2024");
                 Console.WriteLine($"   Role: Super Admin (Account Management, Bike Management, Owner Verification)");
                 Console.WriteLine($"   Wallet Balance: ₱10,000.00");
-                Console.WriteLine($"   Points: 1,000");
             }
             else
             {
