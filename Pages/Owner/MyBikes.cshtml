@@ -1,47 +1,52 @@
 @page
 @using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
 @attribute [Authorize]
 @model MyBikesModel
 @{
     ViewData["Title"] = "My Bikes";
 }
 
-<!-- Link Minimal CSS -->
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/bikes-minimal.css" asp-append-version="true" />
 
-<div class="mybikes-premium-container">
-    <div class="container">
+<div class="page-container">
+    <div class="container" style="max-width: 1400px; margin: 0 auto; padding: var(--space-4);">
         <!-- Compact Header -->
-        <div class="mybikes-header-premium">
-            <div class="header-info">
-                <h2>My Bikes</h2>
-                <p>@Model.Bikes.Count listings</p>
-            </div>
-            <div style="display: flex; gap: var(--space-2);">
-                <a href="/Owner/TrackRenters" class="btn-add-premium" style="background: var(--sage-primary);">
-                    <i class="bi bi-geo-alt-fill"></i> Track Renters
-                </a>
-                <a href="/Owner/AddBike" class="btn-add-premium">
-                    <i class="bi bi-plus-lg"></i> Add Bike
-                </a>
+        <div class="page-header" style="margin-bottom: var(--space-5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3);">
+                <div>
+                    <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
+                        <i class="bi bi-bicycle"></i> My Bikes
+                    </h1>
+                    <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">@Model.Bikes.Count listings</p>
+                </div>
+                <div style="display: flex; gap: var(--space-2);">
+                    <a href="/Owner/TrackRenters" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                        <i class="bi bi-geo-alt-fill"></i> Track Renters
+                    </a>
+                    <a href="/Owner/AddBike" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                        <i class="bi bi-plus-lg"></i> Add Bike
+                    </a>
+                </div>
             </div>
         </div>
 
         <!-- Alerts -->
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert-premium success" id="successAlert">
+            <div class="alert-minimal alert-minimal-success mb-4" id="successAlert">
                 <i class="bi bi-check-circle-fill"></i>
-                <span>@TempData["SuccessMessage"]</span>
+                <div>@TempData["SuccessMessage"]</div>
                 <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
         }
         
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert-premium error" id="errorAlert">
+            <div class="alert-minimal alert-minimal-error mb-4" id="errorAlert">
                 <i class="bi bi-exclamation-triangle-fill"></i>
-                <span>@TempData["ErrorMessage"]</span>
+                <div>@TempData["ErrorMessage"]</div>
                 <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
         }
@@ -49,52 +54,106 @@
         @if (Model.Bikes.Any())
         {
             <!-- Compact Stats -->
-            <div class="stats-bar-premium">
-                <div class="stat-mini available">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 1)</span>
-                    <label>Available</label>
-                </div>
-                <div class="stat-mini rented">
-                    <i class="bi bi-bicycle"></i>
-                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 2)</span>
-                    <label>Rented</label>
-                </div>
-                <div class="stat-mini maintenance">
-                    <i class="bi bi-tools"></i>
-                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 3)</span>
-                    <label>Maintenance</label>
-                </div>
-                <div class="stat-mini inactive">
-                    <i class="bi bi-pause-circle-fill"></i>
-                    <span>@Model.Bikes.Count(b => b.AvailabilityStatusId == 4)</span>
-                    <label>Inactive</label>
+            <div class="card-minimal card-minimal-compact mb-4">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
+                    <div style="text-align: center; padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary); margin-bottom: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 1)
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                            <i class="bi bi-check-circle-fill"></i> Available
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: var(--space-3); background: #E8F4FD; border-radius: var(--radius-md);">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0066CC; margin-bottom: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 2)
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                            <i class="bi bi-bicycle"></i> Rented
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: var(--space-3); background: #FFF4E6; border-radius: var(--radius-md);">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800; margin-bottom: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 3)
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                            <i class="bi bi-tools"></i> Maintenance
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 4)
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                            <i class="bi bi-pause-circle-fill"></i> Inactive
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Streamlined Filters -->
-            <div class="filters-bar-premium">
-                <div class="search-group-premium">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search bikes..." />
+            <div class="card-minimal card-minimal-compact mb-4">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                    <div style="flex: 1; min-width: 200px; position: relative;">
+                        <i class="bi bi-search" style="position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--neutral-600);"></i>
+                        <input type="text" id="searchInput" class="input-minimal" placeholder="Search bikes..." style="padding-left: 2.5rem;" />
+                    </div>
+                    <select class="input-minimal" id="statusFilter" style="min-width: 150px;">
+                        <option value="all">All Status</option>
+                        <option value="active">Active Rentals</option>
+                        <option value="1">Available</option>
+                        <option value="2">Rented</option>
+                        <option value="3">Maintenance</option>
+                        <option value="4">Inactive</option>
+                    </select>
+                    <select class="input-minimal" id="sortSelect" style="min-width: 150px;">
+                        <option value="recent">Recent</option>
+                        <option value="name">Name</option>
+                        <option value="price">Price</option>
+                        <option value="rating">Rating</option>
+                    </select>
                 </div>
-                
-                <select class="select-premium" id="statusFilter">
-                    <option value="all">All Status</option>
-                    <option value="active">Active Rentals</option>
-                    <option value="1">Available</option>
-                    <option value="2">Rented</option>
-                    <option value="3">Maintenance</option>
-                    <option value="4">Inactive</option>
-                </select>
-                
-                <select class="select-premium" id="sortSelect">
-                    <option value="recent">Recent</option>
-                    <option value="name">Name</option>
-                    <option value="price">Price</option>
-                    <option value="rating">Rating</option>
-                </select>
             </div>
+
+            <!-- Lost Bikes Section - Prominent -->
+            @if (Model.LostBookings != null && Model.LostBookings.Any())
+            {
+                <div class="card-minimal mb-4" style="border-left: 4px solid var(--error);">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title" style="color: var(--error);">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Lost/Not Returned Bikes (@Model.LostBookings.Count)
+                        </h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-3);">
+                        @foreach (var booking in Model.LostBookings)
+                        {
+                            <div class="card-minimal card-minimal-compact" style="border-left: 3px solid var(--error);">
+                                <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-3);">
+                                    <div style="flex: 1;">
+                                        <div class="mb-2">
+                                            <span class="badge" style="background: var(--error); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                                Booking #@booking.BookingId.ToString("D6")
+                                            </span>
+                                        </div>
+                                        <h5 style="font-weight: 600; margin-bottom: var(--space-2); font-size: 1rem;">
+                                            @booking.Bike.Brand @booking.Bike.Model
+                                        </h5>
+                                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                                            <p style="margin: 0 0 var(--space-1) 0;"><strong>Renter:</strong> @booking.Renter.FullName</p>
+                                            <p style="margin: 0;"><strong>Reported:</strong> @TimeZoneHelper.FormatPhilippineTime(booking.ReportedLostAt ?? DateTime.UtcNow)</p>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                                        <a href="/Owner/LostBikeDetails/@booking.BookingId" class="btn-minimal btn-minimal-danger btn-minimal-sm">
+                                            <i class="bi bi-eye"></i> View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
 
             <!-- Compact Bikes Grid -->
             <div class="bikes-grid-premium" id="bikesGrid">
@@ -156,32 +215,36 @@
                             
                             @if (hasActiveBookings)
                             {
-                                <div class="active-rentals-section" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb;">
-                                    <div class="rental-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                                        <strong style="font-size: 0.875rem; color: #87A96B;">
+                                <div class="active-rentals-section" style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--neutral-200);">
+                                    <div class="rental-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2);">
+                                        <strong style="font-size: 0.875rem; color: var(--sage-primary); font-weight: 600;">
                                             <i class="bi bi-clock-fill"></i> Active Rentals (@activeRentals)
                                         </strong>
                                     </div>
                                     @foreach (var booking in bikeActiveBookings)
                                     {
                                         var isOverdue = Model.OverdueBookings.ContainsKey(booking.BookingId) && Model.OverdueBookings[booking.BookingId];
-                                        var endDatePh = BiketaBai.Helpers.TimeZoneHelper.ToPhilippineTime(booking.EndDate);
-                                        <div class="rental-item" style="background: @(isOverdue ? "#fee2e2" : "#f0f9ff"); border-left: 3px solid @(isOverdue ? "#dc2626" : "#3b82f6"); padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.375rem;">
-                                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                                <div style="flex: 1;">
-                                                    <div style="font-size: 0.8125rem; font-weight: 500; color: #1a1a1a;">
-                                                        @booking.Renter.FullName
+                                        var endDatePh = TimeZoneHelper.ToPhilippineTime(booking.EndDate);
+                                        <div class="rental-item-premium" style="background: @(isOverdue ? "#FEE2E2" : "#F0F9FF"); border-left: 3px solid @(isOverdue ? "#DC2626" : "#3B82F6"); padding: var(--space-3); margin-bottom: var(--space-2); border-radius: var(--radius-md);">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-3);">
+                                                <div style="flex: 1; min-width: 0;">
+                                                    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+                                                        <div style="font-size: 0.875rem; font-weight: 600; color: var(--neutral-900);">
+                                                            @booking.Renter.FullName
+                                                        </div>
                                                         @if (booking.Quantity > 1)
                                                         {
-                                                            <span class="badge bg-info" style="font-size: 0.75rem; margin-left: 0.25rem;">@booking.Quantity bikes</span>
+                                                            <span class="badge" style="background: var(--info); color: white; font-size: 0.75rem; padding: 0.125rem 0.5rem;">
+                                                                @booking.Quantity bikes
+                                                            </span>
                                                         }
                                                     </div>
-                                                    <div style="font-size: 0.75rem; color: #6a6a6a; margin-top: 0.25rem;">
+                                                    <div style="font-size: 0.8125rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
                                                         <i class="bi bi-calendar"></i> Return by: @endDatePh.ToString("MMM dd, yyyy hh:mm tt")
                                                     </div>
                                                     <div class="remaining-time" 
-                                                         data-end-date="@BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTimeIso(booking.EndDate)"
-                                                         style="font-size: 0.75rem; color: @(isOverdue ? "#dc2626" : "#3b82f6"); margin-top: 0.25rem; font-weight: 500;">
+                                                         data-end-date="@TimeZoneHelper.FormatPhilippineTimeIso(booking.EndDate)"
+                                                         style="font-size: 0.8125rem; color: @(isOverdue ? "#DC2626" : "#3B82F6"); font-weight: 600;">
                                                         @if (isOverdue)
                                                         {
                                                             <i class="bi bi-exclamation-triangle-fill"></i> <span>OVERDUE</span>
@@ -192,17 +255,25 @@
                                                         }
                                                     </div>
                                                 </div>
-                                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                                    <form method="post" asp-page-handler="ConfirmReturn" asp-route-bookingId="@booking.BookingId">
-                                                        <button type="submit" class="btn btn-sm btn-success" style="white-space: nowrap;">
-                                                            <i class="bi bi-check-circle"></i> Confirm Return
-                                                        </button>
-                                                    </form>
-                                                    <form method="post" asp-page-handler="ReportLost" asp-route-bookingId="@booking.BookingId" class="report-lost-form" data-booking-id="@booking.BookingId" data-renter-name="@booking.Renter.FullName">
-                                                        <button type="submit" class="btn btn-sm btn-danger" style="white-space: nowrap;">
-                                                            <i class="bi bi-exclamation-triangle"></i> Report Lost
-                                                        </button>
-                                                    </form>
+                                                <div style="display: flex; flex-direction: column; gap: var(--space-2); flex-shrink: 0;">
+                                                    <button type="button" 
+                                                            class="btn-minimal btn-minimal-success btn-minimal-sm confirm-return-btn" 
+                                                            data-booking-id="@booking.BookingId"
+                                                            data-booking-number="@booking.BookingId.ToString("D6")"
+                                                            data-renter-name="@booking.Renter.FullName"
+                                                            data-bike-name="@bike.Brand @bike.Model"
+                                                            style="white-space: nowrap;">
+                                                        <i class="bi bi-check-circle"></i> Confirm Return
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="btn-minimal btn-minimal-danger btn-minimal-sm report-lost-btn" 
+                                                            data-booking-id="@booking.BookingId"
+                                                            data-booking-number="@booking.BookingId.ToString("D6")"
+                                                            data-renter-name="@booking.Renter.FullName"
+                                                            data-bike-name="@bike.Brand @bike.Model"
+                                                            style="white-space: nowrap;">
+                                                        <i class="bi bi-exclamation-triangle"></i> Report Lost
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -234,13 +305,13 @@
         else
         {
             <!-- Compact Empty State -->
-            <div class="empty-state-premium">
-                <div class="empty-icon">
+            <div class="card-minimal" style="text-align: center; padding: var(--space-6);">
+                <div style="font-size: 4rem; color: var(--neutral-300); margin-bottom: var(--space-3);">
                     <i class="bi bi-bicycle"></i>
                 </div>
-                <h3>No Bikes Yet</h3>
-                <p>Start earning by listing your bikes</p>
-                <a href="/Owner/AddBike" class="btn-add-premium">
+                <h3 style="margin-bottom: var(--space-2);">No Bikes Yet</h3>
+                <p style="color: var(--neutral-600); margin-bottom: var(--space-4);">Start earning by listing your bikes</p>
+                <a href="/Owner/AddBike" class="btn-minimal btn-minimal-primary">
                     <i class="bi bi-plus-lg"></i> Add Your First Bike
                 </a>
             </div>
@@ -248,7 +319,65 @@
     </div>
 </div>
 
-<!-- Improved Delete Modal -->
+<!-- Confirm Return Modal -->
+<div class="modal fade" id="confirmReturnModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header-premium">
+                <div class="modal-icon-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <h5>Confirm Bike Return</h5>
+                <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body-premium">
+                <p id="confirmReturnMessage"></p>
+            </div>
+            <div class="modal-footer-premium">
+                <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="confirmReturnForm" asp-page-handler="ConfirmReturn" style="display: inline;">
+                    <input type="hidden" name="bookingId" id="confirmReturnBookingId" />
+                    <button type="submit" class="btn-modal-success">
+                        <i class="bi bi-check-circle"></i> Confirm Return
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Lost Modal -->
+<div class="modal fade" id="reportLostModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header-premium">
+                <div class="modal-icon-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h5>Report Bike as Lost</h5>
+                <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body-premium">
+                <p id="reportLostMessage"></p>
+                <div class="warning-box" style="background: #FEE2E2; border-left: 3px solid #DC2626; padding: var(--space-3); border-radius: var(--radius-md); margin-top: var(--space-3);">
+                    <i class="bi bi-info-circle-fill" style="color: #DC2626;"></i>
+                    <span style="font-size: 0.875rem;">This will mark the bike as lost and you will be able to view the renter's information and last known location.</span>
+                </div>
+            </div>
+            <div class="modal-footer-premium">
+                <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="reportLostForm" asp-page-handler="ReportLost" style="display: inline;">
+                    <input type="hidden" name="bookingId" id="reportLostBookingId" />
+                    <button type="submit" class="btn-modal-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Report Lost
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-premium">
@@ -279,11 +408,47 @@
     </div>
 </div>
 
+<style>
+    .rental-item-premium {
+        transition: all var(--transition-base);
+    }
+
+    .rental-item-premium:hover {
+        box-shadow: var(--shadow-sm);
+    }
+
+    .modal-icon-success {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--sage-subtle);
+        color: var(--sage-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: var(--space-3);
+    }
+
+    .btn-modal-success {
+        background: var(--sage-primary);
+        color: white;
+        border: none;
+        padding: var(--space-2) var(--space-4);
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .btn-modal-success:hover {
+        background: var(--sage-dark);
+    }
+</style>
+
 @section Scripts {
     <script>
         $(document).ready(function() {
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            
             // Filter and Search
             function filterBikes() {
                 const search = $('#searchInput').val().toLowerCase();
@@ -338,7 +503,7 @@
             function updateRemainingTimes() {
                 $('.remaining-time').each(function() {
                     const $el = $(this);
-                    const endDateStr = $el.closest('.rental-item').find('.remaining-time').data('end-date');
+                    const endDateStr = $el.data('end-date');
                     if (!endDateStr) return;
                     
                     const endDate = new Date(endDateStr);
@@ -347,8 +512,8 @@
                     
                     if (diff <= 0) {
                         $el.html('<i class="bi bi-exclamation-triangle-fill"></i> <span>OVERDUE</span>');
-                        $el.css('color', '#dc2626');
-                        $el.closest('.rental-item').css('background', '#fee2e2').css('border-left-color', '#dc2626');
+                        $el.css('color', '#DC2626');
+                        $el.closest('.rental-item-premium').css('background', '#FEE2E2').css('border-left-color', '#DC2626');
                     } else {
                         const hours = Math.floor(diff / (1000 * 60 * 60));
                         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -374,11 +539,58 @@
             
             // Auto-dismiss alerts
             setTimeout(() => {
-                $('.alert-premium').fadeOut(300, function() { $(this).remove(); });
+                $('.alert-minimal').fadeOut(300, function() { $(this).remove(); });
             }, 5000);
+
+            // Confirm Return Modal
+            $('.confirm-return-btn').on('click', function() {
+                const bookingId = $(this).data('booking-id');
+                const bookingNumber = $(this).data('booking-number');
+                const renterName = $(this).data('renter-name');
+                const bikeName = $(this).data('bike-name');
+                
+                $('#confirmReturnBookingId').val(bookingId);
+                $('#confirmReturnMessage').html(`
+                    <strong>Booking #${bookingNumber}</strong><br>
+                    <strong>Renter:</strong> ${renterName}<br>
+                    <strong>Bike:</strong> ${bikeName}<br><br>
+                    Are you sure the bike has been returned? This will mark the booking as completed.
+                `);
+                
+                const modal = new bootstrap.Modal(document.getElementById('confirmReturnModal'));
+                modal.show();
+            });
+
+            // Report Lost Modal
+            $('.report-lost-btn').on('click', function() {
+                const bookingId = $(this).data('booking-id');
+                const bookingNumber = $(this).data('booking-number');
+                const renterName = $(this).data('renter-name');
+                const bikeName = $(this).data('bike-name');
+                
+                $('#reportLostBookingId').val(bookingId);
+                $('#reportLostMessage').html(`
+                    <strong>Booking #${bookingNumber}</strong><br>
+                    <strong>Renter:</strong> ${renterName}<br>
+                    <strong>Bike:</strong> ${bikeName}<br><br>
+                    Are you sure you want to report this bike as lost/not returned?
+                `);
+                
+                const modal = new bootstrap.Modal(document.getElementById('reportLostModal'));
+                modal.show();
+            });
+
+            // Loading states
+            $('#confirmReturnForm').submit(function() {
+                $(this).find('button[type="submit"]').html('<span class="spinner-border spinner-border-sm me-2"></span>Confirming...').prop('disabled', true);
+            });
+
+            $('#reportLostForm').submit(function() {
+                $(this).find('button[type="submit"]').html('<span class="spinner-border spinner-border-sm me-2"></span>Reporting...').prop('disabled', true);
+            });
         });
         
-        // Improved Delete Confirmation
+        // Delete Confirmation
         function confirmDelete(bikeId, bikeName, hasActive) {
             const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             
@@ -400,57 +612,5 @@
         $('#deleteForm').submit(function() {
             $('#confirmDeleteBtn').html('<span class="spinner-border spinner-border-sm me-2"></span>Deleting...').prop('disabled', true);
         });
-
-        // Report lost form confirmation
-        $('.report-lost-form').submit(function(e) {
-            e.preventDefault();
-            const form = $(this);
-            const bookingId = form.data('booking-id');
-            const renterName = form.data('renter-name');
-            const bookingIdFormatted = String(bookingId).padStart(6, '0');
-            
-            if (confirm('Are you sure you want to report this bike as lost/not returned?\\n\\nBooking #' + bookingIdFormatted + '\\nRenter: ' + renterName + '\\n\\nThis will mark the bike as lost and you will be able to view the renter\'s information and last known location.')) {
-                form.off('submit').submit();
-            }
-        });
     </script>
-
-    <!-- Lost Bikes Section -->
-    @if (Model.LostBookings != null && Model.LostBookings.Any())
-    {
-        <div class="card-minimal mb-4" style="border-left: 4px solid var(--error); margin-top: var(--space-6);">
-            <div class="card-minimal-header">
-                <h2 class="card-minimal-title" style="color: var(--error);">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Lost/Not Returned Bikes (@Model.LostBookings.Count)
-                </h2>
-            </div>
-            <div class="grid-minimal">
-                @foreach (var booking in Model.LostBookings)
-                {
-                    <div class="card-minimal card-minimal-compact" style="border-left: 3px solid var(--error);">
-                        <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-4);">
-                            <div style="flex: 1;">
-                                <div class="mb-2">
-                                    <span class="badge bg-danger">Booking #@booking.BookingId.ToString("D6")</span>
-                                    <span class="badge bg-warning">Reported Lost</span>
-                                </div>
-                                <h5 style="font-weight: 600; margin-bottom: var(--space-2);">
-                                    @booking.Bike.Brand @booking.Bike.Model
-                                </h5>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
-                                    <p style="margin: 0;"><strong>Renter:</strong> @booking.Renter.FullName</p>
-                                    <p style="margin: 0;"><strong>Reported:</strong> @TimeZoneHelper.FormatPhilippineTime(booking.ReportedLostAt ?? DateTime.UtcNow)</p>
-                                </div>
-                            </div>
-                            <div>
-                                <a href="/Owner/LostBikeDetails/@booking.BookingId" class="btn-minimal btn-minimal-danger btn-minimal-sm">
-                                    <i class="bi bi-eye"></i> View Details
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    }
 }

@@ -192,6 +192,11 @@
                     </h2>
                 </div>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                    <form method="post" asp-page-handler="MarkAsFound" asp-route-bookingId="@Model.Booking.BookingId" id="markAsFoundForm" style="display: inline;">
+                        <button type="button" class="btn-minimal btn-minimal-success" onclick="confirmMarkAsFound(@Model.Booking.BookingId, '@Model.Booking.Bike.Brand @Model.Booking.Bike.Model')">
+                            <i class="bi bi-check-circle"></i> Mark as Found & Confirm Return
+                        </button>
+                    </form>
                     <a href="tel:@Model.Booking.Renter.Phone" class="btn-minimal btn-minimal-primary">
                         <i class="bi bi-telephone"></i> Call Renter
                     </a>
@@ -278,6 +283,22 @@
                 map.fitBounds(bounds, { padding: [50, 50] });
             } else {
                 map.setView([lat, lng], 15);
+            }
+        });
+
+        // Mark as Found Confirmation
+        function confirmMarkAsFound(bookingId, bikeName) {
+            if (confirm(`Are you sure the bike "${bikeName}" has been found and returned?\n\nThis will:\n- Mark the bike as found\n- Confirm the return\n- Complete the booking\n\nBooking #${String(bookingId).padStart(6, '0')}`)) {
+                document.getElementById('markAsFoundForm').submit();
+            }
+        }
+
+        // Loading state on mark as found
+        document.getElementById('markAsFoundForm').addEventListener('submit', function() {
+            const btn = this.querySelector('button[type="button"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
             }
         });
     </script>

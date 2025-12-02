@@ -84,15 +84,18 @@ public class BrowseModel : PageModel
         // Calculate available quantity for each bike and filter out bikes with 0 available
         // Get all active and pending bookings for all bikes in one query (optimize N+1)
         // Include ALL pending bookings regardless of start date to prevent double-booking
+        // Also include lost bikes since they should be subtracted from available quantity
         var bikeIds = allBikes.Select(b => b.BikeId).ToList();
         
         // Only query bookings if there are bikes to check
         Dictionary<int, int> allActiveBookings = new Dictionary<int, int>();
         if (bikeIds.Any())
         {
+            // Include active bookings (pending or active status) AND lost bikes
+            // Lost bikes are still in active status but marked as lost, so they should be counted
             allActiveBookings = await _context.Bookings
                 .Where(b => bikeIds.Contains(b.BikeId) && 
-                           (b.BookingStatusId == 1 || b.BookingStatusId == 2)) // Pending or Active
+                           ((b.BookingStatusId == 1 || b.BookingStatusId == 2))) // Pending or Active (includes lost bikes)
                 .GroupBy(b => b.BikeId)
                 .Select(g => new { BikeId = g.Key, RentedQuantity = g.Sum(b => b.Quantity) })
                 .ToDictionaryAsync(x => x.BikeId, x => x.RentedQuantity);

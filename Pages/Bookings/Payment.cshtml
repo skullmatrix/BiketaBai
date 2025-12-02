@@ -3,11 +3,13 @@
 @attribute [Authorize]
 @model PaymentModel
 @{
-    ViewData["Title"] = "Payment";
+    ViewData["Title"] = "Complete Payment";
 }
 
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
 <div class="page-container">
-    <div style="max-width: 800px; margin: 0 auto;">
+    <div style="max-width: 600px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
         @if (Model.Booking == null)
         {
             <div class="alert-minimal alert-minimal-error">
@@ -17,69 +19,24 @@
         }
         else
         {
-            <div class="page-header">
-                <h1 class="page-title">
-                    <i class="bi bi-credit-card"></i> Complete Payment
+            <!-- Compact Header -->
+            <div class="page-header" style="margin-bottom: var(--space-5);">
+                <a href="/Dashboard/Renter" class="btn-minimal btn-minimal-ghost btn-minimal-sm" style="margin-bottom: var(--space-3);">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
+                    <i class="bi bi-credit-card-2-front"></i> Complete Payment
                 </h1>
+                <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Booking #@Model.Booking.BookingId.ToString("D6")</p>
             </div>
 
-            <!-- Booking Summary -->
-            <div class="card-minimal mb-4">
-                <div class="card-minimal-header">
-                    <h2 class="card-minimal-title">
-                        <i class="bi bi-calendar-check"></i> Booking Summary
-                    </h2>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
-                    <div>
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Bike</div>
-                        <div style="font-weight: 600;">@Model.Booking.Bike.Brand @Model.Booking.Bike.Model</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Type</div>
-                        <div style="font-weight: 600;">@Model.Booking.Bike.BikeType.TypeName</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Owner</div>
-                        <div style="font-weight: 600;">@Model.Booking.Bike.Owner.FullName</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Duration</div>
-                        <div style="font-weight: 600;">@Model.Booking.RentalHours.ToString("F1") hours</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pricing Details -->
-            <div class="card-minimal mb-4">
-                <div class="card-minimal-header">
-                    <h2 class="card-minimal-title">
-                        <i class="bi bi-receipt"></i> Pricing Details
-                    </h2>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-                    <div style="display: flex; justify-content: space-between; padding-bottom: var(--space-3); border-bottom: 1px solid var(--neutral-200);">
-                        <span>Base Rate</span>
-                        <strong>₱@Model.Booking.BaseRate.ToString("F2")</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-bottom: var(--space-3); border-bottom: 1px solid var(--neutral-200);">
-                        <span>Service Fee (10%)</span>
-                        <strong>₱@Model.Booking.ServiceFee.ToString("F2")</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-top: var(--space-2);">
-                        <h5 style="margin: 0;">Total Amount</h5>
-                        <h5 style="margin: 0; color: var(--sage-primary);">₱@Model.Booking.TotalAmount.ToString("F2")</h5>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Location Permission Required Alert -->
+            <!-- Location Permission Alert -->
             <div class="alert-minimal alert-minimal-warning mb-4" id="locationPermissionAlert" style="display: none;">
                 <i class="bi bi-geo-alt-fill"></i>
                 <div>
                     <strong>Location Permission Required</strong>
-                    <p class="mb-2">For security purposes, you must enable location access before completing payment. This allows us to track the bike during your rental.</p>
-                    <button type="button" class="btn-minimal btn-minimal-primary btn-sm" id="requestLocationBtn">
+                    <p class="mb-2" style="font-size: 0.875rem;">For security, enable location access before payment. This allows us to track the bike during your rental.</p>
+                    <button type="button" class="btn-minimal btn-minimal-primary btn-minimal-sm" id="requestLocationBtn">
                         <i class="bi bi-geo-alt-fill"></i> Enable Location Access
                     </button>
                 </div>
@@ -103,125 +60,208 @@
 
             @if (Model.ExistingPayment != null)
             {
-                <div class="alert-minimal alert-minimal-warning mb-4">
+                <div class="alert-minimal alert-minimal-info mb-4">
                     <i class="bi bi-info-circle-fill"></i>
                     <div>
-                        <strong>Current Payment Method:</strong> @Model.ExistingPayment.PaymentMethod.MethodName (@Model.ExistingPayment.PaymentStatus)
+                        <strong>Current Payment:</strong> @Model.ExistingPayment.PaymentMethod.MethodName (@Model.ExistingPayment.PaymentStatus)
                         <br />
-                        <small>You can change your payment method below. The previous payment will be cancelled.</small>
+                        <small>You can change your payment method below.</small>
                     </div>
                 </div>
             }
 
+            <!-- Compact Booking Summary Card -->
+            <div class="card-minimal card-minimal-compact mb-4">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-3);">
+                    <div>
+                        <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-1); color: var(--neutral-900);">
+                            @Model.Booking.Bike.Brand @Model.Booking.Bike.Model
+                        </h3>
+                        <p style="font-size: 0.875rem; color: var(--neutral-600); margin: 0;">
+                            @Model.Booking.Bike.BikeType.TypeName • @Model.Booking.RentalHours.ToString("F1") hours
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.75rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Total Amount</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary);">₱@Model.Booking.TotalAmount.ToString("F2")</div>
+                    </div>
+                </div>
+                <div style="padding-top: var(--space-3); border-top: 1px solid var(--neutral-200);">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); font-size: 0.875rem;">
+                        <div>
+                            <div style="color: var(--neutral-600); margin-bottom: var(--space-1);">Owner</div>
+                            <div style="font-weight: 600;">@Model.Booking.Bike.Owner.FullName</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--neutral-600); margin-bottom: var(--space-1);">Duration</div>
+                            <div style="font-weight: 600;">@Model.Booking.RentalHours.ToString("F1") hours</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Payment Methods -->
             <div class="card-minimal mb-4">
                 <div class="card-minimal-header">
-                    <h2 class="card-minimal-title">
-                        <i class="bi bi-credit-card"></i> Select Payment Method
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                        <i class="bi bi-wallet2"></i> Payment Method
                     </h2>
                 </div>
                 <form method="post">
                     <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
-                               class="payment-method-option @(Model.PaymentMethodId == 1 ? "selected" : "")">
-                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 ? "checked" : "") style="margin: 0;" />
-                            <i class="bi bi-wallet2" style="font-size: 1.5rem; color: var(--sage-primary);"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: var(--space-1);">Wallet</div>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600);">
-                                    Balance: ₱<span id="walletBalance">@Model.WalletBalance.ToString("F2")</span>
-                                    @if (Model.WalletBalance < Model.Booking.TotalAmount)
-                                    {
-                                        <span style="color: var(--error);"> • Insufficient</span>
-                                    }
+                        <!-- Wallet -->
+                        <label class="payment-option @(Model.PaymentMethodId == 1 ? "selected" : "")" 
+                               data-method="wallet">
+                            <input type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 ? "checked" : "") />
+                            <div class="payment-option-content">
+                                <div class="payment-icon" style="background: var(--sage-subtle); color: var(--sage-primary);">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <div class="payment-details">
+                                    <div class="payment-name">Wallet</div>
+                                    <div class="payment-subtitle">
+                                        Balance: ₱<span id="walletBalance">@Model.WalletBalance.ToString("F2")</span>
+                                        @if (Model.WalletBalance < Model.Booking.TotalAmount)
+                                        {
+                                            <span style="color: var(--error);"> • Insufficient</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="payment-check">
+                                    <i class="bi bi-check-circle-fill"></i>
                                 </div>
                             </div>
                         </label>
-                        
-                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
-                               class="payment-method-option @(Model.PaymentMethodId == 2 ? "selected" : "")">
-                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="2" @(Model.PaymentMethodId == 2 ? "checked" : "") style="margin: 0;" />
-                            <i class="bi bi-phone" style="font-size: 1.5rem; color: #0066CC;"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: var(--space-1);">GCash</div>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay via GCash mobile payment</div>
+
+                        <!-- GCash -->
+                        <label class="payment-option @(Model.PaymentMethodId == 2 ? "selected" : "")" 
+                               data-method="gcash">
+                            <input type="radio" name="PaymentMethodId" value="2" @(Model.PaymentMethodId == 2 ? "checked" : "") />
+                            <div class="payment-option-content">
+                                <div class="payment-icon" style="background: #E8F4FD; color: #0066CC;">
+                                    <i class="bi bi-phone"></i>
+                                </div>
+                                <div class="payment-details">
+                                    <div class="payment-name">GCash</div>
+                                    <div class="payment-subtitle">Pay via GCash mobile payment</div>
+                                </div>
+                                <div class="payment-check">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
                             </div>
                         </label>
-                        
-                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
-                               class="payment-method-option @(Model.PaymentMethodId == 3 ? "selected" : "")">
-                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="3" @(Model.PaymentMethodId == 3 ? "checked" : "") style="margin: 0;" />
-                            <i class="bi bi-qr-code" style="font-size: 1.5rem; color: var(--info);"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: var(--space-1);">QRPH</div>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay via QR PH</div>
+
+                        <!-- QRPH -->
+                        <label class="payment-option @(Model.PaymentMethodId == 3 ? "selected" : "")" 
+                               data-method="qrph">
+                            <input type="radio" name="PaymentMethodId" value="3" @(Model.PaymentMethodId == 3 ? "checked" : "") />
+                            <div class="payment-option-content">
+                                <div class="payment-icon" style="background: #E8F4FD; color: #0D6EFD;">
+                                    <i class="bi bi-qr-code"></i>
+                                </div>
+                                <div class="payment-details">
+                                    <div class="payment-name">QRPH</div>
+                                    <div class="payment-subtitle">Pay via QR PH</div>
+                                </div>
+                                <div class="payment-check">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
                             </div>
                         </label>
-                        
-                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
-                               class="payment-method-option @(Model.PaymentMethodId == 5 ? "selected" : "")">
-                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="5" @(Model.PaymentMethodId == 5 ? "checked" : "") style="margin: 0;" />
-                            <i class="bi bi-phone" style="font-size: 1.5rem; color: #00D9FF;"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: var(--space-1);">PayMaya</div>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay via PayMaya mobile payment</div>
+
+                        <!-- PayMaya -->
+                        <label class="payment-option @(Model.PaymentMethodId == 5 ? "selected" : "")" 
+                               data-method="paymaya">
+                            <input type="radio" name="PaymentMethodId" value="5" @(Model.PaymentMethodId == 5 ? "checked" : "") />
+                            <div class="payment-option-content">
+                                <div class="payment-icon" style="background: #E0F7FA; color: #00D9FF;">
+                                    <i class="bi bi-phone"></i>
+                                </div>
+                                <div class="payment-details">
+                                    <div class="payment-name">PayMaya</div>
+                                    <div class="payment-subtitle">Pay via PayMaya mobile payment</div>
+                                </div>
+                                <div class="payment-check">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
                             </div>
                         </label>
-                        
-                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
-                               class="payment-method-option @(Model.PaymentMethodId == 6 ? "selected" : "")">
-                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="6" @(Model.PaymentMethodId == 6 ? "checked" : "") style="margin: 0;" />
-                            <i class="bi bi-credit-card" style="font-size: 1.5rem; color: var(--warning);"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: var(--space-1);">Credit/Debit Card</div>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Visa, Mastercard, JCB, and more</div>
+
+                        <!-- Credit/Debit Card -->
+                        <label class="payment-option @(Model.PaymentMethodId == 6 ? "selected" : "")" 
+                               data-method="card">
+                            <input type="radio" name="PaymentMethodId" value="6" @(Model.PaymentMethodId == 6 ? "checked" : "") />
+                            <div class="payment-option-content">
+                                <div class="payment-icon" style="background: #FFF4E6; color: #FF9800;">
+                                    <i class="bi bi-credit-card"></i>
+                                </div>
+                                <div class="payment-details">
+                                    <div class="payment-name">Credit/Debit Card</div>
+                                    <div class="payment-subtitle">Visa, Mastercard, JCB, and more</div>
+                                </div>
+                                <div class="payment-check">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
                             </div>
                         </label>
-                        
-                        <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--neutral-200); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-base);" 
-                               class="payment-method-option @(Model.PaymentMethodId == 4 ? "selected" : "")">
-                            <input class="form-check-input" type="radio" name="PaymentMethodId" value="4" @(Model.PaymentMethodId == 4 ? "checked" : "") style="margin: 0;" />
-                            <i class="bi bi-cash" style="font-size: 1.5rem; color: var(--success);"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: var(--space-1);">Cash</div>
-                                <div style="font-size: 0.875rem; color: var(--neutral-600);">Pay directly to the owner</div>
+
+                        <!-- Cash -->
+                        <label class="payment-option @(Model.PaymentMethodId == 4 ? "selected" : "")" 
+                               data-method="cash">
+                            <input type="radio" name="PaymentMethodId" value="4" @(Model.PaymentMethodId == 4 ? "checked" : "") />
+                            <div class="payment-option-content">
+                                <div class="payment-icon" style="background: #E8F5E9; color: #4CAF50;">
+                                    <i class="bi bi-cash"></i>
+                                </div>
+                                <div class="payment-details">
+                                    <div class="payment-name">Cash</div>
+                                    <div class="payment-subtitle">Pay directly to the owner</div>
+                                </div>
+                                <div class="payment-check">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
                             </div>
                         </label>
                     </div>
 
-                    <!-- Card Payment Form (shown when card is selected) -->
-                    <div id="cardPaymentForm" style="display: none;" class="card-minimal card-minimal-compact mt-4">
-                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: var(--space-4);">
+                    <!-- Card Payment Form -->
+                    <div id="cardPaymentForm" style="display: none; margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--neutral-200);">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-3); color: var(--neutral-900);">
                             <i class="bi bi-credit-card"></i> Card Details
                         </h3>
-                        <div class="form-group-minimal">
-                            <label class="label-minimal">Cardholder Name</label>
-                            <input type="text" class="input-minimal" id="cardholderName" placeholder="John Doe" />
-                        </div>
-                        <div class="form-group-minimal">
-                            <label class="label-minimal">Card Number</label>
-                            <input type="text" class="input-minimal" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
                             <div class="form-group-minimal">
-                                <label class="label-minimal">Expiry Date</label>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);">
-                                    <input type="text" class="input-minimal" id="expMonth" placeholder="MM" maxlength="2" />
-                                    <input type="text" class="input-minimal" id="expYear" placeholder="YYYY" maxlength="4" />
-                                </div>
+                                <label class="label-minimal">Cardholder Name</label>
+                                <input type="text" class="input-minimal" id="cardholderName" placeholder="John Doe" />
                             </div>
                             <div class="form-group-minimal">
-                                <label class="label-minimal">CVV</label>
-                                <input type="text" class="input-minimal" id="cvv" placeholder="123" maxlength="4" />
+                                <label class="label-minimal">Card Number</label>
+                                <input type="text" class="input-minimal" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
+                            </div>
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-3);">
+                                <div class="form-group-minimal">
+                                    <label class="label-minimal">Expiry Date</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);">
+                                        <input type="text" class="input-minimal" id="expMonth" placeholder="MM" maxlength="2" />
+                                        <input type="text" class="input-minimal" id="expYear" placeholder="YYYY" maxlength="4" />
+                                    </div>
+                                </div>
+                                <div class="form-group-minimal">
+                                    <label class="label-minimal">CVV</label>
+                                    <input type="text" class="input-minimal" id="cvv" placeholder="123" maxlength="4" />
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-6);">
+                    <!-- Action Buttons -->
+                    <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5);">
                         <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg" id="submitBtn" disabled>
                             <i class="bi bi-check-circle"></i> <span id="submitBtnText">Confirm Payment</span>
                         </button>
-                        <a href="/Dashboard/Renter" class="btn-minimal btn-minimal-ghost">Cancel</a>
+                        <a href="/Dashboard/Renter" class="btn-minimal btn-minimal-ghost" style="text-align: center;">
+                            Cancel
+                        </a>
                     </div>
                 </form>
             </div>
@@ -230,19 +270,100 @@
 </div>
 
 <style>
-    .payment-method-option {
+    /* Payment Option Styles */
+    .payment-option {
+        position: relative;
+        cursor: pointer;
+        border: 2px solid var(--neutral-200);
+        border-radius: var(--radius-md);
         transition: all var(--transition-base);
+        overflow: hidden;
     }
-    
-    .payment-method-option:hover {
-        background: var(--sage-subtle);
-        border-color: var(--sage-primary);
+
+    .payment-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
     }
-    
-    .payment-method-option.selected {
-        background: var(--sage-subtle);
+
+    .payment-option-content {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3);
+    }
+
+    .payment-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .payment-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .payment-name {
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: var(--neutral-900);
+        margin-bottom: var(--space-1);
+    }
+
+    .payment-subtitle {
+        font-size: 0.8125rem;
+        color: var(--neutral-600);
+        line-height: 1.4;
+    }
+
+    .payment-check {
+        color: var(--sage-primary);
+        font-size: 1.25rem;
+        opacity: 0;
+        transition: opacity var(--transition-base);
+    }
+
+    .payment-option:hover {
         border-color: var(--sage-primary);
+        background: var(--sage-subtle);
+    }
+
+    .payment-option.selected {
+        border-color: var(--sage-primary);
+        background: var(--sage-subtle);
         box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.1);
+    }
+
+    .payment-option.selected .payment-check {
+        opacity: 1;
+    }
+
+    /* Responsive */
+    @@media (max-width: 576px) {
+        .payment-option-content {
+            padding: var(--space-2);
+            gap: var(--space-2);
+        }
+
+        .payment-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+        }
+
+        .payment-name {
+            font-size: 0.875rem;
+        }
+
+        .payment-subtitle {
+            font-size: 0.75rem;
+        }
     }
 </style>
 
@@ -255,18 +376,44 @@
         const form = document.querySelector('form');
         let locationPermissionGranted = false;
 
-        // Check location permission status
-        checkLocationPermission();
+        // Check if location permission is already granted from server
+        const locationAlreadyGranted = @(Model.Booking?.LocationPermissionGranted == true ? "true" : "false");
+        
+        if (locationAlreadyGranted) {
+            locationPermissionGranted = true;
+            locationPermissionAlert.style.display = 'none';
+            submitBtn.disabled = false;
+        } else {
+            // Check location permission status on page load
+            checkLocationPermission();
+        }
 
         function checkLocationPermission() {
             if (!navigator.geolocation) {
                 locationPermissionAlert.style.display = 'block';
                 locationPermissionAlert.className = 'alert-minimal alert-minimal-error mb-4';
-                locationPermissionAlert.querySelector('div').innerHTML = `
-                    <strong>Location Not Supported</strong>
-                    <p class="mb-0">Your browser does not support geolocation. Please use a different browser or device.</p>
-                `;
+                const alertDiv = locationPermissionAlert.querySelector('div');
+                if (alertDiv) {
+                    alertDiv.innerHTML = `
+                        <strong>Location Not Supported</strong>
+                        <p class="mb-2" style="font-size: 0.875rem;">Your browser does not support geolocation. Please use a different browser or device.</p>
+                        <button type="button" class="btn-minimal btn-minimal-primary btn-minimal-sm" id="requestLocationBtn">
+                            <i class="bi bi-geo-alt-fill"></i> Enable Location Access
+                        </button>
+                    `;
+                }
                 return;
+            }
+
+            // Show alert while requesting
+            locationPermissionAlert.style.display = 'block';
+            locationPermissionAlert.className = 'alert-minimal alert-minimal-info mb-4';
+            const alertDiv = locationPermissionAlert.querySelector('div');
+            if (alertDiv) {
+                const pElement = alertDiv.querySelector('p');
+                if (pElement) {
+                    pElement.textContent = 'Requesting location access... Please allow when prompted by your browser.';
+                }
             }
 
             // Request location permission
@@ -294,6 +441,22 @@
                         const result = await response.json();
                         if (result.success) {
                             console.log('Location permission granted and recorded');
+                            // Show success message briefly
+                            if (locationPermissionAlert) {
+                                locationPermissionAlert.style.display = 'block';
+                                locationPermissionAlert.className = 'alert-minimal alert-minimal-success mb-4';
+                                const alertDiv = locationPermissionAlert.querySelector('div');
+                                if (alertDiv) {
+                                    alertDiv.innerHTML = `
+                                        <strong>Location Access Enabled ✓</strong>
+                                        <p class="mb-0" style="font-size: 0.875rem;">You can now proceed with payment.</p>
+                                    `;
+                                }
+                                // Hide success message after 3 seconds
+                                setTimeout(() => {
+                                    locationPermissionAlert.style.display = 'none';
+                                }, 3000);
+                            }
                         }
                     } catch (err) {
                         console.error('Error recording location permission:', err);
@@ -303,29 +466,69 @@
                     // Location permission denied or error
                     locationPermissionGranted = false;
                     locationPermissionAlert.style.display = 'block';
+                    locationPermissionAlert.className = 'alert-minimal alert-minimal-warning mb-4';
                     submitBtn.disabled = true;
                     
                     let errorMessage = 'Location access is required to proceed with payment. ';
                     if (error.code === error.PERMISSION_DENIED) {
-                        errorMessage += 'Please click "Enable Location Access" and allow location when prompted.';
+                        errorMessage += 'Please click "Enable Location Access" below and allow location when prompted.';
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        errorMessage += 'Location information is unavailable. Please check your device settings.';
+                    } else if (error.code === error.TIMEOUT) {
+                        errorMessage += 'Location request timed out. Please try again.';
                     } else {
                         errorMessage += 'Please enable location services in your browser settings.';
                     }
                     
-                    locationPermissionAlert.querySelector('p').textContent = errorMessage;
+                    const alertDiv = locationPermissionAlert.querySelector('div');
+                    if (alertDiv) {
+                        const pElement = alertDiv.querySelector('p');
+                        if (pElement) {
+                            pElement.textContent = errorMessage;
+                        }
+                        // Ensure button is visible
+                        const btn = alertDiv.querySelector('#requestLocationBtn');
+                        if (!btn) {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'btn-minimal btn-minimal-primary btn-minimal-sm';
+                            button.id = 'requestLocationBtn';
+                            button.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Enable Location Access';
+                            alertDiv.appendChild(button);
+                            // Re-attach event listener
+                            button.addEventListener('click', function() {
+                                checkLocationPermission();
+                            });
+                        }
+                    }
                 },
                 {
                     enableHighAccuracy: true,
-                    timeout: 10000,
+                    timeout: 15000,
                     maximumAge: 0
                 }
             );
         }
 
-        // Request location button click
-        requestLocationBtn.addEventListener('click', function() {
-            checkLocationPermission();
+        // Request location button click - ensure it works (use event delegation for dynamic buttons)
+        document.addEventListener('click', function(e) {
+            if (e.target && (e.target.id === 'requestLocationBtn' || e.target.closest('#requestLocationBtn'))) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Enable Location Access button clicked');
+                checkLocationPermission();
+            }
         });
+
+        // Also attach directly if button exists
+        if (requestLocationBtn) {
+            requestLocationBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Enable Location Access button clicked (direct)');
+                checkLocationPermission();
+            });
+        }
 
         // Prevent form submission if location not granted
         form.addEventListener('submit', function(e) {
@@ -337,8 +540,9 @@
             }
         });
 
+        // Payment method selection
         const radioButtons = document.querySelectorAll('input[name="PaymentMethodId"]');
-        const paymentOptions = document.querySelectorAll('.payment-method-option');
+        const paymentOptions = document.querySelectorAll('.payment-option');
         
         // Make entire label clickable
         paymentOptions.forEach(option => {
@@ -391,4 +595,3 @@
         });
     });
 </script>
-

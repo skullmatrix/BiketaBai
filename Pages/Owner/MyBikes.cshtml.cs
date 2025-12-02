@@ -64,9 +64,14 @@ public class MyBikesModel : PageModel
             var bikeActiveBookings = ActiveBookings.Where(b => b.BikeId == bike.BikeId).ToList();
             BikeActiveBookings[bike.BikeId] = bikeActiveBookings;
 
-            // Calculate available quantity: Total Quantity - Sum of active bookings quantity
-            var rentedQuantity = bikeActiveBookings.Sum(b => b.Quantity);
-            AvailableQuantities[bike.BikeId] = Math.Max(0, bike.Quantity - rentedQuantity);
+            // Calculate available quantity: Total Quantity - Sum of active bookings quantity - Sum of lost bikes quantity
+            // Lost bikes should be subtracted from available quantity since they're not available for rent
+            var bikeLostBookings = LostBookings.Where(b => b.BikeId == bike.BikeId).ToList();
+            var activeRentedQuantity = bikeActiveBookings.Sum(b => b.Quantity);
+            var lostQuantity = bikeLostBookings.Sum(b => b.Quantity);
+            var totalRentedQuantity = activeRentedQuantity + lostQuantity;
+            
+            AvailableQuantities[bike.BikeId] = Math.Max(0, bike.Quantity - totalRentedQuantity);
 
             // Check for overdue bookings
             var now = DateTime.UtcNow;
@@ -222,11 +227,12 @@ public class MyBikesModel : PageModel
             await notificationService.CreateNotificationAsync(
                 booking.RenterId,
                 "Bike Return Confirmed",
-                $"Your bike return for booking #{bookingId} has been confirmed by the owner.",
+                $"Your bike return for booking #{bookingId.ToString("D6")} has been confirmed by the owner.",
+                "Booking",
                 $"/Bookings/Details/{bookingId}"
             );
 
-            TempData["SuccessMessage"] = $"Bike return confirmed for booking #{bookingId}";
+            TempData["SuccessMessage"] = $"Bike return confirmed for booking #{bookingId.ToString("D6")}";
             return RedirectToPage();
         }
         catch (Exception ex)

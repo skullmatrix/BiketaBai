@@ -31,15 +31,16 @@ public class BookingService
             return false; // Only allow Available or Partially Rented bikes
 
         // Check for conflicting bookings and count how many bikes are already booked
+        // Include lost bikes in the calculation since they should be subtracted from available quantity
         var conflictingBookings = await _context.Bookings
             .Where(b => b.BikeId == bikeId &&
-                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active
+                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active (includes lost bikes)
                        ((startDate >= b.StartDate && startDate < b.EndDate) ||
                         (endDate > b.StartDate && endDate <= b.EndDate) ||
                         (startDate <= b.StartDate && endDate >= b.EndDate)))
             .ToListAsync();
 
-        // Sum up the quantity of bikes already booked during this period
+        // Sum up the quantity of bikes already booked during this period (including lost bikes)
         var bookedQuantity = conflictingBookings.Sum(b => b.Quantity);
 
         // Calculate available quantity (ensure Quantity is at least 1 for backward compatibility)
@@ -151,14 +152,16 @@ public class BookingService
         var bike = await _context.Bikes.FindAsync(bikeId);
         if (bike == null || bike.IsDeleted) return 0;
 
+        // Include lost bikes in availability calculation since they should be subtracted from available quantity
         var conflictingBookings = await _context.Bookings
             .Where(b => b.BikeId == bikeId &&
-                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active
+                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active (includes lost bikes)
                        ((startDate >= b.StartDate && startDate < b.EndDate) ||
                         (endDate > b.StartDate && endDate <= b.EndDate) ||
                         (startDate <= b.StartDate && endDate >= b.EndDate)))
             .ToListAsync();
 
+        // Sum up the quantity of bikes already booked during this period (including lost bikes)
         var bookedQuantity = conflictingBookings.Sum(b => b.Quantity);
         
         // Calculate available quantity (ensure Quantity is at least 1 for backward compatibility)
