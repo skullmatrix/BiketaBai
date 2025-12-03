@@ -281,21 +281,69 @@
 
     // Test sound
     function testSound() {
+        console.log('🔊 Testing notification sound...');
         if (typeof playNotificationSound === 'function') {
-            playNotificationSound();
-            alert('Sound test triggered! You should hear a notification sound.');
+            console.log('✅ playNotificationSound function found, calling...');
+            try {
+                playNotificationSound();
+                console.log('✅ Sound function called successfully');
+                alert('Sound test triggered! You should hear a notification sound. Check console for details.');
+            } catch (error) {
+                console.error('❌ Error playing sound:', error);
+                alert('Error playing sound: ' + error.message);
+            }
         } else {
+            console.error('❌ playNotificationSound function not found');
             alert('playNotificationSound function not found. Make sure you are on a page with the notification system loaded.');
         }
     }
 
     // Test badge
     function testBadge() {
+        console.log('🔔 Testing notification badge...');
+        const $badge = $('#notificationCountHeader');
+        console.log('Badge element exists:', $badge.length > 0);
+        
+        if ($badge.length > 0) {
+            console.log('Badge element details:', {
+                id: $badge.attr('id'),
+                class: $badge.attr('class'),
+                currentDisplay: $badge.css('display'),
+                currentText: $badge.text(),
+                parent: $badge.parent().attr('id')
+            });
+        }
+        
         if (typeof updateNotificationBadge === 'function') {
             const testCount = Math.floor(Math.random() * 10) + 1;
+            console.log('Calling updateNotificationBadge with count:', testCount);
             updateNotificationBadge(testCount);
-            alert(`Badge test triggered! Badge should show ${testCount}.`);
+            
+            // Check if badge is visible after update
+            setTimeout(() => {
+                const display = $badge.length > 0 ? window.getComputedStyle($badge[0]).display : 'element not found';
+                const isVisible = $badge.length > 0 ? $badge.is(':visible') : false;
+                console.log('Badge visibility after update:', { display, isVisible, text: $badge.text() });
+                
+                if (!isVisible || display === 'none') {
+                    console.warn('⚠️ Badge is not visible! Trying to force show...');
+                    $badge[0].style.setProperty('display', 'flex', 'important');
+                    $badge.show();
+                    
+                    setTimeout(() => {
+                        const newDisplay = window.getComputedStyle($badge[0]).display;
+                        if (newDisplay === 'none') {
+                            alert(`Badge test triggered but badge is still not visible! Count: ${testCount}\nCheck console for details.`);
+                        } else {
+                            alert(`Badge test triggered! Badge should now show ${testCount}.`);
+                        }
+                    }, 200);
+                } else {
+                    alert(`Badge test triggered! Badge should show ${testCount}.`);
+                }
+            }, 300);
         } else {
+            console.error('❌ updateNotificationBadge function not found');
             alert('updateNotificationBadge function not found. Make sure you are on a page with the notification system loaded.');
         }
     }

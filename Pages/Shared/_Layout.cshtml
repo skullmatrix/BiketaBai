@@ -788,15 +788,23 @@
 
             // Update notification badge UI
             function updateNotificationBadge(count) {
+                console.log('🔔 updateNotificationBadge called with count:', count);
                 const countText = count > 9 ? '9+' : String(count);
                 
                 if (count > 0) {
                     // Update sidebar badge
-                    $('#notificationCountSidebar').text(countText).show();
+                    const $sidebarBadge = $('#notificationCountSidebar');
+                    if ($sidebarBadge.length > 0) {
+                        $sidebarBadge.text(countText).show();
+                        console.log('✅ Sidebar badge updated:', countText);
+                    } else {
+                        console.warn('⚠️ Sidebar badge element not found');
+                    }
                     
                     // Update header badge for all authenticated users
-                    if (isAuthenticated === "true") {
-                        const $headerBadge = $('#notificationCountHeader');
+                    const $headerBadge = $('#notificationCountHeader');
+                    if ($headerBadge.length > 0) {
+                        console.log('✅ Header badge element found, updating...');
                         $headerBadge.text(countText);
                         
                         // Toggle class based on whether it's a single digit or multiple
@@ -806,17 +814,48 @@
                             $headerBadge.removeClass('badge-multiple');
                         }
                         
-                        $headerBadge.css('display', 'flex'); // Show as flex to center content
+                        // Show the badge - use multiple methods to ensure it displays
+                        // Use !important to override any CSS rules
+                        $headerBadge[0].style.setProperty('display', 'flex', 'important');
+                        $headerBadge[0].style.setProperty('visibility', 'visible', 'important');
+                        $headerBadge[0].style.setProperty('opacity', '1', 'important');
+                        $headerBadge.show();
+                        
+                        // Double-check it's visible
+                        const computedDisplay = window.getComputedStyle($headerBadge[0]).display;
+                        console.log('✅ Header badge updated:', countText, 'Display:', computedDisplay);
+                        
+                        if (computedDisplay === 'none') {
+                            console.error('❌ Badge display is still none after update! Trying alternative method...');
+                            // Try removing and re-adding the element
+                            const badgeHtml = $headerBadge[0].outerHTML;
+                            $headerBadge.remove();
+                            $('#openSidebarBtn').append(badgeHtml);
+                            const $newBadge = $('#notificationCountHeader');
+                            $newBadge.text(countText);
+                            $newBadge[0].style.setProperty('display', 'flex', 'important');
+                        }
+                    } else {
+                        console.error('❌ Header badge element (#notificationCountHeader) not found!');
+                        console.error('Available elements:', {
+                            openSidebarBtn: $('#openSidebarBtn').length,
+                            sidebarBadge: $('#notificationCountSidebar').length,
+                            allSpans: $('span[id*="notification"]').map(function() { return this.id; }).get()
+                        });
                     }
                     
                     // Play sound notification when new notification arrives
-                    if (isAuthenticated === "true" && count > previousNotificationCount && previousNotificationCount >= 0) {
+                    const shouldPlaySound = count > previousNotificationCount && previousNotificationCount >= 0;
+                    if (shouldPlaySound) {
+                        console.log('🔊 Playing notification sound (count increased from', previousNotificationCount, 'to', count, ')');
                         playNotificationSound();
                     }
                 } else {
                     $('#notificationCountSidebar').hide();
-                    if (isAuthenticated === "true") {
-                        $('#notificationCountHeader').hide().removeClass('badge-multiple');
+                    const $headerBadge = $('#notificationCountHeader');
+                    if ($headerBadge.length > 0) {
+                        $headerBadge.hide().removeClass('badge-multiple');
+                        console.log('✅ Header badge hidden (count is 0)');
                     }
                 }
                 
@@ -826,13 +865,17 @@
             }
             
             function loadNotificationCount() {
+                console.log('📊 Loading notification count from API...');
                 $.get('/Api/Notifications', function(data) {
                     const currentCount = data.count || 0;
+                    console.log('📊 Notification count received:', currentCount);
                     updateNotificationBadge(currentCount);
-                }).fail(function() {
+                }).fail(function(xhr, status, error) {
+                    console.error('❌ Failed to load notification count:', status, error);
                     $('#notificationCountSidebar').hide();
-                    if (isAuthenticated === "true") {
-                        $('#notificationCountHeader').hide().removeClass('badge-multiple');
+                    const $headerBadge = $('#notificationCountHeader');
+                    if ($headerBadge.length > 0) {
+                        $headerBadge.hide().removeClass('badge-multiple');
                     }
                 });
             }
@@ -851,8 +894,27 @@
             window.testNotification = function() {
                 console.log("🧪 Testing notification system...");
                 console.log("1. Checking authentication:", isAuthenticated);
-                console.log("2. Checking badge element:", $('#notificationCountHeader').length > 0 ? "Found" : "Not Found");
-                console.log("3. Checking SignalR connection:", window.BiketaBaiNotifications?.connection ? "Exists" : "Not Found");
+                
+                const $headerBadge = $('#notificationCountHeader');
+                const badgeExists = $headerBadge.length > 0;
+                console.log("2. Checking badge element:", badgeExists ? "✅ Found" : "❌ Not Found");
+                
+                if (badgeExists) {
+                    console.log("   Badge element details:", {
+                        id: $headerBadge.attr('id'),
+                        class: $headerBadge.attr('class'),
+                        currentDisplay: $headerBadge.css('display'),
+                        currentText: $headerBadge.text(),
+                        parent: $headerBadge.parent().attr('id'),
+                        parentButton: $headerBadge.closest('button').attr('id')
+                    });
+                } else {
+                    console.error("❌ Badge element not found! Searching for alternatives...");
+                    console.log("   Searching for openSidebarBtn:", $('#openSidebarBtn').length);
+                    console.log("   All elements with 'notification' in id:", $('[id*="notification"]').map(function() { return this.id; }).get());
+                }
+                
+                console.log("3. Checking SignalR connection:", window.BiketaBaiNotifications?.connection ? "✅ Exists" : "❌ Not Found");
                 
                 if (window.BiketaBaiNotifications?.connection) {
                     const state = window.BiketaBaiNotifications.connection.state;
@@ -860,8 +922,53 @@
                 }
                 
                 // Test badge
-                console.log("5. Testing badge update...");
+                console.log("5. Testing badge update with count 5...");
                 updateNotificationBadge(5);
+                
+                // Verify badge is visible after update
+                setTimeout(() => {
+                    const $badge = $('#notificationCountHeader');
+                    if ($badge.length > 0) {
+                        const display = $badge.css('display');
+                        const visibility = $badge.css('visibility');
+                        const opacity = $badge.css('opacity');
+                        const isVisible = $badge.is(':visible');
+                        const computedStyle = window.getComputedStyle($badge[0]);
+                        
+                        console.log("   Badge visibility check:", {
+                            display: display,
+                            computedDisplay: computedStyle.display,
+                            visibility: visibility,
+                            opacity: opacity,
+                            isVisible: isVisible,
+                            text: $badge.text(),
+                            position: computedStyle.position,
+                            zIndex: computedStyle.zIndex
+                        });
+                        
+                        if (!isVisible || display === 'none' || computedStyle.display === 'none') {
+                            console.warn("⚠️ Badge is not visible! Trying to force show...");
+                            $badge.css({
+                                'display': 'flex !important',
+                                'visibility': 'visible !important',
+                                'opacity': '1 !important'
+                            }).show();
+                            
+                            // Check again
+                            setTimeout(() => {
+                                const newDisplay = window.getComputedStyle($badge[0]).display;
+                                console.log("   After force show, display:", newDisplay);
+                                if (newDisplay === 'none') {
+                                    console.error("❌ Badge still not visible! There may be a CSS conflict.");
+                                }
+                            }, 100);
+                        } else {
+                            console.log("✅ Badge is visible!");
+                        }
+                    } else {
+                        console.error("❌ Badge element disappeared after update!");
+                    }
+                }, 500);
                 
                 // Test sound
                 console.log("6. Testing sound...");
@@ -872,6 +979,7 @@
                 loadNotificationCount();
                 
                 console.log("✅ Test complete! Check the badge and listen for sound.");
+                console.log("💡 If badge is not visible, check console for details above.");
             };
             
             // Get connection status
