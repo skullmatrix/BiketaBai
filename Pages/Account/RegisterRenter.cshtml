@@ -80,6 +80,9 @@
 
             <form method="post" enctype="multipart/form-data" id="renterRegistrationForm">
                 <input type="hidden" name="step" value="@Model.CurrentStep" />
+                <input type="hidden" id="addressPlaceId" name="AddressPlaceId" />
+                <input type="hidden" id="addressLatitude" name="AddressLatitude" />
+                <input type="hidden" id="addressLongitude" name="AddressLongitude" />
 
                         <!-- Step 1: Basic Information -->
                         @if (Model.CurrentStep == 1)
@@ -338,7 +341,11 @@
                     if (data.success && data.predictions && data.predictions.length > 0) {
                         const suggestionsHtml = data.predictions.slice(0, 5).map(function(prediction) {
                             return `
-                                <div class="address-suggestion-item" data-place-id="${prediction.place_id}" data-address="${prediction.description}">
+                                <div class="address-suggestion-item" 
+                                     data-place-id="${prediction.place_id}" 
+                                     data-address="${prediction.description}"
+                                     data-latitude="${prediction.latitude || ''}"
+                                     data-longitude="${prediction.longitude || ''}">
                                     <div class="address-suggestion-icon">
                                         <i class="bi bi-geo-alt-fill"></i>
                                     </div>
@@ -411,11 +418,23 @@
             $(document).on('click', '.address-suggestion-item', function() {
                 const address = $(this).data('address');
                 const placeId = $(this).data('place-id');
+                const latitude = $(this).data('latitude');
+                const longitude = $(this).data('longitude');
                 
                 if (!placeId) return; // Don't process "No addresses found" message
                 
                 $('#addressInput').val(address);
                 addressPlaceId = placeId;
+                
+                // Store place_id and coordinates in hidden fields
+                $('#addressPlaceId').val(placeId);
+                if (latitude && longitude) {
+                    $('#addressLatitude').val(latitude);
+                    $('#addressLongitude').val(longitude);
+                } else {
+                    $('#addressLatitude').val('');
+                    $('#addressLongitude').val('');
+                }
                 
                 // Hide suggestions
                 $('#addressSuggestions').hide();
@@ -425,7 +444,7 @@
                 $('#addressValid').show();
                 $('#addressInvalid').hide();
                 
-                console.log('✅ Address selected:', address);
+                console.log('✅ Address selected:', address, 'Place ID:', placeId, 'Coords:', latitude, longitude);
             });
 
             // Hide suggestions when clicking outside

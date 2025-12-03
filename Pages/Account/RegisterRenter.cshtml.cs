@@ -66,6 +66,15 @@ public class RegisterRenterModel : PageModel
         [Display(Name = "Address")]
         public string Address { get; set; } = string.Empty;
 
+        [Display(Name = "Address Place ID")]
+        public string? AddressPlaceId { get; set; }
+
+        [Display(Name = "Address Latitude")]
+        public double? AddressLatitude { get; set; }
+
+        [Display(Name = "Address Longitude")]
+        public double? AddressLongitude { get; set; }
+
         [Required]
         [Phone]
         [Display(Name = "Phone Number")]
@@ -235,7 +244,23 @@ public class RegisterRenterModel : PageModel
             }
 
             // Validate address using AddressValidationService
-            var addressValidation = await _addressValidationService.ValidateAddressAsync(Input.Address);
+            // If coordinates are provided from autocomplete, use them directly
+            AddressValidationService.AddressValidationResult addressValidation;
+            if (Input.AddressLatitude.HasValue && Input.AddressLongitude.HasValue)
+            {
+                // Address was selected from autocomplete with coordinates - validate using coordinates
+                addressValidation = await _addressValidationService.ValidateAddressAsync(
+                    Input.Address, 
+                    Input.AddressLatitude.Value, 
+                    Input.AddressLongitude.Value
+                );
+            }
+            else
+            {
+                // No coordinates provided - validate by searching
+                addressValidation = await _addressValidationService.ValidateAddressAsync(Input.Address);
+            }
+
             if (!addressValidation.IsValid)
             {
                 ErrorMessage = addressValidation.ErrorMessage ?? "Invalid address. Please check and try again.";
@@ -520,11 +545,79 @@ public class RegisterRenterModel : PageModel
             }
         }
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        // Use database transaction to ensure atomicity and handle concurrency
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Re-check email and phone right before saving to minimize race condition window
+            var existingUserByEmail = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
+            if (existingUserByEmail != null)
+            {
+                await transaction.RollbackAsync();
+                ErrorMessage = "Email address is already registered. Please use a different email or try logging in.";
+                CurrentStep = 1;
+                TempData["RenterCurrentStep"] = "1";
+                TempData["RenterErrorMessage"] = ErrorMessage;
+                return Page();
+            }
 
-        // Create wallet
-        await _walletService.GetOrCreateWalletAsync(user.UserId);
+            var existingUserByPhone = await _context.Users
+                .FirstOrDefaultAsync(u => u.Phone == phone && !u.IsDeleted);
+            if (existingUserByPhone != null)
+            {
+                await transaction.RollbackAsync();
+                ErrorMessage = "Phone number is already registered. Please use a different phone number.";
+                CurrentStep = 1;
+                TempData["RenterCurrentStep"] = "1";
+                TempData["RenterErrorMessage"] = ErrorMessage;
+                return Page();
+            }
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            // Create wallet within the same transaction
+            await _walletService.GetOrCreateWalletAsync(user.UserId);
+            await _context.SaveChangesAsync();
+
+            // Commit transaction
+            await transaction.CommitAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync();
+            
+            // Check if it's a duplicate key violation
+            if (ex.InnerException != null && (
+                ex.InnerException.Message.Contains("Duplicate entry") ||
+                ex.InnerException.Message.Contains("UNIQUE constraint") ||
+                ex.InnerException.Message.Contains("duplicate key")))
+            {
+                Log.Warning("Duplicate registration attempt for email: {Email} or phone: {Phone}", email, phone);
+                ErrorMessage = "This email or phone number is already registered. Please use a different one or try logging in.";
+            }
+            else
+            {
+                Log.Error(ex, "Database error during registration for email: {Email}", email);
+                ErrorMessage = "An error occurred during registration. Please try again.";
+            }
+            
+            CurrentStep = 1;
+            TempData["RenterCurrentStep"] = "1";
+            TempData["RenterErrorMessage"] = ErrorMessage;
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            Log.Error(ex, "Unexpected error during registration for email: {Email}", email);
+            ErrorMessage = "An unexpected error occurred. Please try again.";
+            CurrentStep = 1;
+            TempData["RenterCurrentStep"] = "1";
+            TempData["RenterErrorMessage"] = ErrorMessage;
+            return Page();
+        }
 
         // Send verification email
         try

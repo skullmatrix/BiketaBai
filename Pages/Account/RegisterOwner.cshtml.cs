@@ -73,6 +73,15 @@ public class RegisterOwnerModel : PageModel
         [Display(Name = "Store Address")]
         public string StoreAddress { get; set; } = string.Empty;
 
+        [Display(Name = "Store Address Place ID")]
+        public string? StoreAddressPlaceId { get; set; }
+
+        [Display(Name = "Store Address Latitude")]
+        public double? StoreAddressLatitude { get; set; }
+
+        [Display(Name = "Store Address Longitude")]
+        public double? StoreAddressLongitude { get; set; }
+
         // Step 2: ID Document (handled via IdDocument property)
 
         // Step 3: Account Setup
@@ -228,7 +237,23 @@ public class RegisterOwnerModel : PageModel
 
 
             // Validate store address using AddressValidationService
-            var addressValidation = await _addressValidationService.ValidateAddressAsync(Input.StoreAddress);
+            // If coordinates are provided from autocomplete, use them directly
+            AddressValidationService.AddressValidationResult addressValidation;
+            if (Input.StoreAddressLatitude.HasValue && Input.StoreAddressLongitude.HasValue)
+            {
+                // Address was selected from autocomplete with coordinates - validate using coordinates
+                addressValidation = await _addressValidationService.ValidateAddressAsync(
+                    Input.StoreAddress, 
+                    Input.StoreAddressLatitude.Value, 
+                    Input.StoreAddressLongitude.Value
+                );
+            }
+            else
+            {
+                // No coordinates provided - validate by searching
+                addressValidation = await _addressValidationService.ValidateAddressAsync(Input.StoreAddress);
+            }
+
             if (!addressValidation.IsValid)
             {
                 ErrorMessage = addressValidation.ErrorMessage ?? "Invalid store address. Please check and try again.";

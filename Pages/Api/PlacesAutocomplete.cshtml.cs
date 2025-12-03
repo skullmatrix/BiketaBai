@@ -36,7 +36,9 @@ namespace BiketaBai.Pages.Api
                         place_id = p.PlaceId,
                         description = p.DisplayName,
                         main_text = p.MainText,
-                        secondary_text = p.SecondaryText
+                        secondary_text = p.SecondaryText,
+                        latitude = p.Latitude,
+                        longitude = p.Longitude
                     })
                 });
             }

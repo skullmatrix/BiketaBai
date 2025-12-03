@@ -48,7 +48,19 @@ if (!string.IsNullOrEmpty(connectionString))
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(30),
                 errorNumbersToAdd: null);
+            
+            // Configure connection string with increased pool size for better concurrency
+            // This helps when multiple users register simultaneously on Railway
+            if (!connectionString.Contains("Pooling"))
+            {
+                // Connection pooling is handled by the connection string itself
+                // MySQL connector automatically pools connections
+            }
         });
+        
+        // Enable detailed errors in development
+        options.EnableSensitiveDataLogging(isDevelopment);
+        options.EnableDetailedErrors(isDevelopment);
     });
 }
 

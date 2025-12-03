@@ -99,6 +99,78 @@ public class AddressValidationService
         return result;
     }
 
+    // Overload that accepts coordinates from autocomplete selection
+    public async Task<AddressValidationResult> ValidateAddressAsync(string address, double latitude, double longitude)
+    {
+        var result = new AddressValidationResult();
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            result.ErrorMessage = "Address is required";
+            return result;
+        }
+
+        // Validate coordinates are within valid range
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+        {
+            Log.Warning("Invalid coordinates provided: {Latitude}, {Longitude}. Falling back to address search.", latitude, longitude);
+            // Fall back to regular validation
+            return await ValidateAddressAsync(address);
+        }
+
+        try
+        {
+            // Use reverse geocoding with provided coordinates
+            // This is more reliable when coordinates come from autocomplete
+            var url = $"https://nominatim.openstreetmap.org/reverse?lat={latitude}&lon={longitude}&format=json&addressdetails=1";
+
+            Log.Information("Validating address via reverse geocoding: {Address} at {Latitude}, {Longitude}", address, latitude, longitude);
+
+            var response = await _httpClient.GetAsync(url);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Warning("Reverse geocoding failed: {StatusCode}. Falling back to address search.", response.StatusCode);
+                // Fall back to regular validation
+                return await ValidateAddressAsync(address);
+            }
+
+            var jsonDoc = JsonDocument.Parse(content);
+            var root = jsonDoc.RootElement;
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                var displayName = root.TryGetProperty("display_name", out var displayNameElement)
+                    ? displayNameElement.GetString() ?? ""
+                    : "";
+
+                // If we got a valid response, use it
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    result.IsValid = true;
+                    result.StandardizedAddress = displayName;
+                    result.FormattedAddress = displayName;
+                    result.Latitude = latitude;
+                    result.Longitude = longitude;
+
+                    Log.Information("Address validated successfully via reverse geocoding: {FormattedAddress}", displayName);
+                    return result;
+                }
+            }
+
+            // If reverse geocoding didn't work, fall back to regular validation
+            Log.Information("Reverse geocoding returned empty result. Falling back to address search.");
+            return await ValidateAddressAsync(address);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Error in reverse geocoding for address: {Address}. Falling back to address search.", address);
+            // Fall back to regular validation
+            return await ValidateAddressAsync(address);
+        }
+    }
+
     public async Task<bool> VerifyAddressExistsAsync(string address)
     {
         var result = await ValidateAddressAsync(address);
