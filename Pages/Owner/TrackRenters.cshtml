@@ -301,7 +301,7 @@
             connection = notificationHubConnection;
             isReusingConnection = true;
         } else {
-            // Create a new connection if one doesn't exist (shouldn't happen normally)
+            // Create a new connection if one doesn't exist
             console.log('Creating new SignalR connection for location tracking');
             connection = new signalR.HubConnectionBuilder()
                 .withUrl("/notificationHub")
@@ -320,13 +320,9 @@
         locationTrackingConnection = connection;
         
         // Remove existing handlers if they were already registered (prevents duplicates on retry)
-        // This is critical when reusing notificationHubConnection that may have old handlers from previous retries
-        // Always remove handlers before registering new ones to prevent accumulation
         if (locationTrackingHandlersRegistered || isReusingConnection) {
             console.log('Removing existing location tracking handlers to prevent duplicates...');
             try {
-                // Remove all handlers for ReceiveLocationUpdate event
-                // This prevents duplicate handlers when retrying after connection errors
                 connection.off("ReceiveLocationUpdate");
             } catch (e) {
                 console.warn('Could not remove existing handlers (this is OK if handlers were not registered):', e);
@@ -352,6 +348,12 @@
             const bikeName = data.bikeName || 'Unknown';
             const trackedAt = data.trackedAt || new Date().toISOString();
             
+            // Validate coordinates
+            if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+                console.error("Invalid coordinates in location update:", data);
+                return;
+            }
+            
             // Update location data
             locationData[bookingId] = {
                 latitude: lat,
@@ -376,6 +378,18 @@
 
             // Update location display in the booking card
             updateLocationDisplay(bookingId, distance, isWithin, trackedAt);
+            
+            // Update "View on Map" button data attributes
+            const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
+            if (bookingCard) {
+                const viewButton = bookingCard.querySelector('button.btn-view-location');
+                if (viewButton) {
+                    viewButton.setAttribute('data-latitude', lat.toString());
+                    viewButton.setAttribute('data-longitude', lng.toString());
+                    viewButton.setAttribute('data-distance', distance.toString());
+                    viewButton.setAttribute('data-is-within', isWithin.toString());
+                }
+            }
         });
         
         // Mark handlers as registered and initialization as complete
@@ -392,7 +406,6 @@
                 .catch(function(err) {
                     console.error("Location tracking SignalR connection error:", err);
                     // Reset flags on error so it can be retried
-                    // Handlers will be removed and re-registered on next initialization
                     locationTrackingHandlersRegistered = false;
                     locationTrackingInitialized = false;
                     locationTrackingConnection = null;

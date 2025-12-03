@@ -344,6 +344,9 @@
             // SignalR Connection for Real-time Notifications
             let notificationHubConnection = null;
             
+            // Track if handlers are registered to avoid duplicates
+            let notificationHandlersRegistered = false;
+            
             // Initialize SignalR connection
             function initializeSignalR() {
                 if (typeof signalR === 'undefined') {
@@ -355,6 +358,19 @@
                     return;
                 }
                 
+                // If connection exists and is connected/connecting, just ensure handlers are registered
+                if (notificationHubConnection && 
+                    (notificationHubConnection.state === signalR.HubConnectionState.Connected ||
+                     notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
+                    console.log('SignalR connection already active');
+                    // Ensure handlers are registered (they should be, but double-check)
+                    if (!notificationHandlersRegistered) {
+                        registerNotificationHandlers();
+                    }
+                    return;
+                }
+                
+                // Create new connection if it doesn't exist or is disconnected
                 notificationHubConnection = new signalR.HubConnectionBuilder()
                     .withUrl("/notificationHub")
                     .withAutomaticReconnect({
@@ -368,6 +384,45 @@
                     })
                     .build();
                 
+                // Register notification handlers
+                registerNotificationHandlers();
+                
+                // Start the connection
+                notificationHubConnection.start()
+                    .then(() => {
+                        console.log("SignalR connected successfully for notifications");
+                        // Load initial notification count
+                        loadNotificationCount();
+                    })
+                    .catch((err) => {
+                        console.error("SignalR connection error:", err);
+                        // Retry connection after a delay
+                        setTimeout(() => {
+                            console.log("Retrying SignalR connection...");
+                            if (notificationHubConnection && notificationHubConnection.state === signalR.HubConnectionState.Disconnected) {
+                                notificationHubConnection.start()
+                                    .then(() => {
+                                        console.log("SignalR reconnected successfully");
+                                        loadNotificationCount();
+                                    })
+                                    .catch((retryErr) => {
+                                        console.error("SignalR retry failed:", retryErr);
+                                        // Fallback to polling if SignalR fails completely
+                                        setInterval(function() {
+                                            loadNotificationCount();
+                                        }, 15000);
+                                    });
+                            }
+                        }, 5000);
+                    });
+            }
+            
+            // Register notification handlers (separate function to avoid duplication)
+            function registerNotificationHandlers() {
+                if (!notificationHubConnection || notificationHandlersRegistered) {
+                    return;
+                }
+                
                 // Listen for new notifications
                 notificationHubConnection.on("ReceiveNotification", function (notification) {
                     console.log("New notification received:", notification);
@@ -376,14 +431,16 @@
                     const currentCount = notification.unreadCount || 0;
                     updateNotificationBadge(currentCount);
                     
-                    // Play sound
+                    // Play sound immediately when notification is received
                     playNotificationSound();
                     
                     // Show browser notification if permission granted
                     if (Notification.permission === "granted") {
                         new Notification(notification.title, {
                             body: notification.message,
-                            icon: '/favicon.ico'
+                            icon: '/favicon.ico',
+                            badge: '/favicon.ico',
+                            tag: 'biketabai-notification'
                         });
                     }
                 });
@@ -392,47 +449,55 @@
                 notificationHubConnection.on("ReceiveBookingUpdate", function (update) {
                     console.log("Booking update received:", update);
                     
-                    // Reload notification count
+                    // Reload notification count to get latest
                     loadNotificationCount();
                     
-                    // Play sound
+                    // Play sound for booking updates
                     playNotificationSound();
+                    
+                    // Show browser notification if permission granted
+                    if (Notification.permission === "granted" && update.message) {
+                        new Notification("Booking Update", {
+                            body: update.message,
+                            icon: '/favicon.ico',
+                            badge: '/favicon.ico',
+                            tag: 'biketabai-booking-update'
+                        });
+                    }
                 });
                 
                 // Handle connection events
-                notificationHubConnection.onreconnecting(() => {
-                    console.log("SignalR reconnecting...");
+                notificationHubConnection.onreconnecting((error) => {
+                    console.log("SignalR reconnecting...", error);
                 });
                 
-                notificationHubConnection.onreconnected(() => {
-                    console.log("SignalR reconnected");
+                notificationHubConnection.onreconnected((connectionId) => {
+                    console.log("SignalR reconnected with connection ID:", connectionId);
+                    // Reload notification count when reconnected
                     loadNotificationCount();
                 });
                 
-                notificationHubConnection.onclose(() => {
-                    console.log("SignalR connection closed");
+                notificationHubConnection.onclose((error) => {
+                    console.log("SignalR connection closed", error);
+                    notificationHandlersRegistered = false; // Reset flag on close
+                    // Try to reconnect after a delay if connection was closed unexpectedly
+                    if (error) {
+                        console.log("Connection closed with error, attempting to reconnect...");
+                        setTimeout(() => {
+                            if (notificationHubConnection && 
+                                notificationHubConnection.state === signalR.HubConnectionState.Disconnected) {
+                                initializeSignalR();
+                            }
+                        }, 5000);
+                    }
                 });
                 
-                // Start the connection
-                notificationHubConnection.start()
-                    .then(() => {
-                        console.log("SignalR connected successfully");
-                        // Load initial notification count
-                        loadNotificationCount();
-                    })
-                    .catch((err) => {
-                        console.error("SignalR connection error:", err);
-                        // Fallback to polling if SignalR fails
-                        setInterval(function() {
-                            loadNotificationCount();
-                        }, 15000);
-                    });
+                notificationHandlersRegistered = true;
             }
             
-            // Load wallet and points balance
+            // Load wallet balance
             $(document).ready(function() {
                 loadWalletBalance();
-                loadPointsBalance();
                 
                 // Initialize SignalR for real-time notifications
                 if (isAuthenticated === "true") {
@@ -519,6 +584,24 @@
                 try {
                     // Create audio context for notification sound
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Resume audio context if suspended (browsers require user interaction first)
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            playTone(audioContext);
+                        }).catch((e) => {
+                            console.log('Could not resume audio context:', e);
+                        });
+                    } else {
+                        playTone(audioContext);
+                    }
+                } catch (e) {
+                    console.log('Sound notification not available:', e);
+                }
+            }
+            
+            function playTone(audioContext) {
+                try {
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
                     
@@ -537,23 +620,27 @@
                     
                     // Play a second tone for emphasis
                     setTimeout(() => {
-                        const oscillator2 = audioContext.createOscillator();
-                        const gainNode2 = audioContext.createGain();
-                        
-                        oscillator2.connect(gainNode2);
-                        gainNode2.connect(audioContext.destination);
-                        
-                        oscillator2.frequency.value = 1000;
-                        oscillator2.type = 'sine';
-                        
-                        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
-                        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                        
-                        oscillator2.start(audioContext.currentTime);
-                        oscillator2.stop(audioContext.currentTime + 0.2);
+                        try {
+                            const oscillator2 = audioContext.createOscillator();
+                            const gainNode2 = audioContext.createGain();
+                            
+                            oscillator2.connect(gainNode2);
+                            gainNode2.connect(audioContext.destination);
+                            
+                            oscillator2.frequency.value = 1000;
+                            oscillator2.type = 'sine';
+                            
+                            gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                            gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                            
+                            oscillator2.start(audioContext.currentTime);
+                            oscillator2.stop(audioContext.currentTime + 0.2);
+                        } catch (e2) {
+                            console.log('Second tone not available:', e2);
+                        }
                     }, 150);
                 } catch (e) {
-                    console.log('Sound notification not available:', e);
+                    console.log('Tone playback error:', e);
                 }
             }
         </script>

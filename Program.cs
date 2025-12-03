@@ -104,8 +104,8 @@ builder.Services.AddScoped<AddressValidationService>();
 builder.Services.AddHttpClient<OpenStreetMapService>();
 builder.Services.AddScoped<OpenStreetMapService>();
 builder.Services.AddScoped<IdValidationService>();
-builder.Services.AddHttpClient<SmsService>();
-builder.Services.AddScoped<SmsService>();
+    // Register SmsService with HttpClient (AddHttpClient already registers it as scoped)
+    builder.Services.AddHttpClient<SmsService>();
 builder.Services.AddScoped<OtpService>();
 builder.Services.AddHttpClient<PaymentGatewayService>();
 builder.Services.AddScoped<PaymentGatewayService>();

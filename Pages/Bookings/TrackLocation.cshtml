@@ -90,7 +90,7 @@
                 <div>
                     <strong>How Location Tracking Works</strong>
                     <ul style="margin: var(--space-2) 0 0 0; padding-left: var(--space-5);">
-                        <li>Your location is automatically tracked every 2 minutes while this page is open</li>
+                        <li>Your location is automatically tracked every 30 seconds while this page is open for live tracking</li>
                         <li>You must allow location access when prompted by your browser</li>
                         <li>If you go outside the @Model.GeofenceRadiusKm km radius, you'll receive SMS warnings</li>
                         <li>Keep this page open during your rental to ensure continuous tracking</li>
@@ -220,35 +220,59 @@
     }
 
     function startTracking() {
-        // Update location every 2 minutes
+        // Send location immediately when tracking starts
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                updateLocation,
+                function(error) {
+                    console.error('Error getting initial location:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0 // Get fresh location immediately
+                }
+            );
+        }
+
+        // Update location every 30 seconds for live tracking
         updateInterval = setInterval(function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     updateLocation,
                     function(error) {
                         console.error('Error getting location:', error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 30000 // Accept location up to 30 seconds old
                     }
                 );
             }
-        }, 120000); // 2 minutes
+        }, 30000); // 30 seconds for live tracking
 
-        // Also watch position continuously
-        watchId = navigator.geolocation.watchPosition(updateLocation, function(error) {
-            console.error('Error watching location:', error);
-        }, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
-        });
+        // Also watch position continuously for smoother updates
+        watchId = navigator.geolocation.watchPosition(
+            updateLocation, 
+            function(error) {
+                console.error('Error watching location:', error);
+            }, 
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000 // Accept location up to 30 seconds old
+            }
+        );
     }
 
     function updateLocation(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        // Update marker
+        // Update marker smoothly
         if (renterMarker) {
-            renterMarker.setLatLng([lat, lng]);
+            renterMarker.setLatLng([lat, lng], { animate: true, duration: 0.5 });
         }
 
         // Calculate distance from store
@@ -279,18 +303,15 @@
             distanceText.style.color = 'var(--error)';
             warningAlert.style.display = 'block';
             warningMessage.textContent = `You are ${(distance - radius).toFixed(2)} km outside the allowed radius. Please return to the geofence area.`;
-            
-            // Send location to server
-            sendLocationToServer(lat, lng, distance, true);
         } else {
             statusText.textContent = '✓ Within Geofence';
             statusText.style.color = 'var(--success)';
             distanceText.style.color = 'var(--sage-primary)';
             warningAlert.style.display = 'none';
-            
-            // Send location to server
-            sendLocationToServer(lat, lng, distance, false);
         }
+        
+        // Always send location to server for live tracking (regardless of geofence status)
+        sendLocationToServer(lat, lng, distance, distance > radius);
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -305,7 +326,31 @@
         return R * c;
     }
 
+    let lastSentLocation = null;
+    let isSendingLocation = false;
+    
     function sendLocationToServer(lat, lng, distance, isOutside) {
+        // Prevent duplicate sends if already sending
+        if (isSendingLocation) {
+            console.log('Location send already in progress, skipping...');
+            return;
+        }
+        
+        // Skip if location hasn't changed significantly (more than 10 meters)
+        if (lastSentLocation) {
+            const distanceChange = calculateDistance(
+                lat, lng, 
+                lastSentLocation.lat, lastSentLocation.lng
+            ) * 1000; // Convert to meters
+            
+            if (distanceChange < 0.01) { // Less than 10 meters
+                console.log('Location change too small, skipping send');
+                return;
+            }
+        }
+        
+        isSendingLocation = true;
+        
         fetch('/Api/LocationTracking', {
             method: 'POST',
             headers: {
@@ -317,16 +362,31 @@
                 longitude: lng
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 console.log('Location sent successfully:', data);
+                // Update last sent location
+                lastSentLocation = { lat: lat, lng: lng, timestamp: Date.now() };
             } else {
                 console.error('Error sending location:', data.error);
             }
+            isSendingLocation = false;
         })
         .catch(error => {
             console.error('Error sending location:', error);
+            isSendingLocation = false;
+            // Retry after 5 seconds if failed
+            setTimeout(() => {
+                if (!isSendingLocation) {
+                    sendLocationToServer(lat, lng, distance, isOutside);
+                }
+            }, 5000);
         });
     }
 

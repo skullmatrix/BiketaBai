@@ -18,6 +18,9 @@ public class GeofencingBackgroundService : BackgroundService
     {
         Log.Information("Geofencing background service started. Monitoring interval: {Interval} minutes", _checkInterval.TotalMinutes);
 
+        // Wait a bit before first run to ensure app is fully started
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -25,7 +28,21 @@ public class GeofencingBackgroundService : BackgroundService
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var geofencingService = scope.ServiceProvider.GetRequiredService<GeofencingService>();
+                    var smsService = scope.ServiceProvider.GetRequiredService<SmsService>();
+                    
+                    // Verify services are available
+                    if (geofencingService == null)
+                    {
+                        Log.Error("GeofencingService is null in background service scope");
+                    }
+                    if (smsService == null)
+                    {
+                        Log.Error("SmsService is null in background service scope");
+                    }
+                    
+                    Log.Debug("Geofencing background service: Starting monitoring cycle");
                     await geofencingService.MonitorActiveBookingsAsync();
+                    Log.Debug("Geofencing background service: Monitoring cycle completed");
                 }
 
                 await Task.Delay(_checkInterval, stoppingToken);
@@ -37,7 +54,8 @@ public class GeofencingBackgroundService : BackgroundService
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error in geofencing background service");
+                Log.Error(ex, "Error in geofencing background service: {ErrorMessage}. Stack trace: {StackTrace}", 
+                    ex.Message, ex.StackTrace);
                 // Wait a bit before retrying
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
