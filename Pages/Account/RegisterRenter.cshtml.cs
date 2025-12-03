@@ -532,19 +532,6 @@ public class RegisterRenterModel : PageModel
             UpdatedAt = DateTime.UtcNow
         };
 
-        // Cross-check address if ID address was extracted
-        if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(address))
-        {
-            var addressMatch = await _idValidationService.CrossCheckAddressAsync(address, idExtractedAddress);
-            if (!addressMatch)
-            {
-                Log.Warning("Address mismatch for user {Email}: User address='{UserAddress}', ID address='{IdAddress}'", 
-                    email, address, idExtractedAddress);
-                // Don't block registration, but log the mismatch
-                // Admin can review later
-            }
-        }
-
         // Use database transaction to ensure atomicity and handle concurrency
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
@@ -583,10 +570,39 @@ public class RegisterRenterModel : PageModel
 
             // Commit transaction
             await transaction.CommitAsync();
+            
+            // Cross-check address if ID address was extracted (after successful registration)
+            // This is done outside transaction to avoid blocking registration if address validation fails
+            if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(address))
+            {
+                try
+                {
+                    var addressMatch = await _idValidationService.CrossCheckAddressAsync(address, idExtractedAddress);
+                    if (!addressMatch)
+                    {
+                        Log.Warning("Address mismatch for user {Email}: User address='{UserAddress}', ID address='{IdAddress}'", 
+                            email, address, idExtractedAddress);
+                        // Don't block registration, but log the mismatch
+                        // Admin can review later
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail registration if address cross-check fails
+                    Log.Warning(ex, "Failed to cross-check address for user {Email}. Registration continues.", email);
+                }
+            }
         }
         catch (DbUpdateException ex)
         {
-            await transaction.RollbackAsync();
+            try
+            {
+                await transaction.RollbackAsync();
+            }
+            catch (Exception rollbackEx)
+            {
+                Log.Error(rollbackEx, "Error rolling back transaction for email: {Email}", email);
+            }
             
             // Check if it's a duplicate key violation
             if (ex.InnerException != null && (
@@ -599,22 +615,32 @@ public class RegisterRenterModel : PageModel
             }
             else
             {
-                Log.Error(ex, "Database error during registration for email: {Email}", email);
+                Log.Error(ex, "Database error during registration for email: {Email}. Inner exception: {InnerException}", 
+                    email, ex.InnerException?.Message ?? "None");
                 ErrorMessage = "An error occurred during registration. Please try again.";
             }
             
-            CurrentStep = 1;
-            TempData["RenterCurrentStep"] = "1";
+            CurrentStep = 3; // Stay on step 3 (ID step) instead of going back to step 1
+            TempData["RenterCurrentStep"] = "3";
             TempData["RenterErrorMessage"] = ErrorMessage;
             return Page();
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            Log.Error(ex, "Unexpected error during registration for email: {Email}", email);
-            ErrorMessage = "An unexpected error occurred. Please try again.";
-            CurrentStep = 1;
-            TempData["RenterCurrentStep"] = "1";
+            try
+            {
+                await transaction.RollbackAsync();
+            }
+            catch (Exception rollbackEx)
+            {
+                Log.Error(rollbackEx, "Error rolling back transaction for email: {Email}", email);
+            }
+            
+            Log.Error(ex, "Unexpected error during registration for email: {Email}. Exception type: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}", 
+                email, ex.GetType().Name, ex.Message, ex.StackTrace);
+            ErrorMessage = $"An error occurred during registration: {ex.Message}. Please try again or contact support if the problem persists.";
+            CurrentStep = 3; // Stay on step 3 (ID step) instead of going back to step 1
+            TempData["RenterCurrentStep"] = "3";
             TempData["RenterErrorMessage"] = ErrorMessage;
             return Page();
         }
