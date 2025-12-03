@@ -302,7 +302,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+    <!-- SignalR must load before notification scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js" 
+            onload="console.log('✅ SignalR library loaded successfully')"
+            onerror="console.error('❌ Failed to load SignalR library')"></script>
     
     <!-- Loading Animation Script -->
     <script>
@@ -361,32 +364,31 @@
             
             // Initialize SignalR connection
             function initializeSignalR() {
-                // Prevent duplicate initialization
-                if (window.BiketaBaiNotifications.initialized && 
-                    notificationHubConnection && 
-                    notificationHubConnection.state === signalR.HubConnectionState.Connected) {
-                    console.log('SignalR already initialized and connected');
-                    if (!notificationHandlersRegistered) {
-                        registerNotificationHandlers();
+                console.log('🔧 Initializing SignalR connection...');
+                
+                // Check if SignalR library is loaded
+                if (typeof signalR === 'undefined') {
+                    console.error('❌ SignalR library not loaded, retrying in 2 seconds...');
+                    setTimeout(initializeSignalR, 2000);
+                    // Fallback to polling while retrying
+                    if (!window.BiketaBaiNotifications.pollingInterval) {
+                        window.BiketaBaiNotifications.pollingInterval = setInterval(function() {
+                            loadNotificationCount();
+                        }, 15000);
                     }
                     return;
                 }
                 
-                if (typeof signalR === 'undefined') {
-                    console.error('SignalR library not loaded, retrying in 2 seconds...');
-                    setTimeout(initializeSignalR, 2000);
-                    // Fallback to polling while retrying
-                    setInterval(function() {
-                        loadNotificationCount();
-                    }, 15000);
-                    return;
-                }
+                console.log('✅ SignalR library loaded');
+                
+                // Get connection from global scope (might be null on first load)
+                notificationHubConnection = window.BiketaBaiNotifications.connection || notificationHubConnection;
                 
                 // If connection exists and is connected, just ensure handlers are registered
                 if (notificationHubConnection && notificationHubConnection.state === signalR.HubConnectionState.Connected) {
                     console.log('✅ SignalR connection already active, ensuring handlers are registered');
                     // Ensure handlers are registered (they should be, but double-check)
-                    if (!notificationHandlersRegistered) {
+                    if (!notificationHandlersRegistered && !window.BiketaBaiNotifications.handlersRegistered) {
                         registerNotificationHandlers();
                     }
                     window.BiketaBaiNotifications.initialized = true;
@@ -395,91 +397,127 @@
                 
                 // If connection exists but is disconnected, try to reconnect
                 if (notificationHubConnection && notificationHubConnection.state === signalR.HubConnectionState.Disconnected) {
-                    console.log('SignalR connection exists but disconnected, attempting to reconnect...');
+                    console.log('🔄 SignalR connection exists but disconnected, attempting to reconnect...');
                     notificationHubConnection.start()
                         .then(() => {
                             console.log('✅ SignalR reconnected successfully');
-                            if (!notificationHandlersRegistered) {
+                            if (!notificationHandlersRegistered && !window.BiketaBaiNotifications.handlersRegistered) {
                                 registerNotificationHandlers();
                             }
                             window.BiketaBaiNotifications.initialized = true;
                             loadNotificationCount();
                         })
                         .catch((err) => {
-                            console.error('Failed to reconnect, creating new connection:', err);
+                            console.error('❌ Failed to reconnect, creating new connection:', err);
+                            notificationHubConnection = null;
+                            window.BiketaBaiNotifications.connection = null;
                             createNewConnection();
                         });
                     return;
                 }
                 
+                // If connection exists but is connecting/reconnecting, wait a bit
+                if (notificationHubConnection && 
+                    (notificationHubConnection.state === signalR.HubConnectionState.Connecting ||
+                     notificationHubConnection.state === signalR.HubConnectionState.Reconnecting)) {
+                    console.log('⏳ SignalR connection is connecting/reconnecting, waiting...');
+                    setTimeout(() => {
+                        initializeSignalR();
+                    }, 2000);
+                    return;
+                }
+                
                 // If connection exists but is in another state, close it first
                 if (notificationHubConnection && notificationHubConnection.state !== signalR.HubConnectionState.Disconnected) {
-                    console.log('Closing existing connection to recreate...');
+                    console.log('🔄 Closing existing connection to recreate...');
                     notificationHubConnection.stop().then(() => {
                         notificationHubConnection = null;
                         window.BiketaBaiNotifications.connection = null;
                         notificationHandlersRegistered = false;
                         window.BiketaBaiNotifications.handlersRegistered = false;
+                        window.BiketaBaiNotifications.initialized = false;
                         createNewConnection();
                     }).catch(() => {
                         notificationHubConnection = null;
                         window.BiketaBaiNotifications.connection = null;
                         notificationHandlersRegistered = false;
                         window.BiketaBaiNotifications.handlersRegistered = false;
+                        window.BiketaBaiNotifications.initialized = false;
                         createNewConnection();
                     });
                     return;
                 }
                 
+                // No connection exists, create a new one
+                console.log('🆕 No connection found, creating new connection...');
                 createNewConnection();
             }
             
             function createNewConnection() {
                 // Create new connection
-                console.log('Creating new SignalR connection for notifications...');
-                notificationHubConnection = new signalR.HubConnectionBuilder()
-                    .withUrl("/notificationHub")
-                    .withAutomaticReconnect({
-                        nextRetryDelayInMilliseconds: retryContext => {
-                            // Exponential backoff: 0s, 2s, 10s, 30s, then 30s
-                            if (retryContext.elapsedMilliseconds < 2000) return 0;
-                            if (retryContext.elapsedMilliseconds < 10000) return 2000;
-                            if (retryContext.elapsedMilliseconds < 30000) return 10000;
-                            return 30000;
-                        }
-                    })
-                    .build();
+                console.log('🔨 Creating new SignalR connection for notifications...');
                 
-                // Store connection in global scope for persistence across page navigations
-                window.BiketaBaiNotifications.connection = notificationHubConnection;
-                
-                // Register notification handlers BEFORE starting connection
-                registerNotificationHandlers();
-                
-                // Start the connection
-                notificationHubConnection.start()
-                    .then(() => {
-                        console.log("✅ SignalR connected successfully for notifications");
-                        window.BiketaBaiNotifications.initialized = true;
-                        // Load initial notification count
-                        loadNotificationCount();
-                        
-                        // Set up connection health monitoring (only once)
-                        if (!window.BiketaBaiNotifications.healthMonitorInterval) {
-                            monitorConnectionHealth();
-                        }
-                    })
-                    .catch((err) => {
-                        console.error("❌ SignalR connection error:", err);
-                        notificationHandlersRegistered = false;
-                        window.BiketaBaiNotifications.handlersRegistered = false;
-                        window.BiketaBaiNotifications.initialized = false;
-                        // Retry connection after a delay
-                        setTimeout(() => {
-                            console.log("Retrying SignalR connection...");
-                            initializeSignalR();
-                        }, 5000);
-                    });
+                try {
+                    notificationHubConnection = new signalR.HubConnectionBuilder()
+                        .withUrl("/notificationHub")
+                        .withAutomaticReconnect({
+                            nextRetryDelayInMilliseconds: retryContext => {
+                                // Exponential backoff: 0s, 2s, 10s, 30s, then 30s
+                                if (retryContext.elapsedMilliseconds < 2000) return 0;
+                                if (retryContext.elapsedMilliseconds < 10000) return 2000;
+                                if (retryContext.elapsedMilliseconds < 30000) return 10000;
+                                return 30000;
+                            }
+                        })
+                        .build();
+                    
+                    console.log('✅ SignalR connection object created');
+                    
+                    // Store connection in global scope for persistence across page navigations
+                    window.BiketaBaiNotifications.connection = notificationHubConnection;
+                    console.log('✅ Connection stored in global scope');
+                    
+                    // Register notification handlers BEFORE starting connection
+                    registerNotificationHandlers();
+                    
+                    // Start the connection
+                    console.log('🚀 Starting SignalR connection...');
+                    notificationHubConnection.start()
+                        .then(() => {
+                            console.log("✅ SignalR connected successfully for notifications");
+                            console.log("Connection ID:", notificationHubConnection.connectionId);
+                            window.BiketaBaiNotifications.initialized = true;
+                            // Load initial notification count
+                            loadNotificationCount();
+                            
+                            // Set up connection health monitoring (only once)
+                            if (!window.BiketaBaiNotifications.healthMonitorInterval) {
+                                monitorConnectionHealth();
+                            }
+                        })
+                        .catch((err) => {
+                            console.error("❌ SignalR connection error:", err);
+                            console.error("Error details:", {
+                                message: err.message,
+                                stack: err.stack,
+                                name: err.name
+                            });
+                            notificationHandlersRegistered = false;
+                            window.BiketaBaiNotifications.handlersRegistered = false;
+                            window.BiketaBaiNotifications.initialized = false;
+                            // Retry connection after a delay
+                            setTimeout(() => {
+                                console.log("🔄 Retrying SignalR connection...");
+                                initializeSignalR();
+                            }, 5000);
+                        });
+                } catch (error) {
+                    console.error("❌ Error creating SignalR connection:", error);
+                    setTimeout(() => {
+                        console.log("🔄 Retrying after error...");
+                        initializeSignalR();
+                    }, 3000);
+                }
             }
             
             // Monitor connection health and reconnect if needed
@@ -518,10 +556,19 @@
             
             // Register notification handlers (separate function to avoid duplication)
             function registerNotificationHandlers() {
+                // Get connection from global scope if local variable is null
                 if (!notificationHubConnection) {
-                    console.warn("Cannot register handlers: no connection available");
+                    notificationHubConnection = window.BiketaBaiNotifications.connection;
+                }
+                
+                if (!notificationHubConnection) {
+                    console.warn("❌ Cannot register handlers: no connection available");
+                    console.warn("Attempting to create connection...");
+                    createNewConnection();
                     return;
                 }
+                
+                console.log('📝 Registering notification handlers...');
                 
                 // Remove existing handlers first to prevent duplicates
                 try {
@@ -626,19 +673,59 @@
             // Initialize SignalR immediately when script loads (don't wait for document ready)
             // This ensures SignalR is always listening on all pages for all roles
             if (isAuthenticated === "true") {
-                // Try to initialize immediately
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', function() {
+                console.log('🔔 Notification system: User is authenticated, initializing SignalR...');
+                
+                // Function to initialize after SignalR is loaded
+                function doInitialize() {
+                    console.log('✅ SignalR library ready, initializing connection...');
+                    // Try to initialize immediately
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', function() {
+                            initializeSignalR();
+                            loadWalletBalance();
+                            setupPageVisibilityHandlers();
+                        });
+                    } else {
+                        // DOM already loaded
                         initializeSignalR();
                         loadWalletBalance();
                         setupPageVisibilityHandlers();
-                    });
-                } else {
-                    // DOM already loaded
-                    initializeSignalR();
-                    loadWalletBalance();
-                    setupPageVisibilityHandlers();
+                    }
                 }
+                
+                // Wait for SignalR library to load, then initialize
+                function waitForSignalRAndInit() {
+                    if (typeof signalR !== 'undefined' && typeof signalR.HubConnectionBuilder !== 'undefined') {
+                        doInitialize();
+                    } else {
+                        console.log('⏳ Waiting for SignalR library to load... (attempt ' + (waitForSignalRAndInit.attempts || 0) + ')');
+                        waitForSignalRAndInit.attempts = (waitForSignalRAndInit.attempts || 0) + 1;
+                        
+                        // Give up after 50 attempts (5 seconds)
+                        if (waitForSignalRAndInit.attempts < 50) {
+                            setTimeout(waitForSignalRAndInit, 100);
+                        } else {
+                            console.error('❌ SignalR library failed to load after 5 seconds. Using fallback polling.');
+                            // Fallback to polling
+                            if (document.readyState === 'loading') {
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    loadNotificationCount();
+                                    setInterval(function() {
+                                        loadNotificationCount();
+                                    }, 15000);
+                                });
+                            } else {
+                                loadNotificationCount();
+                                setInterval(function() {
+                                    loadNotificationCount();
+                                }, 15000);
+                            }
+                        }
+                    }
+                }
+                
+                // Start waiting for SignalR (with a small delay to ensure script tag has executed)
+                setTimeout(waitForSignalRAndInit, 100);
             } else {
                 // Fallback to polling if not authenticated
                 if (document.readyState === 'loading') {

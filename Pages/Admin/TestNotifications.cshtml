@@ -93,6 +93,9 @@
         <button type="button" class="btn btn-primary btn-test" onclick="checkConnectionStatus()">
             <i class="bi bi-arrow-clockwise"></i> Refresh Status
         </button>
+        <button type="button" class="btn btn-success btn-test" onclick="forceInitialize()">
+            <i class="bi bi-power"></i> Force Initialize
+        </button>
         <button type="button" class="btn btn-secondary btn-test" onclick="testSound()">
             <i class="bi bi-volume-up"></i> Test Sound
         </button>
@@ -209,29 +212,70 @@
 <script>
     // Check connection status
     function checkConnectionStatus() {
-        const conn = window.BiketaBaiNotifications?.connection || (typeof notificationHubConnection !== 'undefined' ? notificationHubConnection : null);
+        // Check multiple sources for connection
+        const conn = window.BiketaBaiNotifications?.connection || 
+                     (typeof notificationHubConnection !== 'undefined' ? notificationHubConnection : null);
         const handlers = window.BiketaBaiNotifications?.handlersRegistered || false;
+        const signalRLoaded = typeof signalR !== 'undefined';
+        
+        console.log('Checking connection status...', {
+            globalConnection: !!window.BiketaBaiNotifications?.connection,
+            localConnection: typeof notificationHubConnection !== 'undefined',
+            signalRLoaded: signalRLoaded,
+            handlers: handlers
+        });
+        
+        if (!signalRLoaded) {
+            document.getElementById('connectionState').innerHTML = '<span style="color: red;">❌ SignalR Library Not Loaded</span>';
+            document.getElementById('handlersStatus').innerHTML = '<span style="color: red;">❌ N/A</span>';
+            console.error('SignalR library not loaded!');
+            return;
+        }
         
         if (conn) {
             const state = conn.state;
             let stateText = 'Unknown';
-            if (state === signalR.HubConnectionState.Connected) {
+            let stateNum = state;
+            
+            // Convert state number to text
+            if (state === signalR.HubConnectionState.Connected || state === 1) {
                 stateText = '<span style="color: green;">✅ Connected</span>';
-            } else if (state === signalR.HubConnectionState.Connecting) {
+            } else if (state === signalR.HubConnectionState.Connecting || state === 0) {
                 stateText = '<span style="color: orange;">🔄 Connecting...</span>';
-            } else if (state === signalR.HubConnectionState.Disconnected) {
+            } else if (state === signalR.HubConnectionState.Disconnected || state === 2) {
                 stateText = '<span style="color: red;">❌ Disconnected</span>';
-            } else if (state === signalR.HubConnectionState.Reconnecting) {
+            } else if (state === signalR.HubConnectionState.Reconnecting || state === 3) {
                 stateText = '<span style="color: orange;">🔄 Reconnecting...</span>';
+            } else {
+                stateText = `<span style="color: orange;">⚠️ Unknown State (${state})</span>`;
             }
             
-            document.getElementById('connectionState').innerHTML = stateText;
+            document.getElementById('connectionState').innerHTML = stateText + ` (State: ${stateNum})`;
             document.getElementById('handlersStatus').innerHTML = handlers ? 
                 '<span style="color: green;">✅ Registered</span>' : 
                 '<span style="color: red;">❌ Not Registered</span>';
+            
+            // If disconnected, try to reconnect
+            if (state === signalR.HubConnectionState.Disconnected || state === 2) {
+                console.warn('Connection is disconnected, attempting to reconnect...');
+                if (typeof reconnectNotifications === 'function') {
+                    reconnectNotifications();
+                } else if (typeof initializeSignalR === 'function') {
+                    initializeSignalR();
+                }
+            }
         } else {
-            document.getElementById('connectionState').innerHTML = '<span style="color: red;">❌ No Connection</span>';
+            document.getElementById('connectionState').innerHTML = '<span style="color: red;">❌ No Connection Object</span>';
             document.getElementById('handlersStatus').innerHTML = '<span style="color: red;">❌ N/A</span>';
+            console.warn('No connection object found. Attempting to initialize...');
+            
+            // Try to initialize if function exists
+            if (typeof initializeSignalR === 'function') {
+                console.log('Calling initializeSignalR()...');
+                initializeSignalR();
+                // Check again after a delay
+                setTimeout(checkConnectionStatus, 2000);
+            }
         }
     }
 
@@ -258,15 +302,26 @@
 
     // Run debug check
     function runDebugCheck() {
+        const conn = window.BiketaBaiNotifications?.connection;
+        const connState = conn ? conn.state : 'N/A';
+        const connStateText = conn ? 
+            (connState === signalR.HubConnectionState.Connected || connState === 1 ? 'Connected' :
+             connState === signalR.HubConnectionState.Connecting || connState === 0 ? 'Connecting' :
+             connState === signalR.HubConnectionState.Disconnected || connState === 2 ? 'Disconnected' :
+             connState === signalR.HubConnectionState.Reconnecting || connState === 3 ? 'Reconnecting' :
+             `Unknown (${connState})`) : 'No Connection';
+        
         const checks = {
             signalRLibrary: typeof signalR !== 'undefined' ? '✅ Loaded' : '❌ Not Loaded',
-            globalConnection: window.BiketaBaiNotifications?.connection ? '✅ Exists' : '❌ Not Found',
+            globalConnection: conn ? `✅ Exists (${connStateText})` : '❌ Not Found',
             badgeElement: $('#notificationCountHeader').length > 0 ? '✅ Found' : '❌ Not Found',
             authStatus: typeof isAuthenticated !== 'undefined' && isAuthenticated === "true" ? '✅ Authenticated' : '❌ Not Authenticated',
             notificationPermission: 'Notification' in window ? 
                 (Notification.permission === 'granted' ? '✅ Granted' : 
                  Notification.permission === 'denied' ? '❌ Denied' : '⚠️ Default') : 
-                '❌ Not Supported'
+                '❌ Not Supported',
+            handlersRegistered: window.BiketaBaiNotifications?.handlersRegistered ? '✅ Yes' : '❌ No',
+            initialized: window.BiketaBaiNotifications?.initialized ? '✅ Yes' : '❌ No'
         };
 
         document.getElementById('signalRLibrary').textContent = checks.signalRLibrary;
@@ -274,6 +329,73 @@
         document.getElementById('badgeElement').textContent = checks.badgeElement;
         document.getElementById('authStatus').textContent = checks.authStatus;
         document.getElementById('notificationPermission').textContent = checks.notificationPermission;
+        
+        // Add more debug info
+        const debugInfo = document.getElementById('debugInfo');
+        if (debugInfo) {
+            debugInfo.innerHTML = `
+                <strong>SignalR Library:</strong> ${checks.signalRLibrary}<br>
+                <strong>Global Connection:</strong> ${checks.globalConnection}<br>
+                <strong>Badge Element:</strong> ${checks.badgeElement}<br>
+                <strong>Authentication:</strong> ${checks.authStatus}<br>
+                <strong>Notification Permission:</strong> ${checks.notificationPermission}<br>
+                <strong>Handlers Registered:</strong> ${checks.handlersRegistered}<br>
+                <strong>Initialized:</strong> ${checks.initialized}<br>
+                <strong>Connection ID:</strong> ${conn?.connectionId || 'N/A'}<br>
+                <strong>Hub URL:</strong> ${conn?.baseUrl || '/notificationHub'}
+            `;
+        }
+        
+        // If SignalR not loaded, show warning
+        if (typeof signalR === 'undefined') {
+            console.error('❌ SignalR library not loaded! Check if script tag is present.');
+            alert('SignalR library not loaded! Please refresh the page.');
+        }
+        
+        // If no connection and SignalR is loaded, try to initialize
+        if (!conn && typeof signalR !== 'undefined' && typeof initializeSignalR === 'function') {
+            console.log('No connection found but SignalR is loaded, attempting to initialize...');
+            initializeSignalR();
+        }
+    }
+
+    // Force initialize connection
+    function forceInitialize() {
+        console.log('🔧 Force initializing SignalR connection...');
+        
+        // Reset global state
+        if (window.BiketaBaiNotifications) {
+            window.BiketaBaiNotifications.initialized = false;
+            window.BiketaBaiNotifications.handlersRegistered = false;
+            if (window.BiketaBaiNotifications.connection) {
+                window.BiketaBaiNotifications.connection.stop().then(() => {
+                    window.BiketaBaiNotifications.connection = null;
+                    if (typeof initializeSignalR === 'function') {
+                        initializeSignalR();
+                    } else {
+                        alert('initializeSignalR function not found. Please refresh the page.');
+                    }
+                }).catch(() => {
+                    window.BiketaBaiNotifications.connection = null;
+                    if (typeof initializeSignalR === 'function') {
+                        initializeSignalR();
+                    } else {
+                        alert('initializeSignalR function not found. Please refresh the page.');
+                    }
+                });
+            } else {
+                if (typeof initializeSignalR === 'function') {
+                    initializeSignalR();
+                } else {
+                    alert('initializeSignalR function not found. Please refresh the page.');
+                }
+            }
+        } else {
+            alert('BiketaBaiNotifications global object not found. Please refresh the page.');
+        }
+        
+        // Check status after a delay
+        setTimeout(checkConnectionStatus, 2000);
     }
 
     // Open console guide
