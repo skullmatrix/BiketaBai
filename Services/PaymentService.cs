@@ -174,6 +174,15 @@ public class PaymentService
                     "Booking",
                     $"/Owner/RentalRequests"
                 );
+
+                // Send real-time SignalR event for cash payment request
+                await _notificationService.SendCashPaymentRequestAsync(
+                    booking.Bike.OwnerId,
+                    bookingId,
+                    booking.Renter.FullName,
+                    $"{booking.Bike.Brand} {booking.Bike.Model}",
+                    amount
+                );
             }
             else
             {

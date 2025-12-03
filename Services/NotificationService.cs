@@ -59,6 +59,21 @@ public class NotificationService
         });
     }
 
+    public async Task SendCashPaymentRequestAsync(int ownerId, int bookingId, string renterName, string bikeName, decimal amount)
+    {
+        // Send cash payment request notification via SignalR to owner
+        // This will trigger real-time update on MyBikes and RentalRequests pages
+        await _hubContext.Clients.Group($"user_{ownerId}").SendAsync("ReceiveCashPaymentRequest", new
+        {
+            bookingId = bookingId,
+            renterName = renterName,
+            bikeName = bikeName,
+            amount = amount,
+            bookingNumber = bookingId.ToString("D6"),
+            timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        });
+    }
+
     public async Task<List<Notification>> GetUserNotificationsAsync(int userId, int pageNumber = 1, int pageSize = 20)
     {
         return await _context.Notifications

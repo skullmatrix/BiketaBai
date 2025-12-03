@@ -394,6 +394,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
     <script>
         // Tab switching functionality
         document.addEventListener('DOMContentLoaded', function() {
@@ -418,6 +419,190 @@
                     });
                 });
             });
+
+            // ============================================
+            // SignalR for Real-time Cash Payment Requests
+            // ============================================
+            let cashPaymentConnection = null;
+            let cashPaymentHandlersRegistered = false;
+
+            function initializeCashPaymentSignalR() {
+                // Reuse existing notification connection if available
+                if (typeof window.BiketaBaiNotifications !== 'undefined' && 
+                    window.BiketaBaiNotifications.connection) {
+                    console.log('✅ Reusing existing SignalR connection for cash payment requests');
+                    cashPaymentConnection = window.BiketaBaiNotifications.connection;
+                } else if (typeof signalR === 'undefined') {
+                    console.log('⏳ Waiting for SignalR library to load...');
+                    setTimeout(initializeCashPaymentSignalR, 1000);
+                    return;
+                } else {
+                    console.log('🔨 Creating new SignalR connection for cash payment requests');
+                    cashPaymentConnection = new signalR.HubConnectionBuilder()
+                        .withUrl("/notificationHub")
+                        .withAutomaticReconnect({
+                            nextRetryDelayInMilliseconds: retryContext => {
+                                if (retryContext.elapsedMilliseconds < 2000) return 0;
+                                if (retryContext.elapsedMilliseconds < 10000) return 2000;
+                                return 30000;
+                            }
+                        })
+                        .build();
+                }
+
+                // Register handler for cash payment requests
+                if (!cashPaymentHandlersRegistered) {
+                    // Remove existing handler to prevent duplicates
+                    try {
+                        cashPaymentConnection.off("ReceiveCashPaymentRequest");
+                    } catch (e) {
+                        // Ignore if handler doesn't exist
+                    }
+
+                    cashPaymentConnection.on("ReceiveCashPaymentRequest", function(data) {
+                        console.log("💰 New cash payment request received:", data);
+                        
+                        if (!data || !data.bookingId) {
+                            console.error("Invalid cash payment request data:", data);
+                            return;
+                        }
+
+                        // Show notification alert
+                        showCashPaymentAlert(data);
+
+                        // Play notification sound
+                        if (typeof playNotificationSound === 'function') {
+                            playNotificationSound();
+                        }
+
+                        // Refresh the page to show new request
+                        // Use a small delay to allow user to see the alert
+                        setTimeout(function() {
+                            console.log("🔄 Refreshing page to show new cash payment request...");
+                            window.location.reload();
+                        }, 2000);
+                    });
+
+                    cashPaymentHandlersRegistered = true;
+                    console.log("✅ Cash payment request handler registered");
+                }
+
+                // Start connection if not already connected
+                if (cashPaymentConnection.state === signalR.HubConnectionState.Disconnected) {
+                    cashPaymentConnection.start()
+                        .then(function() {
+                            console.log("✅ SignalR connected for cash payment requests");
+                        })
+                        .catch(function(err) {
+                            console.error("❌ Error connecting SignalR for cash payment requests:", err);
+                            setTimeout(initializeCashPaymentSignalR, 5000);
+                        });
+                } else {
+                    console.log("✅ SignalR already connected for cash payment requests");
+                }
+
+                // Handle reconnection
+                cashPaymentConnection.onreconnecting(function(error) {
+                    console.log("🔄 SignalR reconnecting for cash payment requests...", error);
+                });
+
+                cashPaymentConnection.onreconnected(function(connectionId) {
+                    console.log("✅ SignalR reconnected for cash payment requests:", connectionId);
+                    if (!cashPaymentHandlersRegistered) {
+                        initializeCashPaymentSignalR();
+                    }
+                });
+
+                cashPaymentConnection.onclose(function(error) {
+                    console.log("❌ SignalR connection closed for cash payment requests", error);
+                    cashPaymentHandlersRegistered = false;
+                    setTimeout(function() {
+                        console.log("🔄 Attempting to reconnect SignalR for cash payment requests...");
+                        initializeCashPaymentSignalR();
+                    }, 3000);
+                });
+            }
+
+            function showCashPaymentAlert(data) {
+                // Create and show alert
+                const alertHtml = `
+                    <div class="alert alert-info alert-dismissible fade show" id="cashPaymentAlert" style="border-left: 4px solid #3B82F6; animation: slideIn 0.3s ease-out;">
+                        <i class="bi bi-cash-coin" style="font-size: 1.25rem;"></i>
+                        <strong style="display: block; margin-bottom: 0.5rem;">💰 New Cash Payment Request!</strong>
+                        <div style="font-size: 0.875rem;">
+                            <strong>Booking #${data.bookingNumber}</strong><br>
+                            <strong>Renter:</strong> ${data.renterName}<br>
+                            <strong>Bike:</strong> ${data.bikeName}<br>
+                            <strong>Amount:</strong> ₱${parseFloat(data.amount).toFixed(2)}<br>
+                            <small style="color: #6c757d;">Please verify the cash payment to activate the rental.</small>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+
+                // Insert at the top of the container
+                const container = document.querySelector('.container.my-5');
+                if (container) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.innerHTML = alertHtml;
+                    const header = container.querySelector('.d-flex.justify-content-between');
+                    if (header) {
+                        container.insertBefore(alertDiv.firstElementChild, header.nextSibling);
+                    } else {
+                        container.insertBefore(alertDiv.firstElementChild, container.firstElementChild);
+                    }
+
+                    // Auto-dismiss after 10 seconds
+                    setTimeout(function() {
+                        const alert = document.getElementById('cashPaymentAlert');
+                        if (alert) {
+                            alert.style.animation = 'slideOut 0.3s ease-out';
+                            setTimeout(function() {
+                                alert.remove();
+                            }, 300);
+                        }
+                    }, 10000);
+                }
+            }
+
+            // Initialize SignalR when page loads
+            if (typeof signalR !== 'undefined') {
+                initializeCashPaymentSignalR();
+            } else {
+                // Wait for SignalR to load
+                const checkSignalR = setInterval(function() {
+                    if (typeof signalR !== 'undefined') {
+                        clearInterval(checkSignalR);
+                        initializeCashPaymentSignalR();
+                    }
+                }, 100);
+            }
+
+            // Add CSS for animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateY(-20px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateY(-20px);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
         });
     </script>
 }
