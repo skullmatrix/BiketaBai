@@ -139,8 +139,30 @@
     let renterMarker;
     let storeMarker;
     let geofenceCircle;
+    let locationTrail;
     let watchId;
     let updateInterval;
+    
+    // Store location history for trail
+    const locationHistory = [];
+    
+    @if (Model.LocationHistory.Any())
+    {
+        <text>
+        // Initialize location history from server
+        @foreach (var loc in Model.LocationHistory)
+        {
+            <text>
+            locationHistory.push({
+                lat: @loc.Latitude,
+                lng: @loc.Longitude,
+                timestamp: '@loc.TrackedAt.ToString("yyyy-MM-ddTHH:mm:ss")',
+                isWithin: @loc.IsWithinGeofence.ToString().ToLower()
+            });
+            </text>
+        }
+        </text>
+    }
 
     // Initialize map when page loads
     document.addEventListener('DOMContentLoaded', function() {
@@ -259,10 +281,30 @@
             </div>
         `);
         
-        // Pulsing circle removed - no longer needed
+        // Draw location trail if history exists
+        if (locationHistory.length > 1) {
+            const trailPoints = locationHistory.map(point => [point.lat, point.lng]);
+            // Use the last point's geofence status for trail color, or default to blue
+            const lastPoint = locationHistory[locationHistory.length - 1];
+            const trailColor = (lastPoint && lastPoint.isWithin !== undefined) 
+                ? (lastPoint.isWithin ? '#3388ff' : '#ff3333')
+                : '#3388ff';
+            
+            locationTrail = L.polyline(trailPoints, {
+                color: trailColor,
+                weight: 3,
+                opacity: 0.6,
+                smoothFactor: 1
+            }).addTo(map);
+            
+            console.log('📍 Location trail drawn with', locationHistory.length, 'points');
+        }
 
-        // Fit map to show both markers and geofence with proper padding
+        // Fit map to show both markers, geofence, and trail with proper padding
         const group = new L.featureGroup([storeMarker, renterMarker, geofenceCircle]);
+        if (locationTrail) {
+            group.addLayer(locationTrail);
+        }
         const bounds = group.getBounds();
         map.fitBounds(bounds, { 
             padding: [50, 50],
@@ -274,6 +316,7 @@
         console.log('📍 Geofence radius:', radius, 'meters (@Model.GeofenceRadiusKm km)');
         console.log('📍 Renter location:', lat, lng);
         console.log('📍 Geofence circle added to map');
+        console.log('📍 Location history points:', locationHistory.length);
     }
 
     function startTracking() {
@@ -340,6 +383,42 @@
 
         console.log('📍 Location update received:', { lat, lng, sendToServer });
 
+        // Calculate distance from store
+        const storeLat = @(Model.StoreLatitude?.ToString("F6") ?? "14.5995");
+        const storeLng = @(Model.StoreLongitude?.ToString("F6") ?? "120.9842");
+        const distance = calculateDistance(lat, lng, parseFloat(storeLat), parseFloat(storeLng));
+        const radius = @Model.GeofenceRadiusKm;
+        const isWithin = distance <= radius;
+        
+        // Add to location history for trail
+        locationHistory.push({ 
+            lat, 
+            lng, 
+            timestamp: new Date().toISOString(),
+            isWithin: isWithin
+        });
+        
+        // Keep only last 100 points
+        if (locationHistory.length > 100) {
+            locationHistory.shift();
+        }
+        
+        // Update trail on map
+        if (locationHistory.length > 1) {
+            if (locationTrail) {
+                map.removeLayer(locationTrail);
+            }
+            const trailPoints = locationHistory.map(point => [point.lat, point.lng]);
+            const trailColor = isWithin ? '#3388ff' : '#ff3333';
+            
+            locationTrail = L.polyline(trailPoints, {
+                color: trailColor,
+                weight: 3,
+                opacity: 0.6,
+                smoothFactor: 1
+            }).addTo(map);
+        }
+
         // Update marker smoothly with animation
         if (renterMarker) {
             renterMarker.setLatLng([lat, lng], { 
@@ -347,6 +426,17 @@
                 duration: 1.0, // 1 second smooth animation
                 easeLinearity: 0.25
             });
+            
+            // Update marker icon color based on geofence status
+            const markerIcon = L.icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${isWithin ? 'blue' : 'red'}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [30, 48],
+                iconAnchor: [15, 48],
+                popupAnchor: [1, -40],
+                shadowSize: [41, 41]
+            });
+            renterMarker.setIcon(markerIcon);
             
             // Update popup with current info
             renterMarker.setPopupContent(`
@@ -359,12 +449,6 @@
                 </div>
             `);
         }
-
-        // Calculate distance from store
-        const storeLat = @(Model.StoreLatitude?.ToString("F6") ?? "14.5995");
-        const storeLng = @(Model.StoreLongitude?.ToString("F6") ?? "120.9842");
-        const distance = calculateDistance(lat, lng, parseFloat(storeLat), parseFloat(storeLng));
-        const radius = @Model.GeofenceRadiusKm;
 
         // Update UI
         document.getElementById('locationStatus').style.display = 'none';
@@ -382,7 +466,8 @@
         lastUpdateText.textContent = new Date().toLocaleTimeString();
 
         // Check if outside geofence
-        if (distance > radius) {
+        const isWithin = distance <= radius;
+        if (!isWithin) {
             statusText.textContent = '⚠️ Outside Geofence';
             statusText.style.color = 'var(--error)';
             distanceText.style.color = 'var(--error)';

@@ -27,6 +27,7 @@ public class TrackLocationModel : PageModel
     public double? StoreLongitude { get; set; }
     public decimal GeofenceRadiusKm { get; set; }
     public LocationTracking? LatestLocation { get; set; }
+    public List<LocationTracking> LocationHistory { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
@@ -64,6 +65,14 @@ public class TrackLocationModel : PageModel
             .Where(lt => lt.BookingId == bookingId)
             .OrderByDescending(lt => lt.TrackedAt)
             .FirstOrDefaultAsync();
+
+        // Get location history (last 100 points for trail)
+        LocationHistory = await _context.LocationTracking
+            .Where(lt => lt.BookingId == bookingId)
+            .OrderByDescending(lt => lt.TrackedAt)
+            .Take(100)
+            .OrderBy(lt => lt.TrackedAt)
+            .ToListAsync();
 
         return Page();
     }
