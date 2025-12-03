@@ -235,7 +235,7 @@
             );
         }
 
-        // Update location every 30 seconds for live tracking
+        // Update location every 15 seconds for live tracking (more frequent for real-time owner tracking)
         updateInterval = setInterval(function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -246,11 +246,11 @@
                     {
                         enableHighAccuracy: true,
                         timeout: 10000,
-                        maximumAge: 30000 // Accept location up to 30 seconds old
+                        maximumAge: 15000 // Accept location up to 15 seconds old
                     }
                 );
             }
-        }, 30000); // 30 seconds for live tracking
+        }, 15000); // 15 seconds for live tracking (more frequent updates for owner)
 
         // Also watch position continuously for smoother updates
         watchId = navigator.geolocation.watchPosition(
@@ -261,7 +261,7 @@
             {
                 enableHighAccuracy: true,
                 timeout: 10000,
-                maximumAge: 30000 // Accept location up to 30 seconds old
+                maximumAge: 15000 // Accept location up to 15 seconds old (more frequent for real-time tracking)
             }
         );
     }

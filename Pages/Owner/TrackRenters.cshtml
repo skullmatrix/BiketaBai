@@ -88,6 +88,12 @@
                                             <i class="bi bi-geo-alt"></i> Current Location <span style="color: var(--success); font-size: 0.75rem;">● Live</span>
                                         </p>
                                         <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                                            <strong>Coordinates:</strong> 
+                                            <span style="font-family: monospace; color: var(--neutral-700);">
+                                                @latestLocation.Latitude.ToString("F6"), @latestLocation.Longitude.ToString("F6")
+                                            </span>
+                                        </p>
+                                        <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
                                             <strong>Distance from store:</strong> 
                                             <span style="color: @(latestLocation.IsWithinGeofence ? "var(--success)" : "var(--error)"); font-weight: 600;">
                                                 @latestLocation.DistanceFromStoreKm?.ToString("F2") km
@@ -383,8 +389,8 @@
                 isWithin
             );
 
-            // Update location display in the booking card
-            updateLocationDisplay(bookingId, distance, isWithin, trackedAt);
+            // Update location display in the booking card (with coordinates)
+            updateLocationDisplay(bookingId, lat, lng, distance, isWithin, trackedAt);
             
             // Update "View on Map" button data attributes
             const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
@@ -444,7 +450,7 @@
         });
     }
 
-    function updateLocationDisplay(bookingId, distance, isWithinGeofence, trackedAt) {
+    function updateLocationDisplay(bookingId, latitude, longitude, distance, isWithinGeofence, trackedAt) {
         const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
         if (!bookingCard) {
             console.warn('Booking card not found for booking ID:', bookingId);
@@ -523,9 +529,18 @@
         const distanceValue = typeof distance === 'number' ? distance : parseFloat(distance || 0);
         const isWithin = isWithinGeofence === true || isWithinGeofence === 'true';
 
+        const lat = typeof latitude === 'number' ? latitude : parseFloat(latitude || 0);
+        const lng = typeof longitude === 'number' ? longitude : parseFloat(longitude || 0);
+        
         locationSection.innerHTML = `
             <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--neutral-900);">
                 <i class="bi bi-geo-alt"></i> Current Location <span style="color: var(--success); font-size: 0.75rem;">● Live</span>
+            </p>
+            <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
+                <strong>Coordinates:</strong> 
+                <span style="font-family: monospace; color: var(--neutral-700);">
+                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                </span>
             </p>
             <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
                 <strong>Distance from store:</strong> 
