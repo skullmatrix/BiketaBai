@@ -257,8 +257,8 @@ public class GeofencingService
                 return;
             }
 
-        foreach (var booking in activeBookings)
-        {
+            foreach (var booking in activeBookings)
+            {
             // Check for overdue bookings and send SMS
             await CheckAndSendOverdueNotificationAsync(booking);
 
@@ -342,6 +342,7 @@ public class GeofencingService
                             booking.RenterId, booking.BookingId, booking.Renter.Phone);
                     }
                 }
+            }
             }
         }
         catch (Exception ex)
