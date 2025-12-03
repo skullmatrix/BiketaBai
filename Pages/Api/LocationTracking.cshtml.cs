@@ -95,7 +95,7 @@ public class LocationTrackingModel : PageModel
                 var ownerId = bookingWithOwner.Bike.OwnerId;
                 try
                 {
-                    await _hubContext.Clients.Group($"user_{ownerId}").SendAsync("ReceiveLocationUpdate", new
+                    var locationUpdate = new
                     {
                         bookingId = request.BookingId,
                         latitude = request.Latitude,
@@ -105,16 +105,26 @@ public class LocationTrackingModel : PageModel
                         renterName = bookingWithOwner.Renter.FullName,
                         bikeName = $"{bookingWithOwner.Bike.Brand} {bookingWithOwner.Bike.Model}",
                         trackedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
-                    });
+                    };
 
-                    Log.Information("Location update broadcasted to owner {OwnerId} for booking {BookingId}. Distance: {Distance}km, Within: {Within}", 
-                        ownerId, request.BookingId, Math.Round(distanceKm, 2), isWithin);
+                    Log.Information("Broadcasting location update to owner {OwnerId} for booking {BookingId}. Coords: {Lat}, {Lng}, Distance: {Distance}km, Within: {Within}", 
+                        ownerId, request.BookingId, request.Latitude, request.Longitude, Math.Round(distanceKm, 2), isWithin);
+
+                    await _hubContext.Clients.Group($"user_{ownerId}").SendAsync("ReceiveLocationUpdate", locationUpdate);
+
+                    Log.Information("✅ Location update successfully broadcasted to owner {OwnerId} for booking {BookingId}", 
+                        ownerId, request.BookingId);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Error broadcasting location update to owner {OwnerId} for booking {BookingId}", 
+                    Log.Error(ex, "❌ Error broadcasting location update to owner {OwnerId} for booking {BookingId}", 
                         ownerId, request.BookingId);
                 }
+            }
+            else
+            {
+                Log.Warning("⚠️ Cannot broadcast location update: booking with owner info not found for booking {BookingId}", 
+                    request.BookingId);
             }
 
             Response.ContentType = "application/json";

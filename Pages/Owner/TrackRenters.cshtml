@@ -121,9 +121,12 @@
                                 }
                                 else
                                 {
-                                    <div style="margin-top: var(--space-3); padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">
+                                    <div class="location-waiting" style="margin-top: var(--space-3); padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);" data-booking-id="@booking.BookingId">
                                         <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
                                             <i class="bi bi-info-circle"></i> Location tracking not available yet. The renter needs to start location tracking.
+                                        </p>
+                                        <p style="margin: 0; font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                                            <i class="bi bi-hourglass-split"></i> Waiting for location update...
                                         </p>
                                     </div>
                                 }
@@ -146,7 +149,8 @@
                                 else
                                 {
                                     <button type="button" 
-                                            class="btn-minimal btn-minimal-outline btn-minimal-sm" 
+                                            class="btn-minimal btn-minimal-outline btn-minimal-sm btn-waiting-location" 
+                                            data-booking-id="@booking.BookingId"
                                             disabled>
                                         <i class="bi bi-hourglass-split"></i> Waiting for Location
                                     </button>
@@ -345,10 +349,10 @@
 
         // Listen for location updates (register handler)
         connection.on("ReceiveLocationUpdate", function(data) {
-            console.log("Received location update:", data);
+            console.log("📍 Received location update:", data);
             
             if (!data || !data.bookingId) {
-                console.error("Invalid location update data:", data);
+                console.error("❌ Invalid location update data:", data);
                 return;
             }
             
@@ -363,9 +367,11 @@
             
             // Validate coordinates
             if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
-                console.error("Invalid coordinates in location update:", data);
+                console.error("❌ Invalid coordinates in location update:", data);
                 return;
             }
+            
+            console.log(`✅ Processing location update for booking ${bookingId}: ${lat}, ${lng}`);
             
             // Update location data
             locationData[bookingId] = {
@@ -390,18 +396,25 @@
             );
 
             // Update location display in the booking card (with coordinates)
+            console.log(`🔄 Updating location display for booking ${bookingId}...`);
             updateLocationDisplay(bookingId, lat, lng, distance, isWithin, trackedAt);
             
             // Update "View on Map" button data attributes
             const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
             if (bookingCard) {
+                console.log(`✅ Found booking card for booking ${bookingId}`);
                 const viewButton = bookingCard.querySelector('button.btn-view-location');
                 if (viewButton) {
                     viewButton.setAttribute('data-latitude', lat.toString());
                     viewButton.setAttribute('data-longitude', lng.toString());
                     viewButton.setAttribute('data-distance', distance.toString());
                     viewButton.setAttribute('data-is-within', isWithin.toString());
+                    console.log(`✅ Updated view button for booking ${bookingId}`);
+                } else {
+                    console.warn(`⚠️ View button not found for booking ${bookingId}`);
                 }
+            } else {
+                console.warn(`⚠️ Booking card not found for booking ${bookingId}`);
             }
         });
         
@@ -451,30 +464,50 @@
     }
 
     function updateLocationDisplay(bookingId, latitude, longitude, distance, isWithinGeofence, trackedAt) {
+        console.log(`🔄 updateLocationDisplay called for booking ${bookingId} with coords: ${latitude}, ${longitude}`);
+        
         const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
         if (!bookingCard) {
-            console.warn('Booking card not found for booking ID:', bookingId);
+            console.warn(`⚠️ Booking card not found for booking ID: ${bookingId}`);
+            console.warn('Available booking cards:', Array.from(document.querySelectorAll('[data-booking-id]')).map(el => el.getAttribute('data-booking-id')));
             return;
         }
+        
+        console.log(`✅ Found booking card for booking ${bookingId}`);
 
         // Find or create location display section
         let locationSection = bookingCard.querySelector('.location-display');
         if (!locationSection) {
             // Remove the "waiting for location" message if it exists
-            const waitingDiv = bookingCard.querySelector('div[style*="background: var(--neutral-100)"]');
+            const waitingDiv = bookingCard.querySelector('.location-waiting');
             if (waitingDiv) {
+                console.log(`✅ Removing waiting message for booking ${bookingId}`);
                 waitingDiv.remove();
             }
             
-            // Create location display if it doesn't exist
-            const cardContent = bookingCard.querySelector('div > div:first-child');
+            // Also try to find by style attribute (fallback)
+            const waitingDivByStyle = bookingCard.querySelector('div[style*="background: var(--neutral-100)"]');
+            if (waitingDivByStyle && waitingDivByStyle.textContent.includes('Location tracking not available')) {
+                console.log(`✅ Removing waiting message (by style) for booking ${bookingId}`);
+                waitingDivByStyle.remove();
+            }
+            
+            // Find the card content - try multiple selectors
+            let cardContent = bookingCard.querySelector('div > div:first-child');
+            if (!cardContent) {
+                // Try alternative selector
+                cardContent = bookingCard.querySelector('.card-minimal-body') || bookingCard.querySelector('div:first-child > div:first-child');
+            }
+            
             if (cardContent) {
                 locationSection = document.createElement('div');
                 locationSection.className = 'location-display';
                 locationSection.style.cssText = 'margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);';
                 cardContent.appendChild(locationSection);
+                console.log(`✅ Created location display section for booking ${bookingId}`);
             } else {
-                console.warn('Card content not found for booking ID:', bookingId);
+                console.warn(`⚠️ Card content not found for booking ID: ${bookingId}`);
+                console.warn('Booking card structure:', bookingCard);
                 return;
             }
         }
@@ -482,9 +515,11 @@
         // Enable the "View on Map" button
         const viewButton = bookingCard.querySelector('button.btn-view-location');
         if (!viewButton) {
-            // Find the disabled button and replace it
-            const disabledButton = bookingCard.querySelector('button[disabled]');
+            // Find the disabled/waiting button and replace it
+            const disabledButton = bookingCard.querySelector('button.btn-waiting-location') || 
+                                   bookingCard.querySelector('button[disabled]');
             if (disabledButton) {
+                console.log(`✅ Found waiting button for booking ${bookingId}, enabling it...`);
                 disabledButton.disabled = false;
                 disabledButton.className = 'btn-minimal btn-minimal-primary btn-minimal-sm btn-view-location';
                 disabledButton.innerHTML = '<i class="bi bi-map"></i> View on Map';
@@ -498,8 +533,13 @@
                     disabledButton.setAttribute('data-bike-name', locData.bikeName || 'Unknown');
                     disabledButton.setAttribute('data-distance', locData.distance.toString());
                     disabledButton.setAttribute('data-is-within', locData.isWithinGeofence.toString());
+                    console.log(`✅ Updated button attributes for booking ${bookingId}`);
                 }
+            } else {
+                console.warn(`⚠️ No waiting button found for booking ${bookingId}`);
             }
+        } else {
+            console.log(`✅ View button already exists for booking ${bookingId}`);
         }
 
         // Update location display

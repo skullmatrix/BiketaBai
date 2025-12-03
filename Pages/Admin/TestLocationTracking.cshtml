@@ -1,0 +1,240 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize(Roles = "Admin")]
+@model TestLocationTrackingModel
+@{
+    ViewData["Title"] = "Test Location Tracking";
+}
+
+<div class="container my-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2><i class="bi bi-geo-alt-fill"></i> Test Location Tracking</h2>
+            <p class="mb-0">Test SignalR location updates between renter and owner</p>
+        </div>
+        <div class="card-body">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Connection Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-wifi"></i> SignalR Connection Status</h5>
+                </div>
+                <div class="card-body">
+                    <div id="connectionStatus">
+                        <p><strong>Status:</strong> <span id="statusText">Checking...</span></p>
+                        <p><strong>Connection State:</strong> <span id="stateText">-</span></p>
+                        <p><strong>Location Handler Registered:</strong> <span id="handlerStatus">-</span></p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="checkConnectionStatus()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+
+            <!-- Send Test Location -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-send"></i> Send Test Location Update</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="SendTestLocation">
+                        <div class="mb-3">
+                            <label for="bookingId" class="form-label">Select Active Booking</label>
+                            <select class="form-select" id="bookingId" name="bookingId" required>
+                                <option value="">-- Select Booking --</option>
+                                @foreach (var booking in Model.ActiveBookings)
+                                {
+                                    <option value="@booking.BookingId">
+                                        Booking #@booking.BookingId.ToString("D6") - @booking.Renter.FullName 
+                                        (@booking.Bike.Brand @booking.Bike.Model) - Owner: @booking.Bike.Owner.FullName
+                                    </option>
+                                }
+                            </select>
+                            <small class="form-text text-muted">Select a booking to send test location to the owner</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="latitude" class="form-label">Latitude</label>
+                                    <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude" 
+                                           value="14.5995" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="longitude" class="form-label">Longitude</label>
+                                    <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude" 
+                                           value="120.9842" required>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-info mb-2" onclick="useCurrentLocation()">
+                            <i class="bi bi-geo-alt"></i> Use Current Location
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Send Test Location to Owner
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Debug Console -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-terminal"></i> Debug Console</h5>
+                </div>
+                <div class="card-body">
+                    <div id="debugLog" style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.875rem; max-height: 400px; overflow-y: auto;">
+                        <div>Waiting for logs...</div>
+                    </div>
+                    <button type="button" class="btn btn-secondary mt-2" onclick="clearDebugLog()">
+                        <i class="bi bi-trash"></i> Clear Log
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+<script>
+    let debugLog = [];
+    
+    function addDebugLog(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = `[${timestamp}] ${message}`;
+        debugLog.push({ message: logEntry, type: type });
+        
+        const logDiv = document.getElementById('debugLog');
+        const color = type === 'error' ? '#f48771' : type === 'success' ? '#4ec9b0' : '#d4d4d4';
+        logDiv.innerHTML += `<div style="color: ${color};">${logEntry}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    function clearDebugLog() {
+        debugLog = [];
+        document.getElementById('debugLog').innerHTML = '<div>Log cleared...</div>';
+    }
+    
+    function checkConnectionStatus() {
+        addDebugLog('Checking SignalR connection status...', 'info');
+        
+        if (typeof signalR === 'undefined') {
+            document.getElementById('statusText').textContent = '❌ SignalR library not loaded';
+            document.getElementById('stateText').textContent = 'N/A';
+            addDebugLog('ERROR: SignalR library not loaded!', 'error');
+            return;
+        }
+        
+        // Check global connection
+        let conn = null;
+        if (typeof window.BiketaBaiNotifications !== 'undefined' && window.BiketaBaiNotifications.connection) {
+            conn = window.BiketaBaiNotifications.connection;
+            addDebugLog('Found global SignalR connection', 'success');
+        } else if (typeof locationTrackingConnection !== 'undefined' && locationTrackingConnection) {
+            conn = locationTrackingConnection;
+            addDebugLog('Found location tracking connection', 'success');
+        } else {
+            addDebugLog('WARNING: No SignalR connection found!', 'error');
+        }
+        
+        if (conn) {
+            const state = conn.state;
+            let stateText = 'Unknown';
+            let stateNum = state;
+            
+            if (state === signalR.HubConnectionState.Connected || state === 1) {
+                stateText = '✅ Connected';
+                addDebugLog('Connection state: Connected', 'success');
+            } else if (state === signalR.HubConnectionState.Connecting || state === 0) {
+                stateText = '🔄 Connecting...';
+                addDebugLog('Connection state: Connecting', 'info');
+            } else if (state === signalR.HubConnectionState.Disconnected || state === 2) {
+                stateText = '❌ Disconnected';
+                addDebugLog('Connection state: Disconnected', 'error');
+            } else if (state === signalR.HubConnectionState.Reconnecting || state === 3) {
+                stateText = '🔄 Reconnecting...';
+                addDebugLog('Connection state: Reconnecting', 'info');
+            }
+            
+            document.getElementById('statusText').textContent = stateText;
+            document.getElementById('stateText').textContent = `State ${stateNum}`;
+            
+            // Check if ReceiveLocationUpdate handler is registered
+            // We can't directly check, but we can test by listening
+            addDebugLog('Checking for ReceiveLocationUpdate handler...', 'info');
+            document.getElementById('handlerStatus').textContent = 'Checking...';
+            
+            // Try to test if handler exists by checking connection
+            setTimeout(() => {
+                document.getElementById('handlerStatus').textContent = '✅ Handler should be registered (check owner TrackRenters page)';
+                addDebugLog('Handler registration check complete', 'info');
+            }, 1000);
+        } else {
+            document.getElementById('statusText').textContent = '❌ No Connection';
+            document.getElementById('stateText').textContent = 'N/A';
+            document.getElementById('handlerStatus').textContent = '❌ N/A';
+        }
+    }
+    
+    function useCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude.toFixed(6);
+                    document.getElementById('longitude').value = position.coords.longitude.toFixed(6);
+                    addDebugLog(`Current location: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`, 'success');
+                },
+                function(error) {
+                    addDebugLog(`Error getting location: ${error.message}`, 'error');
+                    alert('Error getting location: ' + error.message);
+                }
+            );
+        } else {
+            addDebugLog('Geolocation not supported', 'error');
+            alert('Geolocation is not supported by your browser');
+        }
+    }
+    
+    // Listen for location updates on this test page too
+    if (typeof signalR !== 'undefined') {
+        // Wait for connection to be available
+        setTimeout(() => {
+            let testConn = null;
+            if (typeof window.BiketaBaiNotifications !== 'undefined' && window.BiketaBaiNotifications.connection) {
+                testConn = window.BiketaBaiNotifications.connection;
+            }
+            
+            if (testConn) {
+                testConn.on("ReceiveLocationUpdate", function(data) {
+                    addDebugLog(`Received location update: Booking ${data.bookingId} at ${data.latitude}, ${data.longitude}`, 'success');
+                });
+                addDebugLog('Listening for ReceiveLocationUpdate events...', 'info');
+            } else {
+                addDebugLog('No connection available to listen for location updates', 'error');
+            }
+        }, 2000);
+    }
+    
+    // Check status on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(checkConnectionStatus, 1000);
+    });
+</script>
+
