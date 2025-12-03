@@ -54,7 +54,15 @@
                         <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</div>
                         
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Geofence Radius</div>
-                        <div style="font-weight: 600; color: var(--sage-primary);">@Model.GeofenceRadiusKm km</div>
+                        <div style="font-weight: 600; color: var(--sage-primary); margin-bottom: var(--space-3);">@Model.GeofenceRadiusKm km</div>
+                        
+                        @if (Model.StoreLatitude.HasValue && Model.StoreLongitude.HasValue)
+                        {
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Store Location</div>
+                            <div style="font-weight: 600; font-family: monospace; font-size: 0.875rem; color: var(--neutral-700);">
+                                @Model.StoreLatitude.Value.ToString("F6"), @Model.StoreLongitude.Value.ToString("F6")
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -71,6 +79,15 @@
                         <div style="display: flex; flex-direction: column; gap: var(--space-2); text-align: left; max-width: 400px; margin: 0 auto;">
                             <p style="margin: 0;"><strong>Distance from Store:</strong> <span id="distanceText" style="color: var(--sage-primary); font-weight: 600;">-</span></p>
                             <p style="margin: 0;"><strong>Your Location:</strong> <span id="coordinatesText" style="color: var(--neutral-600);">-</span></p>
+                            @if (Model.StoreLatitude.HasValue && Model.StoreLongitude.HasValue)
+                            {
+                                <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-500);">
+                                    <strong>Store Location:</strong> 
+                                    <span style="font-family: monospace; color: var(--neutral-600);">
+                                        @Model.StoreLatitude.Value.ToString("F6"), @Model.StoreLongitude.Value.ToString("F6")
+                                    </span>
+                                </p>
+                            }
                             <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-500);">Last updated: <span id="lastUpdateText">-</span></p>
                             <p style="margin: 0; font-size: 0.75rem; color: var(--neutral-400);" id="sendStatus">
                                 <i class="bi bi-hourglass-split"></i> Preparing to send location...
@@ -185,25 +202,41 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Add store marker
+        // Add store marker with store name
+        const storeName = '@(Model.Booking?.Bike.Owner.StoreName ?? "Store Location")';
         storeMarker = L.marker([storeLat, storeLng], {
             icon: L.icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
+                iconSize: [30, 48],
+                iconAnchor: [15, 48],
+                popupAnchor: [1, -40],
                 shadowSize: [41, 41]
-            })
-        }).addTo(map).bindPopup('Store Location');
+            }),
+            zIndexOffset: 500
+        }).addTo(map).bindPopup(`
+            <div style="text-align: center; min-width: 150px;">
+                <strong style="font-size: 1.1em;">${storeName}</strong><br>
+                <small style="color: #666;">Store Location</small><br>
+                <hr style="margin: 8px 0;">
+                <strong>Coordinates:</strong><br>
+                <code style="font-size: 0.85em;">${storeLat.toFixed(6)}, ${storeLng.toFixed(6)}</code><br>
+                <strong>Geofence Radius:</strong> @Model.GeofenceRadiusKm km
+            </div>
+        `);
 
-        // Add geofence circle
+        // Add geofence circle - make it more visible
         geofenceCircle = L.circle([storeLat, storeLng], {
             color: '#87A96B',
             fillColor: '#E8F0E3',
-            fillOpacity: 0.3,
+            fillOpacity: 0.4, // Increased opacity for better visibility
+            weight: 3, // Thicker border
             radius: radius
-        }).addTo(map);
+        }).addTo(map).bindTooltip(`Geofence: @Model.GeofenceRadiusKm km radius`, {
+            permanent: false,
+            direction: 'center',
+            className: 'geofence-tooltip'
+        });
 
         // Add renter marker with pulsing effect
         renterMarker = L.marker([lat, lng], {
@@ -228,9 +261,19 @@
         
         // Pulsing circle removed - no longer needed
 
-        // Fit map to show both markers and geofence
+        // Fit map to show both markers and geofence with proper padding
         const group = new L.featureGroup([storeMarker, renterMarker, geofenceCircle]);
-        map.fitBounds(group.getBounds().pad(0.1));
+        const bounds = group.getBounds();
+        map.fitBounds(bounds, { 
+            padding: [50, 50],
+            maxZoom: 15 // Don't zoom in too much if markers are close
+        });
+        
+        // Ensure geofence circle is visible - log for debugging
+        console.log('📍 Store location:', storeLat, storeLng);
+        console.log('📍 Geofence radius:', radius, 'meters (@Model.GeofenceRadiusKm km)');
+        console.log('📍 Renter location:', lat, lng);
+        console.log('📍 Geofence circle added to map');
     }
 
     function startTracking() {

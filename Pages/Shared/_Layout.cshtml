@@ -725,8 +725,44 @@
                     <button type="button" class="mini-notification-close" style="background: none; border: none; color: #9CA3AF; font-size: 1.25rem; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;">×</button>
                 `;
 
+                // Function to mark notification as read
+                const markNotificationAsRead = function(notificationId) {
+                    if (!notificationId) return;
+                    
+                    console.log(`📝 Marking notification ${notificationId} as read...`);
+                    
+                    // Add to processed list immediately to prevent showing again
+                    window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
+                    
+                    // Call API to mark as read
+                    fetch('/Notifications?handler=MarkAsRead', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `notificationId=${notificationId}`
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log(`✅ Notification ${notificationId} marked as read`);
+                            // Reload notification count to update badge
+                            loadNotificationCount();
+                        } else {
+                            console.error(`❌ Failed to mark notification ${notificationId} as read`);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('❌ Error marking notification as read:', err);
+                    });
+                };
+                
                 // Function to dismiss notification
-                const dismissNotification = function() {
+                const dismissNotification = function(shouldMarkAsRead = false) {
+                    // Mark as read if requested (when closed or auto-dismissed)
+                    if (shouldMarkAsRead && notification.notificationId) {
+                        markNotificationAsRead(notification.notificationId);
+                    }
+                    
                     notificationEl.style.animation = 'slideUp 0.3s ease-out';
                     setTimeout(() => {
                         if (notificationEl.parentNode) {
@@ -742,27 +778,23 @@
                 if (notification.actionUrl) {
                     notificationEl.addEventListener('click', function(e) {
                         if (!e.target.classList.contains('mini-notification-close') && !e.target.closest('.mini-notification-close')) {
-                            // Mark notification as read if it has an ID
+                            // Mark notification as read when user takes action
                             if (notification.notificationId) {
-                                fetch('/Notifications?handler=MarkAsRead', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/x-www-form-urlencoded',
-                                    },
-                                    body: `notificationId=${notification.notificationId}`
-                                }).catch(err => console.error('Error marking notification as read:', err));
+                                markNotificationAsRead(notification.notificationId);
                             }
+                            // Navigate to action URL
                             window.location.href = notification.actionUrl;
                         }
                     });
                 }
 
-                // Add close button handler
+                // Add close button handler - mark as read when closed
                 const closeBtn = notificationEl.querySelector('.mini-notification-close');
                 if (closeBtn) {
                     closeBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        dismissNotification();
+                        // Mark as read when user closes the notification
+                        dismissNotification(true); // true = mark as read
                     });
                 }
 
@@ -770,9 +802,9 @@
                 container.appendChild(notificationEl);
                 console.log("✅ Mini notification popup added to DOM");
 
-                // Auto-dismiss after 8 seconds
+                // Auto-dismiss after 8 seconds - mark as read when auto-dismissed
                 const autoDismissTimeout = setTimeout(() => {
-                    dismissNotification();
+                    dismissNotification(true); // true = mark as read
                 }, 8000);
 
                 // Clear timeout if user interacts
