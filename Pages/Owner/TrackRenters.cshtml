@@ -293,10 +293,17 @@
         console.log('Initializing SignalR connection for location tracking...');
         
         // Check if notification hub connection already exists from _Layout.cshtml
-        // If it does, reuse it; otherwise create a new connection
+        // First check global scope, then check local variable
         let connection;
         let isReusingConnection = false;
-        if (typeof notificationHubConnection !== 'undefined' && notificationHubConnection) {
+        
+        // Check global scope first (persistent across pages)
+        if (typeof window.BiketaBaiNotifications !== 'undefined' && 
+            window.BiketaBaiNotifications.connection) {
+            console.log('Reusing existing notification hub connection from global scope for location tracking');
+            connection = window.BiketaBaiNotifications.connection;
+            isReusingConnection = true;
+        } else if (typeof notificationHubConnection !== 'undefined' && notificationHubConnection) {
             console.log('Reusing existing notification hub connection for location tracking');
             connection = notificationHubConnection;
             isReusingConnection = true;

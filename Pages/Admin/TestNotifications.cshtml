@@ -1,0 +1,336 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@model TestNotificationsModel
+@{
+    ViewData["Title"] = "Test Notifications";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+
+<style>
+    .test-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    .test-section {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h3 {
+        color: #333;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    .status-card {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+    .debug-section {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+    .btn-test {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 0.5rem;
+    }
+    .btn-test:hover {
+        background: #5568d3;
+    }
+</style>
+
+<div class="test-container">
+    <h1 class="text-center mb-4">
+        <i class="bi bi-bell-fill"></i> Notification System Test
+    </h1>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Connection Status -->
+    <div class="test-section">
+        <h3><i class="bi bi-wifi"></i> SignalR Connection Status</h3>
+        <div class="status-card">
+            <strong>Current User ID:</strong> @(Model.CurrentUserId?.ToString() ?? "Not logged in")<br>
+            <strong>Unread Notifications:</strong> @(Model.UnreadCount?.ToString() ?? "0")
+        </div>
+        <div class="debug-section" id="connectionStatus">
+            <strong>Connection Status:</strong> <span id="connectionState">Checking...</span><br>
+            <strong>Handlers Registered:</strong> <span id="handlersStatus">Checking...</span><br>
+            <strong>Last Notification:</strong> <span id="lastNotification">None</span>
+        </div>
+        <button type="button" class="btn btn-primary btn-test" onclick="checkConnectionStatus()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Status
+        </button>
+        <button type="button" class="btn btn-secondary btn-test" onclick="testSound()">
+            <i class="bi bi-volume-up"></i> Test Sound
+        </button>
+        <button type="button" class="btn btn-secondary btn-test" onclick="testBadge()">
+            <i class="bi bi-badge"></i> Test Badge
+        </button>
+    </div>
+
+    <!-- Send Test Notification to Current User -->
+    <div class="test-section">
+        <h3><i class="bi bi-send"></i> Send Test Notification to Current User</h3>
+        <p class="text-muted">This will send a notification to your own account to test the badge and sound.</p>
+        <form method="post" asp-page-handler="SendToCurrentUser">
+            <div class="mb-3">
+                <label for="notificationTitle" class="form-label">Title</label>
+                <input type="text" class="form-control" id="notificationTitle" asp-for="NotificationTitle" 
+                       placeholder="Test Notification" />
+            </div>
+            <div class="mb-3">
+                <label for="notificationMessage" class="form-label">Message</label>
+                <textarea class="form-control" id="notificationMessage" asp-for="NotificationMessage" rows="3" 
+                          placeholder="This is a test notification..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="notificationType" class="form-label">Type</label>
+                <select class="form-control" id="notificationType" asp-for="NotificationType">
+                    <option value="Test">Test</option>
+                    <option value="Booking">Booking</option>
+                    <option value="Payment">Payment</option>
+                    <option value="Geofence">Geofence</option>
+                    <option value="Reminder">Reminder</option>
+                    <option value="Overdue">Overdue</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Send Notification to Me
+            </button>
+        </form>
+    </div>
+
+    <!-- Send Test Notification to Specific User -->
+    <div class="test-section">
+        <h3><i class="bi bi-person-plus"></i> Send Test Notification to Specific User</h3>
+        <p class="text-muted">Enter a user ID to send a test notification to that user.</p>
+        <form method="post" asp-page-handler="SendToUser">
+            <div class="mb-3">
+                <label for="testUserId" class="form-label">User ID</label>
+                <input type="number" class="form-control" id="testUserId" asp-for="TestUserId" 
+                       placeholder="Enter user ID" required />
+            </div>
+            <div class="mb-3">
+                <label for="notificationTitle2" class="form-label">Title</label>
+                <input type="text" class="form-control" id="notificationTitle2" asp-for="NotificationTitle" 
+                       placeholder="Test Notification" />
+            </div>
+            <div class="mb-3">
+                <label for="notificationMessage2" class="form-label">Message</label>
+                <textarea class="form-control" id="notificationMessage2" asp-for="NotificationMessage" rows="3" 
+                          placeholder="This is a test notification..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="notificationType2" class="form-label">Type</label>
+                <select class="form-control" id="notificationType2" asp-for="NotificationType">
+                    <option value="Test">Test</option>
+                    <option value="Booking">Booking</option>
+                    <option value="Payment">Payment</option>
+                    <option value="Geofence">Geofence</option>
+                    <option value="Reminder">Reminder</option>
+                    <option value="Overdue">Overdue</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Send Notification
+            </button>
+        </form>
+    </div>
+
+    <!-- Send Test Booking Update -->
+    <div class="test-section">
+        <h3><i class="bi bi-calendar-check"></i> Send Test Booking Update</h3>
+        <p class="text-muted">This will send a booking update notification to test the ReceiveBookingUpdate handler.</p>
+        <form method="post" asp-page-handler="SendBookingUpdate">
+            <div class="mb-3">
+                <label for="notificationMessage3" class="form-label">Message</label>
+                <textarea class="form-control" id="notificationMessage3" asp-for="NotificationMessage" rows="3" 
+                          placeholder="This is a test booking update..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Send Booking Update
+            </button>
+        </form>
+    </div>
+
+    <!-- Debug Information -->
+    <div class="test-section">
+        <h3><i class="bi bi-bug"></i> Debug Information</h3>
+        <div class="debug-section" id="debugInfo">
+            <strong>SignalR Library:</strong> <span id="signalRLibrary">Checking...</span><br>
+            <strong>Global Connection:</strong> <span id="globalConnection">Checking...</span><br>
+            <strong>Badge Element:</strong> <span id="badgeElement">Checking...</span><br>
+            <strong>Authentication:</strong> <span id="authStatus">Checking...</span><br>
+            <strong>Notification Permission:</strong> <span id="notificationPermission">Checking...</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-test" onclick="runDebugCheck()">
+            <i class="bi bi-search"></i> Run Debug Check
+        </button>
+        <button type="button" class="btn btn-secondary btn-test" onclick="openConsole()">
+            <i class="bi bi-terminal"></i> Open Console Guide
+        </button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+<script>
+    // Check connection status
+    function checkConnectionStatus() {
+        const conn = window.BiketaBaiNotifications?.connection || (typeof notificationHubConnection !== 'undefined' ? notificationHubConnection : null);
+        const handlers = window.BiketaBaiNotifications?.handlersRegistered || false;
+        
+        if (conn) {
+            const state = conn.state;
+            let stateText = 'Unknown';
+            if (state === signalR.HubConnectionState.Connected) {
+                stateText = '<span style="color: green;">✅ Connected</span>';
+            } else if (state === signalR.HubConnectionState.Connecting) {
+                stateText = '<span style="color: orange;">🔄 Connecting...</span>';
+            } else if (state === signalR.HubConnectionState.Disconnected) {
+                stateText = '<span style="color: red;">❌ Disconnected</span>';
+            } else if (state === signalR.HubConnectionState.Reconnecting) {
+                stateText = '<span style="color: orange;">🔄 Reconnecting...</span>';
+            }
+            
+            document.getElementById('connectionState').innerHTML = stateText;
+            document.getElementById('handlersStatus').innerHTML = handlers ? 
+                '<span style="color: green;">✅ Registered</span>' : 
+                '<span style="color: red;">❌ Not Registered</span>';
+        } else {
+            document.getElementById('connectionState').innerHTML = '<span style="color: red;">❌ No Connection</span>';
+            document.getElementById('handlersStatus').innerHTML = '<span style="color: red;">❌ N/A</span>';
+        }
+    }
+
+    // Test sound
+    function testSound() {
+        if (typeof playNotificationSound === 'function') {
+            playNotificationSound();
+            alert('Sound test triggered! You should hear a notification sound.');
+        } else {
+            alert('playNotificationSound function not found. Make sure you are on a page with the notification system loaded.');
+        }
+    }
+
+    // Test badge
+    function testBadge() {
+        if (typeof updateNotificationBadge === 'function') {
+            const testCount = Math.floor(Math.random() * 10) + 1;
+            updateNotificationBadge(testCount);
+            alert(`Badge test triggered! Badge should show ${testCount}.`);
+        } else {
+            alert('updateNotificationBadge function not found. Make sure you are on a page with the notification system loaded.');
+        }
+    }
+
+    // Run debug check
+    function runDebugCheck() {
+        const checks = {
+            signalRLibrary: typeof signalR !== 'undefined' ? '✅ Loaded' : '❌ Not Loaded',
+            globalConnection: window.BiketaBaiNotifications?.connection ? '✅ Exists' : '❌ Not Found',
+            badgeElement: $('#notificationCountHeader').length > 0 ? '✅ Found' : '❌ Not Found',
+            authStatus: typeof isAuthenticated !== 'undefined' && isAuthenticated === "true" ? '✅ Authenticated' : '❌ Not Authenticated',
+            notificationPermission: 'Notification' in window ? 
+                (Notification.permission === 'granted' ? '✅ Granted' : 
+                 Notification.permission === 'denied' ? '❌ Denied' : '⚠️ Default') : 
+                '❌ Not Supported'
+        };
+
+        document.getElementById('signalRLibrary').textContent = checks.signalRLibrary;
+        document.getElementById('globalConnection').textContent = checks.globalConnection;
+        document.getElementById('badgeElement').textContent = checks.badgeElement;
+        document.getElementById('authStatus').textContent = checks.authStatus;
+        document.getElementById('notificationPermission').textContent = checks.notificationPermission;
+    }
+
+    // Open console guide
+    function openConsole() {
+        const guide = `
+=== Console Testing Commands ===
+
+1. Check connection:
+   window.BiketaBaiNotifications?.connection?.state
+
+2. Test sound:
+   playNotificationSound()
+
+3. Test badge:
+   updateNotificationBadge(5)
+
+4. Load notification count:
+   loadNotificationCount()
+
+5. Check badge element:
+   $('#notificationCountHeader').length
+
+6. Manually show badge:
+   $('#notificationCountHeader').text('5').css('display', 'flex')
+
+7. Check authentication:
+   isAuthenticated
+
+8. Check SignalR:
+   typeof signalR
+
+9. Check global connection:
+   window.BiketaBaiNotifications
+
+10. Listen for notifications:
+    window.BiketaBaiNotifications?.connection?.on("ReceiveNotification", console.log)
+        `;
+        console.log(guide);
+        alert('Debug commands have been printed to the console. Open Developer Tools (F12) to see them.');
+    }
+
+    // Monitor for notifications
+    if (window.BiketaBaiNotifications?.connection) {
+        window.BiketaBaiNotifications.connection.on("ReceiveNotification", function(notification) {
+            document.getElementById('lastNotification').textContent = 
+                `Received: ${notification.title || 'Notification'} at ${new Date().toLocaleTimeString()}`;
+            checkConnectionStatus();
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        checkConnectionStatus();
+        runDebugCheck();
+        
+        // Auto-refresh status every 5 seconds
+        setInterval(checkConnectionStatus, 5000);
+    });
+</script>
+
