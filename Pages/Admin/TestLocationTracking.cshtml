@@ -41,9 +41,14 @@
                         <p><strong>Connection State:</strong> <span id="stateText">-</span></p>
                         <p><strong>Location Handler Registered:</strong> <span id="handlerStatus">-</span></p>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="checkConnectionStatus()">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh Status
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-secondary" onclick="checkConnectionStatus(0)">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="tryInitializeConnection()">
+                            <i class="bi bi-power"></i> Try Initialize Connection
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -112,7 +117,7 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+<!-- SignalR is loaded in _Layout.cshtml -->
 <script>
     let debugLog = [];
     
@@ -132,26 +137,55 @@
         document.getElementById('debugLog').innerHTML = '<div>Log cleared...</div>';
     }
     
-    function checkConnectionStatus() {
+    function checkConnectionStatus(retryCount = 0) {
         addDebugLog('Checking SignalR connection status...', 'info');
         
         if (typeof signalR === 'undefined') {
             document.getElementById('statusText').textContent = '❌ SignalR library not loaded';
             document.getElementById('stateText').textContent = 'N/A';
-            addDebugLog('ERROR: SignalR library not loaded!', 'error');
+            addDebugLog('ERROR: SignalR library not loaded! Waiting for library...', 'error');
+            
+            // Retry after 2 seconds if library not loaded
+            if (retryCount < 10) {
+                setTimeout(() => checkConnectionStatus(retryCount + 1), 2000);
+            }
             return;
         }
         
-        // Check global connection
+        addDebugLog('✅ SignalR library loaded', 'success');
+        
+        // Check global connection - wait for it to be initialized
         let conn = null;
         if (typeof window.BiketaBaiNotifications !== 'undefined' && window.BiketaBaiNotifications.connection) {
             conn = window.BiketaBaiNotifications.connection;
-            addDebugLog('Found global SignalR connection', 'success');
+            addDebugLog('✅ Found global SignalR connection', 'success');
+        } else if (typeof notificationHubConnection !== 'undefined' && notificationHubConnection) {
+            conn = notificationHubConnection;
+            addDebugLog('✅ Found notification hub connection', 'success');
         } else if (typeof locationTrackingConnection !== 'undefined' && locationTrackingConnection) {
             conn = locationTrackingConnection;
-            addDebugLog('Found location tracking connection', 'success');
+            addDebugLog('✅ Found location tracking connection', 'success');
         } else {
-            addDebugLog('WARNING: No SignalR connection found!', 'error');
+            // Connection might not be initialized yet - wait and retry
+            if (retryCount < 5) {
+                addDebugLog(`⚠️ No SignalR connection found yet (attempt ${retryCount + 1}/5). Waiting 2 seconds...`, 'info');
+                setTimeout(() => checkConnectionStatus(retryCount + 1), 2000);
+                return;
+            } else {
+                addDebugLog('❌ WARNING: No SignalR connection found after multiple attempts!', 'error');
+                addDebugLog('💡 Try: 1) Refresh the page, 2) Check browser console for errors, 3) Ensure you are logged in', 'info');
+                
+                // Try to manually initialize if possible
+                if (typeof initializeSignalR === 'function') {
+                    addDebugLog('🔄 Attempting to manually initialize SignalR connection...', 'info');
+                    try {
+                        initializeSignalR();
+                        setTimeout(() => checkConnectionStatus(0), 3000);
+                    } catch (e) {
+                        addDebugLog('❌ Failed to manually initialize: ' + e.message, 'error');
+                    }
+                }
+            }
         }
         
         if (conn) {
@@ -193,6 +227,64 @@
         }
     }
     
+    function tryInitializeConnection() {
+        addDebugLog('🔄 Attempting to manually initialize SignalR connection...', 'info');
+        
+        if (typeof signalR === 'undefined') {
+            addDebugLog('❌ SignalR library not loaded. Please refresh the page.', 'error');
+            return;
+        }
+        
+        // Check if initializeSignalR function exists (from _Layout.cshtml)
+        if (typeof initializeSignalR === 'function') {
+            addDebugLog('✅ Found initializeSignalR function, calling it...', 'info');
+            try {
+                initializeSignalR();
+                addDebugLog('✅ initializeSignalR called. Waiting 3 seconds for connection...', 'info');
+                setTimeout(() => {
+                    checkConnectionStatus(0);
+                }, 3000);
+            } catch (e) {
+                addDebugLog('❌ Error calling initializeSignalR: ' + e.message, 'error');
+            }
+        } else {
+            addDebugLog('⚠️ initializeSignalR function not found. Connection should be initialized by _Layout.cshtml', 'info');
+            addDebugLog('💡 Try refreshing the page or check browser console for errors', 'info');
+            
+            // Try to create connection manually
+            if (typeof window.BiketaBaiNotifications === 'undefined') {
+                window.BiketaBaiNotifications = {
+                    connection: null,
+                    handlersRegistered: false,
+                    previousNotificationCount: 0,
+                    healthMonitorInterval: null,
+                    initialized: false
+                };
+            }
+            
+            try {
+                const conn = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub")
+                    .withAutomaticReconnect()
+                    .build();
+                
+                window.BiketaBaiNotifications.connection = conn;
+                addDebugLog('✅ Created new connection manually. Starting...', 'info');
+                
+                conn.start()
+                    .then(() => {
+                        addDebugLog('✅ Connection started successfully!', 'success');
+                        checkConnectionStatus(0);
+                    })
+                    .catch(err => {
+                        addDebugLog('❌ Failed to start connection: ' + err.message, 'error');
+                    });
+            } catch (e) {
+                addDebugLog('❌ Error creating connection: ' + e.message, 'error');
+            }
+        }
+    }
+    
     function useCurrentLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -212,29 +304,72 @@
         }
     }
     
-    // Listen for location updates on this test page too
-    if (typeof signalR !== 'undefined') {
-        // Wait for connection to be available
-        setTimeout(() => {
-            let testConn = null;
-            if (typeof window.BiketaBaiNotifications !== 'undefined' && window.BiketaBaiNotifications.connection) {
-                testConn = window.BiketaBaiNotifications.connection;
-            }
+    // Function to setup location update listener
+    function setupLocationListener() {
+        let testConn = null;
+        if (typeof window.BiketaBaiNotifications !== 'undefined' && window.BiketaBaiNotifications.connection) {
+            testConn = window.BiketaBaiNotifications.connection;
+        } else if (typeof notificationHubConnection !== 'undefined' && notificationHubConnection) {
+            testConn = notificationHubConnection;
+        }
+        
+        if (testConn) {
+            // Remove existing handler if any
+            testConn.off("ReceiveLocationUpdate");
             
-            if (testConn) {
-                testConn.on("ReceiveLocationUpdate", function(data) {
-                    addDebugLog(`Received location update: Booking ${data.bookingId} at ${data.latitude}, ${data.longitude}`, 'success');
-                });
-                addDebugLog('Listening for ReceiveLocationUpdate events...', 'info');
-            } else {
-                addDebugLog('No connection available to listen for location updates', 'error');
+            // Add new handler
+            testConn.on("ReceiveLocationUpdate", function(data) {
+                addDebugLog(`📍 Received location update: Booking ${data.bookingId} at ${data.latitude}, ${data.longitude}`, 'success');
+            });
+            addDebugLog('✅ Listening for ReceiveLocationUpdate events...', 'success');
+            return true;
+        }
+        return false;
+    }
+    
+    // Listen for location updates on this test page too
+    function waitForConnectionAndListen(retryCount = 0) {
+        if (typeof signalR === 'undefined') {
+            if (retryCount < 10) {
+                setTimeout(() => waitForConnectionAndListen(retryCount + 1), 2000);
             }
-        }, 2000);
+            return;
+        }
+        
+        if (setupLocationListener()) {
+            // Successfully set up listener
+            return;
+        } else {
+            // Connection not ready yet, retry
+            if (retryCount < 5) {
+                addDebugLog(`Waiting for connection to be available (attempt ${retryCount + 1}/5)...`, 'info');
+                setTimeout(() => waitForConnectionAndListen(retryCount + 1), 2000);
+            } else {
+                addDebugLog('⚠️ Could not set up location listener - connection not available', 'error');
+            }
+        }
     }
     
     // Check status on page load
     document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(checkConnectionStatus, 1000);
+        // Wait a bit longer for _Layout.cshtml to initialize SignalR
+        setTimeout(() => {
+            checkConnectionStatus(0);
+            waitForConnectionAndListen(0);
+        }, 2000);
+        
+        // Also check periodically in case connection is initialized later
+        let checkInterval = setInterval(() => {
+            if (typeof window.BiketaBaiNotifications !== 'undefined' && 
+                window.BiketaBaiNotifications.connection) {
+                clearInterval(checkInterval);
+                checkConnectionStatus(0);
+                setupLocationListener();
+            }
+        }, 1000);
+        
+        // Clear interval after 30 seconds
+        setTimeout(() => clearInterval(checkInterval), 30000);
     });
 </script>
 
