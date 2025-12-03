@@ -350,18 +350,17 @@
             // Initialize SignalR connection
             function initializeSignalR() {
                 if (typeof signalR === 'undefined') {
-                    console.error('SignalR library not loaded');
-                    // Fallback to polling
+                    console.error('SignalR library not loaded, retrying in 2 seconds...');
+                    setTimeout(initializeSignalR, 2000);
+                    // Fallback to polling while retrying
                     setInterval(function() {
                         loadNotificationCount();
                     }, 15000);
                     return;
                 }
                 
-                // If connection exists and is connected/connecting, just ensure handlers are registered
-                if (notificationHubConnection && 
-                    (notificationHubConnection.state === signalR.HubConnectionState.Connected ||
-                     notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
+                // If connection exists and is connected, just ensure handlers are registered
+                if (notificationHubConnection && notificationHubConnection.state === signalR.HubConnectionState.Connected) {
                     console.log('SignalR connection already active');
                     // Ensure handlers are registered (they should be, but double-check)
                     if (!notificationHandlersRegistered) {
@@ -370,7 +369,27 @@
                     return;
                 }
                 
-                // Create new connection if it doesn't exist or is disconnected
+                // If connection exists but is disconnected, close it first
+                if (notificationHubConnection && notificationHubConnection.state !== signalR.HubConnectionState.Disconnected) {
+                    console.log('Closing existing connection to recreate...');
+                    notificationHubConnection.stop().then(() => {
+                        notificationHubConnection = null;
+                        notificationHandlersRegistered = false;
+                        createNewConnection();
+                    }).catch(() => {
+                        notificationHubConnection = null;
+                        notificationHandlersRegistered = false;
+                        createNewConnection();
+                    });
+                    return;
+                }
+                
+                createNewConnection();
+            }
+            
+            function createNewConnection() {
+                // Create new connection
+                console.log('Creating new SignalR connection for notifications...');
                 notificationHubConnection = new signalR.HubConnectionBuilder()
                     .withUrl("/notificationHub")
                     .withAutomaticReconnect({
@@ -384,51 +403,80 @@
                     })
                     .build();
                 
-                // Register notification handlers
+                // Register notification handlers BEFORE starting connection
                 registerNotificationHandlers();
                 
                 // Start the connection
                 notificationHubConnection.start()
                     .then(() => {
-                        console.log("SignalR connected successfully for notifications");
+                        console.log("✅ SignalR connected successfully for notifications");
                         // Load initial notification count
                         loadNotificationCount();
+                        
+                        // Set up connection health monitoring
+                        monitorConnectionHealth();
                     })
                     .catch((err) => {
-                        console.error("SignalR connection error:", err);
+                        console.error("❌ SignalR connection error:", err);
+                        notificationHandlersRegistered = false;
                         // Retry connection after a delay
                         setTimeout(() => {
                             console.log("Retrying SignalR connection...");
-                            if (notificationHubConnection && notificationHubConnection.state === signalR.HubConnectionState.Disconnected) {
-                                notificationHubConnection.start()
-                                    .then(() => {
-                                        console.log("SignalR reconnected successfully");
-                                        loadNotificationCount();
-                                    })
-                                    .catch((retryErr) => {
-                                        console.error("SignalR retry failed:", retryErr);
-                                        // Fallback to polling if SignalR fails completely
-                                        setInterval(function() {
-                                            loadNotificationCount();
-                                        }, 15000);
-                                    });
-                            }
+                            initializeSignalR();
                         }, 5000);
                     });
             }
             
+            // Monitor connection health and reconnect if needed
+            function monitorConnectionHealth() {
+                setInterval(() => {
+                    if (notificationHubConnection) {
+                        const state = notificationHubConnection.state;
+                        if (state === signalR.HubConnectionState.Disconnected) {
+                            console.warn("SignalR connection is disconnected, attempting to reconnect...");
+                            notificationHandlersRegistered = false;
+                            initializeSignalR();
+                        } else if (state === signalR.HubConnectionState.Connected) {
+                            // Connection is healthy
+                            if (!notificationHandlersRegistered) {
+                                console.warn("Handlers not registered but connection is active, re-registering...");
+                                registerNotificationHandlers();
+                            }
+                        }
+                    } else {
+                        console.warn("No SignalR connection found, initializing...");
+                        initializeSignalR();
+                    }
+                }, 30000); // Check every 30 seconds
+            }
+            
             // Register notification handlers (separate function to avoid duplication)
             function registerNotificationHandlers() {
-                if (!notificationHubConnection || notificationHandlersRegistered) {
+                if (!notificationHubConnection) {
+                    console.warn("Cannot register handlers: no connection available");
                     return;
+                }
+                
+                // Remove existing handlers first to prevent duplicates
+                try {
+                    notificationHubConnection.off("ReceiveNotification");
+                    notificationHubConnection.off("ReceiveBookingUpdate");
+                } catch (e) {
+                    // Ignore errors when removing handlers
                 }
                 
                 // Listen for new notifications
                 notificationHubConnection.on("ReceiveNotification", function (notification) {
-                    console.log("New notification received:", notification);
+                    console.log("🔔 New notification received:", notification);
+                    
+                    if (!notification) {
+                        console.error("Invalid notification data received");
+                        return;
+                    }
                     
                     // Update notification count
                     const currentCount = notification.unreadCount || 0;
+                    console.log("Updating badge to:", currentCount);
                     updateNotificationBadge(currentCount);
                     
                     // Play sound immediately when notification is received
@@ -436,18 +484,27 @@
                     
                     // Show browser notification if permission granted
                     if (Notification.permission === "granted") {
-                        new Notification(notification.title, {
-                            body: notification.message,
-                            icon: '/favicon.ico',
-                            badge: '/favicon.ico',
-                            tag: 'biketabai-notification'
-                        });
+                        try {
+                            new Notification(notification.title || "New Notification", {
+                                body: notification.message || "You have a new notification",
+                                icon: '/favicon.ico',
+                                badge: '/favicon.ico',
+                                tag: 'biketabai-notification-' + Date.now()
+                            });
+                        } catch (e) {
+                            console.error("Error showing browser notification:", e);
+                        }
                     }
                 });
                 
                 // Listen for booking updates
                 notificationHubConnection.on("ReceiveBookingUpdate", function (update) {
-                    console.log("Booking update received:", update);
+                    console.log("📋 Booking update received:", update);
+                    
+                    if (!update) {
+                        console.error("Invalid booking update data received");
+                        return;
+                    }
                     
                     // Reload notification count to get latest
                     loadNotificationCount();
@@ -457,59 +514,80 @@
                     
                     // Show browser notification if permission granted
                     if (Notification.permission === "granted" && update.message) {
-                        new Notification("Booking Update", {
-                            body: update.message,
-                            icon: '/favicon.ico',
-                            badge: '/favicon.ico',
-                            tag: 'biketabai-booking-update'
-                        });
+                        try {
+                            new Notification("Booking Update", {
+                                body: update.message,
+                                icon: '/favicon.ico',
+                                badge: '/favicon.ico',
+                                tag: 'biketabai-booking-update-' + Date.now()
+                            });
+                        } catch (e) {
+                            console.error("Error showing browser notification:", e);
+                        }
                     }
                 });
                 
                 // Handle connection events
                 notificationHubConnection.onreconnecting((error) => {
-                    console.log("SignalR reconnecting...", error);
+                    console.log("🔄 SignalR reconnecting...", error);
                 });
                 
                 notificationHubConnection.onreconnected((connectionId) => {
-                    console.log("SignalR reconnected with connection ID:", connectionId);
+                    console.log("✅ SignalR reconnected with connection ID:", connectionId);
                     // Reload notification count when reconnected
                     loadNotificationCount();
-                });
-                
-                notificationHubConnection.onclose((error) => {
-                    console.log("SignalR connection closed", error);
-                    notificationHandlersRegistered = false; // Reset flag on close
-                    // Try to reconnect after a delay if connection was closed unexpectedly
-                    if (error) {
-                        console.log("Connection closed with error, attempting to reconnect...");
-                        setTimeout(() => {
-                            if (notificationHubConnection && 
-                                notificationHubConnection.state === signalR.HubConnectionState.Disconnected) {
-                                initializeSignalR();
-                            }
-                        }, 5000);
+                    // Re-register handlers if needed
+                    if (!notificationHandlersRegistered) {
+                        registerNotificationHandlers();
                     }
                 });
                 
+                notificationHubConnection.onclose((error) => {
+                    console.log("❌ SignalR connection closed", error);
+                    notificationHandlersRegistered = false; // Reset flag on close
+                    // Try to reconnect after a delay if connection was closed unexpectedly
+                    setTimeout(() => {
+                        console.log("Attempting to reconnect SignalR...");
+                        initializeSignalR();
+                    }, 3000);
+                });
+                
                 notificationHandlersRegistered = true;
+                console.log("✅ Notification handlers registered successfully");
             }
             
-            // Load wallet balance
-            $(document).ready(function() {
-                loadWalletBalance();
-                
-                // Initialize SignalR for real-time notifications
-                if (isAuthenticated === "true") {
-                    initializeSignalR();
+            // Initialize SignalR immediately when script loads (don't wait for document ready)
+            if (isAuthenticated === "true") {
+                // Try to initialize immediately
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        initializeSignalR();
+                        loadWalletBalance();
+                    });
                 } else {
-                    // Fallback to polling if not authenticated
+                    // DOM already loaded
+                    initializeSignalR();
+                    loadWalletBalance();
+                }
+            } else {
+                // Fallback to polling if not authenticated
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        loadNotificationCount();
+                        setInterval(function() {
+                            loadNotificationCount();
+                        }, 15000);
+                    });
+                } else {
                     loadNotificationCount();
                     setInterval(function() {
                         loadNotificationCount();
                     }, 15000);
                 }
-                
+            }
+            
+            // Load wallet balance and set up refresh
+            $(document).ready(function() {
                 // Refresh wallet every 30 seconds
                 setInterval(function() {
                     loadWalletBalance();
@@ -580,10 +658,28 @@
                 Notification.requestPermission();
             }
             
+            // Audio context for notification sounds (created once and reused)
+            let notificationAudioContext = null;
+            
+            function getAudioContext() {
+                if (!notificationAudioContext) {
+                    try {
+                        notificationAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error('Could not create audio context:', e);
+                        return null;
+                    }
+                }
+                return notificationAudioContext;
+            }
+            
             function playNotificationSound() {
                 try {
-                    // Create audio context for notification sound
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const audioContext = getAudioContext();
+                    if (!audioContext) {
+                        console.log('Audio context not available');
+                        return;
+                    }
                     
                     // Resume audio context if suspended (browsers require user interaction first)
                     if (audioContext.state === 'suspended') {
