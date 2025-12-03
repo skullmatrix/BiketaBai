@@ -129,6 +129,9 @@ public class RentalRequestsModel : PageModel
 
             await _context.SaveChangesAsync();
 
+            // Mark related notifications as read since owner took action
+            await _notificationService.MarkNotificationsByBookingIdAsync(userId, booking.BookingId);
+
             // Send notification to renter with geofencing link
             var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
             await _notificationService.CreateNotificationAsync(
@@ -225,6 +228,9 @@ public class RentalRequestsModel : PageModel
             }
 
             await _context.SaveChangesAsync();
+
+            // Mark related notifications as read since owner took action
+            await _notificationService.MarkNotificationsByBookingIdAsync(userId, booking.BookingId);
 
             // Send notification to renter
             await _notificationService.CreateNotificationAsync(
@@ -330,6 +336,9 @@ public class RentalRequestsModel : PageModel
             booking.Bike.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Mark related notifications as read since owner verified payment
+            await _notificationService.MarkNotificationsByBookingIdAsync(userId, booking.BookingId);
 
             // Send notification to renter with geofencing link
             var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);

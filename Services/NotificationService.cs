@@ -116,5 +116,46 @@ public class NotificationService
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task MarkNotificationsByActionUrlAsync(int userId, string actionUrl)
+    {
+        // Mark all notifications with matching action URL as read
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == userId && !n.IsRead && n.ActionUrl == actionUrl)
+            .ToListAsync();
+
+        foreach (var notification in notifications)
+        {
+            notification.IsRead = true;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task MarkNotificationsByBookingIdAsync(int userId, int bookingId)
+    {
+        // Mark all booking-related notifications as read when action is taken
+        var actionUrls = new[]
+        {
+            $"/Owner/RentalRequests",
+            $"/Owner/RentalRequests?bookingId={bookingId}",
+            $"/Bookings/Details/{bookingId}"
+        };
+
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == userId && 
+                       !n.IsRead && 
+                       (n.ActionUrl != null && actionUrls.Contains(n.ActionUrl) ||
+                        n.Message.Contains($"#{bookingId.ToString("D6")}") ||
+                        n.Message.Contains($"booking #{bookingId}")))
+            .ToListAsync();
+
+        foreach (var notification in notifications)
+        {
+            notification.IsRead = true;
+        }
+
+        await _context.SaveChangesAsync();
+    }
 }
 

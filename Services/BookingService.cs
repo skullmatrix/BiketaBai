@@ -123,26 +123,10 @@ public class BookingService
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync();
 
-        // Send notification to owner about new booking request
-        var bikeForNotification = await _context.Bikes
-            .Include(b => b.Owner)
-            .FirstOrDefaultAsync(b => b.BikeId == bikeId);
-        
-        if (bikeForNotification != null && bikeForNotification.OwnerId > 0)
-        {
-            var renterName = await _context.Users
-                .Where(u => u.UserId == renterId)
-                .Select(u => u.FullName)
-                .FirstOrDefaultAsync() ?? "a renter";
-            
-            await _notificationService.CreateNotificationAsync(
-                bikeForNotification.OwnerId,
-                "New Booking Request",
-                $"You have a new rental request for {bikeForNotification.Brand} {bikeForNotification.Model} from {renterName}. Quantity: {quantity}. Please review and approve.",
-                "Booking",
-                $"/Owner/RentalRequests"
-            );
-        }
+        // NOTE: Notification to owner is sent only when payment is processed (in PaymentService)
+        // This prevents duplicate notifications - owner only gets notified when payment type is selected
+        // For cash payments, notification is sent in PaymentService.ProcessPaymentAsync
+        // For other payments, notification is sent when payment is confirmed
 
         return (true, booking.BookingId, "Booking created successfully");
     }
