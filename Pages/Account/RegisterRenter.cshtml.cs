@@ -532,78 +532,56 @@ public class RegisterRenterModel : PageModel
             UpdatedAt = DateTime.UtcNow
         };
 
-        // Use database transaction to ensure atomicity and handle concurrency
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        // Use execution strategy to handle retry logic
+        // Note: We can't use explicit transactions with retry strategy, so we rely on SaveChangesAsync atomicity
+        // For true transaction support, we'd need to disable retry or use a different approach
+        // Since we're doing user creation and wallet creation separately, we'll do them sequentially
+        // The execution strategy will handle retries for transient failures
         try
         {
-            // Re-check email and phone right before saving to minimize race condition window
-            var existingUserByEmail = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
-            if (existingUserByEmail != null)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                await transaction.RollbackAsync();
-                ErrorMessage = "Email address is already registered. Please use a different email or try logging in.";
-                CurrentStep = 1;
-                TempData["RenterCurrentStep"] = "1";
-                TempData["RenterErrorMessage"] = ErrorMessage;
-                return Page();
-            }
-
-            var existingUserByPhone = await _context.Users
-                .FirstOrDefaultAsync(u => u.Phone == phone && !u.IsDeleted);
-            if (existingUserByPhone != null)
-            {
-                await transaction.RollbackAsync();
-                ErrorMessage = "Phone number is already registered. Please use a different phone number.";
-                CurrentStep = 1;
-                TempData["RenterCurrentStep"] = "1";
-                TempData["RenterErrorMessage"] = ErrorMessage;
-                return Page();
-            }
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Create wallet within the same transaction
-            await _walletService.GetOrCreateWalletAsync(user.UserId);
-            await _context.SaveChangesAsync();
-
-            // Commit transaction
-            await transaction.CommitAsync();
-            
-            // Cross-check address if ID address was extracted (after successful registration)
-            // This is done outside transaction to avoid blocking registration if address validation fails
-            if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(address))
-            {
-                try
+                // Re-check email and phone right before saving to minimize race condition window
+                var existingUserByEmail = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
+                if (existingUserByEmail != null)
                 {
-                    var addressMatch = await _idValidationService.CrossCheckAddressAsync(address, idExtractedAddress);
-                    if (!addressMatch)
-                    {
-                        Log.Warning("Address mismatch for user {Email}: User address='{UserAddress}', ID address='{IdAddress}'", 
-                            email, address, idExtractedAddress);
-                        // Don't block registration, but log the mismatch
-                        // Admin can review later
-                    }
+                    throw new InvalidOperationException("Email address is already registered. Please use a different email or try logging in.");
                 }
-                catch (Exception ex)
+
+                var existingUserByPhone = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Phone == phone && !u.IsDeleted);
+                if (existingUserByPhone != null)
                 {
-                    // Log but don't fail registration if address cross-check fails
-                    Log.Warning(ex, "Failed to cross-check address for user {Email}. Registration continues.", email);
+                    throw new InvalidOperationException("Phone number is already registered. Please use a different phone number.");
                 }
-            }
+
+                // Add user and save - this is atomic
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Create wallet - this is a separate operation but will be retried if needed
+                // GetOrCreateWalletAsync is idempotent, so it's safe to call
+                var wallet = await _walletService.GetOrCreateWalletAsync(user.UserId);
+                if (wallet == null)
+                {
+                    throw new InvalidOperationException("Failed to create wallet. Please try again.");
+                }
+                await _context.SaveChangesAsync();
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Handle validation errors (duplicate email/phone)
+            ErrorMessage = ex.Message;
+            CurrentStep = 1;
+            TempData["RenterCurrentStep"] = "1";
+            TempData["RenterErrorMessage"] = ErrorMessage;
+            return Page();
         }
         catch (DbUpdateException ex)
         {
-            try
-            {
-                await transaction.RollbackAsync();
-            }
-            catch (Exception rollbackEx)
-            {
-                Log.Error(rollbackEx, "Error rolling back transaction for email: {Email}", email);
-            }
-            
             // Check if it's a duplicate key violation
             if (ex.InnerException != null && (
                 ex.InnerException.Message.Contains("Duplicate entry") ||
@@ -627,22 +605,35 @@ public class RegisterRenterModel : PageModel
         }
         catch (Exception ex)
         {
-            try
-            {
-                await transaction.RollbackAsync();
-            }
-            catch (Exception rollbackEx)
-            {
-                Log.Error(rollbackEx, "Error rolling back transaction for email: {Email}", email);
-            }
-            
-            Log.Error(ex, "Unexpected error during registration for email: {Email}. Exception type: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}", 
-                email, ex.GetType().Name, ex.Message, ex.StackTrace);
+            Log.Error(ex, "Unexpected error during registration for email: {Email}. Exception type: {ExceptionType}, Message: {Message}", 
+                email, ex.GetType().Name, ex.Message);
             ErrorMessage = $"An error occurred during registration: {ex.Message}. Please try again or contact support if the problem persists.";
             CurrentStep = 3; // Stay on step 3 (ID step) instead of going back to step 1
             TempData["RenterCurrentStep"] = "3";
             TempData["RenterErrorMessage"] = ErrorMessage;
             return Page();
+        }
+
+        // Cross-check address if ID address was extracted (after successful registration)
+        // This is done outside transaction to avoid blocking registration if address validation fails
+        if (!string.IsNullOrEmpty(idExtractedAddress) && !string.IsNullOrEmpty(address))
+        {
+            try
+            {
+                var addressMatch = await _idValidationService.CrossCheckAddressAsync(address, idExtractedAddress);
+                if (!addressMatch)
+                {
+                    Log.Warning("Address mismatch for user {Email}: User address='{UserAddress}', ID address='{IdAddress}'", 
+                        email, address, idExtractedAddress);
+                    // Don't block registration, but log the mismatch
+                    // Admin can review later
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail registration if address cross-check fails
+                Log.Warning(ex, "Failed to cross-check address for user {Email}. Registration continues.", email);
+            }
         }
 
         // Send verification email
