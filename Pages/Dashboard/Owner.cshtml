@@ -1,5 +1,6 @@
 @page
 @using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
 @attribute [Authorize]
 @model OwnerDashboardModel
 @{
@@ -191,7 +192,7 @@
                                     <i class="bi bi-person"></i> @booking.Renter.FullName
                                 </p>
                                 <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
-                                    <i class="bi bi-calendar"></i> @booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")
+                                    <i class="bi bi-calendar"></i> @TimeZoneHelper.FormatPhilippineTime(booking.StartDate, "MMM dd, yyyy hh:mm tt")
                                 </p>
                                 <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
                                     <i class="bi bi-hash"></i> Quantity: @booking.Quantity
@@ -303,7 +304,7 @@
                                     <i class="bi bi-telephone"></i> @booking.Renter.Phone
                                 </p>
                                 <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
-                                    <i class="bi bi-calendar-x"></i> Return by: @booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")
+                                    <i class="bi bi-calendar-x"></i> Return by: @TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd, yyyy hh:mm tt")
                                 </p>
                                 <p style="font-size: 0.875rem; color: var(--neutral-600); margin: 0;">
                                     <strong>Earning:</strong> <span class="text-sage">₱@((booking.TotalAmount * 0.9m).ToString("F0"))</span>
@@ -424,8 +425,8 @@
                                 <td>@booking.Renter.FullName</td>
                                 <td>
                                     <div style="font-size: 0.875rem;">
-                                        @booking.StartDate.ToString("MMM dd")<br />
-                                        <span style="color: var(--neutral-500);">to @booking.EndDate.ToString("MMM dd")</span>
+                                        @TimeZoneHelper.FormatPhilippineTime(booking.StartDate, "MMM dd")<br />
+                                        <span style="color: var(--neutral-500);">to @TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd")</span>
                                     </div>
                                 </td>
                                 <td><strong class="text-sage">₱@((booking.TotalAmount * 0.9m).ToString("F0"))</strong></td>

@@ -500,25 +500,77 @@
             
             $('#searchInput, #statusFilter, #sortSelect').on('input change', filterBikes);
             
-            // Update remaining time for active rentals
+            // Helper function to get current Philippine time (UTC+8)
+            function getPhilippineTime() {
+                const now = new Date();
+                // Get current time in Philippine timezone
+                const phTimeStr = now.toLocaleString('en-US', { 
+                    timeZone: 'Asia/Manila',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                
+                // Parse the string to create a Date object
+                // Format: "MM/DD/YYYY, HH:MM:SS"
+                const parts = phTimeStr.split(', ');
+                const dateParts = parts[0].split('/');
+                const timeParts = parts[1].split(':');
+                
+                // Create date in local timezone but representing Philippine time
+                const phDate = new Date(
+                    parseInt(dateParts[2]), // year
+                    parseInt(dateParts[0]) - 1, // month (0-indexed)
+                    parseInt(dateParts[1]), // day
+                    parseInt(timeParts[0]), // hour
+                    parseInt(timeParts[1]), // minute
+                    parseInt(timeParts[2]) // second
+                );
+                
+                return phDate;
+            }
+
+            // Update remaining time for active rentals - uses Philippine time
             function updateRemainingTimes() {
                 $('.remaining-time').each(function() {
                     const $el = $(this);
                     const endDateStr = $el.data('end-date');
                     if (!endDateStr) return;
                     
-                    const endDate = new Date(endDateStr);
-                    const now = new Date();
-                    const diff = endDate - now;
+                    // Parse the end date - it's in Philippine time format (YYYY-MM-DDTHH:mm:ss)
+                    const endDateParts = endDateStr.split('T');
+                    const dateParts = endDateParts[0].split('-');
+                    const timeParts = endDateParts[1].split(':');
+                    
+                    // Create end date in local timezone but representing Philippine time values
+                    const endDate = new Date(
+                        parseInt(dateParts[0]), // year
+                        parseInt(dateParts[1]) - 1, // month (0-indexed)
+                        parseInt(dateParts[2]), // day
+                        parseInt(timeParts[0]), // hour
+                        parseInt(timeParts[1]), // minute
+                        parseInt(timeParts[2] || 0) // second
+                    );
+                    
+                    // Get current Philippine time
+                    const nowPhilippine = getPhilippineTime();
+                    
+                    // Calculate difference in milliseconds
+                    const diff = endDate.getTime() - nowPhilippine.getTime();
                     
                     if (diff <= 0) {
                         $el.html('<i class="bi bi-exclamation-triangle-fill"></i> <span>OVERDUE</span>');
                         $el.css('color', '#DC2626');
                         $el.closest('.rental-item-premium').css('background', '#FEE2E2').css('border-left-color', '#DC2626');
                     } else {
-                        const hours = Math.floor(diff / (1000 * 60 * 60));
-                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                        const totalSeconds = Math.floor(diff / 1000);
+                        const hours = Math.floor(totalSeconds / 3600);
+                        const minutes = Math.floor((totalSeconds % 3600) / 60);
+                        const seconds = totalSeconds % 60;
                         
                         let timeStr = '';
                         if (hours > 0) {
@@ -666,9 +718,11 @@
                         playNotificationSound();
                     }
 
-                    // Note: The mini notification popup from _Layout.cshtml will handle displaying the notification
-                    // No need to refresh the page - user can click the popup to navigate to RentalRequests if needed
-                    console.log("✅ Cash payment request received. Mini notification popup will show from _Layout.cshtml");
+                    // Refresh the page to show new request after a delay to allow popup to be seen
+                    setTimeout(function() {
+                        console.log("🔄 Refreshing page to show new cash payment request...");
+                        window.location.reload();
+                    }, 5000); // 5 second delay to allow user to see the mini notification popup
                 });
 
                 cashPaymentHandlersRegistered = true;

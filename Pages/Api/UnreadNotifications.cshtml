@@ -1,0 +1,33 @@
+@page "/Api/UnreadNotifications"
+@using BiketaBai.Helpers
+@using BiketaBai.Services
+@using System.Linq
+@inject NotificationService NotificationService
+@{
+    Layout = null;
+    
+    var userId = AuthHelper.GetCurrentUserId(User);
+    if (userId.HasValue)
+    {
+        var notifications = await NotificationService.GetUnreadNotificationsAsync(userId.Value);
+        
+        Response.ContentType = "application/json";
+        await Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { 
+            notifications = notifications.Select(n => new {
+                notificationId = n.NotificationId,
+                title = n.Title,
+                message = n.Message,
+                notificationType = n.NotificationType,
+                actionUrl = n.ActionUrl,
+                createdAt = n.CreatedAt
+            }).ToList()
+        }));
+    }
+    else
+    {
+        Response.StatusCode = 401;
+        Response.ContentType = "application/json";
+        await Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { error = "Unauthorized" }));
+    }
+}
+

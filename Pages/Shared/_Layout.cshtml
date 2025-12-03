@@ -554,8 +554,118 @@
                 }, 30000); // Check every 30 seconds
             }
             
+            // Notification queue system - shows one notification at a time
+            if (typeof window.BiketaBaiNotifications === 'undefined') {
+                window.BiketaBaiNotifications = {};
+            }
+            
+            window.BiketaBaiNotifications.notificationQueue = window.BiketaBaiNotifications.notificationQueue || [];
+            window.BiketaBaiNotifications.isShowingNotification = window.BiketaBaiNotifications.isShowingNotification || false;
+            window.BiketaBaiNotifications.processedNotificationIds = window.BiketaBaiNotifications.processedNotificationIds || new Set();
+
+            // Add notification to queue
+            function queueNotification(notification) {
+                // Skip if we've already processed this notification
+                if (notification.notificationId && window.BiketaBaiNotifications.processedNotificationIds.has(notification.notificationId)) {
+                    console.log("⏭️ Skipping already processed notification:", notification.notificationId);
+                    return;
+                }
+
+                // Mark as processed
+                if (notification.notificationId) {
+                    window.BiketaBaiNotifications.processedNotificationIds.add(notification.notificationId);
+                }
+
+                // Add to queue
+                window.BiketaBaiNotifications.notificationQueue.push(notification);
+                console.log("📥 Notification queued. Queue length:", window.BiketaBaiNotifications.notificationQueue.length);
+
+                // Process queue if not currently showing
+                if (!window.BiketaBaiNotifications.isShowingNotification) {
+                    processNotificationQueue();
+                }
+            }
+
+            // Process notification queue - shows one at a time
+            function processNotificationQueue() {
+                if (window.BiketaBaiNotifications.isShowingNotification) {
+                    console.log("⏸️ Already showing notification, waiting...");
+                    return;
+                }
+
+                if (window.BiketaBaiNotifications.notificationQueue.length === 0) {
+                    console.log("✅ Notification queue is empty");
+                    window.BiketaBaiNotifications.isShowingNotification = false;
+                    
+                    // Check for more unread notifications from server
+                    checkForMoreNotifications();
+                    return;
+                }
+
+                // Get next notification from queue
+                const notification = window.BiketaBaiNotifications.notificationQueue.shift();
+                window.BiketaBaiNotifications.isShowingNotification = true;
+                
+                console.log("📤 Showing notification from queue:", notification.title);
+                showMiniNotification(notification, function() {
+                    // Callback when notification is dismissed
+                    window.BiketaBaiNotifications.isShowingNotification = false;
+                    console.log("✅ Notification dismissed, processing next in queue...");
+                    
+                    // Process next notification after a short delay
+                    setTimeout(() => {
+                        processNotificationQueue();
+                    }, 500);
+                });
+            }
+
+            // Check for more unread notifications from server
+            function checkForMoreNotifications() {
+                fetch('/Api/UnreadNotifications')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.notifications && data.notifications.length > 0) {
+                            console.log(`📬 Found ${data.notifications.length} unread notifications from server`);
+                            
+                            // Add unread notifications to queue (filter out already processed)
+                            let addedCount = 0;
+                            data.notifications.forEach(notif => {
+                                if (!window.BiketaBaiNotifications.processedNotificationIds.has(notif.notificationId)) {
+                                    queueNotification({
+                                        notificationId: notif.notificationId,
+                                        title: notif.title,
+                                        message: notif.message,
+                                        type: notif.notificationType,
+                                        actionUrl: notif.actionUrl
+                                    });
+                                    addedCount++;
+                                }
+                            });
+                            
+                            if (addedCount > 0) {
+                                console.log(`✅ Added ${addedCount} new notifications to queue`);
+                            }
+                            
+                            // Process queue if we added new notifications
+                            if (!window.BiketaBaiNotifications.isShowingNotification && window.BiketaBaiNotifications.notificationQueue.length > 0) {
+                                processNotificationQueue();
+                            }
+                        } else {
+                            console.log("✅ No more unread notifications");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error checking for unread notifications:", err);
+                    });
+            }
+
             // Show mini notification popup at the top of the page
-            function showMiniNotification(notification) {
+            function showMiniNotification(notification, onDismiss) {
                 console.log("📢 showMiniNotification called with:", notification);
                 
                 // Create notification container if it doesn't exist
@@ -568,6 +678,9 @@
                     console.log("✅ Created mini notification container");
                 }
 
+                // Clear any existing notifications (only show one at a time)
+                container.innerHTML = '';
+
                 // Create notification element
                 const notificationEl = document.createElement('div');
                 notificationEl.className = 'mini-notification';
@@ -577,7 +690,6 @@
                     border-radius: 8px;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                     padding: 1rem 1.25rem;
-                    margin-bottom: 0.75rem;
                     display: flex;
                     align-items: flex-start;
                     gap: 0.75rem;
@@ -613,10 +725,33 @@
                     <button type="button" class="mini-notification-close" style="background: none; border: none; color: #9CA3AF; font-size: 1.25rem; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;">×</button>
                 `;
 
+                // Function to dismiss notification
+                const dismissNotification = function() {
+                    notificationEl.style.animation = 'slideUp 0.3s ease-out';
+                    setTimeout(() => {
+                        if (notificationEl.parentNode) {
+                            notificationEl.remove();
+                        }
+                        if (onDismiss) {
+                            onDismiss();
+                        }
+                    }, 300);
+                };
+
                 // Add click handler to navigate to action URL
                 if (notification.actionUrl) {
                     notificationEl.addEventListener('click', function(e) {
                         if (!e.target.classList.contains('mini-notification-close') && !e.target.closest('.mini-notification-close')) {
+                            // Mark notification as read if it has an ID
+                            if (notification.notificationId) {
+                                fetch('/Notifications?handler=MarkAsRead', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                    },
+                                    body: `notificationId=${notification.notificationId}`
+                                }).catch(err => console.error('Error marking notification as read:', err));
+                            }
                             window.location.href = notification.actionUrl;
                         }
                     });
@@ -627,12 +762,7 @@
                 if (closeBtn) {
                     closeBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        notificationEl.style.animation = 'slideUp 0.3s ease-out';
-                        setTimeout(() => {
-                            if (notificationEl.parentNode) {
-                                notificationEl.remove();
-                            }
-                        }, 300);
+                        dismissNotification();
                     });
                 }
 
@@ -640,17 +770,15 @@
                 container.appendChild(notificationEl);
                 console.log("✅ Mini notification popup added to DOM");
 
-                // Auto-remove after 8 seconds
-                setTimeout(() => {
-                    if (notificationEl.parentNode) {
-                        notificationEl.style.animation = 'slideUp 0.3s ease-out';
-                        setTimeout(() => {
-                            if (notificationEl.parentNode) {
-                                notificationEl.remove();
-                            }
-                        }, 300);
-                    }
+                // Auto-dismiss after 8 seconds
+                const autoDismissTimeout = setTimeout(() => {
+                    dismissNotification();
                 }, 8000);
+
+                // Clear timeout if user interacts
+                notificationEl.addEventListener('mouseenter', () => {
+                    clearTimeout(autoDismissTimeout);
+                });
             }
 
             // Helper function to escape HTML
@@ -737,11 +865,11 @@
                     // Play sound immediately when notification is received
                     playNotificationSound();
                     
-                    // Show mini notification popup at the top of the page
+                    // Add to queue (will show one at a time)
                     try {
-                        showMiniNotification(notification);
+                        queueNotification(notification);
                     } catch (e) {
-                        console.error("Error showing mini notification:", e);
+                        console.error("Error queueing notification:", e);
                     }
                     
                     // Show browser notification if permission granted
@@ -819,6 +947,19 @@
                 console.log("✅ Notification handlers registered successfully");
             }
             
+            // Check for unread notifications on page load and show them one by one
+            function initializeNotificationQueue() {
+                console.log("🔍 Checking for unread notifications on page load...");
+                checkForMoreNotifications();
+                
+                // Also check periodically (every 30 seconds) for new notifications
+                setInterval(() => {
+                    if (!window.BiketaBaiNotifications.isShowingNotification && window.BiketaBaiNotifications.notificationQueue.length === 0) {
+                        checkForMoreNotifications();
+                    }
+                }, 30000);
+            }
+
             // Initialize SignalR immediately when script loads (don't wait for document ready)
             // This ensures SignalR is always listening on all pages for all roles
             if (isAuthenticated === "true") {
@@ -829,17 +970,21 @@
                     console.log('✅ SignalR library ready, initializing connection...');
                     // Try to initialize immediately
                     if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', function() {
-                            initializeSignalR();
-                            loadWalletBalance();
-                            setupPageVisibilityHandlers();
-                        });
-                    } else {
-                        // DOM already loaded
+                    document.addEventListener('DOMContentLoaded', function() {
                         initializeSignalR();
                         loadWalletBalance();
                         setupPageVisibilityHandlers();
-                    }
+                        // Initialize notification queue after DOM is ready
+                        setTimeout(initializeNotificationQueue, 1000);
+                    });
+                } else {
+                    // DOM already loaded
+                    initializeSignalR();
+                    loadWalletBalance();
+                    setupPageVisibilityHandlers();
+                    // Initialize notification queue
+                    setTimeout(initializeNotificationQueue, 1000);
+                }
                 }
                 
                 // Wait for SignalR library to load, then initialize
@@ -883,12 +1028,16 @@
                         setInterval(function() {
                             loadNotificationCount();
                         }, 15000);
+                        // Initialize notification queue even if not authenticated (for testing)
+                        setTimeout(initializeNotificationQueue, 2000);
                     });
                 } else {
                     loadNotificationCount();
                     setInterval(function() {
                         loadNotificationCount();
                     }, 15000);
+                    // Initialize notification queue even if not authenticated (for testing)
+                    setTimeout(initializeNotificationQueue, 2000);
                 }
             }
             
