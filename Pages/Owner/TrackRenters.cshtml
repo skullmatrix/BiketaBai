@@ -126,8 +126,14 @@
                                 @if (hasLocation)
                                 {
                                     <button type="button" 
-                                            class="btn-minimal btn-minimal-primary btn-minimal-sm" 
-                                            onclick="showLocationOnMap(@booking.BookingId, @latestLocation.Latitude, @latestLocation.Longitude, '@booking.Renter.FullName', '@booking.Bike.Brand @booking.Bike.Model', @latestLocation.DistanceFromStoreKm, @latestLocation.IsWithinGeofence.ToString().ToLower())">
+                                            class="btn-minimal btn-minimal-primary btn-minimal-sm btn-view-location" 
+                                            data-booking-id="@booking.BookingId"
+                                            data-latitude="@latestLocation.Latitude"
+                                            data-longitude="@latestLocation.Longitude"
+                                            data-renter-name="@(booking.Renter.FullName)"
+                                            data-bike-name="@($"{booking.Bike.Brand} {booking.Bike.Model}")"
+                                            data-distance="@latestLocation.DistanceFromStoreKm"
+                                            data-is-within="@latestLocation.IsWithinGeofence.ToString().ToLower()">
                                         <i class="bi bi-map"></i> View on Map
                                     </button>
                                 }
@@ -164,13 +170,16 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@7.0.0/dist/browser/signalr.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
 <script>
     let map;
     let markers = {};
     let storeMarker;
     let geofenceCircles = {};
     let locationData = {}; // Store location data for each booking
+    let locationTrackingConnection = null; // Store connection reference to prevent duplicate listeners
+    let locationTrackingInitialized = false; // Flag to prevent duplicate initialization
+    let locationTrackingHandlersRegistered = false; // Flag to track if handlers are already registered
 
         // Initialize map
         document.addEventListener('DOMContentLoaded', function() {
@@ -248,111 +257,265 @@
         }
 
         // Initialize SignalR connection for real-time location updates
-        initializeSignalR();
+        initializeLocationTrackingSignalR();
+        
+        // Set up click handlers for "View on Map" buttons using event delegation (safe from XSS)
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('.btn-view-location');
+            if (target) {
+                e.preventDefault();
+                const bookingId = parseInt(target.getAttribute('data-booking-id'));
+                const lat = parseFloat(target.getAttribute('data-latitude'));
+                const lng = parseFloat(target.getAttribute('data-longitude'));
+                const renterName = target.getAttribute('data-renter-name') || 'Unknown';
+                const bikeName = target.getAttribute('data-bike-name') || 'Unknown';
+                const distance = parseFloat(target.getAttribute('data-distance') || 0);
+                const isWithin = target.getAttribute('data-is-within') === 'true';
+                
+                showLocationOnMap(bookingId, lat, lng, renterName, bikeName, distance, isWithin);
+            }
+        });
     });
 
-    function initializeSignalR() {
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/notificationHub")
-            .withAutomaticReconnect()
-            .build();
+    function initializeLocationTrackingSignalR() {
+        if (typeof signalR === 'undefined') {
+            console.error('SignalR library not loaded. Retrying in 2 seconds...');
+            setTimeout(initializeLocationTrackingSignalR, 2000);
+            return;
+        }
+        
+        // Prevent duplicate initialization if already initialized and connection exists
+        if (locationTrackingInitialized && locationTrackingConnection && locationTrackingHandlersRegistered) {
+            console.log('Location tracking SignalR already initialized with handlers, skipping...');
+            return;
+        }
+        
+        console.log('Initializing SignalR connection for location tracking...');
+        
+        // Check if notification hub connection already exists from _Layout.cshtml
+        // If it does, reuse it; otherwise create a new connection
+        let connection;
+        let isReusingConnection = false;
+        if (typeof notificationHubConnection !== 'undefined' && notificationHubConnection) {
+            console.log('Reusing existing notification hub connection for location tracking');
+            connection = notificationHubConnection;
+            isReusingConnection = true;
+        } else {
+            // Create a new connection if one doesn't exist (shouldn't happen normally)
+            console.log('Creating new SignalR connection for location tracking');
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/notificationHub")
+                .withAutomaticReconnect({
+                    nextRetryDelayInMilliseconds: retryContext => {
+                        if (retryContext.elapsedMilliseconds < 2000) return 0;
+                        if (retryContext.elapsedMilliseconds < 10000) return 2000;
+                        if (retryContext.elapsedMilliseconds < 30000) return 10000;
+                        return 30000;
+                    }
+                })
+                .build();
+        }
+        
+        // Store connection reference
+        locationTrackingConnection = connection;
+        
+        // Remove existing handlers if they were already registered (prevents duplicates on retry)
+        // This is critical when reusing notificationHubConnection that may have old handlers from previous retries
+        // Always remove handlers before registering new ones to prevent accumulation
+        if (locationTrackingHandlersRegistered || isReusingConnection) {
+            console.log('Removing existing location tracking handlers to prevent duplicates...');
+            try {
+                // Remove all handlers for ReceiveLocationUpdate event
+                // This prevents duplicate handlers when retrying after connection errors
+                connection.off("ReceiveLocationUpdate");
+            } catch (e) {
+                console.warn('Could not remove existing handlers (this is OK if handlers were not registered):', e);
+            }
+            locationTrackingHandlersRegistered = false;
+        }
 
-        // Listen for location updates
+        // Listen for location updates (register handler)
         connection.on("ReceiveLocationUpdate", function(data) {
             console.log("Received location update:", data);
             
+            if (!data || !data.bookingId) {
+                console.error("Invalid location update data:", data);
+                return;
+            }
+            
+            const bookingId = parseInt(data.bookingId);
+            const lat = parseFloat(data.latitude);
+            const lng = parseFloat(data.longitude);
+            const distance = parseFloat(data.distanceKm || 0);
+            const isWithin = data.isWithinGeofence === true || data.isWithinGeofence === 'true';
+            const renterName = data.renterName || 'Unknown';
+            const bikeName = data.bikeName || 'Unknown';
+            const trackedAt = data.trackedAt || new Date().toISOString();
+            
             // Update location data
-            locationData[data.bookingId] = {
-                latitude: data.latitude,
-                longitude: data.longitude,
-                renterName: data.renterName,
-                bikeName: data.bikeName,
-                distance: data.distanceKm,
-                isWithinGeofence: data.isWithinGeofence,
-                trackedAt: new Date(data.trackedAt).toISOString()
+            locationData[bookingId] = {
+                latitude: lat,
+                longitude: lng,
+                renterName: renterName,
+                bikeName: bikeName,
+                distance: distance,
+                isWithinGeofence: isWithin,
+                trackedAt: trackedAt
             };
 
             // Update marker on map
             updateRenterMarker(
-                data.bookingId,
-                data.latitude,
-                data.longitude,
-                data.renterName,
-                data.bikeName,
-                data.distanceKm,
-                data.isWithinGeofence
+                bookingId,
+                lat,
+                lng,
+                renterName,
+                bikeName,
+                distance,
+                isWithin
             );
 
             // Update location display in the booking card
-            updateLocationDisplay(data.bookingId, data.distanceKm, data.isWithinGeofence, data.trackedAt);
+            updateLocationDisplay(bookingId, distance, isWithin, trackedAt);
         });
+        
+        // Mark handlers as registered and initialization as complete
+        locationTrackingHandlersRegistered = true;
+        locationTrackingInitialized = true;
 
-        // Start SignalR connection
-        connection.start()
-            .then(function() {
-                console.log("SignalR connected. Listening for location updates...");
-            })
-            .catch(function(err) {
-                console.error("SignalR connection error:", err);
-            });
+        // Only start connection if it's a new connection (not reused from _Layout)
+        // Check connection state - if it's already connected, we can just add listeners
+        if (connection.state === signalR.HubConnectionState.Disconnected) {
+            connection.start()
+                .then(function() {
+                    console.log("Location tracking SignalR connected. Listening for location updates...");
+                })
+                .catch(function(err) {
+                    console.error("Location tracking SignalR connection error:", err);
+                    // Reset flags on error so it can be retried
+                    // Handlers will be removed and re-registered on next initialization
+                    locationTrackingHandlersRegistered = false;
+                    locationTrackingInitialized = false;
+                    locationTrackingConnection = null;
+                    // Retry connection after 5 seconds
+                    setTimeout(function() {
+                        console.log("Retrying location tracking SignalR connection...");
+                        initializeLocationTrackingSignalR();
+                    }, 5000);
+                });
+        } else {
+            console.log("Location tracking SignalR already connected. Listening for location updates...");
+        }
 
-        // Handle connection state changes
+        // Handle connection state changes (only register once)
         connection.onreconnecting(function() {
-            console.log("SignalR reconnecting...");
+            console.log("Location tracking SignalR reconnecting...");
         });
 
         connection.onreconnected(function() {
-            console.log("SignalR reconnected");
+            console.log("Location tracking SignalR reconnected");
         });
 
         connection.onclose(function() {
-            console.log("SignalR connection closed");
+            console.log("Location tracking SignalR connection closed");
+            // Reset flags on close so it can be reinitialized if needed
+            locationTrackingInitialized = false;
+            locationTrackingConnection = null;
+            locationTrackingHandlersRegistered = false;
         });
     }
 
     function updateLocationDisplay(bookingId, distance, isWithinGeofence, trackedAt) {
         const bookingCard = document.querySelector(`[data-booking-id="${bookingId}"]`);
-        if (!bookingCard) return;
+        if (!bookingCard) {
+            console.warn('Booking card not found for booking ID:', bookingId);
+            return;
+        }
 
         // Find or create location display section
         let locationSection = bookingCard.querySelector('.location-display');
         if (!locationSection) {
+            // Remove the "waiting for location" message if it exists
+            const waitingDiv = bookingCard.querySelector('div[style*="background: var(--neutral-100)"]');
+            if (waitingDiv) {
+                waitingDiv.remove();
+            }
+            
             // Create location display if it doesn't exist
             const cardContent = bookingCard.querySelector('div > div:first-child');
             if (cardContent) {
                 locationSection = document.createElement('div');
                 locationSection.className = 'location-display';
-                locationSection.style.cssText = 'margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-bg); border-radius: var(--radius-md);';
+                locationSection.style.cssText = 'margin-top: var(--space-3); padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);';
                 cardContent.appendChild(locationSection);
             } else {
+                console.warn('Card content not found for booking ID:', bookingId);
                 return;
+            }
+        }
+        
+        // Enable the "View on Map" button
+        const viewButton = bookingCard.querySelector('button.btn-view-location');
+        if (!viewButton) {
+            // Find the disabled button and replace it
+            const disabledButton = bookingCard.querySelector('button[disabled]');
+            if (disabledButton) {
+                disabledButton.disabled = false;
+                disabledButton.className = 'btn-minimal btn-minimal-primary btn-minimal-sm btn-view-location';
+                disabledButton.innerHTML = '<i class="bi bi-map"></i> View on Map';
+                // Get location data to set data attributes (safe from XSS)
+                const locData = locationData[bookingId];
+                if (locData) {
+                    disabledButton.setAttribute('data-booking-id', bookingId.toString());
+                    disabledButton.setAttribute('data-latitude', locData.latitude.toString());
+                    disabledButton.setAttribute('data-longitude', locData.longitude.toString());
+                    disabledButton.setAttribute('data-renter-name', locData.renterName || 'Unknown');
+                    disabledButton.setAttribute('data-bike-name', locData.bikeName || 'Unknown');
+                    disabledButton.setAttribute('data-distance', locData.distance.toString());
+                    disabledButton.setAttribute('data-is-within', locData.isWithinGeofence.toString());
+                }
             }
         }
 
         // Update location display
-        const phTime = new Date(trackedAt).toLocaleString('en-US', {
-            timeZone: 'Asia/Manila',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
+        let phTime;
+        try {
+            phTime = new Date(trackedAt).toLocaleString('en-US', {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (e) {
+            phTime = new Date().toLocaleString('en-US', {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        const distanceValue = typeof distance === 'number' ? distance : parseFloat(distance || 0);
+        const isWithin = isWithinGeofence === true || isWithinGeofence === 'true';
 
         locationSection.innerHTML = `
-            <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--text-primary);">
+            <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--neutral-900);">
                 <i class="bi bi-geo-alt"></i> Current Location <span style="color: var(--success); font-size: 0.75rem;">● Live</span>
             </p>
             <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
                 <strong>Distance from store:</strong> 
-                <span style="color: ${isWithinGeofence ? 'var(--success)' : 'var(--error)'}; font-weight: 600;">
-                    ${distance.toFixed(2)} km
+                <span style="color: ${isWithin ? 'var(--success)' : 'var(--error)'}; font-weight: 600;">
+                    ${distanceValue.toFixed(2)} km
                 </span>
             </p>
             <p style="margin: 0; font-size: 0.875rem; color: var(--neutral-600);">
                 <strong>Status:</strong> 
-                ${isWithinGeofence 
+                ${isWithin 
                     ? '<span style="color: var(--success); font-weight: 600;"><i class="bi bi-check-circle"></i> Within Geofence</span>'
                     : '<span style="color: var(--error); font-weight: 600;"><i class="bi bi-exclamation-triangle"></i> Outside Geofence</span>'
                 }

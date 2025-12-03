@@ -168,25 +168,42 @@ public class GeofencingService
         if (!isWithin)
         {
             // Check if we've already sent a warning recently (within last 15 minutes)
-            var lastWarning = await _context.LocationTracking
-                .Where(t => t.BookingId == bookingId && !t.IsWithinGeofence)
-                .OrderByDescending(t => t.TrackedAt)
+            // Check notifications to see if we've sent a geofence warning recently
+            var recentWarning = await _context.Notifications
+                .Where(n => n.UserId == booking.RenterId 
+                    && n.NotificationType == "Geofence"
+                    && n.Title.Contains("Geofence Alert")
+                    && n.Message.Contains($"Booking #{bookingId}"))
+                .OrderByDescending(n => n.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            var shouldSendWarning = lastWarning == null || 
-                (DateTime.UtcNow - lastWarning.TrackedAt).TotalMinutes >= 15;
+            var shouldSendWarning = recentWarning == null || 
+                (DateTime.UtcNow - recentWarning.CreatedAt).TotalMinutes >= 15;
 
             if (shouldSendWarning && !string.IsNullOrWhiteSpace(booking.Renter.Phone))
             {
                 var owner = booking.Bike.Owner;
                 var radius = owner.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
                 var message = $"⚠️ Geofence Alert: You are {distanceKm:F1}km away from {owner.StoreName ?? "the store location"}. " +
-                             $"Please return within {radius}km radius. Current distance: {distanceKm:F1}km.";
+                             $"Please return within {radius}km radius. Current distance: {distanceKm:F1}km. - Bike Ta Bai";
 
                 var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
                 if (smsSent)
                 {
                     warningMessage = "Warning SMS sent";
+                    
+                    // Create notification record to track that SMS was sent
+                    var notification = new Notification
+                    {
+                        UserId = booking.RenterId,
+                        Title = "Geofence Alert",
+                        Message = $"Geofence Alert: You are {distanceKm:F1}km away from {owner.StoreName ?? "the store location"}. Booking #{bookingId}",
+                        NotificationType = "Geofence",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Notifications.Add(notification);
+                    
                     Log.Information("Geofence warning SMS sent to renter {RenterId} for booking {BookingId}. Distance: {Distance}km", 
                         booking.RenterId, bookingId, distanceKm);
                 }
@@ -196,6 +213,12 @@ public class GeofencingService
                         booking.RenterId, bookingId);
                 }
             }
+        }
+        else
+        {
+            // If back within geofence, log it (no SMS needed)
+            Log.Information("Renter {RenterId} for booking {BookingId} is back within geofence. Distance: {Distance}km", 
+                booking.RenterId, bookingId, distanceKm);
         }
 
         await _context.SaveChangesAsync();
@@ -249,22 +272,43 @@ public class GeofencingService
             // If already outside geofence, check if we need to send another warning
             if (!latestLocation.IsWithinGeofence)
             {
-                // Check if we've sent a warning recently
-                var lastWarningTime = latestLocation.TrackedAt;
-                var minutesSinceWarning = (DateTime.UtcNow - lastWarningTime).TotalMinutes;
+                // Check if we've already sent a warning recently (within last 15 minutes)
+                var recentWarning = await _context.Notifications
+                    .Where(n => n.UserId == booking.RenterId 
+                        && n.NotificationType == "Geofence"
+                        && n.Title.Contains("Geofence Alert")
+                        && n.Message.Contains($"Booking #{booking.BookingId}"))
+                    .OrderByDescending(n => n.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                var shouldSend = recentWarning == null || 
+                    (DateTime.UtcNow - recentWarning.CreatedAt).TotalMinutes >= 15;
 
                 // Send warning every 15 minutes if still outside
-                if (minutesSinceWarning >= 15 && !string.IsNullOrWhiteSpace(booking.Renter.Phone))
+                if (shouldSend && !string.IsNullOrWhiteSpace(booking.Renter.Phone))
                 {
                     var owner = booking.Bike.Owner;
                     var radius = owner.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
                     var distance = latestLocation.DistanceFromStoreKm ?? 0;
                     var message = $"⚠️ Geofence Alert: You are still {distance:F1}km away from {owner.StoreName ?? "the store location"}. " +
-                                 $"Please return within {radius}km radius immediately.";
+                                 $"Please return within {radius}km radius immediately. - Bike Ta Bai";
 
                     var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
                     if (smsSent)
                     {
+                        // Create notification record
+                        var notification = new Notification
+                        {
+                            UserId = booking.RenterId,
+                            Title = "Geofence Alert",
+                            Message = $"Geofence Alert: You are still {distance:F1}km away from {owner.StoreName ?? "the store location"}. Booking #{booking.BookingId}",
+                            NotificationType = "Geofence",
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Notifications.Add(notification);
+                        await _context.SaveChangesAsync();
+                        
                         Log.Information("Periodic geofence warning SMS sent to renter {RenterId} for booking {BookingId}. Distance: {Distance}km", 
                             booking.RenterId, booking.BookingId, distance);
                     }

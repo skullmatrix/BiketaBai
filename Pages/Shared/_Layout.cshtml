@@ -302,6 +302,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
     
     <!-- Loading Animation Script -->
     <script>
@@ -337,17 +338,111 @@
     @if (User.Identity?.IsAuthenticated == true)
     {
         <script>
+            let previousNotificationCount = 0;
+            const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
+            
+            // SignalR Connection for Real-time Notifications
+            let notificationHubConnection = null;
+            
+            // Initialize SignalR connection
+            function initializeSignalR() {
+                if (typeof signalR === 'undefined') {
+                    console.error('SignalR library not loaded');
+                    // Fallback to polling
+                    setInterval(function() {
+                        loadNotificationCount();
+                    }, 15000);
+                    return;
+                }
+                
+                notificationHubConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub")
+                    .withAutomaticReconnect({
+                        nextRetryDelayInMilliseconds: retryContext => {
+                            // Exponential backoff: 0s, 2s, 10s, 30s, then 30s
+                            if (retryContext.elapsedMilliseconds < 2000) return 0;
+                            if (retryContext.elapsedMilliseconds < 10000) return 2000;
+                            if (retryContext.elapsedMilliseconds < 30000) return 10000;
+                            return 30000;
+                        }
+                    })
+                    .build();
+                
+                // Listen for new notifications
+                notificationHubConnection.on("ReceiveNotification", function (notification) {
+                    console.log("New notification received:", notification);
+                    
+                    // Update notification count
+                    const currentCount = notification.unreadCount || 0;
+                    updateNotificationBadge(currentCount);
+                    
+                    // Play sound
+                    playNotificationSound();
+                    
+                    // Show browser notification if permission granted
+                    if (Notification.permission === "granted") {
+                        new Notification(notification.title, {
+                            body: notification.message,
+                            icon: '/favicon.ico'
+                        });
+                    }
+                });
+                
+                // Listen for booking updates
+                notificationHubConnection.on("ReceiveBookingUpdate", function (update) {
+                    console.log("Booking update received:", update);
+                    
+                    // Reload notification count
+                    loadNotificationCount();
+                    
+                    // Play sound
+                    playNotificationSound();
+                });
+                
+                // Handle connection events
+                notificationHubConnection.onreconnecting(() => {
+                    console.log("SignalR reconnecting...");
+                });
+                
+                notificationHubConnection.onreconnected(() => {
+                    console.log("SignalR reconnected");
+                    loadNotificationCount();
+                });
+                
+                notificationHubConnection.onclose(() => {
+                    console.log("SignalR connection closed");
+                });
+                
+                // Start the connection
+                notificationHubConnection.start()
+                    .then(() => {
+                        console.log("SignalR connected successfully");
+                        // Load initial notification count
+                        loadNotificationCount();
+                    })
+                    .catch((err) => {
+                        console.error("SignalR connection error:", err);
+                        // Fallback to polling if SignalR fails
+                        setInterval(function() {
+                            loadNotificationCount();
+                        }, 15000);
+                    });
+            }
+            
             // Load wallet and points balance
             $(document).ready(function() {
                 loadWalletBalance();
                 loadPointsBalance();
-                loadNotificationCount();
                 
-                // Refresh notifications for all authenticated users (every 15 seconds)
+                // Initialize SignalR for real-time notifications
                 if (isAuthenticated === "true") {
+                    initializeSignalR();
+                } else {
+                    // Fallback to polling if not authenticated
+                    loadNotificationCount();
                     setInterval(function() {
                         loadNotificationCount();
-                    }, 15000); // Check every 15 seconds
+                    }, 15000);
                 }
                 
                 // Refresh wallet every 30 seconds
@@ -366,53 +461,58 @@
             }
 
 
-            let previousNotificationCount = 0;
-            const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
+            // Update notification badge UI
+            function updateNotificationBadge(count) {
+                const countText = count > 9 ? '9+' : String(count);
+                
+                if (count > 0) {
+                    // Update sidebar badge
+                    $('#notificationCountSidebar').text(countText).show();
+                    
+                    // Update header badge for all authenticated users
+                    if (isAuthenticated === "true") {
+                        const $headerBadge = $('#notificationCountHeader');
+                        $headerBadge.text(countText);
+                        
+                        // Toggle class based on whether it's a single digit or multiple
+                        if (count > 9 || countText.length > 1) {
+                            $headerBadge.addClass('badge-multiple');
+                        } else {
+                            $headerBadge.removeClass('badge-multiple');
+                        }
+                        
+                        $headerBadge.css('display', 'flex'); // Show as flex to center content
+                    }
+                    
+                    // Play sound notification when new notification arrives
+                    if (isAuthenticated === "true" && count > previousNotificationCount && previousNotificationCount >= 0) {
+                        playNotificationSound();
+                    }
+                } else {
+                    $('#notificationCountSidebar').hide();
+                    if (isAuthenticated === "true") {
+                        $('#notificationCountHeader').hide().removeClass('badge-multiple');
+                    }
+                }
+                
+                previousNotificationCount = count;
+            }
             
             function loadNotificationCount() {
                 $.get('/Api/Notifications', function(data) {
                     const currentCount = data.count || 0;
-                    // Ensure countText is always a string
-                    const countText = currentCount > 9 ? '9+' : String(currentCount);
-                    
-                    if (currentCount > 0) {
-                        // Update sidebar badge
-                        $('#notificationCountSidebar').text(countText).show();
-                        
-                        // Update header badge for all authenticated users
-                        if (isAuthenticated === "true") {
-                            const $headerBadge = $('#notificationCountHeader');
-                            $headerBadge.text(countText);
-                            
-                            // Toggle class based on whether it's a single digit or multiple
-                            // countText is now guaranteed to be a string, so .length is safe
-                            if (currentCount > 9 || countText.length > 1) {
-                                $headerBadge.addClass('badge-multiple');
-                            } else {
-                                $headerBadge.removeClass('badge-multiple');
-                            }
-                            
-                            $headerBadge.css('display', 'flex'); // Show as flex to center content
-                        }
-                        
-                        // Play sound notification for all authenticated users when new notification arrives
-                        if (isAuthenticated === "true" && currentCount > previousNotificationCount && previousNotificationCount >= 0) {
-                            playNotificationSound();
-                        }
-                    } else {
-                        $('#notificationCountSidebar').hide();
-                        if (isAuthenticated === "true") {
-                            $('#notificationCountHeader').hide().removeClass('badge-multiple');
-                        }
-                    }
-                    
-                    previousNotificationCount = currentCount;
+                    updateNotificationBadge(currentCount);
                 }).fail(function() {
                     $('#notificationCountSidebar').hide();
                     if (isAuthenticated === "true") {
                         $('#notificationCountHeader').hide().removeClass('badge-multiple');
                     }
                 });
+            }
+            
+            // Request browser notification permission on page load
+            if (isAuthenticated === "true" && "Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
             }
             
             function playNotificationSound() {

@@ -314,11 +314,18 @@
             body: JSON.stringify({
                 bookingId: @Model.Booking.BookingId,
                 latitude: lat,
-                longitude: lng,
-                distanceFromStore: distance,
-                isOutsideGeofence: isOutside
+                longitude: lng
             })
-        }).catch(error => {
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Location sent successfully:', data);
+            } else {
+                console.error('Error sending location:', data.error);
+            }
+        })
+        .catch(error => {
             console.error('Error sending location:', error);
         });
     }

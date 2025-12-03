@@ -93,20 +93,28 @@ public class LocationTrackingModel : PageModel
             if (bookingWithOwner != null)
             {
                 var ownerId = bookingWithOwner.Bike.OwnerId;
-                await _hubContext.Clients.Group($"user_{ownerId}").SendAsync("ReceiveLocationUpdate", new
+                try
                 {
-                    bookingId = request.BookingId,
-                    latitude = request.Latitude,
-                    longitude = request.Longitude,
-                    distanceKm = Math.Round(distanceKm, 2),
-                    isWithinGeofence = isWithin,
-                    renterName = bookingWithOwner.Renter.FullName,
-                    bikeName = $"{bookingWithOwner.Bike.Brand} {bookingWithOwner.Bike.Model}",
-                    trackedAt = DateTime.UtcNow
-                });
+                    await _hubContext.Clients.Group($"user_{ownerId}").SendAsync("ReceiveLocationUpdate", new
+                    {
+                        bookingId = request.BookingId,
+                        latitude = request.Latitude,
+                        longitude = request.Longitude,
+                        distanceKm = Math.Round(distanceKm, 2),
+                        isWithinGeofence = isWithin,
+                        renterName = bookingWithOwner.Renter.FullName,
+                        bikeName = $"{bookingWithOwner.Bike.Brand} {bookingWithOwner.Bike.Model}",
+                        trackedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                    });
 
-                Log.Information("Location update broadcasted to owner {OwnerId} for booking {BookingId}", 
-                    ownerId, request.BookingId);
+                    Log.Information("Location update broadcasted to owner {OwnerId} for booking {BookingId}. Distance: {Distance}km, Within: {Within}", 
+                        ownerId, request.BookingId, Math.Round(distanceKm, 2), isWithin);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error broadcasting location update to owner {OwnerId} for booking {BookingId}", 
+                        ownerId, request.BookingId);
+                }
             }
 
             Response.ContentType = "application/json";

@@ -50,15 +50,20 @@ public class TrackRentersModel : PageModel
             .OrderByDescending(b => b.StartDate)
             .ToListAsync();
 
-        // Get latest location for each booking
-        foreach (var booking in ActiveBookings)
+        // Get latest location for each booking (optimized query)
+        var bookingIds = ActiveBookings.Select(b => b.BookingId).ToList();
+        if (bookingIds.Any())
         {
-            var latestLocation = await _context.LocationTracking
-                .Where(lt => lt.BookingId == booking.BookingId)
-                .OrderByDescending(lt => lt.TrackedAt)
-                .FirstOrDefaultAsync();
+            var allLatestLocations = await _context.LocationTracking
+                .Where(lt => bookingIds.Contains(lt.BookingId))
+                .GroupBy(lt => lt.BookingId)
+                .Select(g => g.OrderByDescending(lt => lt.TrackedAt).First())
+                .ToListAsync();
             
-            LatestLocations[booking.BookingId] = latestLocation;
+            foreach (var location in allLatestLocations)
+            {
+                LatestLocations[location.BookingId] = location;
+            }
         }
 
         return Page();
