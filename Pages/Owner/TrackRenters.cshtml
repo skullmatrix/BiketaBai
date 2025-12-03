@@ -155,6 +155,12 @@
                                         <i class="bi bi-hourglass-split"></i> Waiting for Location
                                     </button>
                                 }
+                                @if (hasLocation)
+                                {
+                                    <a href="/Owner/TrackRenter/@booking.BookingId" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                                        <i class="bi bi-map"></i> Track on Map
+                                    </a>
+                                }
                                 <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
                                     <i class="bi bi-eye"></i> View Details
                                 </a>
@@ -694,50 +700,15 @@
             }
         }
 
-        // Add or update pulsing circle to show active location
-        const pulseColor = isWithinGeofence ? '#3388ff' : '#ff3333';
-        
+        // Remove pulsing circle if it exists (no longer using pulsing animation)
         if (marker.pulseCircle) {
-            // Update existing pulse circle position and color
-            marker.pulseCircle.setLatLng([lat, lng]);
-            marker.pulseCircle.setStyle({
-                fillColor: pulseColor,
-                color: pulseColor
-            });
-        } else {
-            // Create new pulse circle
-            const pulseCircle = L.circleMarker([lat, lng], {
-                radius: 10,
-                fillColor: pulseColor,
-                color: pulseColor,
-                weight: 2,
-                opacity: 0.7,
-                fillOpacity: 0.2
-            }).addTo(map);
-            
-            marker.pulseCircle = pulseCircle;
-            
-            // Animate pulsing effect (only start once)
-            let pulseRadius = 10;
-            let pulseDirection = 1;
-            const pulseInterval = setInterval(() => {
-                if (!marker.pulseCircle || !map.hasLayer(marker.pulseCircle)) {
-                    clearInterval(pulseInterval);
-                    return;
-                }
-                pulseRadius += pulseDirection * 1.5;
-                if (pulseRadius > 25 || pulseRadius < 10) {
-                    pulseDirection *= -1;
-                }
-                marker.pulseCircle.setRadius(pulseRadius);
-                marker.pulseCircle.setStyle({
-                    opacity: Math.max(0.2, 0.7 - (pulseRadius - 10) / 25),
-                    fillOpacity: Math.max(0.1, 0.2 - (pulseRadius - 10) / 30)
-                });
-            }, 150);
-            
-            // Store interval to clear later
-            marker.pulseInterval = pulseInterval;
+            map.removeLayer(marker.pulseCircle);
+            marker.pulseCircle = null;
+        }
+        
+        if (marker.pulseInterval) {
+            clearInterval(marker.pulseInterval);
+            marker.pulseInterval = null;
         }
 
         // Fit map to show all markers (only if new marker)

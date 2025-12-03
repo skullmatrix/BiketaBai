@@ -226,30 +226,7 @@
             </div>
         `);
         
-        // Add pulsing circle to show active location
-        let pulseCircle = L.circleMarker([lat, lng], {
-            radius: 10,
-            fillColor: '#3388ff',
-            color: '#3388ff',
-            weight: 2,
-            opacity: 0.8,
-            fillOpacity: 0.3
-        }).addTo(map);
-        
-        // Animate pulsing effect
-        let pulseRadius = 10;
-        let pulseDirection = 1;
-        setInterval(() => {
-            pulseRadius += pulseDirection * 2;
-            if (pulseRadius > 25 || pulseRadius < 10) {
-                pulseDirection *= -1;
-            }
-            pulseCircle.setRadius(pulseRadius);
-            pulseCircle.setStyle({
-                opacity: Math.max(0.2, 0.8 - (pulseRadius - 10) / 25),
-                fillOpacity: Math.max(0.1, 0.3 - (pulseRadius - 10) / 30)
-            });
-        }, 100);
+        // Pulsing circle removed - no longer needed
 
         // Fit map to show both markers and geofence
         const group = new L.featureGroup([storeMarker, renterMarker, geofenceCircle]);
@@ -428,7 +405,7 @@
             sendStatusEl.innerHTML = '<i class="bi bi-arrow-up-circle" style="color: var(--sage-primary);"></i> Sending location to owner...';
         }
         
-        fetch('/Api/LocationTracking', {
+        fetch('/api/location/track', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -458,7 +435,7 @@
                     sendStatusEl.innerHTML = '<i class="bi bi-check-circle" style="color: var(--success);"></i> Location sent to owner successfully';
                     setTimeout(() => {
                         if (sendStatusEl) {
-                            sendStatusEl.innerHTML = '<i class="bi bi-arrow-repeat" style="color: var(--neutral-400);"></i> Next update in 15 seconds...';
+                            sendStatusEl.innerHTML = '<i class="bi bi-arrow-repeat" style="color: var(--neutral-400);"></i> Next update in 10 seconds...';
                         }
                     }, 2000);
                 }
