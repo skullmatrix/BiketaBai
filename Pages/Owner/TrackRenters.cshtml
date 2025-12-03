@@ -384,7 +384,8 @@
                 trackedAt: trackedAt
             };
 
-            // Update marker on map
+            // Update marker on map - always update to show movement
+            console.log(`🔄 Calling updateRenterMarker for booking ${bookingId}`);
             updateRenterMarker(
                 bookingId,
                 lat,
@@ -394,6 +395,7 @@
                 distance,
                 isWithin
             );
+            console.log(`✅ updateRenterMarker completed for booking ${bookingId}`);
 
             // Update location display in the booking card (with coordinates)
             console.log(`🔄 Updating location display for booking ${bookingId}...`);
@@ -605,44 +607,11 @@
         updateRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence);
     }
 
-    // Store location trails for each renter
-    const locationTrails = {};
-    const locationHistory = {};
-
     function updateRenterMarker(bookingId, lat, lng, renterName, bikeName, distance, isWithinGeofence) {
+        console.log(`🗺️ Updating marker for booking ${bookingId} to: ${lat}, ${lng}`);
+        
         const existingMarker = markers[bookingId];
         const isNewMarker = !existingMarker;
-
-        // Initialize location history for this booking
-        if (!locationHistory[bookingId]) {
-            locationHistory[bookingId] = [];
-        }
-
-        // Add current location to history (keep last 50 points for trail)
-        locationHistory[bookingId].push({ lat, lng, timestamp: Date.now() });
-        if (locationHistory[bookingId].length > 50) {
-            locationHistory[bookingId].shift();
-        }
-
-        // Create or update trail polyline
-        if (locationHistory[bookingId].length > 1) {
-            if (locationTrails[bookingId]) {
-                map.removeLayer(locationTrails[bookingId]);
-            }
-            
-            const trailPoints = locationHistory[bookingId].map(point => [point.lat, point.lng]);
-            locationTrails[bookingId] = L.polyline(trailPoints, {
-                color: isWithinGeofence ? '#3388ff' : '#ff3333',
-                weight: 3,
-                opacity: 0.6,
-                smoothFactor: 1
-            }).addTo(map);
-        }
-
-        // Create pulsing circle to show active location
-        if (existingMarker && existingMarker.pulseCircle) {
-            map.removeLayer(existingMarker.pulseCircle);
-        }
 
         // Create marker with color based on geofence status
         const markerIcon = L.icon({
@@ -680,35 +649,38 @@
             `);
             markers[bookingId] = marker;
         } else {
-            // Update existing marker with smooth animation
+            // Update existing marker - ALWAYS update position
             marker = existingMarker;
             const currentPos = marker.getLatLng();
             
-            if (Math.abs(currentPos.lat - lat) > 0.0001 || Math.abs(currentPos.lng - lng) > 0.0001) {
-                // Smoothly animate marker to new position
-                marker.setLatLng([lat, lng], {
-                    animate: true,
-                    duration: 1.0, // 1 second animation for smooth movement
-                    easeLinearity: 0.25
-                });
-                
-                // Update popup with new info
-                marker.setPopupContent(`
-                    <div style="min-width: 200px;">
-                        <strong style="font-size: 1.1em;">${renterName}</strong><br>
-                        <span style="color: #666;">${bikeName}</span><br>
-                        <hr style="margin: 8px 0;">
-                        <strong>Distance:</strong> ${distance.toFixed(2)} km<br>
-                        <strong>Status:</strong> ${isWithinGeofence ? '<span style="color: green;">✓ Within Geofence</span>' : '<span style="color: red;">⚠ Outside Geofence</span>'}<br>
-                        <strong>Coordinates:</strong><br>
-                        <code style="font-size: 0.85em;">${lat.toFixed(6)}, ${lng.toFixed(6)}</code><br>
-                        <small style="color: #666; display: block; margin-top: 8px;">
-                            <i class="bi bi-circle-fill" style="color: #28a745; font-size: 0.6em;"></i> Live Tracking<br>
-                            Updated: ${new Date().toLocaleTimeString()}
-                        </small>
-                    </div>
-                `);
-            }
+            console.log(`📍 Current marker position: ${currentPos.lat}, ${currentPos.lng}`);
+            console.log(`📍 New position: ${lat}, ${lng}`);
+            
+            // Always update position (even if small change) to ensure movement is visible
+            marker.setLatLng([lat, lng], {
+                animate: true,
+                duration: 0.8, // Smooth animation
+                easeLinearity: 0.25
+            });
+            
+            console.log(`✅ Marker position updated to: ${lat}, ${lng}`);
+            
+            // Always update popup with new info
+            marker.setPopupContent(`
+                <div style="min-width: 200px;">
+                    <strong style="font-size: 1.1em;">${renterName}</strong><br>
+                    <span style="color: #666;">${bikeName}</span><br>
+                    <hr style="margin: 8px 0;">
+                    <strong>Distance:</strong> ${distance.toFixed(2)} km<br>
+                    <strong>Status:</strong> ${isWithinGeofence ? '<span style="color: green;">✓ Within Geofence</span>' : '<span style="color: red;">⚠ Outside Geofence</span>'}<br>
+                    <strong>Coordinates:</strong><br>
+                    <code style="font-size: 0.85em;">${lat.toFixed(6)}, ${lng.toFixed(6)}</code><br>
+                    <small style="color: #666; display: block; margin-top: 8px;">
+                        <i class="bi bi-circle-fill" style="color: #28a745; font-size: 0.6em;"></i> Live Tracking<br>
+                        Updated: ${new Date().toLocaleTimeString()}
+                    </small>
+                </div>
+            `);
             
             // Update icon if geofence status changed
             const currentIconUrl = marker.options.icon.options.iconUrl;
@@ -718,6 +690,7 @@
             
             if ((shouldBeBlue && isCurrentlyRed) || (!shouldBeBlue && isCurrentlyBlue)) {
                 marker.setIcon(markerIcon);
+                console.log(`🔄 Updated marker icon (geofence status changed)`);
             }
         }
 
@@ -734,34 +707,34 @@
         } else {
             // Create new pulse circle
             const pulseCircle = L.circleMarker([lat, lng], {
-                radius: 8,
+                radius: 10,
                 fillColor: pulseColor,
                 color: pulseColor,
                 weight: 2,
-                opacity: 0.8,
-                fillOpacity: 0.3
+                opacity: 0.7,
+                fillOpacity: 0.2
             }).addTo(map);
             
             marker.pulseCircle = pulseCircle;
             
             // Animate pulsing effect (only start once)
-            let pulseRadius = 8;
+            let pulseRadius = 10;
             let pulseDirection = 1;
             const pulseInterval = setInterval(() => {
                 if (!marker.pulseCircle || !map.hasLayer(marker.pulseCircle)) {
                     clearInterval(pulseInterval);
                     return;
                 }
-                pulseRadius += pulseDirection * 2;
-                if (pulseRadius > 20 || pulseRadius < 8) {
+                pulseRadius += pulseDirection * 1.5;
+                if (pulseRadius > 25 || pulseRadius < 10) {
                     pulseDirection *= -1;
                 }
                 marker.pulseCircle.setRadius(pulseRadius);
                 marker.pulseCircle.setStyle({
-                    opacity: Math.max(0.2, 0.8 - (pulseRadius - 8) / 20),
-                    fillOpacity: Math.max(0.1, 0.3 - (pulseRadius - 8) / 30)
+                    opacity: Math.max(0.2, 0.7 - (pulseRadius - 10) / 25),
+                    fillOpacity: Math.max(0.1, 0.2 - (pulseRadius - 10) / 30)
                 });
-            }, 100);
+            }, 150);
             
             // Store interval to clear later
             marker.pulseInterval = pulseInterval;
