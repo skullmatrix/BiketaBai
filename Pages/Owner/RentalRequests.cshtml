@@ -467,20 +467,37 @@
                             return;
                         }
 
-                        // Show notification alert
-                        showCashPaymentAlert(data);
-
                         // Play notification sound
                         if (typeof playNotificationSound === 'function') {
                             playNotificationSound();
                         }
 
-                        // Refresh the page to show new request
-                        // Use a small delay to allow user to see the alert
-                        setTimeout(function() {
-                            console.log("🔄 Refreshing page to show new cash payment request...");
+                        // Note: The mini notification popup from _Layout.cshtml will handle displaying the notification
+                        // The user can click the popup to navigate to this page, or manually refresh if needed
+                        // We don't auto-refresh to avoid interrupting the user's view of the popup
+                        console.log("✅ Cash payment request received. Mini notification popup will show from _Layout.cshtml");
+                        
+                        // Optional: Show a subtle indicator that a new request is available
+                        // User can manually refresh if they want to see it in the list
+                        const refreshHint = document.createElement('div');
+                        refreshHint.id = 'newRequestHint';
+                        refreshHint.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: #3B82F6; color: white; padding: 0.75rem 1rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9998; cursor: pointer; font-size: 0.875rem;';
+                        refreshHint.innerHTML = '<i class="bi bi-arrow-clockwise"></i> New request available - Click to refresh';
+                        refreshHint.onclick = function() {
                             window.location.reload();
-                        }, 2000);
+                        };
+                        document.body.appendChild(refreshHint);
+                        
+                        // Auto-remove hint after 10 seconds
+                        setTimeout(function() {
+                            if (refreshHint.parentNode) {
+                                refreshHint.style.opacity = '0';
+                                refreshHint.style.transition = 'opacity 0.3s';
+                                setTimeout(function() {
+                                    refreshHint.remove();
+                                }, 300);
+                            }
+                        }, 10000);
                     });
 
                     cashPaymentHandlersRegistered = true;

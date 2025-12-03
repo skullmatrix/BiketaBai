@@ -661,20 +661,14 @@
                         return;
                     }
 
-                    // Show notification alert
-                    showCashPaymentAlert(data);
-
                     // Play notification sound
                     if (typeof playNotificationSound === 'function') {
                         playNotificationSound();
                     }
 
-                    // Refresh the page to show new request
-                    // Use a small delay to allow user to see the alert
-                    setTimeout(function() {
-                        console.log("🔄 Refreshing page to show new cash payment request...");
-                        window.location.reload();
-                    }, 2000);
+                    // Note: The mini notification popup from _Layout.cshtml will handle displaying the notification
+                    // No need to refresh the page - user can click the popup to navigate to RentalRequests if needed
+                    console.log("✅ Cash payment request received. Mini notification popup will show from _Layout.cshtml");
                 });
 
                 cashPaymentHandlersRegistered = true;
