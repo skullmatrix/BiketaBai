@@ -23,12 +23,10 @@ public class TrackLocationModel : PageModel
 
     public Booking? Booking { get; set; }
     public User? Owner { get; set; }
-    public Store? PrimaryStore { get; set; }
     public double? StoreLatitude { get; set; }
     public double? StoreLongitude { get; set; }
     public decimal GeofenceRadiusKm { get; set; }
     public LocationTracking? LatestLocation { get; set; }
-    public List<LocationTracking> LocationHistory { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
@@ -54,39 +52,17 @@ public class TrackLocationModel : PageModel
 
         Owner = Booking.Bike.Owner;
         
-        // Get primary store
-        PrimaryStore = await _context.Stores
-            .FirstOrDefaultAsync(s => s.OwnerId == Owner.UserId && s.IsPrimary && !s.IsDeleted);
-        
-        // Get store location from Store model or geofencing service
-        if (PrimaryStore != null)
-        {
-            StoreLatitude = PrimaryStore.StoreLatitude;
-            StoreLongitude = PrimaryStore.StoreLongitude;
-            GeofenceRadiusKm = PrimaryStore.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
-        }
-        else
-        {
-            // Fallback to geofencing service if no store found
-            var (lat, lon) = await _geofencingService.GetStoreLocationAsync(Owner.UserId);
-            StoreLatitude = lat;
-            StoreLongitude = lon;
-            GeofenceRadiusKm = _geofencingService.GetDefaultGeofenceRadius();
-        }
+        // Get store location
+        var (lat, lon) = await _geofencingService.GetStoreLocationAsync(Owner.UserId);
+        StoreLatitude = lat;
+        StoreLongitude = lon;
+        GeofenceRadiusKm = Owner.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
 
         // Get latest location tracking
         LatestLocation = await _context.LocationTracking
             .Where(lt => lt.BookingId == bookingId)
             .OrderByDescending(lt => lt.TrackedAt)
             .FirstOrDefaultAsync();
-
-        // Get location history (last 100 points for trail)
-        LocationHistory = await _context.LocationTracking
-            .Where(lt => lt.BookingId == bookingId)
-            .OrderByDescending(lt => lt.TrackedAt)
-            .Take(100)
-            .OrderBy(lt => lt.TrackedAt)
-            .ToListAsync();
 
         return Page();
     }
