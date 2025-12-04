@@ -126,6 +126,52 @@
                     <p id="warningMessage" style="margin: var(--space-2) 0 0 0;"></p>
                 </div>
             </div>
+
+            <!-- Connection Status & Debug Panel -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-terminal"></i> Debug & Connection Status
+                    </h2>
+                </div>
+                <div class="card-minimal-body">
+                    <!-- SignalR Connection Status -->
+                    <div class="mb-4">
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-2);">
+                            <i class="bi bi-wifi"></i> SignalR Connection Status
+                        </h4>
+                        <div style="padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">
+                            <p style="margin: 0 0 var(--space-2) 0;">
+                                <strong>Status:</strong> <span id="signalRStatusText">Checking...</span>
+                            </p>
+                            <p style="margin: 0 0 var(--space-2) 0;">
+                                <strong>Connection State:</strong> <span id="signalRStateText">-</span>
+                            </p>
+                            <p style="margin: 0;">
+                                <strong>Location Sending:</strong> <span id="locationSendingStatus">Not started</span>
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-3);">
+                            <button type="button" class="btn-minimal btn-minimal-secondary btn-minimal-sm" onclick="checkSignalRConnection()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                            </button>
+                            <button type="button" class="btn-minimal btn-minimal-secondary btn-minimal-sm" onclick="clearDebugLog()">
+                                <i class="bi bi-trash"></i> Clear Log
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Debug Console -->
+                    <div>
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-2);">
+                            <i class="bi bi-terminal"></i> Debug Console
+                        </h4>
+                        <div id="debugLog" style="background: #1e1e1e; color: #d4d4d4; padding: var(--space-4); border-radius: var(--radius-md); font-family: monospace; font-size: 0.875rem; max-height: 300px; overflow-y: auto; min-height: 150px;">
+                            <div style="color: #858585;">Waiting for logs...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
     </div>
 </div>
@@ -135,6 +181,103 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+    // Debug logging functions (similar to admin test page)
+    let debugLog = [];
+    
+    function addDebugLog(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = `[${timestamp}] ${message}`;
+        debugLog.push({ message: logEntry, type: type });
+        
+        // Also log to browser console
+        if (type === 'error') {
+            console.error(logEntry);
+        } else if (type === 'success') {
+            console.log('✅', logEntry);
+        } else {
+            console.log('📍', logEntry);
+        }
+        
+        const logDiv = document.getElementById('debugLog');
+        if (logDiv) {
+            const color = type === 'error' ? '#f48771' : type === 'success' ? '#4ec9b0' : '#d4d4d4';
+            logDiv.innerHTML += `<div style="color: ${color}; margin-bottom: 2px;">${logEntry}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    }
+    
+    function clearDebugLog() {
+        debugLog = [];
+        const logDiv = document.getElementById('debugLog');
+        if (logDiv) {
+            logDiv.innerHTML = '<div style="color: #858585;">Log cleared...</div>';
+        }
+    }
+    
+    // SignalR Connection Status Checker
+    function checkSignalRConnection(retryCount = 0) {
+        addDebugLog('Checking SignalR connection status...', 'info');
+        
+        if (typeof signalR === 'undefined') {
+            document.getElementById('signalRStatusText').textContent = '❌ SignalR library not loaded';
+            document.getElementById('signalRStateText').textContent = 'N/A';
+            addDebugLog('ERROR: SignalR library not loaded! Waiting for library...', 'error');
+            
+            // Retry after 2 seconds if library not loaded
+            if (retryCount < 10) {
+                setTimeout(() => checkSignalRConnection(retryCount + 1), 2000);
+            }
+            return;
+        }
+        
+        addDebugLog('✅ SignalR library loaded', 'success');
+        
+        // Check global connection - wait for it to be initialized
+        let conn = null;
+        if (typeof window.BiketaBaiNotifications !== 'undefined' && window.BiketaBaiNotifications.connection) {
+            conn = window.BiketaBaiNotifications.connection;
+            addDebugLog('✅ Found global SignalR connection', 'success');
+        } else if (typeof notificationHubConnection !== 'undefined' && notificationHubConnection) {
+            conn = notificationHubConnection;
+            addDebugLog('✅ Found notification hub connection', 'success');
+        } else {
+            // Connection might not be initialized yet - wait and retry
+            if (retryCount < 5) {
+                addDebugLog(`⚠️ No SignalR connection found yet (attempt ${retryCount + 1}/5). Waiting 2 seconds...`, 'info');
+                setTimeout(() => checkSignalRConnection(retryCount + 1), 2000);
+                return;
+            } else {
+                addDebugLog('❌ WARNING: No SignalR connection found after multiple attempts!', 'error');
+                addDebugLog('💡 Try: 1) Refresh the page, 2) Check browser console for errors, 3) Ensure you are logged in', 'info');
+                document.getElementById('signalRStatusText').textContent = '❌ No Connection';
+                document.getElementById('signalRStateText').textContent = 'Not Found';
+            }
+        }
+        
+        if (conn) {
+            const state = conn.state;
+            let stateText = 'Unknown';
+            let stateNum = state;
+            
+            if (state === signalR.HubConnectionState.Connected || state === 1) {
+                stateText = '✅ Connected';
+                addDebugLog('Connection state: Connected', 'success');
+            } else if (state === signalR.HubConnectionState.Connecting || state === 0) {
+                stateText = '🔄 Connecting...';
+                addDebugLog('Connection state: Connecting', 'info');
+            } else if (state === signalR.HubConnectionState.Disconnected || state === 2) {
+                stateText = '❌ Disconnected';
+                addDebugLog('Connection state: Disconnected', 'error');
+            } else if (state === signalR.HubConnectionState.Reconnecting || state === 3) {
+                stateText = '🔄 Reconnecting...';
+                addDebugLog('Connection state: Reconnecting', 'info');
+            }
+            
+            document.getElementById('signalRStatusText').textContent = stateText;
+            document.getElementById('signalRStateText').textContent = `State ${stateNum}`;
+        }
+    }
+
     let map;
     let renterMarker;
     let storeMarker;
@@ -166,27 +309,40 @@
 
     // Initialize map when page loads
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('📍 Page loaded, initializing location tracking...');
-        console.log('📍 Booking ID:', @Model.Booking.BookingId);
+        addDebugLog('📍 Page loaded, initializing location tracking...', 'info');
+        addDebugLog('📍 Booking ID: ' + @Model.Booking.BookingId, 'info');
+        
+        // Check SignalR connection status
+        setTimeout(() => {
+            checkSignalRConnection();
+        }, 2000);
+        
+        // Also check periodically
+        setInterval(() => {
+            checkSignalRConnection();
+        }, 10000); // Check every 10 seconds
+        
         checkPermissionAndInitialize();
         
         // Make functions globally accessible for buttons and debugging after page load
         window.checkPermissionAndInitialize = checkPermissionAndInitialize;
         window.requestLocationPermission = requestLocationPermission;
         window.initializeLocation = initializeLocation;
+        window.checkSignalRConnection = checkSignalRConnection;
+        window.clearDebugLog = clearDebugLog;
         window.testLocationAccess = function() {
-            console.log('🧪 Testing location access...');
+            addDebugLog('🧪 Testing location access...', 'info');
             if (!navigator.geolocation) {
-                console.error('❌ Geolocation not supported');
+                addDebugLog('❌ Geolocation not supported', 'error');
                 return;
             }
             navigator.geolocation.getCurrentPosition(
                 function(pos) {
-                    console.log('✅ Test successful:', pos.coords.latitude, pos.coords.longitude);
+                    addDebugLog('✅ Test successful: ' + pos.coords.latitude + ', ' + pos.coords.longitude, 'success');
                     alert('Location access works! Coordinates: ' + pos.coords.latitude + ', ' + pos.coords.longitude);
                 },
                 function(err) {
-                    console.error('❌ Test failed:', err.code, err.message);
+                    addDebugLog('❌ Test failed: ' + err.code + ' - ' + err.message, 'error');
                     alert('Location access failed: ' + err.message);
                 }
             );
@@ -214,11 +370,11 @@
             if (navigator.permissions && navigator.permissions.query) {
                 const result = await navigator.permissions.query({ name: 'geolocation' });
                 permissionStatus = result.state;
-                console.log('🔍 Permission status:', permissionStatus);
+                addDebugLog('🔍 Permission status: ' + permissionStatus, 'info');
                 
                 // Listen for permission changes
                 result.onchange = function() {
-                    console.log('🔔 Permission status changed to:', result.state);
+                    addDebugLog('🔔 Permission status changed to: ' + result.state, 'info');
                     if (result.state === 'granted') {
                         initializeLocation();
                     } else if (result.state === 'denied') {
@@ -227,12 +383,13 @@
                 };
                 
                 if (result.state === 'denied') {
+                    addDebugLog('⚠️ Permission denied, showing permission request UI', 'error');
                     showPermissionDeniedUI(bookingId);
                     return;
                 }
             }
         } catch (error) {
-            console.log('⚠️ Permissions API not available or failed:', error);
+            addDebugLog('⚠️ Permissions API not available or failed: ' + error.message, 'info');
             // Continue to try requesting location anyway
         }
         
@@ -244,7 +401,7 @@
         const bookingId = @Model.Booking.BookingId;
         const locationStatusEl = document.getElementById('locationStatus');
         
-        console.log('📍 Requesting location access...');
+        addDebugLog('📍 Requesting location access...', 'info');
         
         // Update status to show we're requesting
         if (locationStatusEl) {
@@ -269,13 +426,13 @@
         ];
         
         const currentOptions = options[Math.min(attemptNumber, options.length - 1)];
-        console.log(`📍 Attempt ${attemptNumber + 1}/${maxAttempts} with options:`, currentOptions);
+        addDebugLog(`📍 Attempt ${attemptNumber + 1}/${maxAttempts} with options: timeout=${currentOptions.timeout}ms, maxAge=${currentOptions.maximumAge}ms, highAccuracy=${currentOptions.enableHighAccuracy}`, 'info');
         
         navigator.geolocation.getCurrentPosition(
             function(position) {
                 if (!locationReceived) {
                     locationReceived = true;
-                    console.log('✅ Location obtained:', position.coords.latitude, position.coords.longitude);
+                    addDebugLog('✅ Location obtained: ' + position.coords.latitude + ', ' + position.coords.longitude + ' (accuracy: ' + position.coords.accuracy + 'm)', 'success');
                     
                     // Hide "Requesting location access" status immediately
                     const locationStatusEl = document.getElementById('locationStatus');
@@ -288,16 +445,22 @@
                 }
             },
             function(error) {
-                console.error(`❌ Attempt ${attemptNumber + 1} failed:`, error.message, error.code);
+                let errorType = 'Unknown';
+                if (error.code === 1) errorType = 'PERMISSION_DENIED';
+                else if (error.code === 2) errorType = 'POSITION_UNAVAILABLE';
+                else if (error.code === 3) errorType = 'TIMEOUT';
+                
+                addDebugLog(`❌ Attempt ${attemptNumber + 1} failed: ${errorType} - ${error.message}`, 'error');
                 
                 // Try next fallback option
                 if (attemptNumber < maxAttempts - 1) {
-                    console.log(`🔄 Retrying with different options...`);
+                    addDebugLog(`🔄 Retrying with different options...`, 'info');
                     setTimeout(() => {
                         requestLocationWithFallback(bookingId, attemptNumber + 1);
                     }, 1000);
                 } else {
                     // All attempts failed
+                    addDebugLog('❌ All location request attempts failed', 'error');
                     handleLocationError(error, bookingId);
                 }
             },
@@ -333,11 +496,11 @@
             bookingId = @Model.Booking.BookingId;
         }
         
-        console.log('🔐 Requesting location permission explicitly...', 'Booking ID:', bookingId);
+        addDebugLog('🔐 Requesting location permission explicitly... Booking ID: ' + bookingId, 'info');
         const locationStatusEl = document.getElementById('locationStatus');
         
         if (!navigator.geolocation) {
-            console.error('❌ Geolocation API not supported');
+            addDebugLog('❌ Geolocation API not supported', 'error');
             if (locationStatusEl) {
                 locationStatusEl.innerHTML = 
                     '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
@@ -354,14 +517,14 @@
                 '<p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: var(--space-2);">Please allow location access when prompted by your browser.</p>';
         }
         
-        console.log('📍 Calling navigator.geolocation.getCurrentPosition()...');
+        addDebugLog('📍 Calling navigator.geolocation.getCurrentPosition()...', 'info');
         
         // Request permission explicitly
         navigator.geolocation.getCurrentPosition(
             function(position) {
-                console.log('✅ Location permission granted!');
-                console.log('📍 Coordinates:', position.coords.latitude, position.coords.longitude);
-                console.log('📍 Accuracy:', position.coords.accuracy, 'meters');
+                addDebugLog('✅ Location permission granted!', 'success');
+                addDebugLog('📍 Coordinates: ' + position.coords.latitude + ', ' + position.coords.longitude, 'success');
+                addDebugLog('📍 Accuracy: ' + position.coords.accuracy + ' meters', 'success');
                 
                 const locationStatusEl = document.getElementById('locationStatus');
                 const locationInfoEl = document.getElementById('locationInfo');
@@ -372,9 +535,7 @@
                 startTracking();
             },
             function(error) {
-                console.error('❌ Permission request failed');
-                console.error('Error code:', error.code);
-                console.error('Error message:', error.message);
+                addDebugLog('❌ Permission request failed', 'error');
                 
                 let errorType = 'Unknown';
                 switch(error.code) {
@@ -388,7 +549,8 @@
                         errorType = 'TIMEOUT';
                         break;
                 }
-                console.error('Error type:', errorType);
+                addDebugLog('Error code: ' + error.code + ' (' + errorType + ')', 'error');
+                addDebugLog('Error message: ' + error.message, 'error');
                 
                 handleLocationError(error, bookingId);
             },
@@ -558,7 +720,7 @@
                 smoothFactor: 1
             }).addTo(map);
             
-            console.log('📍 Location trail drawn with', locationHistory.length, 'points');
+            addDebugLog('📍 Location trail drawn with ' + locationHistory.length + ' points', 'success');
         }
 
         // Fit map to show both markers, geofence, and trail with proper padding
@@ -573,25 +735,26 @@
         });
         
         // Ensure geofence circle is visible - log for debugging
-        console.log('📍 Store location:', storeLat, storeLng);
-        console.log('📍 Geofence radius:', radius, 'meters (@Model.GeofenceRadiusKm km)');
-        console.log('📍 Renter location:', lat, lng);
-        console.log('📍 Geofence circle added to map');
-        console.log('📍 Location history points:', locationHistory.length);
+        addDebugLog('📍 Store location: ' + storeLat + ', ' + storeLng, 'info');
+        addDebugLog('📍 Geofence radius: ' + radius + ' meters (' + @Model.GeofenceRadiusKm + ' km)', 'info');
+        addDebugLog('📍 Renter location: ' + lat + ', ' + lng, 'info');
+        addDebugLog('📍 Geofence circle added to map', 'success');
+        addDebugLog('📍 Location history points: ' + locationHistory.length, 'info');
     }
 
     function startTracking() {
-        console.log('🚀 Starting location tracking...');
+        addDebugLog('🚀 Starting location tracking...', 'info');
+        updateLocationSendingStatus('Starting...');
         
         // Send location immediately when tracking starts (with sendToServer = true)
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function(position) {
-                    console.log('📍 Initial location received, sending to server...');
+                    addDebugLog('📍 Initial location received, sending to server...', 'success');
                     updateLocation(position, true); // Always send first location
                 },
                 function(error) {
-                    console.error('❌ Error getting initial location:', error);
+                    addDebugLog('❌ Error getting initial location: ' + error.message, 'error');
                 },
                 {
                     enableHighAccuracy: true,
@@ -609,7 +772,7 @@
                         updateLocation(position, true); // Send to server
                     },
                     function(error) {
-                        console.error('❌ Error getting location:', error);
+                        addDebugLog('❌ Error getting location: ' + error.message, 'error');
                     },
                     {
                         enableHighAccuracy: true,
@@ -626,7 +789,7 @@
                 updateLocation(position, false); // Update UI but don't send to server (interval handles that)
             }, 
             function(error) {
-                console.error('❌ Error watching location:', error);
+                addDebugLog('❌ Error watching location: ' + error.message, 'error');
             }, 
             {
                 enableHighAccuracy: true,
@@ -635,14 +798,15 @@
             }
         );
         
-        console.log('✅ Location tracking started. Updates will be sent every 10 seconds for live tracking.');
+        addDebugLog('✅ Location tracking started. Updates will be sent every 10 seconds for live tracking.', 'success');
+        updateLocationSendingStatus('Active - Sending every 10 seconds');
     }
 
     function updateLocation(position, sendToServer = true) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        console.log('📍 Location update received:', { lat, lng, sendToServer });
+        addDebugLog('📍 Location update received: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + ' (sendToServer: ' + sendToServer + ')', 'info');
 
         // Calculate distance from store
         const storeLat = @(Model.StoreLatitude?.ToString("F6") ?? "14.5995");
@@ -762,10 +926,17 @@
     let lastSentLocation = null;
     let isSendingLocation = false;
     
+    function updateLocationSendingStatus(status) {
+        const statusEl = document.getElementById('locationSendingStatus');
+        if (statusEl) {
+            statusEl.textContent = status;
+        }
+    }
+    
     function sendLocationToServer(lat, lng, distance, isOutside) {
         // Prevent duplicate sends if already sending
         if (isSendingLocation) {
-            console.log('⏳ Location send already in progress, skipping...');
+            addDebugLog('⏳ Location send already in progress, skipping...', 'info');
             return;
         }
         
@@ -780,13 +951,14 @@
             ) * 1000; // Convert to meters
             
             if (distanceChange < 0.01) { // Less than 10 meters
-                console.log('📍 Location change too small (' + distanceChange.toFixed(2) + 'm), skipping send');
+                addDebugLog('📍 Location change too small (' + distanceChange.toFixed(2) + 'm), skipping send', 'info');
                 return;
             }
         }
         
         isSendingLocation = true;
-        console.log('📤 Sending location to server:', { lat, lng, bookingId: @Model.Booking.BookingId, isFirstUpdate });
+        addDebugLog('📤 Sending location to server: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + ' (Booking ID: ' + @Model.Booking.BookingId + ', First: ' + isFirstUpdate + ')', 'info');
+        updateLocationSendingStatus('Sending...');
         
         // Update send status UI
         const sendStatusEl = document.getElementById('sendStatus');
@@ -813,9 +985,10 @@
         })
         .then(data => {
             if (data.success) {
-                console.log('✅ Location sent successfully to server:', data);
-                console.log('   Distance from store:', data.distanceKm, 'km');
-                console.log('   Within geofence:', data.isWithinGeofence);
+                addDebugLog('✅ Location sent successfully to server', 'success');
+                addDebugLog('   Distance from store: ' + data.distanceKm + ' km, Within geofence: ' + data.isWithinGeofence, 'success');
+                updateLocationSendingStatus('Last sent: ' + new Date().toLocaleTimeString());
+                
                 // Update last sent location
                 lastSentLocation = { lat: lat, lng: lng, timestamp: Date.now() };
                 
@@ -829,7 +1002,8 @@
                     }, 2000);
                 }
             } else {
-                console.error('❌ Error sending location:', data.error);
+                addDebugLog('❌ Error sending location: ' + data.error, 'error');
+                updateLocationSendingStatus('Error: ' + data.error);
                 if (sendStatusEl) {
                     sendStatusEl.innerHTML = '<i class="bi bi-exclamation-triangle" style="color: var(--error);"></i> Error sending location';
                 }
@@ -837,8 +1011,8 @@
             isSendingLocation = false;
         })
         .catch(error => {
-            console.error('❌ Error sending location to server:', error);
-            console.error('   Error details:', error.message);
+            addDebugLog('❌ Error sending location to server: ' + error.message, 'error');
+            updateLocationSendingStatus('Error - Retrying...');
             isSendingLocation = false;
             
             // Update send status UI
@@ -850,7 +1024,7 @@
             // Retry after 5 seconds if failed
             setTimeout(() => {
                 if (!isSendingLocation) {
-                    console.log('🔄 Retrying location send...');
+                    addDebugLog('🔄 Retrying location send...', 'info');
                     sendLocationToServer(lat, lng, distance, isOutside);
                 }
             }, 5000);
