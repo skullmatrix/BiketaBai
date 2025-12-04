@@ -234,26 +234,46 @@ public class RegisterOwnerModel : PageModel
 
 
             // Validate store address using AddressValidationService
-            // If coordinates are provided from autocomplete, use them directly
+            // If coordinates are provided from autocomplete, use them directly (more lenient)
             AddressValidationService.AddressValidationResult addressValidation;
             if (Input.StoreAddressLatitude.HasValue && Input.StoreAddressLongitude.HasValue)
             {
                 // Address was selected from autocomplete with coordinates - validate using coordinates
+                // This method is more lenient and will accept coordinates even if reverse geocoding fails
                 addressValidation = await _addressValidationService.ValidateAddressAsync(
                     Input.StoreAddress, 
                     Input.StoreAddressLatitude.Value, 
                     Input.StoreAddressLongitude.Value
                 );
+                
+                // If coordinates are provided from autocomplete, they should always be valid
+                // The overloaded method handles API failures gracefully
+                if (!addressValidation.IsValid)
+                {
+                    Log.Warning("Store address validation failed even with coordinates. Address: {Address}, Coords: {Lat}, {Lng}", 
+                        Input.StoreAddress, Input.StoreAddressLatitude.Value, Input.StoreAddressLongitude.Value);
+                    // Still accept it if coordinates are valid range
+                    if (Input.StoreAddressLatitude.Value >= -90 && Input.StoreAddressLatitude.Value <= 90 &&
+                        Input.StoreAddressLongitude.Value >= -180 && Input.StoreAddressLongitude.Value <= 180)
+                    {
+                        addressValidation.IsValid = true;
+                        addressValidation.StandardizedAddress = Input.StoreAddress;
+                        addressValidation.FormattedAddress = Input.StoreAddress;
+                        addressValidation.Latitude = Input.StoreAddressLatitude.Value;
+                        addressValidation.Longitude = Input.StoreAddressLongitude.Value;
+                    }
+                }
             }
             else
             {
                 // No coordinates provided - validate by searching
+                // This is more lenient now and will accept reasonable addresses even if not in Nominatim
                 addressValidation = await _addressValidationService.ValidateAddressAsync(Input.StoreAddress);
             }
 
             if (!addressValidation.IsValid)
             {
-                ErrorMessage = addressValidation.ErrorMessage ?? "Invalid store address. Please check and try again.";
+                ErrorMessage = addressValidation.ErrorMessage ?? "Invalid store address. Please select an address from the suggestions or provide a more detailed address.";
                 return Page();
             }
 

@@ -99,8 +99,9 @@ public class AddressValidationService
         try
         {
             // Use OpenStreetMap Nominatim API (free, no API key required)
+            // Remove country filter to be more lenient - many addresses might not have country in the search
             var encodedAddress = Uri.EscapeDataString(address);
-            var url = $"https://nominatim.openstreetmap.org/search?q={encodedAddress}&format=json&addressdetails=1&limit=1&countrycodes=ph";
+            var url = $"https://nominatim.openstreetmap.org/search?q={encodedAddress}&format=json&addressdetails=1&limit=5";
 
             Log.Information("Validating address via OpenStreetMap Nominatim: {Address} (attempt {Attempt})", address, retryCount + 1);
 
@@ -141,32 +142,77 @@ public class AddressValidationService
 
             if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
             {
-                var firstResult = root[0];
-                var displayName = firstResult.TryGetProperty("display_name", out var displayNameElement)
+                // Try to find a result in the Philippines first, otherwise use the first result
+                var bestResult = root[0];
+                for (int i = 0; i < root.GetArrayLength(); i++)
+                {
+                    var candidate = root[i];
+                    if (candidate.TryGetProperty("address", out var addressObj))
+                    {
+                        if (addressObj.TryGetProperty("country_code", out var countryCode) && 
+                            countryCode.GetString()?.ToLower() == "ph")
+                        {
+                            bestResult = candidate;
+                            break;
+                        }
+                    }
+                }
+
+                var displayName = bestResult.TryGetProperty("display_name", out var displayNameElement)
                     ? displayNameElement.GetString() ?? ""
                     : "";
 
-                var lat = firstResult.TryGetProperty("lat", out var latElement)
+                var lat = bestResult.TryGetProperty("lat", out var latElement)
                     ? (double.TryParse(latElement.GetString(), out var latitude) ? latitude : 0)
                     : 0;
 
-                var lng = firstResult.TryGetProperty("lon", out var lonElement)
+                var lng = bestResult.TryGetProperty("lon", out var lonElement)
                     ? (double.TryParse(lonElement.GetString(), out var longitude) ? longitude : 0)
                     : 0;
 
-                result.IsValid = true;
-                result.StandardizedAddress = displayName;
-                result.FormattedAddress = displayName;
-                result.Latitude = lat;
-                result.Longitude = lng;
+                // Validate coordinates are reasonable
+                if (lat != 0 && lng != 0 && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)
+                {
+                    result.IsValid = true;
+                    result.StandardizedAddress = !string.IsNullOrWhiteSpace(displayName) ? displayName : address;
+                    result.FormattedAddress = !string.IsNullOrWhiteSpace(displayName) ? displayName : address;
+                    result.Latitude = lat;
+                    result.Longitude = lng;
 
-                Log.Information("Address validated successfully: {FormattedAddress}", displayName);
+                    Log.Information("Address validated successfully: {FormattedAddress} at {Lat}, {Lng}", 
+                        result.FormattedAddress, lat, lng);
+                }
+                else
+                {
+                    // Invalid coordinates - but address was found, so accept it without coordinates
+                    Log.Warning("Address found but coordinates are invalid: {Address}. Accepting address without coordinates.", address);
+                    result.IsValid = true;
+                    result.StandardizedAddress = !string.IsNullOrWhiteSpace(displayName) ? displayName : address;
+                    result.FormattedAddress = !string.IsNullOrWhiteSpace(displayName) ? displayName : address;
+                    result.Latitude = null;
+                    result.Longitude = null;
+                }
             }
             else
             {
-                result.IsValid = false;
-                result.ErrorMessage = "Address not found. Please check and try again.";
-                Log.Warning("Address not found: {Address}", address);
+                // No results found - but if address is reasonable (not too short, has some structure), accept it
+                // This allows manual addresses that might not be in OpenStreetMap
+                var trimmedAddress = address.Trim();
+                if (trimmedAddress.Length >= 10 && trimmedAddress.Split(' ').Length >= 2)
+                {
+                    Log.Information("Address not found in Nominatim but appears valid: {Address}. Accepting as-is.", address);
+                    result.IsValid = true;
+                    result.StandardizedAddress = trimmedAddress;
+                    result.FormattedAddress = trimmedAddress;
+                    result.Latitude = null;
+                    result.Longitude = null;
+                }
+                else
+                {
+                    result.IsValid = false;
+                    result.ErrorMessage = "Address not found. Please select an address from the suggestions or provide a more detailed address.";
+                    Log.Warning("Address not found and appears invalid: {Address}", address);
+                }
             }
         }
         catch (HttpRequestException ex)
