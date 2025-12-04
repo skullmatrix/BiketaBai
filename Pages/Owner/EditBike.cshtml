@@ -181,10 +181,10 @@
                             <label>Status<span class="req">*</span></label>
                             <div class="input-wrapper-premium">
                                 <i class="bi bi-toggle-on"></i>
-                                <select asp-for="Input.AvailabilityStatusId" required class="status-select-premium">
-                                    <option value="1" data-status="available">Available</option>
-                                    <option value="3" data-status="maintenance">Maintenance</option>
-                                    <option value="4" data-status="inactive">Inactive</option>
+                                <select asp-for="Input.AvailabilityStatus" required class="status-select-premium">
+                                    <option value="Available" data-status="available">Available</option>
+                                    <option value="Maintenance" data-status="maintenance">Maintenance</option>
+                                    <option value="Inactive" data-status="inactive">Inactive</option>
                                 </select>
                             </div>
                             <small class="field-hint">"Rented" status is set automatically when booked</small>

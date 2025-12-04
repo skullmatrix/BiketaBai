@@ -42,7 +42,6 @@ public class HomeModel : PageModel
     public int ActiveListings { get; set; }
     
     // Shared Stats
-    public decimal WalletBalance { get; set; }
     public int UnreadNotifications { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
@@ -56,16 +55,12 @@ public class HomeModel : PageModel
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
         
         CurrentUser = await _context.Users
-            .Include(u => u.Wallet)
             .FirstOrDefaultAsync(u => u.UserId == userId);
 
         if (CurrentUser == null)
         {
             return RedirectToPage("/Account/Login");
         }
-
-        // Get wallet balance
-        WalletBalance = CurrentUser.Wallet?.Balance ?? 0;
 
         // Get unread notifications count
         UnreadNotifications = await _context.Notifications
@@ -86,7 +81,7 @@ public class HomeModel : PageModel
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Where(b => b.AvailabilityStatusId == 1 && !excludeBikeIds.Contains(b.BikeId))
+            .Where(b => b.AvailabilityStatus == "Available" && !excludeBikeIds.Contains(b.BikeId))
             .OrderByDescending(b => b.CreatedAt)
             .Take(8)
             .ToListAsync();
@@ -113,8 +108,7 @@ public class HomeModel : PageModel
                     .ThenInclude(b => b.Owner)
                 .Include(b => b.Bike)
                     .ThenInclude(b => b.BikeType)
-                .Include(b => b.BookingStatus)
-                .Where(b => b.RenterId == userId && b.BookingStatusId == 2) // Active
+                .Where(b => b.RenterId == userId && b.BookingStatus == "Active")
                 .OrderByDescending(b => b.StartDate)
                 .ToListAsync();
 
@@ -123,7 +117,6 @@ public class HomeModel : PageModel
             // Get recent bookings (all statuses, latest first)
             RecentBookings = await _context.Bookings
                 .Include(b => b.Bike)
-                .Include(b => b.BookingStatus)
                 .Where(b => b.RenterId == userId)
                 .OrderByDescending(b => b.CreatedAt)
                 .Take(10)
@@ -133,8 +126,7 @@ public class HomeModel : PageModel
             RecentRentals = await _context.Bookings
                 .Include(b => b.Bike)
                     .ThenInclude(b => b.BikeImages)
-                .Include(b => b.BookingStatus)
-                .Where(b => b.RenterId == userId && b.BookingStatusId == 3) // Completed
+                .Where(b => b.RenterId == userId && b.BookingStatus == "Completed")
                 .OrderByDescending(b => b.EndDate)
                 .Take(3)
                 .ToListAsync();
@@ -144,11 +136,11 @@ public class HomeModel : PageModel
                 .CountAsync();
             
             TotalRentalsCount = await _context.Bookings
-                .Where(b => b.RenterId == userId && b.BookingStatusId == 3) // Completed
+                .Where(b => b.RenterId == userId && b.BookingStatus == "Completed")
                 .CountAsync();
             
             TotalSpent = await _context.Bookings
-                .Where(b => b.RenterId == userId && b.BookingStatusId == 3) // Completed
+                .Where(b => b.RenterId == userId && b.BookingStatus == "Completed")
                 .SumAsync(b => b.TotalAmount);
 
             var totalKmSaved = await _context.Bookings
@@ -171,21 +163,20 @@ public class HomeModel : PageModel
             PendingRequests = await _context.Bookings
                 .Include(b => b.Bike)
                 .Include(b => b.Renter)
-                .Include(b => b.BookingStatus)
-                .Where(b => b.Bike.OwnerId == userId && b.BookingStatus.StatusName == "Pending")
+                .Where(b => b.Bike.OwnerId == userId && b.BookingStatus == "Pending")
                 .OrderByDescending(b => b.CreatedAt)
                 .Take(5)
                 .ToListAsync();
 
             var completedBookings = await _context.Bookings
                 .Include(b => b.Bike)
-                .Where(b => b.Bike.OwnerId == userId && b.BookingStatus.StatusName == "Completed")
+                .Where(b => b.Bike.OwnerId == userId && b.BookingStatus == "Completed")
                 .ToListAsync();
             
             TotalEarnings = (int)completedBookings.Sum(b => b.TotalAmount);
 
             ActiveListings = await _context.Bikes
-                .Where(b => b.OwnerId == userId && b.AvailabilityStatusId == 1)
+                .Where(b => b.OwnerId == userId && b.AvailabilityStatus == "Available")
                 .CountAsync();
         }
 

@@ -52,8 +52,8 @@
                         <div class="card bg-eco-light mb-4">
                             <div class="card-body">
                                 <h5 class="text-eco-green mb-3">Store Information</h5>
-                                <p><strong>Store Name:</strong> @Model.Owner?.StoreName</p>
-                                <p><strong>Store Address:</strong> @Model.Owner?.StoreAddress</p>
+                                <p><strong>Store Name:</strong> @(Model.PrimaryStore?.StoreName ?? "N/A")</p>
+                                <p><strong>Store Address:</strong> @(Model.PrimaryStore?.StoreAddress ?? "N/A")</p>
                                 @if (Model.StoreLatitude.HasValue && Model.StoreLongitude.HasValue)
                                 {
                                     <p><strong>Coordinates:</strong> @Model.StoreLatitude.Value.ToString("F6"), @Model.StoreLongitude.Value.ToString("F6")</p>
@@ -141,7 +141,7 @@
                     popupAnchor: [1, -34]
                 })
             }).addTo(map);
-            storeMarker.bindPopup('<b>Store Location</b><br>@Model.Owner?.StoreName').openPopup();
+            storeMarker.bindPopup('<b>Store Location</b><br>@(Model.PrimaryStore?.StoreName ?? "Store")').openPopup();
 
             // Add geofence circle
             const geofenceCircle = L.circle([storeLat, storeLon], {

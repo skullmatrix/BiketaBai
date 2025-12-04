@@ -50,8 +50,9 @@ public class Bike
     public int Quantity { get; set; } = 1; // Number of bikes available for this listing
 
     [Required]
-    [Column("availability_status_id")]
-    public int AvailabilityStatusId { get; set; } = 1; // Default to "Available"
+    [MaxLength(50)]
+    [Column("availability_status")]
+    public string AvailabilityStatus { get; set; } = "Available"; // Available, Rented, Maintenance, Inactive
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -75,9 +76,6 @@ public class Bike
 
     [ForeignKey("BikeTypeId")]
     public virtual BikeType BikeType { get; set; } = null!;
-
-    [ForeignKey("AvailabilityStatusId")]
-    public virtual AvailabilityStatus AvailabilityStatus { get; set; } = null!;
 
     [ForeignKey("StoreId")]
     public virtual Store? Store { get; set; }

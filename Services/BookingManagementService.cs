@@ -34,8 +34,7 @@ public class BookingManagementService
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Include(b => b.AvailabilityStatus)
-            .Where(b => b.AvailabilityStatusId == 1) // Only available bikes
+            .Where(b => b.AvailabilityStatus == "Available") // Only available bikes
             .AsQueryable();
 
         // Apply filters
@@ -87,7 +86,7 @@ public class BookingManagementService
                 return (false, 0, "Bike not found");
             }
 
-            if (bike.AvailabilityStatusId != 1)
+            if (bike.AvailabilityStatus != "Available")
             {
                 return (false, 0, "Bike is not available for booking");
             }
@@ -106,7 +105,7 @@ public class BookingManagementService
             // Check for overlapping bookings
             var hasConflict = await _context.Bookings
                 .AnyAsync(b => b.BikeId == bikeId &&
-                              (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active
+                              (b.BookingStatus == "Pending" || b.BookingStatus == "Active") &&
                               ((startDate >= b.StartDate && startDate < b.EndDate) ||
                                (endDate > b.StartDate && endDate <= b.EndDate) ||
                                (startDate <= b.StartDate && endDate >= b.EndDate)));
@@ -135,34 +134,12 @@ public class BookingManagementService
             var serviceFee = baseRate * 0.10m; // 10% service fee
             var totalAmount = baseRate + serviceFee;
 
-            // Check wallet balance
-            var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == renterId);
-            if (wallet == null || wallet.Balance < totalAmount)
-            {
-                return (false, 0, $"Insufficient wallet balance. You need ₱{totalAmount:N2}");
-            }
-
-            // Deduct from wallet
-            wallet.Balance -= totalAmount;
-            wallet.UpdatedAt = DateTime.UtcNow;
-
-            // Create wallet transaction
-            var transaction = new CreditTransaction
-            {
-                WalletId = wallet.WalletId,
-                Amount = -totalAmount,
-                TransactionTypeId = 2, // Debit
-                Description = $"Booking payment for {bike.Brand} {bike.Model}",
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.CreditTransactions.Add(transaction);
-
             // Create booking
             var booking = new Booking
             {
                 BikeId = bikeId,
                 RenterId = renterId,
-                BookingStatusId = 1, // Pending
+                BookingStatus = "Pending",
                 StartDate = startDate,
                 EndDate = endDate,
                 RentalHours = hours,
@@ -214,7 +191,6 @@ public class BookingManagementService
                 .Include(b => b.Bike)
                     .ThenInclude(bike => bike.Owner)
                 .Include(b => b.Renter)
-                .Include(b => b.BookingStatus)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId);
 
             if (booking == null)
@@ -229,12 +205,12 @@ public class BookingManagementService
             }
 
             // Check if can be cancelled
-            if (booking.BookingStatusId == 3) // Completed
+            if (booking.BookingStatus == "Completed")
             {
                 return (false, "Cannot cancel completed bookings");
             }
 
-            if (booking.BookingStatusId == 4) // Already cancelled
+            if (booking.BookingStatus == "Cancelled")
             {
                 return (false, "Booking is already cancelled");
             }
@@ -252,32 +228,16 @@ public class BookingManagementService
             }
 
             // Update booking status to Cancelled
-            booking.BookingStatusId = 4; // Cancelled
+            booking.BookingStatus = "Cancelled";
             booking.UpdatedAt = DateTime.UtcNow;
 
-            // Refund to wallet
-            var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
-            if (wallet != null)
-            {
-                wallet.Balance += refundAmount;
-                wallet.UpdatedAt = DateTime.UtcNow;
-
-                // Create refund transaction
-                var refundTransaction = new CreditTransaction
-                {
-                    WalletId = wallet.WalletId,
-                    Amount = refundAmount,
-                    TransactionTypeId = 1, // Credit
-                    Description = $"Refund for cancelled booking #{bookingId} ({refundPercentage}%)",
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.CreditTransactions.Add(refundTransaction);
-            }
+            // Note: Refunds will be processed through payment gateway or manual transfer
+            // No wallet functionality - refunds go back to original payment method
 
             // If bike was set to rented, make it available again
-            if (booking.Bike.AvailabilityStatusId == 2)
+            if (booking.Bike.AvailabilityStatus == "Rented")
             {
-                booking.Bike.AvailabilityStatusId = 1; // Available
+                booking.Bike.AvailabilityStatus = "Available";
                 booking.Bike.UpdatedAt = DateTime.UtcNow;
             }
 
@@ -295,13 +255,13 @@ public class BookingManagementService
             await _notificationService.CreateNotificationAsync(
                 userId,
                 "Booking Cancelled",
-                $"Your booking has been cancelled. Refund of ₱{refundAmount:N2} ({refundPercentage}%) has been processed",
-                "/Wallet/Index"
+                $"Your booking has been cancelled. Refund of ₱{refundAmount:N2} ({refundPercentage}%) will be processed to your payment method.",
+                "/Renter/RentalHistory"
             );
 
             _logger.LogInformation($"Booking {bookingId} cancelled by user {userId} with {refundPercentage}% refund");
 
-            return (true, $"Booking cancelled successfully! ₱{refundAmount:N2} ({refundPercentage}%) refunded to your wallet");
+            return (true, $"Booking cancelled successfully! ₱{refundAmount:N2} ({refundPercentage}%) will be refunded to your payment method.");
         }
         catch (Exception ex)
         {
@@ -320,7 +280,6 @@ public class BookingManagementService
                 .ThenInclude(bike => bike.BikeImages)
             .Include(b => b.Bike.BikeType)
             .Include(b => b.Bike.Owner)
-            .Include(b => b.BookingStatus)
             .Where(b => b.RenterId == renterId)
             .AsQueryable();
 
@@ -328,10 +287,10 @@ public class BookingManagementService
         {
             query = status.ToLower() switch
             {
-                "pending" => query.Where(b => b.BookingStatusId == 1),
-                "active" => query.Where(b => b.BookingStatusId == 2),
-                "completed" => query.Where(b => b.BookingStatusId == 3),
-                "cancelled" => query.Where(b => b.BookingStatusId == 4),
+                "pending" => query.Where(b => b.BookingStatus == "Pending"),
+                "active" => query.Where(b => b.BookingStatus == "Active"),
+                "completed" => query.Where(b => b.BookingStatus == "Completed"),
+                "cancelled" => query.Where(b => b.BookingStatus == "Cancelled"),
                 _ => query
             };
         }
@@ -351,11 +310,11 @@ public class BookingManagementService
         return new RenterBookingStatistics
         {
             TotalBookings = bookings.Count,
-            PendingBookings = bookings.Count(b => b.BookingStatusId == 1),
-            ActiveBookings = bookings.Count(b => b.BookingStatusId == 2),
-            CompletedBookings = bookings.Count(b => b.BookingStatusId == 3),
-            CancelledBookings = bookings.Count(b => b.BookingStatusId == 4),
-            TotalSpent = bookings.Where(b => b.BookingStatusId == 3).Sum(b => b.TotalAmount),
+            PendingBookings = bookings.Count(b => b.BookingStatus == "Pending"),
+            ActiveBookings = bookings.Count(b => b.BookingStatus == "Active"),
+            CompletedBookings = bookings.Count(b => b.BookingStatus == "Completed"),
+            CancelledBookings = bookings.Count(b => b.BookingStatus == "Cancelled"),
+            TotalSpent = bookings.Where(b => b.BookingStatus == "Completed").Sum(b => b.TotalAmount),
             TotalDistanceSaved = bookings.Where(b => b.DistanceSavedKm.HasValue).Sum(b => b.DistanceSavedKm ?? 0)
         };
     }
@@ -369,7 +328,6 @@ public class BookingManagementService
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Include(b => b.AvailabilityStatus)
             .Include(b => b.Ratings)
                 .ThenInclude(r => r.Rater)
             .FirstOrDefaultAsync(b => b.BikeId == bikeId);
@@ -381,14 +339,14 @@ public class BookingManagementService
     public async Task<bool> IsBikeAvailableAsync(int bikeId, DateTime startDate, DateTime endDate)
     {
         var bike = await _context.Bikes.FindAsync(bikeId);
-        if (bike == null || bike.AvailabilityStatusId != 1)
+        if (bike == null || bike.AvailabilityStatus != "Available")
         {
             return false;
         }
 
         var hasConflict = await _context.Bookings
             .AnyAsync(b => b.BikeId == bikeId &&
-                          (b.BookingStatusId == 1 || b.BookingStatusId == 2) &&
+                          (b.BookingStatus == "Pending" || b.BookingStatus == "Active") &&
                           ((startDate >= b.StartDate && startDate < b.EndDate) ||
                            (endDate > b.StartDate && endDate <= b.EndDate) ||
                            (startDate <= b.StartDate && endDate >= b.EndDate)));
@@ -441,7 +399,7 @@ public class BookingManagementService
     public async Task<List<Bike>> GetPopularBikesAsync(int count = 10)
     {
         var popularBikeIds = await _context.Bookings
-            .Where(b => b.BookingStatusId == 3) // Completed
+            .Where(b => b.BookingStatus == "Completed")
             .GroupBy(b => b.BikeId)
             .OrderByDescending(g => g.Count())
             .Take(count)
@@ -452,7 +410,7 @@ public class BookingManagementService
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Where(b => popularBikeIds.Contains(b.BikeId) && b.AvailabilityStatusId == 1)
+            .Where(b => popularBikeIds.Contains(b.BikeId) && b.AvailabilityStatus == "Available")
             .ToListAsync();
     }
 

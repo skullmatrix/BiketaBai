@@ -78,24 +78,10 @@ namespace BiketaBai.Data
                 await _context.SaveChangesAsync();
 
                 Console.WriteLine($"✅ Admin user created with email: {adminEmail}");
-
-                // Create wallet for admin
-                var wallet = new Wallet
-                {
-                    UserId = adminUser.UserId,
-                    Balance = 10000.00m, // Give admin some initial balance
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Wallets.Add(wallet);
-
-                await _context.SaveChangesAsync();
-
                 Console.WriteLine($"✅ Super Admin account initialized");
                 Console.WriteLine($"   Email: {adminEmail}");
                 Console.WriteLine($"   Password: BiketaBai@2024");
                 Console.WriteLine($"   Role: Super Admin (Account Management, Bike Management, Owner Verification)");
-                Console.WriteLine($"   Wallet Balance: ₱10,000.00");
             }
             else
             {

@@ -103,7 +103,7 @@
                                         @foreach (var booking in Model.ActiveBookings)
                                         {
                                             <option value="@booking.BookingId">
-                                                Booking #@booking.BookingId - Store: @(booking.Bike.Owner.StoreName ?? "N/A")
+                                                Booking #@booking.BookingId - Store: @(booking.Bike.Store?.StoreName ?? "N/A")
                                             </option>
                                         }
                                     </select>

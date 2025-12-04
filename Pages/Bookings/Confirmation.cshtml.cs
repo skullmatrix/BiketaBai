@@ -29,7 +29,6 @@ public class ConfirmationModel : PageModel
                 .ThenInclude(bike => bike.BikeType)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
-            .Include(b => b.BookingStatus)
             .Include(b => b.Payments.OrderByDescending(p => p.PaymentDate).Take(1))
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 

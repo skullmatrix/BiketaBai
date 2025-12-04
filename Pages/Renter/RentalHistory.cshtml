@@ -110,9 +110,9 @@
                                         <i class="bi bi-bicycle"></i>
                                     </div>
                                 }
-                                <div class="status-badge @Model.GetStatusBadgeClass(booking.BookingStatus.StatusName)">
-                                    <i class="bi @Model.GetStatusIcon(booking.BookingStatus.StatusName)"></i>
-                                    <span>@booking.BookingStatus.StatusName</span>
+                                <div class="status-badge @Model.GetStatusBadgeClass(booking.BookingStatus)">
+                                    <i class="bi @Model.GetStatusIcon(booking.BookingStatus)"></i>
+                                    <span>@booking.BookingStatus</span>
                                 </div>
                             </div>
                             
@@ -148,7 +148,7 @@
                                             <span class="date-value">@BiketaBai.Helpers.TimeZoneHelper.FormatPhilippineTime(booking.EndDate)</span>
                                         </div>
                                     </div>
-                                    @if (booking.BookingStatus.StatusName == "Active")
+                                    @if (booking.BookingStatus == "Active")
                                     {
                                         <div class="date-item" style="margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--neutral-200);">
                                             <i class="bi bi-clock" style="color: var(--sage-primary);"></i>
@@ -167,7 +167,7 @@
                                         <i class="bi bi-eye"></i>
                                         <span>View</span>
                                     </a>
-                                    @if (booking.BookingStatus.StatusName == "Pending" || booking.BookingStatus.StatusName == "Confirmed")
+                                    @if (booking.BookingStatus == "Pending" || booking.BookingStatus == "Confirmed")
                                     {
                                         <form method="post" asp-page-handler="CancelBooking" asp-route-bookingId="@booking.BookingId" 
                                               onsubmit="return confirm('Cancel this booking? Cancellation policy applies.');" 

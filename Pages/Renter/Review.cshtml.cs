@@ -50,13 +50,12 @@ namespace BiketaBai.Pages.Renter
                     .ThenInclude(bike => bike.BikeImages)
                 .Include(b => b.Bike.BikeType)
                 .Include(b => b.Bike.Owner)
-                .Include(b => b.BookingStatus)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
             if (Booking == null)
                 return NotFound();
 
-            if (Booking.BookingStatus.StatusName != "Completed")
+            if (Booking.BookingStatus != "Completed")
             {
                 TempData["ErrorMessage"] = "You can only review completed bookings.";
                 return RedirectToPage("/Renter/RentalHistory");
@@ -76,13 +75,12 @@ namespace BiketaBai.Pages.Renter
             Booking = await _context.Bookings
                 .Include(b => b.Bike)
                 .Include(b => b.Bike.Owner)
-                .Include(b => b.BookingStatus)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
             if (Booking == null)
                 return NotFound();
 
-            if (Booking.BookingStatus.StatusName != "Completed")
+            if (Booking.BookingStatus != "Completed")
             {
                 TempData["ErrorMessage"] = "You can only review completed bookings.";
                 return RedirectToPage("/Renter/RentalHistory");

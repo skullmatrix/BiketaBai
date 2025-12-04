@@ -15,8 +15,9 @@ public class Payment
     public int BookingId { get; set; }
 
     [Required]
-    [Column("payment_method_id")]
-    public int PaymentMethodId { get; set; }
+    [MaxLength(50)]
+    [Column("payment_method")]
+    public string PaymentMethod { get; set; } = string.Empty; // Wallet, GCash, QRPH, Cash, PayMaya, Card
 
     [Required]
     [Column("amount")]
@@ -53,9 +54,6 @@ public class Payment
     // Navigation properties
     [ForeignKey("BookingId")]
     public virtual Booking Booking { get; set; } = null!;
-
-    [ForeignKey("PaymentMethodId")]
-    public virtual PaymentMethod PaymentMethod { get; set; } = null!;
 
     [ForeignKey("OwnerVerifiedBy")]
     public virtual User? OwnerVerifier { get; set; }

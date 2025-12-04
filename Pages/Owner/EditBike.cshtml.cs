@@ -62,7 +62,7 @@ public class EditBikeModel : PageModel
         public int Quantity { get; set; } = 1;
 
         [Required(ErrorMessage = "Availability status is required")]
-        public int AvailabilityStatusId { get; set; }
+        public string AvailabilityStatus { get; set; } = "Available";
 
         public List<IFormFile>? NewImages { get; set; }
     }
@@ -83,7 +83,6 @@ public class EditBikeModel : PageModel
         CurrentBike = await _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
-            .Include(b => b.AvailabilityStatus)
             .FirstOrDefaultAsync(b => b.BikeId == id && b.OwnerId == userId.Value);
         
         if (CurrentBike == null)
@@ -110,7 +109,7 @@ public class EditBikeModel : PageModel
         Input.HourlyRate = CurrentBike.HourlyRate;
         Input.DailyRate = CurrentBike.DailyRate;
         Input.Quantity = CurrentBike.Quantity;
-        Input.AvailabilityStatusId = CurrentBike.AvailabilityStatusId;
+        Input.AvailabilityStatus = CurrentBike.AvailabilityStatus;
 
         return Page();
     }
@@ -159,7 +158,7 @@ public class EditBikeModel : PageModel
             CurrentBike.HourlyRate = Input.HourlyRate.Value;
             CurrentBike.DailyRate = Input.DailyRate.Value;
             CurrentBike.Quantity = Input.Quantity;
-            CurrentBike.AvailabilityStatusId = Input.AvailabilityStatusId;
+            CurrentBike.AvailabilityStatus = Input.AvailabilityStatus;
             CurrentBike.UpdatedAt = DateTime.Now;
             // Location, Mileage, Latitude, Longitude remain unchanged
 

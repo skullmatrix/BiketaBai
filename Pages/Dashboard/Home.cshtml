@@ -34,13 +34,6 @@
             
             <!-- Quick Stats -->
             <div class="home-quick-stats">
-                <div class="home-stat-card wallet">
-                    <i class="bi bi-wallet2"></i>
-                    <div>
-                        <div class="home-stat-value">₱@Model.WalletBalance.ToString("N2")</div>
-                        <div class="home-stat-label">Wallet</div>
-                    </div>
-                </div>
                 @if (Model.UnreadNotifications > 0)
                 {
                     <div class="home-stat-card notifications">
@@ -185,7 +178,7 @@
                                 {
                                     <div class="home-rental-image">
                                         <img src="@rental.Bike.BikeImages.FirstOrDefault()?.ImageUrl" alt="@rental.Bike.Brand @rental.Bike.Model" />
-                                        <span class="home-rental-badge completed">@rental.BookingStatus.StatusName</span>
+                                        <span class="home-rental-badge completed">@rental.BookingStatus</span>
                                     </div>
                                 }
                                 <div class="home-rental-info">
@@ -287,18 +280,18 @@
                                         </td>
                                         <td><strong>₱@booking.TotalAmount.ToString("F0")</strong></td>
                                         <td>
-                                            @switch (booking.BookingStatusId)
+                                            @switch (booking.BookingStatus)
                                             {
-                                                case 1:
+                                                case "Pending":
                                                     <span class="badge-minimal badge-minimal-warning">Pending</span>
                                                     break;
-                                                case 2:
+                                                case "Active":
                                                     <span class="badge-minimal badge-minimal-primary">Active</span>
                                                     break;
-                                                case 3:
+                                                case "Completed":
                                                     <span class="badge-minimal badge-minimal-success">Completed</span>
                                                     break;
-                                                case 4:
+                                                case "Cancelled":
                                                     <span class="badge-minimal badge-minimal-danger">Cancelled</span>
                                                     break;
                                             }

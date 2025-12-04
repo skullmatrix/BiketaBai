@@ -33,7 +33,7 @@ public class TestLocationTrackingModel : PageModel
             .Include(b => b.Renter)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
-            .Where(b => b.BookingStatusId == 2) // Active bookings
+            .Where(b => b.BookingStatus == "Active")
             .OrderByDescending(b => b.CreatedAt)
             .Take(20)
             .ToListAsync();

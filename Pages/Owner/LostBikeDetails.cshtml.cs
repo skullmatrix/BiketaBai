@@ -40,13 +40,15 @@ public class LostBikeDetailsModel : PageModel
         if (Booking == null)
             return NotFound();
 
-        // Get owner's store location
-        var owner = await _context.Users.FindAsync(userId.Value);
-        if (owner != null)
+        // Get primary store for owner
+        var primaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == userId.Value && s.IsPrimary && !s.IsDeleted);
+        
+        if (primaryStore != null)
         {
-            StoreLatitude = owner.StoreLatitude;
-            StoreLongitude = owner.StoreLongitude;
-            GeofenceRadiusKm = owner.GeofenceRadiusKm;
+            StoreLatitude = primaryStore.StoreLatitude;
+            StoreLongitude = primaryStore.StoreLongitude;
+            GeofenceRadiusKm = primaryStore.GeofenceRadiusKm;
         }
 
         // Get last known location
@@ -82,7 +84,7 @@ public class LostBikeDetailsModel : PageModel
 
             // Mark as found: Remove lost status and mark as completed
             booking.IsReportedLost = false;
-            booking.BookingStatusId = 3; // Completed
+            booking.BookingStatus = "Completed";
             booking.ActualReturnDate = DateTime.UtcNow;
             booking.OwnerConfirmedAt = DateTime.UtcNow;
             booking.UpdatedAt = DateTime.UtcNow;

@@ -38,13 +38,13 @@ public class BrowseModel : PageModel
         BikeTypes = await _context.BikeTypes.ToListAsync();
 
         // Get all bikes that are available (not deleted, not maintenance, etc.)
-        // Include bikes with AvailabilityStatusId = 1 (Available) OR 2 (Rented but may have available quantity)
+        // Include bikes with AvailabilityStatus = "Available" OR "Rented" (but may have available quantity)
         // We'll filter by available quantity later
         var query = _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
             .Include(b => b.Owner)
-            .Where(b => (b.AvailabilityStatusId == 1 || b.AvailabilityStatusId == 2) && !b.IsDeleted) // Available or Partially Rented, not deleted
+            .Where(b => (b.AvailabilityStatus == "Available" || b.AvailabilityStatus == "Rented") && !b.IsDeleted)
             .AsQueryable();
 
         // Apply filters
@@ -95,7 +95,7 @@ public class BrowseModel : PageModel
             // Lost bikes are still in active status but marked as lost, so they should be counted
             allActiveBookings = await _context.Bookings
                 .Where(b => bikeIds.Contains(b.BikeId) && 
-                           ((b.BookingStatusId == 1 || b.BookingStatusId == 2))) // Pending or Active (includes lost bikes)
+                           (b.BookingStatus == "Pending" || b.BookingStatus == "Active")) // Pending or Active (includes lost bikes)
                 .GroupBy(b => b.BikeId)
                 .Select(g => new { BikeId = g.Key, RentedQuantity = g.Sum(b => b.Quantity) })
                 .ToDictionaryAsync(x => x.BikeId, x => x.RentedQuantity);

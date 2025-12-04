@@ -37,7 +37,6 @@ public class MyBikesModel : PageModel
         // Get all bikes for this owner
         var allBikes = await _context.Bikes
             .Include(b => b.BikeType)
-            .Include(b => b.AvailabilityStatus)
             .Include(b => b.BikeImages)
             .Where(b => b.OwnerId == userId.Value && !b.IsDeleted)
             .ToListAsync();
@@ -46,7 +45,7 @@ public class MyBikesModel : PageModel
         ActiveBookings = await _context.Bookings
             .Include(b => b.Renter)
             .Include(b => b.Bike)
-            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatusId == 2 && !b.IsReportedLost) // Active and not reported lost
+            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatus == "Active" && !b.IsReportedLost) // Active and not reported lost
             .OrderBy(b => b.EndDate)
             .ToListAsync();
 
@@ -133,7 +132,7 @@ public class MyBikesModel : PageModel
 
             // Check for active or pending bookings
             var activeBookings = bike.Bookings
-                .Where(b => b.BookingStatusId == 1 || b.BookingStatusId == 2)
+                .Where(b => b.BookingStatus == "Pending" || b.BookingStatus == "Active")
                 .ToList();
 
             if (activeBookings.Any())
@@ -144,7 +143,7 @@ public class MyBikesModel : PageModel
 
             // Check for upcoming bookings
             var upcomingBookings = bike.Bookings
-                .Where(b => b.StartDate > DateTime.Now && b.BookingStatusId != 3) // Not cancelled
+                .Where(b => b.StartDate > DateTime.Now && b.BookingStatus != "Completed") // Not completed
                 .ToList();
 
             if (upcomingBookings.Any())
@@ -157,12 +156,12 @@ public class MyBikesModel : PageModel
             bike.IsDeleted = true;
             bike.DeletedAt = DateTime.UtcNow;
             bike.DeletedBy = AuthHelper.GetUserEmail(User);
-            bike.AvailabilityStatusId = 4; // Set to Inactive
+            bike.AvailabilityStatus = "Inactive";
             bike.UpdatedAt = DateTime.UtcNow;
             
             // Soft delete completed/cancelled bookings related to this bike
             var oldBookings = bike.Bookings
-                .Where(b => b.BookingStatusId == 3 || b.BookingStatusId == 4)
+                .Where(b => b.BookingStatus == "Completed" || b.BookingStatus == "Cancelled")
                 .ToList();
             
             foreach (var booking in oldBookings)
@@ -205,14 +204,14 @@ public class MyBikesModel : PageModel
                 return RedirectToPage();
             }
 
-            if (booking.BookingStatusId != 2) // Must be Active
+            if (booking.BookingStatus != "Active")
             {
                 TempData["ErrorMessage"] = "This booking is not active";
                 return RedirectToPage();
             }
 
             // Mark booking as completed
-            booking.BookingStatusId = 3; // Completed
+            booking.BookingStatus = "Completed";
             booking.ActualReturnDate = DateTime.UtcNow;
             booking.OwnerConfirmedAt = DateTime.UtcNow;
             booking.UpdatedAt = DateTime.UtcNow;
@@ -264,7 +263,7 @@ public class MyBikesModel : PageModel
                 return RedirectToPage();
             }
 
-            if (booking.BookingStatusId != 2) // Must be Active
+            if (booking.BookingStatus != "Active")
             {
                 TempData["ErrorMessage"] = "This booking is not active";
                 return RedirectToPage();

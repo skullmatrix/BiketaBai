@@ -44,7 +44,7 @@
                         <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.Bike.Owner.FullName</div>
                         
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Store</div>
-                        <div style="font-weight: 600;">@Model.Booking.Bike.Owner.StoreName</div>
+                        <div style="font-weight: 600;">@(Model.PrimaryStore?.StoreName ?? "Store Location")</div>
                     </div>
                     <div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Start</div>
@@ -225,7 +225,7 @@
         }).addTo(map);
 
         // Add store marker with store name
-        const storeName = '@(Model.Booking?.Bike.Owner.StoreName ?? "Store Location")';
+        const storeName = '@(Model.PrimaryStore?.StoreName ?? "Store Location")';
         storeMarker = L.marker([storeLat, storeLng], {
             icon: L.icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',

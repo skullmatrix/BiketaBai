@@ -47,7 +47,6 @@ namespace BiketaBai.Pages.Admin
             Bikes = await _context.Bikes
                 .Include(b => b.Owner)
                 .Include(b => b.BikeType)
-                .Include(b => b.AvailabilityStatus)
                 .Include(b => b.BikeImages)
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync();
@@ -56,9 +55,9 @@ namespace BiketaBai.Pages.Admin
 
             // Calculate statistics
             TotalListings = Bikes.Count;
-            AvailableListings = Bikes.Count(b => b.AvailabilityStatusId == 1); // Available
-            RentedListings = Bikes.Count(b => b.AvailabilityStatusId == 2); // Rented
-            FlaggedListings = Bikes.Count(b => b.AvailabilityStatusId == 4); // Maintenance/Flagged
+            AvailableListings = Bikes.Count(b => b.AvailabilityStatus == "Available");
+            RentedListings = Bikes.Count(b => b.AvailabilityStatus == "Rented");
+            FlaggedListings = Bikes.Count(b => b.AvailabilityStatus == "Maintenance");
 
             // Apply filters
             FilteredBikes = Bikes;
@@ -75,9 +74,9 @@ namespace BiketaBai.Pages.Admin
             }
 
             // Status filter
-            if (!string.IsNullOrWhiteSpace(StatusFilter) && int.TryParse(StatusFilter, out int statusId))
+            if (!string.IsNullOrWhiteSpace(StatusFilter))
             {
-                FilteredBikes = FilteredBikes.Where(b => b.AvailabilityStatusId == statusId).ToList();
+                FilteredBikes = FilteredBikes.Where(b => b.AvailabilityStatus == StatusFilter).ToList();
             }
 
             // Type filter
@@ -103,8 +102,7 @@ namespace BiketaBai.Pages.Admin
 
             // Check if bike has active bookings
             var hasActiveBookings = await _context.Bookings
-                .AnyAsync(b => b.BikeId == bikeId && 
-                    (b.BookingStatus.StatusName == "Active" || b.BookingStatus.StatusName == "Confirmed"));
+                .AnyAsync(b => b.BikeId == bikeId && b.BookingStatus == "Active");
 
             if (hasActiveBookings)
             {
@@ -119,7 +117,7 @@ namespace BiketaBai.Pages.Admin
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostSetStatusAsync(int bikeId, int statusId)
+        public async Task<IActionResult> OnPostSetStatusAsync(int bikeId, string status)
         {
             var bike = await _context.Bikes
                 .Include(b => b.Owner)
@@ -131,29 +129,28 @@ namespace BiketaBai.Pages.Admin
                 return RedirectToPage();
             }
 
-            var status = await _context.AvailabilityStatuses.FindAsync(statusId);
-            if (status == null)
+            if (string.IsNullOrWhiteSpace(status))
             {
                 ErrorMessage = "Invalid status";
                 return RedirectToPage();
             }
 
-            bike.AvailabilityStatusId = statusId;
+            bike.AvailabilityStatus = status;
             bike.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            SuccessMessage = $"Bike '{bike.Brand} {bike.Model}' status updated to '{status.StatusName}'";
+            SuccessMessage = $"Bike '{bike.Brand} {bike.Model}' status updated to '{status}'";
             return RedirectToPage();
         }
 
-        public string GetStatusBadgeClass(int statusId)
+        public string GetStatusBadgeClass(string status)
         {
-            return statusId switch
+            return status switch
             {
-                1 => "bg-success", // Available
-                2 => "bg-primary", // Rented
-                3 => "bg-secondary", // Inactive
-                4 => "bg-warning", // Under Maintenance
+                "Available" => "bg-success",
+                "Rented" => "bg-primary",
+                "Inactive" => "bg-secondary",
+                "Maintenance" => "bg-warning",
                 _ => "bg-secondary"
             };
         }

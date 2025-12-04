@@ -103,24 +103,6 @@ public class User
     [Column("login_count")]
     public int LoginCount { get; set; } = 0;
 
-    // Store information (for owners)
-    [MaxLength(255)]
-    [Column("store_name")]
-    public string? StoreName { get; set; }
-
-    [MaxLength(500)]
-    [Column("store_address")]
-    public string? StoreAddress { get; set; }
-
-    [Column("store_latitude")]
-    public double? StoreLatitude { get; set; }
-
-    [Column("store_longitude")]
-    public double? StoreLongitude { get; set; }
-
-    [Column("geofence_radius_km")]
-    public decimal? GeofenceRadiusKm { get; set; }
-
     // ID and Address Verification
     [Column("id_verified")]
     public bool IdVerified { get; set; } = false;
@@ -143,7 +125,6 @@ public class User
     public virtual ICollection<Booking> BookingsAsRenter { get; set; } = new List<Booking>();
     public virtual ICollection<Rating> RatingsGiven { get; set; } = new List<Rating>();
     public virtual ICollection<Rating> RatingsReceived { get; set; } = new List<Rating>();
-    public virtual Wallet? Wallet { get; set; }
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<Store> Stores { get; set; } = new List<Store>();
     public virtual ICollection<Payment> PaymentsVerified { get; set; } = new List<Payment>();

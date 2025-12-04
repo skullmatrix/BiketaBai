@@ -198,18 +198,18 @@
                                 </td>
                                 <td><strong>₱@booking.TotalAmount.ToString("F0")</strong></td>
                                 <td>
-                                    @switch (booking.BookingStatusId)
+                                    @switch (booking.BookingStatus)
                                     {
-                                        case 1:
+                                        case "Pending":
                                             <span class="badge-minimal badge-minimal-warning">Pending</span>
                                             break;
-                                        case 2:
+                                        case "Active":
                                             <span class="badge-minimal badge-minimal-primary">Active</span>
                                             break;
-                                        case 3:
+                                        case "Completed":
                                             <span class="badge-minimal badge-minimal-success">Completed</span>
                                             break;
-                                        case 4:
+                                        case "Cancelled":
                                             <span class="badge-minimal badge-minimal-danger">Cancelled</span>
                                             break;
                                     }

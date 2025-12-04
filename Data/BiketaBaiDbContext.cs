@@ -11,16 +11,10 @@ public class BiketaBaiDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<BikeType> BikeTypes { get; set; }
-    public DbSet<AvailabilityStatus> AvailabilityStatuses { get; set; }
     public DbSet<Bike> Bikes { get; set; }
     public DbSet<BikeImage> BikeImages { get; set; }
-    public DbSet<BookingStatus> BookingStatuses { get; set; }
     public DbSet<Booking> Bookings { get; set; }
-    public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<Payment> Payments { get; set; }
-    public DbSet<Wallet> Wallets { get; set; }
-    public DbSet<TransactionType> TransactionTypes { get; set; }
-    public DbSet<CreditTransaction> CreditTransactions { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Report> Reports { get; set; }
@@ -73,29 +67,7 @@ public class BiketaBaiDbContext : DbContext
             .Property(p => p.RefundAmount)
             .HasPrecision(10, 2);
 
-        modelBuilder.Entity<Wallet>()
-            .Property(w => w.Balance)
-            .HasPrecision(10, 2);
-
-        modelBuilder.Entity<CreditTransaction>()
-            .Property(ct => ct.Amount)
-            .HasPrecision(10, 2);
-
-        modelBuilder.Entity<CreditTransaction>()
-            .Property(ct => ct.BalanceBefore)
-            .HasPrecision(10, 2);
-
-        modelBuilder.Entity<CreditTransaction>()
-            .Property(ct => ct.BalanceAfter)
-            .HasPrecision(10, 2);
-
         // Configure relationships
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Wallet)
-            .WithOne(w => w.User)
-            .HasForeignKey<Wallet>(w => w.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         modelBuilder.Entity<Booking>()
             .HasOne(b => b.Renter)
             .WithMany(u => u.BookingsAsRenter)
@@ -132,7 +104,7 @@ public class BiketaBaiDbContext : DbContext
             .HasForeignKey(b => b.StoreId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Seed data for lookup tables
+        // Seed data for bike types
         modelBuilder.Entity<BikeType>().HasData(
             new BikeType { BikeTypeId = 1, TypeName = "Mountain Bike", Description = "Off-road cycling" },
             new BikeType { BikeTypeId = 2, TypeName = "Road Bike", Description = "Paved road cycling" },
@@ -143,51 +115,22 @@ public class BiketaBaiDbContext : DbContext
             new BikeType { BikeTypeId = 7, TypeName = "Folding Bike", Description = "Compact and portable" }
         );
 
-        modelBuilder.Entity<AvailabilityStatus>().HasData(
-            new AvailabilityStatus { StatusId = 1, StatusName = "Available" },
-            new AvailabilityStatus { StatusId = 2, StatusName = "Rented" },
-            new AvailabilityStatus { StatusId = 3, StatusName = "Maintenance" },
-            new AvailabilityStatus { StatusId = 4, StatusName = "Inactive" }
-        );
-
-        modelBuilder.Entity<BookingStatus>().HasData(
-            new BookingStatus { StatusId = 1, StatusName = "Pending" },
-            new BookingStatus { StatusId = 2, StatusName = "Active" },
-            new BookingStatus { StatusId = 3, StatusName = "Completed" },
-            new BookingStatus { StatusId = 4, StatusName = "Cancelled" }
-        );
-
-        modelBuilder.Entity<PaymentMethod>().HasData(
-            new PaymentMethod { MethodId = 1, MethodName = "Wallet" },
-            new PaymentMethod { MethodId = 2, MethodName = "GCash" },
-            new PaymentMethod { MethodId = 3, MethodName = "QRPH" },
-            new PaymentMethod { MethodId = 4, MethodName = "Cash" },
-            new PaymentMethod { MethodId = 5, MethodName = "PayMaya" },
-            new PaymentMethod { MethodId = 6, MethodName = "Credit/Debit Card" }
-        );
-
-        modelBuilder.Entity<TransactionType>().HasData(
-            new TransactionType { TypeId = 1, TypeName = "Load" },
-            new TransactionType { TypeId = 2, TypeName = "Withdrawal" },
-            new TransactionType { TypeId = 3, TypeName = "Rental Payment" },
-            new TransactionType { TypeId = 4, TypeName = "Rental Earnings" },
-            new TransactionType { TypeId = 5, TypeName = "Refund" },
-            new TransactionType { TypeId = 6, TypeName = "Service Fee" }
-        );
-
         // Create indexes for better performance
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .IsUnique();
 
         modelBuilder.Entity<Bike>()
-            .HasIndex(b => b.AvailabilityStatusId);
+            .HasIndex(b => b.AvailabilityStatus);
 
         modelBuilder.Entity<Bike>()
             .HasIndex(b => b.BikeTypeId);
 
+        modelBuilder.Entity<Bike>()
+            .HasIndex(b => b.AvailabilityStatus);
+
         modelBuilder.Entity<Booking>()
-            .HasIndex(b => b.BookingStatusId);
+            .HasIndex(b => b.BookingStatus);
 
         modelBuilder.Entity<Booking>()
             .HasIndex(b => b.StartDate);

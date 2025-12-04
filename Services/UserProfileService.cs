@@ -19,7 +19,6 @@ public class UserProfileService
     public async Task<User?> GetUserByIdAsync(int userId)
     {
         return await _context.Users
-            .Include(u => u.Wallet)
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }
 
@@ -134,25 +133,19 @@ public class UserProfileService
             return new UserStatistics();
         }
 
-        var stats = new UserStatistics
-        {
-            WalletBalance = user.Wallet?.Balance ?? 0
-        };
+        var stats = new UserStatistics();
 
         if (user.IsRenter)
         {
             var renterBookings = await _context.Bookings
-                .Include(b => b.BookingStatus)
                 .Where(b => b.RenterId == userId)
                 .ToListAsync();
 
             stats.TotalRentals = renterBookings.Count;
-            stats.CompletedRentals = renterBookings.Count(b => b.BookingStatus.StatusName == "Completed");
-            stats.ActiveRentals = renterBookings.Count(b => 
-                b.BookingStatus.StatusName == "Active" || 
-                b.BookingStatus.StatusName == "Confirmed");
+            stats.CompletedRentals = renterBookings.Count(b => b.BookingStatus == "Completed");
+            stats.ActiveRentals = renterBookings.Count(b => b.BookingStatus == "Active");
             stats.TotalSpent = renterBookings
-                .Where(b => b.BookingStatus.StatusName == "Completed" || b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Completed" || b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount);
 
             // Get renter ratings (owners rating this renter)
@@ -173,21 +166,20 @@ public class UserProfileService
             stats.TotalBikes = bikes.Count;
 
             var ownerBookings = await _context.Bookings
-                .Include(b => b.BookingStatus)
                 .Include(b => b.Bike)
                 .Where(b => b.Bike.OwnerId == userId)
                 .ToListAsync();
 
             stats.TotalBookings = ownerBookings.Count;
-            stats.CompletedBookings = ownerBookings.Count(b => b.BookingStatus.StatusName == "Completed");
+            stats.CompletedBookings = ownerBookings.Count(b => b.BookingStatus == "Completed");
             
             // 90% share to owner, 10% platform fee
             stats.TotalEarnings = ownerBookings
-                .Where(b => b.BookingStatus.StatusName == "Completed" || b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Completed" || b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount * 0.90m);
 
             stats.PendingPayout = ownerBookings
-                .Where(b => b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount * 0.90m);
 
             // Get owner ratings (renters rating this owner)
@@ -208,7 +200,6 @@ public class UserProfileService
     public async Task<List<Booking>> GetRecentBookingsAsync(int userId, bool isOwner, int count = 5)
     {
         IQueryable<Booking> query = _context.Bookings
-            .Include(b => b.BookingStatus)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.BikeImages)
             .Include(b => b.Bike.BikeType)
@@ -299,7 +290,6 @@ public class UserProfileService
 public class UserStatistics
 {
     // Common stats
-    public decimal WalletBalance { get; set; }
     public double AverageRating { get; set; }
     public int TotalReviews { get; set; }
 
