@@ -127,45 +127,34 @@
 </style>
 
 <script>
-    // Function to create a custom bike icon marker
+    // Function to create a pin marker with bike logo
     function createBikeIcon(color = '#3388ff') {
-        // Create SVG bike icon with better visibility
+        // Create SVG pin marker with bike icon
         const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                <!-- Background circle with shadow effect -->
-                <circle cx="24" cy="24" r="22" fill="${color}" stroke="#fff" stroke-width="3" opacity="0.95" filter="url(#shadow)"/>
-                <!-- Bike icon -->
-                <g transform="translate(24, 24)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
+                <!-- Pin shadow -->
+                <ellipse cx="12.5" cy="38.5" rx="5" ry="2" fill="rgba(0,0,0,0.2)"/>
+                <!-- Pin shape -->
+                <path d="M 12.5 0 C 5.6 0 0 5.6 0 12.5 C 0 19.4 12.5 41 12.5 41 C 12.5 41 25 19.4 25 12.5 C 25 5.6 19.4 0 12.5 0 Z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+                <!-- Bike icon in center -->
+                <g transform="translate(12.5, 12.5) scale(0.35)">
                     <!-- Bike wheels -->
-                    <circle cx="-10" cy="5" r="7" fill="none" stroke="#fff" stroke-width="2.5"/>
-                    <circle cx="10" cy="5" r="7" fill="none" stroke="#fff" stroke-width="2.5"/>
-                    <!-- Wheel spokes -->
-                    <line x1="-10" y1="5" x2="-10" y2="-2" stroke="#fff" stroke-width="2"/>
-                    <line x1="-10" y1="5" x2="-3" y2="5" stroke="#fff" stroke-width="2"/>
-                    <line x1="10" y1="5" x2="10" y2="-2" stroke="#fff" stroke-width="2"/>
-                    <line x1="10" y1="5" x2="3" y2="5" stroke="#fff" stroke-width="2"/>
+                    <circle cx="-8" cy="3" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+                    <circle cx="8" cy="3" r="5" fill="none" stroke="#fff" stroke-width="2"/>
                     <!-- Bike frame -->
-                    <path d="M -10 5 L -2 -5 L 0 0 L 2 -5 L 10 5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                    <!-- Seat -->
-                    <circle cx="-4" cy="-8" r="1.5" fill="#fff"/>
+                    <path d="M -8 3 L -2 -4 L 0 0 L 2 -4 L 8 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                     <!-- Handlebars -->
-                    <path d="M 0 -5 L -3 -8 M 0 -5 L 3 -8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 0 -4 L -2 -6 M 0 -4 L 2 -6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
                 </g>
-                <!-- Shadow filter -->
-                <defs>
-                    <filter id="shadow">
-                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                    </filter>
-                </defs>
             </svg>
         `;
         
         return L.divIcon({
             html: svg,
             className: 'bike-marker-icon',
-            iconSize: [48, 48],
-            iconAnchor: [24, 24],
-            popupAnchor: [0, -24]
+            iconSize: [25, 41],
+            iconAnchor: [12.5, 41],
+            popupAnchor: [0, -41]
         });
     }
 

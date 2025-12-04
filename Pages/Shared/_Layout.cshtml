@@ -738,13 +738,14 @@
                     // Add to processed list immediately to prevent showing again
                     window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
                     
-                    // Call API to mark as read
+                    // Call API to mark as read (fire and forget - don't wait for response)
                     fetch('/Notifications?handler=MarkAsRead', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                         },
-                        body: `notificationId=${notificationId}`
+                        body: `notificationId=${notificationId}`,
+                        keepalive: true // Ensure request completes even if page navigates
                     })
                     .then(response => {
                         if (response.ok) {
@@ -763,8 +764,14 @@
                 // Function to dismiss notification
                 const dismissNotification = function(shouldMarkAsRead = false) {
                     // Mark as read if requested (when closed or auto-dismissed)
-                    if (shouldMarkAsRead && notification.notificationId) {
-                        markNotificationAsRead(notification.notificationId);
+                    if (shouldMarkAsRead) {
+                        // Try multiple possible property names for notification ID
+                        const notificationId = notification.notificationId || notification.id || notification.NotificationId;
+                        if (notificationId) {
+                            // Add to processed list immediately to prevent re-showing
+                            window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
+                            markNotificationAsRead(notificationId);
+                        }
                     }
                     
                     notificationEl.style.animation = 'slideUp 0.3s ease-out';
@@ -782,12 +789,36 @@
                 if (notification.actionUrl) {
                     notificationEl.addEventListener('click', function(e) {
                         if (!e.target.classList.contains('mini-notification-close') && !e.target.closest('.mini-notification-close')) {
-                            // Mark notification as read when user takes action
-                            if (notification.notificationId) {
-                                markNotificationAsRead(notification.notificationId);
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Mark notification as read when user takes action, then navigate
+                            // Try multiple possible property names for notification ID
+                            const notificationId = notification.notificationId || notification.id || notification.NotificationId;
+                            if (notificationId) {
+                                // Add to processed list immediately to prevent re-showing
+                                window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
+                                // Mark as read (API call happens in background)
+                                markNotificationAsRead(notificationId);
                             }
                             // Navigate to action URL
                             window.location.href = notification.actionUrl;
+                        }
+                    });
+                } else {
+                    // If no actionUrl, mark as read when clicked anyway
+                    notificationEl.addEventListener('click', function(e) {
+                        if (!e.target.classList.contains('mini-notification-close') && !e.target.closest('.mini-notification-close')) {
+                            // Try multiple possible property names for notification ID
+                            const notificationId = notification.notificationId || notification.id || notification.NotificationId;
+                            if (notificationId) {
+                                window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
+                                markNotificationAsRead(notificationId);
+                                dismissNotification(false); // Dismiss but already marked as read
+                            } else {
+                                // No notificationId found, just dismiss
+                                dismissNotification(false);
+                            }
                         }
                     });
                 }
