@@ -221,7 +221,7 @@ public class AddressValidationService
                 }
                 else
                 {
-                    result.IsValid = false;
+                result.IsValid = false;
                     result.ErrorMessage = "Address not found. Please select an address from the suggestions or provide a more detailed address.";
                     Log.Warning("Address not found and too short: {Address}", address);
                 }

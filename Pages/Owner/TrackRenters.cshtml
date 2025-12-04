@@ -621,7 +621,7 @@
 
         const lat = typeof latitude === 'number' ? latitude : parseFloat(latitude || 0);
         const lng = typeof longitude === 'number' ? longitude : parseFloat(longitude || 0);
-        
+
         locationSection.innerHTML = `
             <p style="margin: 0 0 var(--space-2) 0; font-weight: 600; color: var(--neutral-900);">
                 <i class="bi bi-geo-alt"></i> Current Location <span style="color: var(--success); font-size: 0.75rem;">● Live</span>
@@ -668,12 +668,12 @@
         if (isNewMarker) {
             // Create new marker
             marker = L.marker([lat, lng], { 
-                icon: markerIcon,
+            icon: markerIcon,
                 title: `${renterName} - ${bikeName}`,
                 zIndexOffset: 1000 // Ensure renter markers are on top
-            })
-            .addTo(map)
-            .bindPopup(`
+        })
+        .addTo(map)
+        .bindPopup(`
                 <div style="min-width: 200px;">
                     <strong style="font-size: 1.1em;">${renterName}</strong><br>
                     <span style="color: #666;">${bikeName}</span><br>
@@ -687,8 +687,8 @@
                         Updated: ${new Date().toLocaleTimeString()}
                     </small>
                 </div>
-            `);
-            markers[bookingId] = marker;
+        `);
+        markers[bookingId] = marker;
         } else {
             // Update existing marker - ALWAYS update position
             marker = existingMarker;

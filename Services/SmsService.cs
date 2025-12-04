@@ -30,7 +30,7 @@ public class SmsService
             
             if (string.IsNullOrEmpty(apiToken))
             {
-                Log.Warning("IPROG SMS API token not configured. Cannot send SMS.");
+                Log.Error("IPROG SMS API token not configured. Cannot send SMS. Please check appsettings.json.");
                 return false;
             }
 
@@ -38,7 +38,7 @@ public class SmsService
             var formattedPhone = FormatPhoneNumber(phoneNumber);
             if (string.IsNullOrEmpty(formattedPhone))
             {
-                Log.Warning("Invalid phone number format: {PhoneNumber}", phoneNumber);
+                Log.Error("Invalid phone number format: {PhoneNumber}. Cannot send SMS.", phoneNumber);
                 return false;
             }
 
@@ -58,7 +58,7 @@ public class SmsService
             };
             var content = new FormUrlEncodedContent(formData);
 
-            Log.Information("Sending SMS via iProgSMS to {PhoneNumber} (formatted: {FormattedPhone}) with sender: {SenderName}", 
+            Log.Information("Attempting to send SMS via iProgSMS to {PhoneNumber} (formatted: {FormattedPhone}) with sender: {SenderName}", 
                 phoneNumber, formattedPhone, senderName);
 
             // Send POST request with body
@@ -67,21 +67,21 @@ public class SmsService
 
             if (response.IsSuccessStatusCode)
             {
-                Log.Information("SMS sent successfully to {PhoneNumber}. Response: {Response}", 
-                    phoneNumber, responseContent);
+                Log.Information("✅ SMS sent successfully to {PhoneNumber} (formatted: {FormattedPhone}). Response: {Response}", 
+                    phoneNumber, formattedPhone, responseContent);
                 return true;
             }
             else
             {
-                Log.Error("Failed to send SMS to {PhoneNumber}. Status: {StatusCode}, Response: {Response}", 
-                    phoneNumber, response.StatusCode, responseContent);
+                Log.Error("❌ Failed to send SMS to {PhoneNumber} (formatted: {FormattedPhone}). Status: {StatusCode}, Response: {Response}, URL: {ApiUrl}", 
+                    phoneNumber, formattedPhone, response.StatusCode, responseContent, apiUrl.Split('?')[0] + "?api_token=***&phone_number=***&message=***");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error sending SMS to {PhoneNumber}. Error: {ErrorMessage}", 
-                phoneNumber, ex.Message);
+            Log.Error(ex, "❌ Exception while sending SMS to {PhoneNumber}. Error: {ErrorMessage}, StackTrace: {StackTrace}", 
+                phoneNumber, ex.Message, ex.StackTrace);
             return false;
         }
     }

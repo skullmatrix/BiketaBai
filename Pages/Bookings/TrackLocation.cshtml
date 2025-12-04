@@ -301,11 +301,11 @@
         watchId = navigator.geolocation.watchPosition(
             updateLocation, 
             function(error) {
-                console.error('Error watching location:', error);
+            console.error('Error watching location:', error);
             }, 
             {
-                enableHighAccuracy: true,
-                timeout: 10000,
+            enableHighAccuracy: true,
+            timeout: 10000,
                 maximumAge: 15000 // Accept location up to 15 seconds old (more frequent for real-time tracking)
             }
         );
@@ -388,7 +388,7 @@
 
     let lastSentLocation = null;
     let isSendingLocation = false;
-    
+
     function sendLocationToServer(lat, lng, distance, isOutside) {
         // Prevent duplicate sends if already sending
         if (isSendingLocation) {

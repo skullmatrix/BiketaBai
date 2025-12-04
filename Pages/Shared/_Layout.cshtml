@@ -377,8 +377,8 @@
                     // Fallback to polling while retrying
                     if (!window.BiketaBaiNotifications.pollingInterval) {
                         window.BiketaBaiNotifications.pollingInterval = setInterval(function() {
-                            loadNotificationCount();
-                        }, 15000);
+                        loadNotificationCount();
+                    }, 15000);
                     }
                     return;
                 }
@@ -462,18 +462,18 @@
                 console.log('🔨 Creating new SignalR connection for notifications...');
                 
                 try {
-                    notificationHubConnection = new signalR.HubConnectionBuilder()
-                        .withUrl("/notificationHub")
-                        .withAutomaticReconnect({
-                            nextRetryDelayInMilliseconds: retryContext => {
-                                // Exponential backoff: 0s, 2s, 10s, 30s, then 30s
-                                if (retryContext.elapsedMilliseconds < 2000) return 0;
-                                if (retryContext.elapsedMilliseconds < 10000) return 2000;
-                                if (retryContext.elapsedMilliseconds < 30000) return 10000;
-                                return 30000;
-                            }
-                        })
-                        .build();
+                notificationHubConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub")
+                    .withAutomaticReconnect({
+                        nextRetryDelayInMilliseconds: retryContext => {
+                            // Exponential backoff: 0s, 2s, 10s, 30s, then 30s
+                            if (retryContext.elapsedMilliseconds < 2000) return 0;
+                            if (retryContext.elapsedMilliseconds < 10000) return 2000;
+                            if (retryContext.elapsedMilliseconds < 30000) return 10000;
+                            return 30000;
+                        }
+                    })
+                    .build();
                     
                     console.log('✅ SignalR connection object created');
                     
@@ -1103,11 +1103,11 @@
                             // Fallback to polling
                             if (document.readyState === 'loading') {
                                 document.addEventListener('DOMContentLoaded', function() {
-                                    loadNotificationCount();
-                                    setInterval(function() {
-                                        loadNotificationCount();
-                                    }, 15000);
-                                });
+                        loadNotificationCount();
+                        setInterval(function() {
+                            loadNotificationCount();
+                        }, 15000);
+                    });
                             } else {
                                 loadNotificationCount();
                                 setInterval(function() {
@@ -1120,14 +1120,14 @@
                 
                 // Start waiting for SignalR (with a small delay to ensure script tag has executed)
                 setTimeout(waitForSignalRAndInit, 100);
-            } else {
-                // Fallback to polling if not authenticated
+                } else {
+                    // Fallback to polling if not authenticated
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', function() {
+                    loadNotificationCount();
+                    setInterval(function() {
                         loadNotificationCount();
-                        setInterval(function() {
-                            loadNotificationCount();
-                        }, 15000);
+                    }, 15000);
                         // Initialize notification queue even if not authenticated (for testing)
                         setTimeout(initializeNotificationQueue, 2000);
                     });
@@ -1200,7 +1200,7 @@
                     }
                     
                     // Update header badge for all authenticated users
-                    const $headerBadge = $('#notificationCountHeader');
+                        const $headerBadge = $('#notificationCountHeader');
                     if ($headerBadge.length > 0) {
                         console.log('✅ Header badge element found, updating...');
                         $headerBadge.text(countText);
@@ -1501,20 +1501,20 @@
                     // Play a second tone for emphasis
                     setTimeout(() => {
                         try {
-                            const oscillator2 = audioContext.createOscillator();
-                            const gainNode2 = audioContext.createGain();
-                            
-                            oscillator2.connect(gainNode2);
-                            gainNode2.connect(audioContext.destination);
-                            
-                            oscillator2.frequency.value = 1000;
-                            oscillator2.type = 'sine';
-                            
-                            gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
-                            gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                            
-                            oscillator2.start(audioContext.currentTime);
-                            oscillator2.stop(audioContext.currentTime + 0.2);
+                        const oscillator2 = audioContext.createOscillator();
+                        const gainNode2 = audioContext.createGain();
+                        
+                        oscillator2.connect(gainNode2);
+                        gainNode2.connect(audioContext.destination);
+                        
+                        oscillator2.frequency.value = 1000;
+                        oscillator2.type = 'sine';
+                        
+                        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        
+                        oscillator2.start(audioContext.currentTime);
+                        oscillator2.stop(audioContext.currentTime + 0.2);
                         } catch (e2) {
                             console.log('Second tone not available:', e2);
                         }
