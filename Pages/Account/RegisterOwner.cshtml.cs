@@ -13,7 +13,6 @@ namespace BiketaBai.Pages.Account;
 public class RegisterOwnerModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
-    private readonly WalletService _walletService;
     private readonly EmailService _emailService;
     private readonly AddressValidationService _addressValidationService;
     private readonly IdValidationService _idValidationService;
@@ -22,7 +21,6 @@ public class RegisterOwnerModel : PageModel
 
     public RegisterOwnerModel(
         BiketaBaiDbContext context, 
-        WalletService walletService, 
         EmailService emailService,
         AddressValidationService addressValidationService,
         IdValidationService idValidationService,
@@ -30,7 +28,6 @@ public class RegisterOwnerModel : PageModel
         IWebHostEnvironment environment)
     {
         _context = context;
-        _walletService = walletService;
         _emailService = emailService;
         _addressValidationService = addressValidationService;
         _idValidationService = idValidationService;
@@ -565,9 +562,7 @@ public class RegisterOwnerModel : PageModel
             {
                 FullName = fullName,
                 Email = email,
-                StoreName = storeName,
-                StoreAddress = storeAddress,
-            PasswordHash = PasswordHelper.HashPassword(password),
+                PasswordHash = PasswordHelper.HashPassword(password),
                 IsRenter = false,
                 IsOwner = true,
                 IsAdmin = false,
@@ -602,8 +597,24 @@ public class RegisterOwnerModel : PageModel
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Create wallet
-            await _walletService.GetOrCreateWalletAsync(user.UserId);
+            // Create primary store for the owner
+            if (!string.IsNullOrWhiteSpace(storeName) && !string.IsNullOrWhiteSpace(storeAddress))
+            {
+                var store = new Store
+                {
+                    OwnerId = user.UserId,
+                    StoreName = storeName,
+                    StoreAddress = storeAddress, // Already validated address passed as parameter
+                    StoreLatitude = Input.StoreAddressLatitude,
+                    StoreLongitude = Input.StoreAddressLongitude,
+                    IsPrimary = true,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.Stores.Add(store);
+                await _context.SaveChangesAsync();
+            }
 
             // Send verification email
             try

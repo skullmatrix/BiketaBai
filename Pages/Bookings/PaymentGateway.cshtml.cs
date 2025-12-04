@@ -184,7 +184,7 @@ public class PaymentGatewayModel : PageModel
                 var payment = new Payment
                 {
                     BookingId = bookingId,
-                    PaymentMethodId = 6, // Credit/Debit Card
+                    PaymentMethod = "Credit/Debit Card",
                     Amount = booking.TotalAmount,
                     PaymentStatus = "Completed",
                     TransactionReference = attachResult.TransactionReference ?? paymentIntentId,
@@ -194,11 +194,11 @@ public class PaymentGatewayModel : PageModel
                 _context.Payments.Add(payment);
 
                 // Update booking status
-                booking.BookingStatusId = 2; // Active
+                booking.BookingStatus = "Active";
                 booking.UpdatedAt = DateTime.UtcNow;
 
                 // Update bike status
-                booking.Bike.AvailabilityStatusId = 2; // Rented
+                booking.Bike.AvailabilityStatus = "Rented";
                 booking.Bike.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();

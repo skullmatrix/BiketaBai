@@ -91,7 +91,6 @@ builder.Services.AddAuthentication("BiketaBaiAuth")
 builder.Services.AddAuthorization();
 
 // Register application services
-builder.Services.AddScoped<WalletService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<PaymentService>();

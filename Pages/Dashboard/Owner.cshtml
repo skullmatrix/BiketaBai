@@ -72,7 +72,7 @@
             <div class="stat-label">Total Bikes</div>
             <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
                 @{
-                    var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatusId == 1);
+                    var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatus == "Available");
                 }
                 <i class="bi bi-check-circle"></i> @availableBikes Available
             </div>
@@ -351,18 +351,18 @@
                                 <td><strong>@bike.Brand @bike.Model</strong></td>
                                 <td><span class="badge-minimal badge-minimal-primary">@bike.BikeType.TypeName</span></td>
                                 <td>
-                                    @switch (bike.AvailabilityStatusId)
+                                    @switch (bike.AvailabilityStatus)
                                     {
-                                        case 1:
+                                        case "Available":
                                             <span class="badge-minimal badge-minimal-success">Available</span>
                                             break;
-                                        case 2:
+                                        case "Rented":
                                             <span class="badge-minimal badge-minimal-primary">Rented</span>
                                             break;
-                                        case 3:
+                                        case "Maintenance":
                                             <span class="badge-minimal badge-minimal-warning">Maintenance</span>
                                             break;
-                                        case 4:
+                                        case "Inactive":
                                             <span class="badge-minimal badge-minimal-danger">Inactive</span>
                                             break;
                                     }
@@ -431,18 +431,18 @@
                                 </td>
                                 <td><strong class="text-sage">₱@((booking.TotalAmount * 0.9m).ToString("F0"))</strong></td>
                                 <td>
-                                    @switch (booking.BookingStatusId)
+                                    @switch (booking.BookingStatus)
                                     {
-                                        case 1:
+                                        case "Pending":
                                             <span class="badge-minimal badge-minimal-warning">Pending</span>
                                             break;
-                                        case 2:
+                                        case "Active":
                                             <span class="badge-minimal badge-minimal-primary">Active</span>
                                             break;
-                                        case 3:
+                                        case "Completed":
                                             <span class="badge-minimal badge-minimal-success">Completed</span>
                                             break;
-                                        case 4:
+                                        case "Cancelled":
                                             <span class="badge-minimal badge-minimal-danger">Cancelled</span>
                                             break;
                                     }

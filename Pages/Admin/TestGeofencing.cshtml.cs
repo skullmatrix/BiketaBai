@@ -73,13 +73,21 @@ public class TestGeofencingModel : PageModel
                 TestLongitude);
 
             var owner = booking.Bike.Owner;
-            var radius = owner.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
+            
+            // Get primary store for the owner
+            var primaryStore = await _context.Stores
+                .FirstOrDefaultAsync(s => s.OwnerId == owner.UserId && s.IsPrimary && !s.IsDeleted);
+            
+            var radius = primaryStore?.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
+            var storeName = primaryStore?.StoreName ?? "N/A";
+            var storeLat = primaryStore?.StoreLatitude?.ToString("F6") ?? "N/A";
+            var storeLon = primaryStore?.StoreLongitude?.ToString("F6") ?? "N/A";
 
             TestResult = $"✅ Test Completed!\n\n" +
                         $"Booking: #{BookingId} - {booking.Bike.Brand} {booking.Bike.Model}\n" +
                         $"Renter: {booking.Renter.FullName}\n" +
-                        $"Store: {owner.StoreName ?? "N/A"}\n" +
-                        $"Store Location: {owner.StoreLatitude?.ToString("F6") ?? "N/A"}, {owner.StoreLongitude?.ToString("F6") ?? "N/A"}\n" +
+                        $"Store: {storeName}\n" +
+                        $"Store Location: {storeLat}, {storeLon}\n" +
                         $"Test Location: {TestLatitude:F6}, {TestLongitude:F6}\n" +
                         $"Geofence Radius: {radius} km\n" +
                         $"Distance from Store: {distanceKm:F2} km\n" +
@@ -152,7 +160,11 @@ public class TestGeofencingModel : PageModel
                 TestLatitude, 
                 TestLongitude);
 
-            var radius = owner.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
+            // Get primary store for the owner
+            var primaryStore = await _context.Stores
+                .FirstOrDefaultAsync(s => s.OwnerId == owner.UserId && s.IsPrimary && !s.IsDeleted);
+            
+            var radius = primaryStore?.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
             var isWithin = distance <= (double)radius;
 
             TestResult = $"📏 Distance Calculation Test\n\n" +
@@ -179,8 +191,10 @@ public class TestGeofencingModel : PageModel
         ActiveBookings = await _context.Bookings
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
+            .Include(b => b.Bike)
+                .ThenInclude(bike => bike.Store)
             .Include(b => b.Renter)
-            .Where(b => b.BookingStatusId == 2) // Active
+            .Where(b => b.BookingStatus == "Active")
             .OrderByDescending(b => b.CreatedAt)
             .Take(20)
             .ToListAsync();

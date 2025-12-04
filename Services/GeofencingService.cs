@@ -37,33 +37,46 @@ public class GeofencingService
     }
 
     /// <summary>
-    /// Gets the owner's store location coordinates
+    /// Gets the owner's store location coordinates from Store model
     /// </summary>
     public async Task<(double? latitude, double? longitude)> GetStoreLocationAsync(int ownerId)
     {
-        var owner = await _context.Users.FindAsync(ownerId);
-        if (owner == null || string.IsNullOrWhiteSpace(owner.StoreAddress))
+        // Get primary store for the owner
+        var primaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == ownerId && s.IsPrimary && s.IsActive && !s.IsDeleted);
+
+        if (primaryStore == null)
             return (null, null);
 
         // Check if coordinates are already stored
-        if (owner.StoreLatitude.HasValue && owner.StoreLongitude.HasValue)
+        if (primaryStore.StoreLatitude.HasValue && primaryStore.StoreLongitude.HasValue)
         {
-            return (owner.StoreLatitude.Value, owner.StoreLongitude.Value);
+            return (primaryStore.StoreLatitude.Value, primaryStore.StoreLongitude.Value);
         }
 
         // Geocode the address if coordinates not available
-        var geocodeResult = await _addressValidationService.ValidateAddressAsync(owner.StoreAddress);
+        var geocodeResult = await _addressValidationService.ValidateAddressAsync(primaryStore.StoreAddress);
         if (geocodeResult.IsValid && geocodeResult.Latitude.HasValue && geocodeResult.Longitude.HasValue)
         {
             // Store coordinates for future use
-            owner.StoreLatitude = geocodeResult.Latitude.Value;
-            owner.StoreLongitude = geocodeResult.Longitude.Value;
+            primaryStore.StoreLatitude = geocodeResult.Latitude.Value;
+            primaryStore.StoreLongitude = geocodeResult.Longitude.Value;
+            primaryStore.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             return (geocodeResult.Latitude.Value, geocodeResult.Longitude.Value);
         }
 
         return (null, null);
+    }
+    
+    /// <summary>
+    /// Gets the primary store for an owner
+    /// </summary>
+    private async Task<Store?> GetPrimaryStoreAsync(int ownerId)
+    {
+        return await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == ownerId && s.IsPrimary && s.IsActive && !s.IsDeleted);
     }
 
     /// <summary>
@@ -118,7 +131,10 @@ public class GeofencingService
         }
 
         var distance = CalculateDistance(storeLat.Value, storeLon.Value, renterLatitude, renterLongitude);
-        var radius = owner.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
+        
+        // Get geofence radius from Store model
+        var primaryStore = await GetPrimaryStoreAsync(owner.UserId);
+        var radius = primaryStore?.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
 
         var isWithin = (decimal)distance <= radius;
 
@@ -143,7 +159,7 @@ public class GeofencingService
             return (false, 0, "Booking not found");
 
         // Only track active bookings
-        if (booking.BookingStatusId != 2) // 2 = Active
+        if (booking.BookingStatus != "Active")
         {
             return (true, 0, null);
         }
@@ -182,9 +198,10 @@ public class GeofencingService
 
             if (shouldSendWarning && !string.IsNullOrWhiteSpace(booking.Renter.Phone))
             {
-                var owner = booking.Bike.Owner;
-                var radius = owner.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
-                var message = $"⚠️ Geofence Alert: You are {distanceKm:F1}km away from {owner.StoreName ?? "the store location"}. " +
+                var primaryStore = await GetPrimaryStoreAsync(booking.Bike.OwnerId);
+                var radius = primaryStore?.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
+                var storeName = primaryStore?.StoreName ?? "the store location";
+                var message = $"⚠️ Geofence Alert: You are {distanceKm:F1}km away from {storeName}. " +
                              $"Please return within {radius}km radius. Current distance: {distanceKm:F1}km. - Bike Ta Bai";
 
                 try
@@ -199,7 +216,7 @@ public class GeofencingService
                         {
                             UserId = booking.RenterId,
                             Title = "Geofence Alert",
-                            Message = $"Geofence Alert: You are {distanceKm:F1}km away from {owner.StoreName ?? "the store location"}. Booking #{bookingId}",
+                            Message = $"Geofence Alert: You are {distanceKm:F1}km away from {storeName}. Booking #{bookingId}",
                             NotificationType = "Geofence",
                             IsRead = false,
                             CreatedAt = DateTime.UtcNow
@@ -246,7 +263,7 @@ public class GeofencingService
                 .Include(b => b.Bike)
                     .ThenInclude(bike => bike.Owner)
                 .Include(b => b.Renter)
-                .Where(b => b.BookingStatusId == 2) // Active bookings
+                .Where(b => b.BookingStatus == "Active")
                 .ToListAsync();
 
             Log.Information("Monitoring {Count} active bookings for geofence violations and reminders", activeBookings.Count);
@@ -303,10 +320,11 @@ public class GeofencingService
                 // Send warning every 15 minutes if still outside
                 if (shouldSend && !string.IsNullOrWhiteSpace(booking.Renter.Phone))
                 {
-                    var owner = booking.Bike.Owner;
-                    var radius = owner.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
+                    var primaryStore = await GetPrimaryStoreAsync(booking.Bike.OwnerId);
+                    var radius = primaryStore?.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
+                    var storeName = primaryStore?.StoreName ?? "the store location";
                     var distance = latestLocation.DistanceFromStoreKm ?? 0;
-                    var message = $"⚠️ Geofence Alert: You are still {distance:F1}km away from {owner.StoreName ?? "the store location"}. " +
+                    var message = $"⚠️ Geofence Alert: You are still {distance:F1}km away from {storeName}. " +
                                  $"Please return within {radius}km radius immediately. - Bike Ta Bai";
 
                     try
@@ -319,7 +337,7 @@ public class GeofencingService
                             {
                                 UserId = booking.RenterId,
                                 Title = "Geofence Alert",
-                                Message = $"Geofence Alert: You are still {distance:F1}km away from {owner.StoreName ?? "the store location"}. Booking #{booking.BookingId}",
+                                Message = $"Geofence Alert: You are still {distance:F1}km away from {storeName}. Booking #{booking.BookingId}",
                                 NotificationType = "Geofence",
                                 IsRead = false,
                                 CreatedAt = DateTime.UtcNow

@@ -25,16 +25,15 @@ public class BookingService
         if (bike == null || bike.IsDeleted)
             return false;
 
-        // Allow bikes with AvailabilityStatusId = 1 (Available) OR 2 (Partially Rented)
-        // Status 2 means some bikes are rented but there may still be available bikes
-        if (bike.AvailabilityStatusId != 1 && bike.AvailabilityStatusId != 2)
-            return false; // Only allow Available or Partially Rented bikes
+        // Allow bikes with status "Available" or "Rented" (some bikes may still be available)
+        if (bike.AvailabilityStatus != "Available" && bike.AvailabilityStatus != "Rented")
+            return false; // Only allow Available or Rented bikes
 
         // Check for conflicting bookings and count how many bikes are already booked
         // Include lost bikes in the calculation since they should be subtracted from available quantity
         var conflictingBookings = await _context.Bookings
             .Where(b => b.BikeId == bikeId &&
-                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active (includes lost bikes)
+                       (b.BookingStatus == "Pending" || b.BookingStatus == "Active") && // Pending or Active (includes lost bikes)
                        ((startDate >= b.StartDate && startDate < b.EndDate) ||
                         (endDate > b.StartDate && endDate <= b.EndDate) ||
                         (startDate <= b.StartDate && endDate >= b.EndDate)))
@@ -112,7 +111,7 @@ public class BookingService
             BaseRate = baseRate,
             ServiceFee = serviceFee,
             TotalAmount = totalAmount,
-            BookingStatusId = 1, // Pending
+            BookingStatus = "Pending",
             DistanceSavedKm = distanceSavedKm,
             PickupLocation = pickupLocation,
             ReturnLocation = returnLocation,
@@ -139,7 +138,7 @@ public class BookingService
         // Include lost bikes in availability calculation since they should be subtracted from available quantity
         var conflictingBookings = await _context.Bookings
             .Where(b => b.BikeId == bikeId &&
-                       (b.BookingStatusId == 1 || b.BookingStatusId == 2) && // Pending or Active (includes lost bikes)
+                       (b.BookingStatus == "Pending" || b.BookingStatus == "Active") && // Pending or Active (includes lost bikes)
                        ((startDate >= b.StartDate && startDate < b.EndDate) ||
                         (endDate > b.StartDate && endDate <= b.EndDate) ||
                         (startDate <= b.StartDate && endDate >= b.EndDate)))
@@ -166,7 +165,7 @@ public class BookingService
         if (booking.RenterId != userId && booking.Bike.OwnerId != userId)
             return (false, "Unauthorized to cancel this booking");
 
-        if (booking.BookingStatusId == 3 || booking.BookingStatusId == 4)
+        if (booking.BookingStatus == "Completed" || booking.BookingStatus == "Cancelled")
             return (false, "Booking is already completed or cancelled");
 
         // Calculate refund based on cancellation policy
@@ -182,13 +181,13 @@ public class BookingService
         else
             refundPercentage = 0;
 
-        booking.BookingStatusId = 4; // Cancelled
+        booking.BookingStatus = "Cancelled";
         booking.CancellationReason = reason;
         booking.CancelledAt = DateTime.UtcNow;
         booking.UpdatedAt = DateTime.UtcNow;
 
         // Update bike status back to available
-        booking.Bike.AvailabilityStatusId = 1; // Available
+        booking.Bike.AvailabilityStatus = "Available";
         booking.Bike.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -217,15 +216,15 @@ public class BookingService
             .Include(b => b.Bike)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId);
 
-        if (booking == null || booking.BookingStatusId != 2) // Must be Active
+        if (booking == null || booking.BookingStatus != "Active") // Must be Active
             return false;
 
-        booking.BookingStatusId = 3; // Completed
+        booking.BookingStatus = "Completed";
         booking.ActualReturnDate = DateTime.UtcNow;
         booking.UpdatedAt = DateTime.UtcNow;
 
         // Update bike status back to available
-        booking.Bike.AvailabilityStatusId = 1; // Available
+        booking.Bike.AvailabilityStatus = "Available";
         booking.Bike.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -257,7 +256,6 @@ public class BookingService
                 .ThenInclude(bike => bike.BikeType)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
-            .Include(b => b.BookingStatus)
             .Include(b => b.Renter)
             .AsQueryable();
 
@@ -267,7 +265,17 @@ public class BookingService
             query = query.Where(b => b.Bike.OwnerId == userId);
 
         if (statusId.HasValue)
-            query = query.Where(b => b.BookingStatusId == statusId.Value);
+        {
+            var statusMap = new Dictionary<int, string>
+            {
+                { 1, "Pending" },
+                { 2, "Active" },
+                { 3, "Completed" },
+                { 4, "Cancelled" }
+            };
+            if (statusMap.ContainsKey(statusId.Value))
+                query = query.Where(b => b.BookingStatus == statusMap[statusId.Value]);
+        }
 
         return await query
             .OrderByDescending(b => b.CreatedAt)
@@ -284,9 +292,7 @@ public class BookingService
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.BikeImages)
             .Include(b => b.Renter)
-            .Include(b => b.BookingStatus)
             .Include(b => b.Payments)
-                .ThenInclude(p => p.PaymentMethod)
             .Include(b => b.Ratings)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId);
     }

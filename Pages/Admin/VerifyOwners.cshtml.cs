@@ -50,11 +50,17 @@ public class VerifyOwnersModel : PageModel
         if (!string.IsNullOrWhiteSpace(search))
         {
             search = search.Trim();
+            // Search in users and also in stores for store name
+            var ownerIdsWithStoreMatch = await _context.Stores
+                .Where(s => s.StoreName.Contains(search) && !s.IsDeleted)
+                .Select(s => s.OwnerId)
+                .ToListAsync();
+            
             query = query.Where(u => 
                 u.FullName.Contains(search) || 
                 u.Email.Contains(search) || 
                 (u.Phone != null && u.Phone.Contains(search)) ||
-                (u.StoreName != null && u.StoreName.Contains(search)));
+                ownerIdsWithStoreMatch.Contains(u.UserId));
         }
 
         // Get total count for pagination

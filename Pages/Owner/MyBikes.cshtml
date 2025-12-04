@@ -58,7 +58,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
                     <div style="text-align: center; padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary); margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 1)
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Available")
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-check-circle-fill"></i> Available
@@ -66,7 +66,7 @@
                     </div>
                     <div style="text-align: center; padding: var(--space-3); background: #E8F4FD; border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: #0066CC; margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 2)
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Rented")
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-bicycle"></i> Rented
@@ -74,7 +74,7 @@
                     </div>
                     <div style="text-align: center; padding: var(--space-3); background: #FFF4E6; border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800; margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 3)
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Maintenance")
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-tools"></i> Maintenance
@@ -82,7 +82,7 @@
                     </div>
                     <div style="text-align: center; padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: var(--neutral-600); margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatusId == 4)
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Inactive")
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-pause-circle-fill"></i> Inactive
@@ -160,8 +160,8 @@
                 @foreach (var bike in Model.Bikes)
                 {
                     var avgRating = Model.BikeRatings.ContainsKey(bike.BikeId) ? Model.BikeRatings[bike.BikeId] : 0;
-                    var statusClass = bike.AvailabilityStatusId switch { 1 => "available", 2 => "rented", 3 => "maintenance", 4 => "inactive", _ => "inactive" };
-                    var statusText = bike.AvailabilityStatusId switch { 1 => "Available", 2 => "Rented", 3 => "Maintenance", 4 => "Inactive", _ => "Unknown" };
+                    var statusClass = bike.AvailabilityStatus switch { "Available" => "available", "Rented" => "rented", "Maintenance" => "maintenance", "Inactive" => "inactive", _ => "inactive" };
+                    var statusText = bike.AvailabilityStatus;
                     var bikeActiveBookings = Model.BikeActiveBookings.ContainsKey(bike.BikeId) ? Model.BikeActiveBookings[bike.BikeId] : new List<Booking>();
                     var activeRentals = bikeActiveBookings.Count;
                     var hasActiveBookings = activeRentals > 0;
@@ -169,7 +169,7 @@
                     
                     <div class="bike-card-premium" 
                          data-id="@bike.BikeId"
-                         data-status="@bike.AvailabilityStatusId" 
+                         data-status="@bike.AvailabilityStatus" 
                          data-name="@bike.Brand @bike.Model" 
                          data-price="@bike.HourlyRate"
                          data-rating="@avgRating">

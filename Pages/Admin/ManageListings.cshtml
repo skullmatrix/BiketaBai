@@ -138,9 +138,9 @@
                                 <i class="bi bi-bicycle" style="font-size: 3rem; color: var(--neutral-400);"></i>
                             </div>
                         }
-                        <span class="badge-minimal @(bike.AvailabilityStatusId == 1 ? "badge-minimal-success" : bike.AvailabilityStatusId == 2 ? "badge-minimal-primary" : bike.AvailabilityStatusId == 4 ? "badge-minimal-warning" : "badge-minimal-info")" 
+                        <span class="badge-minimal @(bike.AvailabilityStatus == "Available" ? "badge-minimal-success" : bike.AvailabilityStatus == "Rented" ? "badge-minimal-primary" : bike.AvailabilityStatus == "Maintenance" ? "badge-minimal-warning" : "badge-minimal-info")" 
                               style="position: absolute; top: var(--space-2); right: var(--space-2);">
-                            @bike.AvailabilityStatus.StatusName
+                            @bike.AvailabilityStatus
                         </span>
                     </div>
                     

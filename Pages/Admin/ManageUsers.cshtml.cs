@@ -12,12 +12,10 @@ namespace BiketaBai.Pages.Admin
     public class ManageUsersModel : PageModel
     {
         private readonly BiketaBaiDbContext _context;
-        private readonly WalletService _walletService;
 
-        public ManageUsersModel(BiketaBaiDbContext context, WalletService walletService)
+        public ManageUsersModel(BiketaBaiDbContext context)
         {
             _context = context;
-            _walletService = walletService;
         }
 
         public List<User> Users { get; set; } = new List<User>();
@@ -44,20 +42,11 @@ namespace BiketaBai.Pages.Admin
         [TempData]
         public string? ErrorMessage { get; set; }
 
-        public Dictionary<int, decimal> UserBalances { get; set; } = new Dictionary<int, decimal>();
-
         public async Task<IActionResult> OnGetAsync()
         {
             Users = await _context.Users
                 .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
-
-            // Load wallet balances for all users
-            foreach (var user in Users)
-            {
-                var balance = await _walletService.GetBalanceAsync(user.UserId);
-                UserBalances[user.UserId] = balance;
-            }
 
             // Calculate statistics
             TotalUsers = Users.Count;
@@ -102,16 +91,6 @@ namespace BiketaBai.Pages.Admin
                     "EmailNotVerified" => FilteredUsers.Where(u => !u.IsEmailVerified).ToList(),
                     _ => FilteredUsers
                 };
-            }
-
-            // Load balances for filtered users
-            foreach (var user in FilteredUsers)
-            {
-                if (!UserBalances.ContainsKey(user.UserId))
-                {
-                    var balance = await _walletService.GetBalanceAsync(user.UserId);
-                    UserBalances[user.UserId] = balance;
-                }
             }
 
             return Page();
@@ -175,7 +154,7 @@ namespace BiketaBai.Pages.Admin
             // Check if user has active bookings
             var hasActiveBookings = await _context.Bookings
                 .AnyAsync(b => b.RenterId == userId && 
-                    (b.BookingStatus.StatusName == "Active" || b.BookingStatus.StatusName == "Confirmed"));
+                    (b.BookingStatus == "Active"));
 
             if (hasActiveBookings)
             {
@@ -246,49 +225,6 @@ namespace BiketaBai.Pages.Admin
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostAddBalanceAsync(int userId, decimal amount, string? description)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                ErrorMessage = "User not found";
-                return RedirectToPage();
-            }
-
-            if (amount <= 0)
-            {
-                ErrorMessage = "Amount must be greater than zero";
-                return RedirectToPage();
-            }
-
-            if (amount > 100000)
-            {
-                ErrorMessage = "Amount cannot exceed ₱100,000";
-                return RedirectToPage();
-            }
-
-            var adminUser = User.Identity?.Name;
-            var transactionDescription = description ?? $"Admin balance addition by {adminUser}";
-            
-            var success = await _walletService.AddToWalletAsync(
-                userId, 
-                amount, 
-                1, // TransactionType 1 = "Load"
-                transactionDescription,
-                $"ADMIN-{DateTime.UtcNow:yyyyMMddHHmmss}"
-            );
-
-            if (success)
-            {
-                SuccessMessage = $"Successfully added ₱{amount:N2} to {user.FullName}'s wallet";
-            }
-            else
-            {
-                ErrorMessage = "Failed to add balance. Please try again.";
-            }
-
-            return RedirectToPage();
-        }
 
         public string GetRoleBadges(User user)
         {

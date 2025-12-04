@@ -88,7 +88,7 @@
                         </div>
 
                         <!-- Payment Waiting Status (for Cash Payments) -->
-                        @if (Model.Booking.BookingStatusId == 1 && Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending")
+                        @if (Model.Booking.BookingStatus == "Pending" && Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending")
                         {
                             <div class="alert-minimal alert-minimal-info mb-4" id="paymentWaitingAlert">
                                 <i class="bi bi-hourglass-split"></i>
@@ -100,7 +100,7 @@
                         }
 
                         <!-- Location Tracking Info -->
-                        @if (Model.Booking.BookingStatusId == 2) // Active
+                        @if (Model.Booking.BookingStatus == "Active")
                         {
                             <div class="alert-minimal alert-minimal-success mb-4" id="locationStatusAlert">
                                 <i class="bi bi-geo-alt-fill"></i>
@@ -113,7 +113,7 @@
 
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2">
-                            @if (Model.Booking.BookingStatusId == 2) // Active
+                            @if (Model.Booking.BookingStatus == "Active")
                             {
                                 <a href="/Bookings/TrackLocation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-primary" id="trackLocationBtn">
                                     <i class="bi bi-geo-alt-fill"></i> Track Location
@@ -138,8 +138,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const bookingId = @Model.Booking.BookingId;
-            const bookingStatusId = @Model.Booking.BookingStatusId;
-            const isPendingCashPayment = bookingStatusId === 1 && @(Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending" ? "true" : "false");
+            const bookingStatus = '@Model.Booking.BookingStatus';
+            const isPendingCashPayment = bookingStatus === 'Pending' && @(Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending" ? "true" : "false");
             
             // Initialize SignalR connection for real-time updates
             const connection = new signalR.HubConnectionBuilder()

@@ -13,7 +13,6 @@ namespace BiketaBai.Pages.Account;
 public class RegisterRenterModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
-    private readonly WalletService _walletService;
     private readonly EmailService _emailService;
     private readonly AddressValidationService _addressValidationService;
     private readonly IdValidationService _idValidationService;
@@ -22,7 +21,6 @@ public class RegisterRenterModel : PageModel
 
     public RegisterRenterModel(
         BiketaBaiDbContext context, 
-        WalletService walletService, 
         EmailService emailService,
         AddressValidationService addressValidationService,
         IdValidationService idValidationService,
@@ -30,7 +28,6 @@ public class RegisterRenterModel : PageModel
         IWebHostEnvironment environment)
     {
         _context = context;
-        _walletService = walletService;
         _emailService = emailService;
         _addressValidationService = addressValidationService;
         _idValidationService = idValidationService;
@@ -535,7 +532,7 @@ public class RegisterRenterModel : PageModel
         // Use execution strategy to handle retry logic
         // Note: We can't use explicit transactions with retry strategy, so we rely on SaveChangesAsync atomicity
         // For true transaction support, we'd need to disable retry or use a different approach
-        // Since we're doing user creation and wallet creation separately, we'll do them sequentially
+        // Create user in a transaction
         // The execution strategy will handle retries for transient failures
         try
         {
@@ -559,15 +556,6 @@ public class RegisterRenterModel : PageModel
 
                 // Add user and save - this is atomic
                 _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-
-                // Create wallet - this is a separate operation but will be retried if needed
-                // GetOrCreateWalletAsync is idempotent, so it's safe to call
-                var wallet = await _walletService.GetOrCreateWalletAsync(user.UserId);
-                if (wallet == null)
-                {
-                    throw new InvalidOperationException("Failed to create wallet. Please try again.");
-                }
                 await _context.SaveChangesAsync();
             });
         }

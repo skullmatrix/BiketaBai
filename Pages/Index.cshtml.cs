@@ -41,7 +41,7 @@ public class IndexModel : PageModel
         FeaturedBikes = await _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.BikeImages)
-            .Where(b => b.AvailabilityStatusId == 1) // Available
+            .Where(b => b.AvailabilityStatus == "Available")
             .OrderByDescending(b => b.CreatedAt)
             .Take(6)
             .ToListAsync();
@@ -60,7 +60,7 @@ public class IndexModel : PageModel
         // Statistics
         TotalBikes = await _context.Bikes.CountAsync();
         TotalUsers = await _context.Users.CountAsync();
-        TotalBookings = await _context.Bookings.Where(b => b.BookingStatusId == 3).CountAsync(); // Completed
+        TotalBookings = await _context.Bookings.Where(b => b.BookingStatus == "Completed").CountAsync();
         
         // Calculate CO2 saved (assuming 0.2 kg CO2 per km saved)
         var totalKmSaved = await _context.Bookings

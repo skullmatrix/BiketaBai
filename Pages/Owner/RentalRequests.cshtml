@@ -112,7 +112,7 @@
 
                                     <!-- Rental Details -->
                                     <div class="col-md-3">
-                                        @if (booking.BookingStatusId == 2 && !booking.LocationPermissionGranted && booking.LocationPermissionDeniedAt.HasValue)
+                                        @if (booking.BookingStatus == "Active" && !booking.LocationPermissionGranted && booking.LocationPermissionDeniedAt.HasValue)
                                         {
                                             <div class="alert alert-warning alert-sm mb-2" style="padding: 0.5rem; font-size: 0.875rem;">
                                                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -163,7 +163,7 @@
                                         </div>
 
                                         @{
-                                            var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethodId == 4);
+                                            var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethod == "Cash");
                                             var isCashPayment = cashPayment != null;
                                             var needsVerification = isCashPayment && cashPayment.PaymentStatus == "Pending";
                                         }
@@ -195,7 +195,7 @@
                                             }
                                         }
                                         
-                                        @if (booking.BookingStatusId == 2 && !booking.LocationPermissionGranted && booking.LocationPermissionDeniedAt.HasValue)
+                                        @if (booking.BookingStatus == "Active" && !booking.LocationPermissionGranted && booking.LocationPermissionDeniedAt.HasValue)
                                         {
                                             <div class="alert alert-danger mb-3">
                                                 <i class="bi bi-exclamation-triangle-fill"></i> <strong>Location Permission Denied</strong><br>
@@ -359,15 +359,15 @@
                                 </td>
                                 <td>₱@booking.TotalAmount.ToString("N2")</td>
                                 <td>
-                                    @switch (booking.BookingStatusId)
+                                    @switch (booking.BookingStatus)
                                     {
-                                        case 1:
+                                        case "Pending":
                                             <span class="badge bg-warning">Pending</span>
                                             break;
-                                        case 2:
+                                        case "Active":
                                             <span class="badge bg-success">Accepted</span>
                                             break;
-                                        case 4:
+                                        case "Cancelled":
                                             <span class="badge bg-danger">Rejected</span>
                                             break;
                                     }

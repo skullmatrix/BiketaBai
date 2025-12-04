@@ -43,14 +43,16 @@ public class TrackRenterModel : PageModel
             return NotFound();
         }
 
-        // Get owner information for store location
-        var owner = await _context.Users.FindAsync(userId.Value);
-        if (owner != null)
+        // Get primary store for owner
+        var primaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == userId.Value && s.IsPrimary && !s.IsDeleted);
+        
+        if (primaryStore != null)
         {
-            StoreLatitude = owner.StoreLatitude;
-            StoreLongitude = owner.StoreLongitude;
-            GeofenceRadiusKm = owner.GeofenceRadiusKm;
-            StoreName = owner.StoreName;
+            StoreLatitude = primaryStore.StoreLatitude;
+            StoreLongitude = primaryStore.StoreLongitude;
+            GeofenceRadiusKm = primaryStore.GeofenceRadiusKm;
+            StoreName = primaryStore.StoreName;
         }
 
         // Get latest location

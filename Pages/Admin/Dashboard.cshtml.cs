@@ -35,7 +35,6 @@ public class AdminDashboardModel : PageModel
     
     // Financial Statistics
     public decimal TotalRevenue { get; set; }
-    public decimal TotalWalletBalance { get; set; }
     
     // Environmental Impact
     public decimal TotalCO2Saved { get; set; }
@@ -93,12 +92,12 @@ public class AdminDashboardModel : PageModel
 
         // Bike statistics
         TotalBikes = await _context.Bikes.CountAsync();
-        AvailableBikes = await _context.Bikes.Where(b => b.AvailabilityStatusId == 1).CountAsync();
+        AvailableBikes = await _context.Bikes.Where(b => b.AvailabilityStatus == "Available").CountAsync();
 
         // Booking statistics
         TotalBookings = await _context.Bookings.CountAsync();
-        ActiveBookings = await _context.Bookings.Where(b => b.BookingStatusId == 2).CountAsync();
-        CompletedBookings = await _context.Bookings.Where(b => b.BookingStatusId == 3).CountAsync();
+        ActiveBookings = await _context.Bookings.Where(b => b.BookingStatus == "Active").CountAsync();
+        CompletedBookings = await _context.Bookings.Where(b => b.BookingStatus == "Completed").CountAsync();
 
         var today = DateTime.UtcNow.Date;
         TodayBookings = await _context.Bookings
@@ -112,11 +111,8 @@ public class AdminDashboardModel : PageModel
 
         // Revenue (10% service fee from all completed bookings)
         TotalRevenue = await _context.Bookings
-            .Where(b => b.BookingStatusId == 3)
+            .Where(b => b.BookingStatus == "Completed")
             .SumAsync(b => b.ServiceFee);
-
-        // Wallet statistics
-        TotalWalletBalance = await _context.Wallets.SumAsync(w => w.Balance);
 
         // CO2 saved
         var totalKmSaved = await _context.Bookings
@@ -135,7 +131,6 @@ public class AdminDashboardModel : PageModel
             .Include(b => b.Renter)
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
-            .Include(b => b.BookingStatus)
             .OrderByDescending(b => b.CreatedAt)
             .Take(10)
             .ToListAsync();
@@ -151,7 +146,7 @@ public class AdminDashboardModel : PageModel
         var bookingsWithBikes = await _context.Bookings
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
-            .Where(b => b.BookingStatusId == 3) // Completed
+            .Where(b => b.BookingStatus == "Completed")
             .ToListAsync();
 
         var bikeEarningsDict = bookingsWithBikes

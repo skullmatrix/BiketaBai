@@ -117,19 +117,6 @@
                         </div>
                     </div>
                     
-                    <!-- Wallet -->
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <div class="wallet-display-card">
-                                <i class="bi bi-wallet2"></i>
-                                <div>
-                                    <small class="text-muted">Wallet Balance</small>
-                                    <h5 class="mb-0 text-success">₱@(Model.UserWallet?.Balance.ToString("N2") ?? "0.00")</h5>
-                                </div>
-                                <a href="/Wallet/Index" class="btn btn-sm btn-outline-success">Manage</a>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -223,8 +210,8 @@
                                             <p class="mb-1 small text-muted">
                                                 <i class="bi bi-calendar"></i> @booking.StartDate.ToString("MMM dd, yyyy")
                                             </p>
-                                            <span class="badge bg-@(booking.BookingStatus.StatusName == "Completed" ? "success" : booking.BookingStatus.StatusName == "Active" ? "primary" : "warning")">
-                                                @booking.BookingStatus.StatusName
+                                            <span class="badge bg-@(booking.BookingStatus == "Completed" ? "success" : booking.BookingStatus == "Active" ? "primary" : "warning")">
+                                                @booking.BookingStatus
                                             </span>
                                         </div>
                                         <div class="text-end">

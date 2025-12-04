@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
+using BiketaBai.Models;
 using BiketaBai.Helpers;
 using BiketaBai.Services;
 using System.ComponentModel.DataAnnotations;
@@ -30,6 +31,7 @@ public class GeofenceSettingsModel : PageModel
     public InputModel Input { get; set; } = new();
 
     public Models.User? Owner { get; set; }
+    public Store? PrimaryStore { get; set; }
     public double? StoreLatitude { get; set; }
     public double? StoreLongitude { get; set; }
     public decimal CurrentGeofenceRadius { get; set; }
@@ -60,9 +62,13 @@ public class GeofenceSettingsModel : PageModel
         if (Owner == null)
             return NotFound();
 
-        HasStoreAddress = !string.IsNullOrWhiteSpace(Owner.StoreAddress);
+        // Get primary store
+        PrimaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == userId.Value && s.IsPrimary && !s.IsDeleted);
+
+        HasStoreAddress = PrimaryStore != null && !string.IsNullOrWhiteSpace(PrimaryStore.StoreAddress);
         
-        if (HasStoreAddress)
+        if (HasStoreAddress && PrimaryStore != null)
         {
             // Get or geocode store location
             var (lat, lon) = await _geofencingService.GetStoreLocationAsync(userId.Value);
@@ -70,8 +76,8 @@ public class GeofenceSettingsModel : PageModel
             StoreLongitude = lon;
         }
 
-        CurrentGeofenceRadius = Owner.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
-        Input.GeofenceRadiusKm = Owner.GeofenceRadiusKm;
+        CurrentGeofenceRadius = PrimaryStore?.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
+        Input.GeofenceRadiusKm = PrimaryStore?.GeofenceRadiusKm;
 
         return Page();
     }
@@ -94,30 +100,41 @@ public class GeofenceSettingsModel : PageModel
         if (Owner == null)
             return NotFound();
 
-        // Update geofence radius
+        // Get or create primary store
+        var primaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == userId.Value && s.IsPrimary && !s.IsDeleted);
+
+        if (primaryStore == null)
+        {
+            ErrorMessage = "Store not found. Please set up your store first.";
+            return await OnGetAsync();
+        }
+
+        // Update geofence radius in Store
         if (Input.GeofenceRadiusKm.HasValue)
         {
-            Owner.GeofenceRadiusKm = Input.GeofenceRadiusKm.Value;
+            primaryStore.GeofenceRadiusKm = Input.GeofenceRadiusKm.Value;
         }
         else
         {
-            // Reset to default
-            Owner.GeofenceRadiusKm = null;
+            // Reset to null (will use default)
+            primaryStore.GeofenceRadiusKm = null;
         }
 
         // If store address exists but coordinates don't, geocode it
-        if (!string.IsNullOrWhiteSpace(Owner.StoreAddress) && 
-            (!Owner.StoreLatitude.HasValue || !Owner.StoreLongitude.HasValue))
+        if (!string.IsNullOrWhiteSpace(primaryStore.StoreAddress) && 
+            (!primaryStore.StoreLatitude.HasValue || !primaryStore.StoreLongitude.HasValue))
         {
-            var geocodeResult = await _addressValidationService.ValidateAddressAsync(Owner.StoreAddress);
+            var geocodeResult = await _addressValidationService.ValidateAddressAsync(primaryStore.StoreAddress);
             if (geocodeResult.IsValid && geocodeResult.Latitude.HasValue && geocodeResult.Longitude.HasValue)
             {
-                Owner.StoreLatitude = geocodeResult.Latitude.Value;
-                Owner.StoreLongitude = geocodeResult.Longitude.Value;
+                primaryStore.StoreLatitude = geocodeResult.Latitude.Value;
+                primaryStore.StoreLongitude = geocodeResult.Longitude.Value;
+                primaryStore.UpdatedAt = DateTime.UtcNow;
             }
         }
 
-        Owner.UpdatedAt = DateTime.UtcNow;
+        primaryStore.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         SuccessMessage = "Geofence settings updated successfully!";

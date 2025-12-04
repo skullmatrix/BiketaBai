@@ -31,14 +31,16 @@ public class TrackRentersModel : PageModel
         if (!userId.HasValue)
             return RedirectToPage("/Account/Login");
 
-        // Get owner information for store location
-        var owner = await _context.Users.FindAsync(userId.Value);
-        if (owner != null)
+        // Get primary store for owner
+        var primaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == userId.Value && s.IsPrimary && !s.IsDeleted);
+        
+        if (primaryStore != null)
         {
-            StoreLatitude = owner.StoreLatitude;
-            StoreLongitude = owner.StoreLongitude;
-            GeofenceRadiusKm = owner.GeofenceRadiusKm;
-            StoreName = owner.StoreName;
+            StoreLatitude = primaryStore.StoreLatitude;
+            StoreLongitude = primaryStore.StoreLongitude;
+            GeofenceRadiusKm = primaryStore.GeofenceRadiusKm;
+            StoreName = primaryStore.StoreName;
         }
 
         // Get all active bookings for this owner's bikes
@@ -46,7 +48,7 @@ public class TrackRentersModel : PageModel
             .Include(b => b.Bike)
             .Include(b => b.Renter)
             .Include(b => b.LocationTracking.OrderByDescending(lt => lt.TrackedAt).Take(1))
-            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatusId == 2) // Active
+            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatus == "Active")
             .OrderByDescending(b => b.StartDate)
             .ToListAsync();
 

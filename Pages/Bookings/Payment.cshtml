@@ -63,7 +63,7 @@
                 <div class="alert-minimal alert-minimal-info mb-4">
                     <i class="bi bi-info-circle-fill"></i>
                     <div>
-                        <strong>Current Payment:</strong> @Model.ExistingPayment.PaymentMethod.MethodName (@Model.ExistingPayment.PaymentStatus)
+                        <strong>Current Payment:</strong> @Model.ExistingPayment.PaymentMethod (@Model.ExistingPayment.PaymentStatus)
                         <br />
                         <small>You can change your payment method below.</small>
                     </div>
@@ -109,30 +109,6 @@
                 </div>
                 <form method="post">
                     <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-                        <!-- Wallet -->
-                        <label class="payment-option @(Model.PaymentMethodId == 1 ? "selected" : "")" 
-                               data-method="wallet">
-                            <input type="radio" name="PaymentMethodId" value="1" @(Model.PaymentMethodId == 1 ? "checked" : "") />
-                            <div class="payment-option-content">
-                                <div class="payment-icon" style="background: var(--sage-subtle); color: var(--sage-primary);">
-                                    <i class="bi bi-wallet2"></i>
-                                </div>
-                                <div class="payment-details">
-                                    <div class="payment-name">Wallet</div>
-                                    <div class="payment-subtitle">
-                                        Balance: ₱<span id="walletBalance">@Model.WalletBalance.ToString("F2")</span>
-                                        @if (Model.WalletBalance < Model.Booking.TotalAmount)
-                                        {
-                                            <span style="color: var(--error);"> • Insufficient</span>
-                                        }
-                                    </div>
-                                </div>
-                                <div class="payment-check">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </div>
-                            </div>
-                        </label>
-
                         <!-- GCash -->
                         <label class="payment-option @(Model.PaymentMethodId == 2 ? "selected" : "")" 
                                data-method="gcash">

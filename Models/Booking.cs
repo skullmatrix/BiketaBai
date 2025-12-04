@@ -45,8 +45,9 @@ public class Booking
     public decimal TotalAmount { get; set; }
 
     [Required]
-    [Column("booking_status_id")]
-    public int BookingStatusId { get; set; }
+    [MaxLength(50)]
+    [Column("booking_status")]
+    public string BookingStatus { get; set; } = "Pending"; // Pending, Active, Completed, Cancelled
 
     [Column("distance_saved_km")]
     public decimal? DistanceSavedKm { get; set; }
@@ -113,9 +114,6 @@ public class Booking
 
     [ForeignKey("BikeId")]
     public virtual Bike Bike { get; set; } = null!;
-
-    [ForeignKey("BookingStatusId")]
-    public virtual BookingStatus BookingStatus { get; set; } = null!;
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();

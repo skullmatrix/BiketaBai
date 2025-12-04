@@ -146,7 +146,7 @@ public class AddBikeModel : PageModel
                 HourlyRate = Input.HourlyRate ?? 0,
                 DailyRate = Input.DailyRate ?? 0,
                 Quantity = Input.Quantity,
-                AvailabilityStatusId = 1, // Available
+                AvailabilityStatus = "Available",
                 ViewCount = 0,
                 BookingCount = 0,
                 CreatedAt = DateTime.UtcNow,

@@ -49,7 +49,6 @@ public class DetailsModel : PageModel
         Bike = await _context.Bikes
             .Include(b => b.BikeType)
             .Include(b => b.Owner)
-            .Include(b => b.AvailabilityStatus)
             .Include(b => b.BikeImages)
             .FirstOrDefaultAsync(b => b.BikeId == id);
 
@@ -125,7 +124,7 @@ public class DetailsModel : PageModel
         {
             // Check if user has any completed bookings
             var hasCompletedBooking = await _context.Bookings
-                .AnyAsync(b => b.RenterId == userId.Value && b.BookingStatusId == 3); // 3 = Completed
+                .AnyAsync(b => b.RenterId == userId.Value && b.BookingStatus == "Completed");
 
             if (!hasCompletedBooking)
             {

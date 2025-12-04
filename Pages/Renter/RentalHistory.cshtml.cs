@@ -49,31 +49,30 @@ namespace BiketaBai.Pages.Renter
                     .ThenInclude(bike => bike.BikeImages)
                 .Include(b => b.Bike.BikeType)
                 .Include(b => b.Bike.Owner)
-                .Include(b => b.BookingStatus)
                 .Where(b => b.RenterId == userId)
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync();
 
             // Categorize bookings
             CurrentBookings = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Pending" || 
-                           b.BookingStatus.StatusName == "Confirmed" ||
-                           b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Pending" || 
+                           b.BookingStatus == "Confirmed" ||
+                           b.BookingStatus == "Active")
                 .ToList();
 
             PastBookings = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Completed")
+                .Where(b => b.BookingStatus == "Completed")
                 .ToList();
 
             CancelledBookings = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Cancelled")
+                .Where(b => b.BookingStatus == "Cancelled")
                 .ToList();
 
             // Calculate statistics
             TotalRentals = allBookings.Count();
             TotalSpent = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Completed" || 
-                           b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Completed" || 
+                           b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount);
             ActiveRentals = CurrentBookings.Count;
             CompletedRentals = PastBookings.Count;

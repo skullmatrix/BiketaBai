@@ -12,24 +12,21 @@ public class PaymentModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly PaymentService _paymentService;
-    private readonly WalletService _walletService;
 
-    public PaymentModel(BiketaBaiDbContext context, PaymentService paymentService, WalletService walletService)
+    public PaymentModel(BiketaBaiDbContext context, PaymentService paymentService)
     {
         _context = context;
         _paymentService = paymentService;
-        _walletService = walletService;
     }
 
     public Booking? Booking { get; set; }
-    public decimal WalletBalance { get; set; }
     public string? ErrorMessage { get; set; }
     public string? SuccessMessage { get; set; }
     public Payment? ExistingPayment { get; set; }
     public int? CurrentPaymentMethodId { get; set; }
 
     [BindProperty]
-    public int PaymentMethodId { get; set; } = 1;
+    public int PaymentMethodId { get; set; } = 2; // Default to GCash (Wallet removed)
 
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
@@ -48,8 +45,6 @@ public class PaymentModel : PageModel
         if (Booking == null)
             return NotFound();
 
-        WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
-
         // Check for existing pending payment
         ExistingPayment = Booking.Payments
             .OrderByDescending(p => p.PaymentDate)
@@ -57,15 +52,16 @@ public class PaymentModel : PageModel
 
         if (ExistingPayment != null)
         {
-            CurrentPaymentMethodId = ExistingPayment.PaymentMethodId;
-            PaymentMethodId = ExistingPayment.PaymentMethodId; // Pre-select current method
+            // Map payment method string back to ID for UI
+            CurrentPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
+            PaymentMethodId = CurrentPaymentMethodId ?? 2; // Default to GCash
         }
         else
         {
             // Ensure default is set if no existing payment
             if (PaymentMethodId == 0)
             {
-                PaymentMethodId = 1; // Default to Wallet
+                PaymentMethodId = 2; // Default to GCash (Wallet removed)
             }
         }
 
@@ -90,7 +86,6 @@ public class PaymentModel : PageModel
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
             .Include(b => b.Payments)
-                .ThenInclude(p => p.PaymentMethod)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
         if (Booking == null)
@@ -100,7 +95,6 @@ public class PaymentModel : PageModel
         if (!Booking.LocationPermissionGranted)
         {
             ErrorMessage = "Location permission is required to proceed with payment. Please enable location access first.";
-            WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
             
             // Check for existing pending payment
             ExistingPayment = Booking.Payments
@@ -109,14 +103,12 @@ public class PaymentModel : PageModel
             
             if (ExistingPayment != null)
             {
-                CurrentPaymentMethodId = ExistingPayment.PaymentMethodId;
-                PaymentMethodId = ExistingPayment.PaymentMethodId;
+                CurrentPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
+                PaymentMethodId = CurrentPaymentMethodId ?? 2;
             }
             
             return Page();
         }
-
-        WalletBalance = await _walletService.GetBalanceAsync(userId.Value);
 
         // Check for existing pending payment
         ExistingPayment = Booking.Payments
@@ -124,47 +116,23 @@ public class PaymentModel : PageModel
             .FirstOrDefault(p => p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed");
 
         // If user is changing payment method and there's a pending payment, cancel it
-        if (ExistingPayment != null && ExistingPayment.PaymentMethodId != PaymentMethodId)
+        if (ExistingPayment != null)
         {
-            // Cancel/void the existing pending payment
-            if (ExistingPayment.PaymentStatus == "Pending" && !string.IsNullOrEmpty(ExistingPayment.TransactionReference))
+            var existingPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
+            if (existingPaymentMethodId.HasValue && existingPaymentMethodId.Value != PaymentMethodId)
             {
-                // For gateway payments, we can mark as cancelled
-                // The gateway will handle expiry
-                ExistingPayment.PaymentStatus = "Cancelled";
-                ExistingPayment.Notes = $"Cancelled - user changed to payment method {PaymentMethodId}";
-                await _context.SaveChangesAsync();
+                // Cancel/void the existing pending payment
+                if (ExistingPayment.PaymentStatus == "Pending" && !string.IsNullOrEmpty(ExistingPayment.TransactionReference))
+                {
+                    ExistingPayment.PaymentStatus = "Cancelled";
+                    ExistingPayment.Notes = $"Cancelled - user changed payment method";
+                    await _context.SaveChangesAsync();
+                }
             }
         }
 
         // Handle different payment methods
-        if (PaymentMethodId == 1) // Wallet
-        {
-            // Validate wallet balance
-            if (WalletBalance < Booking.TotalAmount)
-        {
-            ErrorMessage = "Insufficient wallet balance. Please top up your wallet or choose another payment method.";
-            return Page();
-        }
-
-            // Process wallet payment
-            var result = await _paymentService.ProcessPaymentAsync(
-                bookingId,
-                PaymentMethodId,
-                Booking.TotalAmount
-            );
-
-            if (result.success)
-            {
-                return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
-            }
-            else
-            {
-                ErrorMessage = result.message;
-                return Page();
-            }
-        }
-        else if (PaymentMethodId == 4) // Cash
+        if (PaymentMethodId == 4) // Cash
         {
             // Process cash payment
         var result = await _paymentService.ProcessPaymentAsync(
@@ -215,6 +183,19 @@ public class PaymentModel : PageModel
                 return Page();
             }
         }
+    }
+
+    private int? MapPaymentMethodToId(string paymentMethod)
+    {
+        return paymentMethod switch
+        {
+            "GCash" => 2,
+            "QRPH" => 3,
+            "Cash" => 4,
+            "PayMaya" => 5,
+            "Credit/Debit Card" => 6,
+            _ => null
+        };
     }
 }
 

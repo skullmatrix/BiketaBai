@@ -58,8 +58,7 @@ public class RentalRequestsModel : PageModel
                 .ThenInclude(b => b.BikeType)
             .Include(b => b.Renter)
             .Include(b => b.Payments)
-                .ThenInclude(p => p.PaymentMethod)
-            .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatusId == 1)
+            .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatus == "Pending")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -67,7 +66,7 @@ public class RentalRequestsModel : PageModel
         AcceptedRequests = await _context.Bookings
             .Include(b => b.Bike)
             .Include(b => b.Renter)
-            .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatusId == 2)
+            .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatus == "Active")
             .OrderByDescending(b => b.CreatedAt)
             .Take(10)
             .ToListAsync();
@@ -76,7 +75,7 @@ public class RentalRequestsModel : PageModel
         AllRequests = await _context.Bookings
             .Include(b => b.Bike)
             .Include(b => b.Renter)
-            .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatusId != 3) // Not completed
+            .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatus != "Completed")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -111,7 +110,7 @@ public class RentalRequestsModel : PageModel
         }
 
         // Check if already accepted
-        if (booking.BookingStatusId != 1) // Not pending
+        if (booking.BookingStatus != "Pending")
         {
             TempData["ErrorMessage"] = "This booking has already been processed.";
             return RedirectToPage();
@@ -119,12 +118,12 @@ public class RentalRequestsModel : PageModel
 
         try
         {
-            // Update booking status to Active (2)
-            booking.BookingStatusId = 2;
+            // Update booking status to Active
+            booking.BookingStatus = "Active";
             booking.UpdatedAt = DateTime.UtcNow;
 
-            // Update bike availability to Rented (2)
-            booking.Bike.AvailabilityStatusId = 2;
+            // Update bike availability to Rented
+            booking.Bike.AvailabilityStatus = "Rented";
             booking.Bike.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -192,7 +191,7 @@ public class RentalRequestsModel : PageModel
         }
 
         // Check if already processed
-        if (booking.BookingStatusId != 1) // Not pending
+        if (booking.BookingStatus != "Pending")
         {
             TempData["ErrorMessage"] = "This booking has already been processed.";
             return RedirectToPage();
@@ -200,32 +199,11 @@ public class RentalRequestsModel : PageModel
 
         try
         {
-            // Update booking status to Cancelled (4)
-            booking.BookingStatusId = 4;
+            // Update booking status to Cancelled
+            booking.BookingStatus = "Cancelled";
             booking.UpdatedAt = DateTime.UtcNow;
 
-            // Refund the renter if payment was made
-            if (booking.Payments != null && booking.Payments.Any())
-            {
-                var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == booking.RenterId);
-                if (wallet != null)
-                {
-                    // Full refund
-                    wallet.Balance += booking.TotalAmount;
-                    wallet.UpdatedAt = DateTime.UtcNow;
-
-                    // Create transaction record
-                    var transaction = new CreditTransaction
-                    {
-                        WalletId = wallet.WalletId,
-                        Amount = booking.TotalAmount,
-                        TransactionTypeId = 1, // Credit
-                        Description = $"Refund for rejected booking - {booking.Bike.Brand} {booking.Bike.Model}",
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    _context.CreditTransactions.Add(transaction);
-                }
-            }
+            // Note: Wallet refund functionality removed. For rejected bookings, payment should be handled through payment gateway refund process.
 
             await _context.SaveChangesAsync();
 
@@ -236,12 +214,12 @@ public class RentalRequestsModel : PageModel
             await _notificationService.CreateNotificationAsync(
                 booking.RenterId,
                 "Booking Rejected",
-                $"Your rental request for {booking.Bike.Brand} {booking.Bike.Model} has been declined. Full refund has been processed.",
-                "/Wallet/Index"
+                $"Your rental request for {booking.Bike.Brand} {booking.Bike.Model} has been declined. Please contact support for refund if payment was already made.",
+                "/Dashboard/Renter"
             );
 
             _logger.LogInformation($"Booking {booking.BookingId} rejected by owner {userId}");
-            TempData["SuccessMessage"] = $"Rental request from {booking.Renter.FullName} has been rejected. Refund processed.";
+            TempData["SuccessMessage"] = $"Rental request from {booking.Renter.FullName} has been rejected. Please contact support for refund if payment was already made.";
         }
         catch (Exception ex)
         {
@@ -265,7 +243,6 @@ public class RentalRequestsModel : PageModel
             .Include(b => b.Bike)
             .Include(b => b.Renter)
             .Include(b => b.Payments)
-                .ThenInclude(p => p.PaymentMethod)
             .FirstOrDefaultAsync(b => b.BookingId == id);
 
         if (booking == null)
@@ -282,14 +259,14 @@ public class RentalRequestsModel : PageModel
         }
 
         // Check if booking is pending
-        if (booking.BookingStatusId != 1)
+        if (booking.BookingStatus != "Pending")
         {
             TempData["ErrorMessage"] = "This booking has already been processed.";
             return RedirectToPage();
         }
 
         // Find cash payment
-        var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethodId == 4 && p.PaymentStatus == "Pending");
+        var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethod == "Cash" && p.PaymentStatus == "Pending");
         if (cashPayment == null)
         {
             TempData["ErrorMessage"] = "No pending cash payment found for this booking.";
@@ -328,11 +305,11 @@ public class RentalRequestsModel : PageModel
             booking.OwnerConfirmedAt = verificationTime; // Record when owner confirmed
 
             // Activate booking
-            booking.BookingStatusId = 2; // Active
+            booking.BookingStatus = "Active";
             booking.UpdatedAt = DateTime.UtcNow;
 
             // Update bike status to Rented
-            booking.Bike.AvailabilityStatusId = 2; // Rented
+            booking.Bike.AvailabilityStatus = "Rented";
             booking.Bike.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

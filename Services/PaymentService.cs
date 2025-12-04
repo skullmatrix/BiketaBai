@@ -10,20 +10,17 @@ namespace BiketaBai.Services;
 public class PaymentService
 {
     private readonly BiketaBaiDbContext _context;
-    private readonly WalletService _walletService;
     private readonly NotificationService _notificationService;
     private readonly PaymentGatewayService _paymentGatewayService;
     private readonly IConfiguration _configuration;
 
     public PaymentService(
         BiketaBaiDbContext context, 
-        WalletService walletService, 
         NotificationService notificationService, 
         PaymentGatewayService paymentGatewayService,
         IConfiguration configuration)
     {
         _context = context;
-        _walletService = walletService;
         _notificationService = notificationService;
         _paymentGatewayService = paymentGatewayService;
         _configuration = configuration;
@@ -40,11 +37,22 @@ public class PaymentService
         if (booking == null)
             return (false, "Booking not found");
 
+        // Map payment method ID to string
+        string paymentMethodString = paymentMethodId switch
+        {
+            2 => "GCash",
+            3 => "QRPH",
+            4 => "Cash",
+            5 => "PayMaya",
+            6 => "Credit/Debit Card",
+            _ => "Unknown"
+        };
+
         // Create payment record
         var payment = new Payment
         {
             BookingId = bookingId,
-            PaymentMethodId = paymentMethodId,
+            PaymentMethod = paymentMethodString,
             Amount = amount,
             PaymentStatus = "Pending",
             TransactionReference = transactionReference ?? Guid.NewGuid().ToString(),
@@ -57,17 +65,6 @@ public class PaymentService
 
         switch (paymentMethodId)
         {
-            case 1: // Wallet
-                paymentSuccess = await _walletService.DeductFromWalletAsync(
-                    booking.RenterId,
-                    amount,
-                    3, // Rental Payment
-                    $"Payment for booking #{bookingId}",
-                    $"Booking-{bookingId}"
-                );
-                message = paymentSuccess ? "Payment successful via Wallet" : "Insufficient wallet balance";
-                break;
-
             case 2: // GCash
             case 5: // PayMaya
             case 3: // QRPH
@@ -138,17 +135,17 @@ public class PaymentService
             // For other payments, activate booking immediately
             if (paymentMethodId == 4) // Cash
             {
-                // Booking stays Pending (status 1) until owner verifies payment
-                booking.BookingStatusId = 1; // Pending
+                // Booking stays Pending until owner verifies payment
+                booking.BookingStatus = "Pending";
                 // Bike status remains Available until payment is verified
                 // Don't change bike status here
             }
             else
             {
                 // For non-cash payments, activate booking immediately
-                booking.BookingStatusId = 2; // Active
+                booking.BookingStatus = "Active";
                 // Update bike status to Rented
-                booking.Bike.AvailabilityStatusId = 2; // Rented
+                booking.Bike.AvailabilityStatus = "Rented";
                 booking.Bike.UpdatedAt = DateTime.UtcNow;
             }
             
@@ -222,16 +219,8 @@ public class PaymentService
         var payment = booking.Payments.FirstOrDefault(p => p.PaymentStatus == "Completed");
         if (payment == null) return false;
 
-        // Add refund to renter's wallet
-        await _walletService.AddToWalletAsync(
-            booking.RenterId,
-            refundAmount,
-            5, // Refund
-            $"Refund for cancelled booking #{bookingId}",
-            $"Booking-{bookingId}"
-        );
-
-        // Update payment record
+        // Update payment record for refund
+        // Note: Refunds will be processed through payment gateway or manual transfer
         payment.RefundAmount = refundAmount;
         payment.RefundDate = DateTime.UtcNow;
         payment.PaymentStatus = "Refunded";
@@ -241,7 +230,7 @@ public class PaymentService
         await _notificationService.CreateNotificationAsync(
             booking.RenterId,
             "Refund Processed",
-            $"₱{refundAmount:F2} has been refunded to your wallet for booking #{bookingId}",
+            $"₱{refundAmount:F2} refund has been processed for booking #{bookingId}. Please check your payment method for the refund.",
             "Payment"
         );
 
@@ -264,19 +253,14 @@ public class PaymentService
         var serviceFee = booking.TotalAmount * (serviceFeePercentage / 100);
         var ownerEarnings = booking.TotalAmount - serviceFee;
 
-        // Add earnings to owner's wallet
-        await _walletService.AddToWalletAsync(
-            booking.Bike.OwnerId,
-            ownerEarnings,
-            4, // Rental Earnings
-            $"Earnings from booking #{bookingId}",
-            $"Booking-{bookingId}"
-        );
-
+        // Note: Earnings distribution - owners receive payments directly through payment gateway
+        // Platform fee is handled at payment processing time
+        // No wallet needed - earnings go directly to owner's payment method
+        
         await _notificationService.CreateNotificationAsync(
             booking.Bike.OwnerId,
-            "Earnings Received",
-            $"₱{ownerEarnings:F2} has been added to your wallet from booking #{bookingId}",
+            "Payment Received",
+            $"₱{ownerEarnings:F2} has been received from booking #{bookingId}.",
             "Payment"
         );
 
@@ -288,7 +272,6 @@ public class PaymentService
         return await _context.Payments
             .Include(p => p.Booking)
             .ThenInclude(b => b.Bike)
-            .Include(p => p.PaymentMethod)
             .Where(p => p.Booking.RenterId == userId || p.Booking.Bike.OwnerId == userId)
             .OrderByDescending(p => p.PaymentDate)
             .Skip((pageNumber - 1) * pageSize)
@@ -303,7 +286,6 @@ public class PaymentService
     {
         return paymentMethodId switch
         {
-            1 => "Wallet",
             2 => "GCash",
             3 => "QRPH",
             4 => "Cash",
@@ -361,11 +343,21 @@ public class PaymentService
 
             if (paymentIntent.Success && !string.IsNullOrEmpty(paymentIntent.PaymentIntentId))
             {
+                // Map payment method ID to string
+                string paymentMethodString = paymentMethodId switch
+                {
+                    2 => "GCash",
+                    3 => "QRPH",
+                    5 => "PayMaya",
+                    6 => "Credit/Debit Card",
+                    _ => "GCash"
+                };
+
                 // Create pending payment record
                 var payment = new Payment
                 {
                     BookingId = bookingId,
-                    PaymentMethodId = paymentMethodId,
+                    PaymentMethod = paymentMethodString,
                     Amount = amount,
                     PaymentStatus = "Pending",
                     TransactionReference = paymentIntent.PaymentIntentId,
@@ -419,11 +411,11 @@ public class PaymentService
                 payment.PaymentDate = DateTime.UtcNow;
 
                 // Update booking status
-                payment.Booking.BookingStatusId = 2; // Active
+                payment.Booking.BookingStatus = "Active";
                 payment.Booking.UpdatedAt = DateTime.UtcNow;
 
                 // Update bike status
-                payment.Booking.Bike.AvailabilityStatusId = 2; // Rented
+                payment.Booking.Bike.AvailabilityStatus = "Rented";
                 payment.Booking.Bike.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();

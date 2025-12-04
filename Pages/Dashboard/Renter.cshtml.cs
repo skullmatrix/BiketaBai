@@ -38,7 +38,6 @@ public class RenterDashboardModel : PageModel
         // Get recent bookings
         RecentBookings = await _context.Bookings
             .Include(b => b.Bike)
-            .Include(b => b.BookingStatus)
             .Where(b => b.RenterId == userId.Value)
             .OrderByDescending(b => b.CreatedAt)
             .Take(10)
@@ -47,11 +46,11 @@ public class RenterDashboardModel : PageModel
         // Calculate stats
         ActiveRentalsCount = ActiveBookings.Count;
         TotalRentalsCount = await _context.Bookings
-            .Where(b => b.RenterId == userId.Value && b.BookingStatusId == 3) // Completed
+            .Where(b => b.RenterId == userId.Value && b.BookingStatus == "Completed")
             .CountAsync();
         
         TotalSpent = await _context.Bookings
-            .Where(b => b.RenterId == userId.Value && b.BookingStatusId == 3)
+            .Where(b => b.RenterId == userId.Value && b.BookingStatus == "Completed")
             .SumAsync(b => b.TotalAmount);
 
         var totalKmSaved = await _context.Bookings

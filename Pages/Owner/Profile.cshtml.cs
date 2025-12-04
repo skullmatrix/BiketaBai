@@ -27,8 +27,7 @@ namespace BiketaBai.Pages.Owner
         public double AverageRating { get; set; }
         public int TotalReviews { get; set; }
 
-        // Wallet & Payout
-        public BiketaBai.Models.Wallet? UserWallet { get; set; }
+        // Payout
         public decimal PendingPayout { get; set; }
         public decimal LifetimeEarnings { get; set; }
 
@@ -74,7 +73,6 @@ namespace BiketaBai.Pages.Owner
 
             // Load bookings for owner's bikes
             var allBookings = await _context.Bookings
-                .Include(b => b.BookingStatus)
                 .Include(b => b.Bike)
                     .ThenInclude(bike => bike.BikeImages)
                 .Include(b => b.Renter)
@@ -82,22 +80,19 @@ namespace BiketaBai.Pages.Owner
                 .ToListAsync();
 
             TotalBookings = allBookings.Count;
-            CompletedBookings = allBookings.Count(b => b.BookingStatus.StatusName == "Completed");
+            CompletedBookings = allBookings.Count(b => b.BookingStatus == "Completed");
             
             // Calculate earnings (90% to owner, 10% platform fee)
             TotalEarnings = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Completed" || b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Completed" || b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount * 0.90m);
             
             LifetimeEarnings = TotalEarnings;
             
             // Calculate pending payout (from active bookings)
             PendingPayout = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount * 0.90m);
-
-            // Load wallet
-            UserWallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
 
             // Load ratings (renters rating this owner)
             var ratingsReceived = await _context.Ratings

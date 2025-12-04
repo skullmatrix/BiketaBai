@@ -157,16 +157,6 @@
 
         <!-- Secondary Stats - Compact Row -->
         <div class="admin-secondary-stats">
-            <!-- Wallet Balance -->
-            <div class="admin-mini-stat">
-                <div class="admin-mini-icon">
-                    <i class="bi bi-wallet2"></i>
-                </div>
-                <div class="admin-mini-content">
-                    <h4>₱@Model.TotalWalletBalance.ToString("N0")</h4>
-                    <p>Total Wallet Balance</p>
-                </div>
-            </div>
 
             <!-- Today's Bookings -->
             <div class="admin-mini-stat">
@@ -390,8 +380,8 @@
                                                     <i class="bi bi-person"></i> @booking.Renter.FullName
                                                 </div>
                                                 <div style="display: flex; gap: var(--admin-space-sm); align-items: center; flex-wrap: wrap;">
-                                                    <span class="admin-badge @(booking.BookingStatus.StatusName == "Completed" ? "emerald" : booking.BookingStatus.StatusName == "Active" ? "blue" : booking.BookingStatus.StatusName == "Cancelled" ? "red" : "amber")">
-                                                        @booking.BookingStatus.StatusName
+                                                    <span class="admin-badge @(booking.BookingStatus == "Completed" ? "emerald" : booking.BookingStatus == "Active" ? "blue" : booking.BookingStatus == "Cancelled" ? "red" : "amber")">
+                                                        @booking.BookingStatus
                                                     </span>
                                                     <strong style="color: var(--admin-sage-dark);">₱@booking.TotalAmount.ToString("N2")</strong>
                                                 </div>

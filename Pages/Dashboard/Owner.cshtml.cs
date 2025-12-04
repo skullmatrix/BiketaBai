@@ -61,7 +61,7 @@ public class OwnerDashboardModel : PageModel
         ActiveBookings = await _context.Bookings
             .Include(b => b.Bike)
             .Include(b => b.Renter)
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatusId == 2) // Active
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Active")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -69,8 +69,8 @@ public class OwnerDashboardModel : PageModel
         PendingBookings = await _context.Bookings
             .Include(b => b.Bike)
             .Include(b => b.Renter)
-            .Include(b => b.Payments).ThenInclude(p => p.PaymentMethod)
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatusId == 1) // Pending
+            .Include(b => b.Payments)
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Pending")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -80,7 +80,7 @@ public class OwnerDashboardModel : PageModel
             .Include(b => b.Bike)
             .Include(b => b.Renter)
             .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                       b.BookingStatusId == 2 && // Active
+                       b.BookingStatus == "Active" &&
                        b.EndDate < now) // Overdue
             .OrderBy(b => b.EndDate)
             .ToListAsync();
@@ -89,7 +89,6 @@ public class OwnerDashboardModel : PageModel
         RecentBookings = await _context.Bookings
             .Include(b => b.Bike)
             .Include(b => b.Renter)
-            .Include(b => b.BookingStatus)
             .Where(b => ownerBikeIds.Contains(b.BikeId))
             .OrderByDescending(b => b.CreatedAt)
             .Take(10)
@@ -113,11 +112,11 @@ public class OwnerDashboardModel : PageModel
         OverdueCount = OverdueBookings.Count;
         
         TotalEarnings = await _context.Bookings
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatusId == 3) // Completed
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Completed")
             .SumAsync(b => b.TotalAmount * 0.9m); // 90% after service fee
 
         PendingEarnings = await _context.Bookings
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatusId == 2) // Active
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Active")
             .SumAsync(b => b.TotalAmount * 0.9m);
 
         var ownerRatings = await _context.Ratings

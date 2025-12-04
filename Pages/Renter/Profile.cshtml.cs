@@ -28,9 +28,6 @@ namespace BiketaBai.Pages.Renter
         public double AverageRating { get; set; }
         public int TotalReviews { get; set; }
 
-        // Wallet
-        public BiketaBai.Models.Wallet? UserWallet { get; set; }
-
         // Recent Activity
         public List<Booking> RecentBookings { get; set; } = new List<Booking>();
 
@@ -66,7 +63,6 @@ namespace BiketaBai.Pages.Renter
 
             // Load statistics
             var allBookings = await _context.Bookings
-                .Include(b => b.BookingStatus)
                 .Include(b => b.Bike)
                     .ThenInclude(bike => bike.BikeImages)
                 .Include(b => b.Bike.BikeType)
@@ -74,16 +70,12 @@ namespace BiketaBai.Pages.Renter
                 .ToListAsync();
 
             TotalRentals = allBookings.Count;
-            CompletedRentals = allBookings.Count(b => b.BookingStatus.StatusName == "Completed");
+            CompletedRentals = allBookings.Count(b => b.BookingStatus == "Completed");
             ActiveRentals = allBookings.Count(b => 
-                b.BookingStatus.StatusName == "Active" || 
-                b.BookingStatus.StatusName == "Confirmed");
+                b.BookingStatus == "Active");
             TotalSpent = allBookings
-                .Where(b => b.BookingStatus.StatusName == "Completed" || b.BookingStatus.StatusName == "Active")
+                .Where(b => b.BookingStatus == "Completed" || b.BookingStatus == "Active")
                 .Sum(b => b.TotalAmount);
-
-            // Load wallet
-            UserWallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
 
             // Load ratings given by others to this renter (owner rating renter)
             var ratingsReceived = await _context.Ratings

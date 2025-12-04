@@ -133,10 +133,6 @@
                                             <i class="bi bi-calendar"></i>
                                             @user.CreatedAt.ToString("MMM dd, yyyy")
                                         </span>
-                                        <span class="premium-meta-item wallet-balance">
-                                            <i class="bi bi-wallet2"></i>
-                                            Balance: ₱@(Model.UserBalances.ContainsKey(user.UserId) ? Model.UserBalances[user.UserId].ToString("N2") : "0.00")
-                                        </span>
                 </div>
             </div>
         </div>
@@ -224,12 +220,6 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <div class="premium-dropdown-menu">
-                                            <button type="button" 
-                                                    class="premium-dropdown-item"
-                                                    onclick="openAddBalanceModal(@user.UserId, '@user.FullName', @(Model.UserBalances.ContainsKey(user.UserId) ? Model.UserBalances[user.UserId] : 0))">
-                                                <i class="bi bi-wallet2"></i>
-                                                Add Balance
-                                            </button>
                                             @if (user.IsOwner && user.VerificationStatus != "Approved")
                                             {
                                                 <form method="post" asp-page-handler="ApproveOwner" asp-route-userId="@user.UserId" class="premium-form-inline">
@@ -1171,80 +1161,6 @@
     console.log('✨ Premium Manage Users loaded');
 })();
 
-// Add Balance Modal
-function openAddBalanceModal(userId, userName, currentBalance) {
-    document.getElementById('addBalanceUserId').value = userId;
-    document.getElementById('addBalanceUserName').textContent = userName;
-    document.getElementById('addBalanceCurrentBalance').textContent = '₱' + currentBalance.toFixed(2);
-    document.getElementById('addBalanceAmount').value = '';
-    document.getElementById('addBalanceDescription').value = '';
-    document.getElementById('addBalanceModal').style.display = 'flex';
-}
-
-function closeAddBalanceModal() {
-    document.getElementById('addBalanceModal').style.display = 'none';
-}
-
-// Close modal when clicking outside
-document.getElementById('addBalanceModal')?.addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeAddBalanceModal();
-    }
-});
-</script>
-
-<!-- Add Balance Modal -->
-<div id="addBalanceModal" class="premium-modal" style="display: none;">
-    <div class="premium-modal-content">
-        <div class="premium-modal-header">
-            <h2><i class="bi bi-wallet2"></i> Add Balance</h2>
-            <button type="button" class="premium-modal-close" onclick="closeAddBalanceModal()">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <form method="post" asp-page-handler="AddBalance">
-            <input type="hidden" id="addBalanceUserId" name="userId" />
-            <div class="premium-modal-body">
-                <div class="premium-form-group">
-                    <label>User</label>
-                    <div class="premium-form-value" id="addBalanceUserName"></div>
-                </div>
-                <div class="premium-form-group">
-                    <label>Current Balance</label>
-                    <div class="premium-form-value" id="addBalanceCurrentBalance"></div>
-                </div>
-                <div class="premium-form-group">
-                    <label for="addBalanceAmount">Amount to Add <span class="text-danger">*</span></label>
-                    <input type="number" 
-                           id="addBalanceAmount" 
-                           name="amount" 
-                           class="premium-form-input" 
-                           step="0.01" 
-                           min="0.01" 
-                           max="100000" 
-                           required 
-                           placeholder="0.00" />
-                    <small class="premium-form-hint">Maximum: ₱100,000</small>
-                </div>
-                <div class="premium-form-group">
-                    <label for="addBalanceDescription">Description (Optional)</label>
-                    <textarea id="addBalanceDescription" 
-                              name="description" 
-                              class="premium-form-input" 
-                              rows="3" 
-                              placeholder="e.g., Testing balance for rental"></textarea>
-                </div>
-            </div>
-            <div class="premium-modal-footer">
-                <button type="button" class="premium-btn secondary" onclick="closeAddBalanceModal()">Cancel</button>
-                <button type="submit" class="premium-btn success">
-                    <i class="bi bi-check-lg"></i>
-                    Add Balance
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <style>
 .wallet-balance {

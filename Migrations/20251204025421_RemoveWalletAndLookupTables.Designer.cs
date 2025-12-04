@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251204025421_RemoveWalletAndLookupTables")]
+    partial class RemoveWalletAndLookupTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -121,7 +124,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("HourlyRate", "DailyRate");
 
-                    b.ToTable("bikes", (string)null);
+                    b.ToTable("bikes");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.BikeImage", b =>
@@ -153,7 +156,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("BikeId");
 
-                    b.ToTable("bike_images", (string)null);
+                    b.ToTable("bike_images");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.BikeType", b =>
@@ -176,7 +179,7 @@ namespace BiketaBai.Migrations
 
                     b.HasKey("BikeTypeId");
 
-                    b.ToTable("bike_types", (string)null);
+                    b.ToTable("bike_types");
 
                     b.HasData(
                         new
@@ -370,7 +373,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("StartDate");
 
-                    b.ToTable("bookings", (string)null);
+                    b.ToTable("bookings");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.LocationTracking", b =>
@@ -409,7 +412,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("BookingId");
 
-                    b.ToTable("location_tracking", (string)null);
+                    b.ToTable("location_tracking");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Notification", b =>
@@ -457,7 +460,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("UserId", "IsRead");
 
-                    b.ToTable("notifications", (string)null);
+                    b.ToTable("notifications");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Payment", b =>
@@ -525,7 +528,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("OwnerVerifiedBy");
 
-                    b.ToTable("payments", (string)null);
+                    b.ToTable("payments");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.PhoneOtp", b =>
@@ -573,7 +576,7 @@ namespace BiketaBai.Migrations
 
                     b.HasKey("OtpId");
 
-                    b.ToTable("phone_otps", (string)null);
+                    b.ToTable("phone_otps");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Rating", b =>
@@ -638,7 +641,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("RatingValue");
 
-                    b.ToTable("ratings", (string)null);
+                    b.ToTable("ratings");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Report", b =>
@@ -729,7 +732,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("ReporterId");
 
-                    b.ToTable("reports", (string)null);
+                    b.ToTable("reports");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Store", b =>
@@ -795,7 +798,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("stores", (string)null);
+                    b.ToTable("stores");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.User", b =>
@@ -956,7 +959,7 @@ namespace BiketaBai.Migrations
 
                     b.HasIndex("LastLoginAt");
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("users");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.Bike", b =>
