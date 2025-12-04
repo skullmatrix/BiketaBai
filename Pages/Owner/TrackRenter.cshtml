@@ -10,6 +10,17 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
 
+<style>
+    .bike-marker-icon {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    }
+    .bike-marker-icon svg {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+</style>
+
 <div class="page-container">
     @if (Model.Booking == null)
     {
@@ -128,6 +139,48 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
 
 <script>
+    // Function to create a custom bike icon marker
+    function createBikeIcon(color = '#3388ff') {
+        // Create SVG bike icon with better visibility
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+                <!-- Background circle with shadow effect -->
+                <circle cx="24" cy="24" r="22" fill="${color}" stroke="#fff" stroke-width="3" opacity="0.95" filter="url(#shadow)"/>
+                <!-- Bike icon -->
+                <g transform="translate(24, 24)">
+                    <!-- Bike wheels -->
+                    <circle cx="-10" cy="5" r="7" fill="none" stroke="#fff" stroke-width="2.5"/>
+                    <circle cx="10" cy="5" r="7" fill="none" stroke="#fff" stroke-width="2.5"/>
+                    <!-- Wheel spokes -->
+                    <line x1="-10" y1="5" x2="-10" y2="-2" stroke="#fff" stroke-width="2"/>
+                    <line x1="-10" y1="5" x2="-3" y2="5" stroke="#fff" stroke-width="2"/>
+                    <line x1="10" y1="5" x2="10" y2="-2" stroke="#fff" stroke-width="2"/>
+                    <line x1="10" y1="5" x2="3" y2="5" stroke="#fff" stroke-width="2"/>
+                    <!-- Bike frame -->
+                    <path d="M -10 5 L -2 -5 L 0 0 L 2 -5 L 10 5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- Seat -->
+                    <circle cx="-4" cy="-8" r="1.5" fill="#fff"/>
+                    <!-- Handlebars -->
+                    <path d="M 0 -5 L -3 -8 M 0 -5 L 3 -8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+                <!-- Shadow filter -->
+                <defs>
+                    <filter id="shadow">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                    </filter>
+                </defs>
+            </svg>
+        `;
+        
+        return L.divIcon({
+            html: svg,
+            className: 'bike-marker-icon',
+            iconSize: [48, 48],
+            iconAnchor: [24, 24],
+            popupAnchor: [0, -24]
+        });
+    }
+
     let map;
     let renterMarker;
     let storeMarker;
@@ -150,7 +203,8 @@
             locationHistory.push({
                 lat: @loc.Latitude,
                 lng: @loc.Longitude,
-                timestamp: '@loc.TrackedAt.ToString("yyyy-MM-ddTHH:mm:ss")'
+                timestamp: '@loc.TrackedAt.ToString("yyyy-MM-ddTHH:mm:ss")',
+                isWithin: @loc.IsWithinGeofence.ToString().ToLower()
             });
             </text>
         }
@@ -211,14 +265,7 @@
             <text>
             const isWithin = @Model.LatestLocation.IsWithinGeofence.ToString().ToLower();
             renterMarker = L.marker([@Model.LatestLocation.Latitude.ToString("F6"), @Model.LatestLocation.Longitude.ToString("F6")], {
-                icon: L.icon({
-                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${isWithin ? 'blue' : 'red'}.png`,
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [30, 48],
-                    iconAnchor: [15, 48],
-                    popupAnchor: [1, -40],
-                    shadowSize: [41, 41]
-                }),
+                icon: createBikeIcon(isWithin ? '#3388ff' : '#ff3333'),
                 zIndexOffset: 1000
             }).addTo(map).bindPopup(`
                 <div style="min-width: 200px;">
@@ -241,19 +288,33 @@
         // Draw location trail if history exists
         if (locationHistory.length > 1) {
             const trailPoints = locationHistory.map(point => [point.lat, point.lng]);
+            // Use the last point's geofence status for trail color, or default to blue
+            const lastPoint = locationHistory[locationHistory.length - 1];
+            const trailColor = (lastPoint && lastPoint.isWithin !== undefined) 
+                ? (lastPoint.isWithin ? '#3388ff' : '#ff3333')
+                : '#3388ff';
+            
             locationTrail = L.polyline(trailPoints, {
-                color: '#3388ff',
-                weight: 3,
-                opacity: 0.6,
+                color: trailColor,
+                weight: 4,
+                opacity: 0.7,
                 smoothFactor: 1
             }).addTo(map);
+            
+            console.log('📍 Location trail drawn with', locationHistory.length, 'points');
         }
 
-        // Fit map to show all markers
+        // Fit map to show all markers, trail, and geofence
         const bounds = L.latLngBounds([]);
         if (storeMarker) bounds.extend(storeMarker.getLatLng());
         if (renterMarker) bounds.extend(renterMarker.getLatLng());
         if (geofenceCircle) bounds.extend(geofenceCircle.getBounds());
+        if (locationTrail) {
+            // Include all trail points in bounds
+            locationHistory.forEach(point => {
+                bounds.extend([point.lat, point.lng]);
+            });
+        }
         if (bounds.isValid()) {
             map.fitBounds(bounds, { padding: [50, 50] });
         }
@@ -313,22 +374,23 @@
                 return;
             }
             
-            // Add to history
-            locationHistory.push({ lat, lng, timestamp: trackedAt });
+            // Add to history with geofence status
+            locationHistory.push({ lat, lng, timestamp: trackedAt, isWithin: isWithin });
             if (locationHistory.length > 100) {
                 locationHistory.shift();
             }
             
-            // Update trail
+            // Update trail with color based on current geofence status
             if (locationHistory.length > 1) {
                 if (locationTrail) {
                     map.removeLayer(locationTrail);
                 }
                 const trailPoints = locationHistory.map(point => [point.lat, point.lng]);
+                const trailColor = isWithin ? '#3388ff' : '#ff3333';
                 locationTrail = L.polyline(trailPoints, {
-                    color: isWithin ? '#3388ff' : '#ff3333',
-                    weight: 3,
-                    opacity: 0.6,
+                    color: trailColor,
+                    weight: 4,
+                    opacity: 0.7,
                     smoothFactor: 1
                 }).addTo(map);
             }
@@ -342,15 +404,7 @@
                 });
                 
                 // Update icon if geofence status changed
-                const markerIcon = L.icon({
-                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${isWithin ? 'blue' : 'red'}.png`,
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [30, 48],
-                    iconAnchor: [15, 48],
-                    popupAnchor: [1, -40],
-                    shadowSize: [41, 41]
-                });
-                renterMarker.setIcon(markerIcon);
+                renterMarker.setIcon(createBikeIcon(isWithin ? '#3388ff' : '#ff3333'));
                 
                 // Update popup
                 renterMarker.setPopupContent(`
@@ -371,14 +425,7 @@
             } else {
                 // Create marker if it doesn't exist
                 renterMarker = L.marker([lat, lng], {
-                    icon: L.icon({
-                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${isWithin ? 'blue' : 'red'}.png`,
-                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                        iconSize: [30, 48],
-                        iconAnchor: [15, 48],
-                        popupAnchor: [1, -40],
-                        shadowSize: [41, 41]
-                    }),
+                    icon: createBikeIcon(isWithin ? '#3388ff' : '#ff3333'),
                     zIndexOffset: 1000
                 }).addTo(map).bindPopup(`
                     <div style="min-width: 200px;">
