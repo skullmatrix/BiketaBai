@@ -198,6 +198,11 @@ public class GeofencingService
 
             if (shouldSendWarning)
             {
+                // Get store details for notifications (both renter SMS and owner notification)
+                var primaryStore = await GetPrimaryStoreAsync(booking.Bike.OwnerId);
+                var radius = primaryStore?.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
+                var storeName = primaryStore?.StoreName ?? "the store location";
+
                 if (string.IsNullOrWhiteSpace(booking.Renter.Phone))
                 {
                     Log.Warning("Cannot send geofence SMS to renter {RenterId} for booking {BookingId}: Phone number is empty or null", 
@@ -205,9 +210,6 @@ public class GeofencingService
                 }
                 else
                 {
-                    var primaryStore = await GetPrimaryStoreAsync(booking.Bike.OwnerId);
-                    var radius = primaryStore?.GeofenceRadiusKm ?? GetDefaultGeofenceRadius();
-                    var storeName = primaryStore?.StoreName ?? "the store location";
                     var message = $"⚠️ Geofence Alert: You are {distanceKm:F1}km away from {storeName}. " +
                                  $"Please return within {radius}km radius. Current distance: {distanceKm:F1}km. - Bike Ta Bai";
 
