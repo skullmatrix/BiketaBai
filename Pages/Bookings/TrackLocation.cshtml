@@ -166,45 +166,100 @@
 
     // Initialize map when page loads
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('📍 Page loaded, initializing location tracking...');
         initializeLocation();
     });
     
     function initializeLocation() {
         const bookingId = @Model.Booking.BookingId;
+        const locationStatusEl = document.getElementById('locationStatus');
         
         if (!navigator.geolocation) {
-            document.getElementById('locationStatus').innerHTML = 
-                '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
-                '<p class="mt-2" style="color: var(--error);">Geolocation is not supported by your browser.</p>';
+            if (locationStatusEl) {
+                locationStatusEl.innerHTML = 
+                    '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+                    '<p class="mt-2" style="color: var(--error);">Geolocation is not supported by your browser.</p>';
+            }
             return;
         }
 
         console.log('📍 Requesting location access...');
         
-        // Use getCurrentPosition with cached location support for faster response
-        // Accept locations up to 10 minutes old for instant response when permission already granted
-        navigator.geolocation.getCurrentPosition(
+        // Use watchPosition which is faster when permission is already granted
+        // It returns immediately with cached location if available
+        let locationReceived = false;
+        let watchId = null;
+        
+        watchId = navigator.geolocation.watchPosition(
             function(position) {
-                console.log('✅ Location obtained:', position.coords.latitude, position.coords.longitude);
-                // Hide "Requesting location access" status immediately
-                const locationStatusEl = document.getElementById('locationStatus');
-                const locationInfoEl = document.getElementById('locationInfo');
-                if (locationStatusEl) locationStatusEl.style.display = 'none';
-                if (locationInfoEl) locationInfoEl.style.display = 'block';
-                
-                initMap(position.coords.latitude, position.coords.longitude);
-                startTracking();
+                if (!locationReceived) {
+                    locationReceived = true;
+                    if (watchId !== null) {
+                        navigator.geolocation.clearWatch(watchId);
+                    }
+                    console.log('✅ Location obtained:', position.coords.latitude, position.coords.longitude);
+                    
+                    // Hide "Requesting location access" status immediately
+                    const locationStatusEl = document.getElementById('locationStatus');
+                    const locationInfoEl = document.getElementById('locationInfo');
+                    if (locationStatusEl) locationStatusEl.style.display = 'none';
+                    if (locationInfoEl) locationInfoEl.style.display = 'block';
+                    
+                    initMap(position.coords.latitude, position.coords.longitude);
+                    startTracking();
+                }
             },
-            async function(error) {
-                console.error('❌ Location error:', error);
-                handleLocationError(error, bookingId);
+            function(error) {
+                // If watchPosition fails, fall back to getCurrentPosition
+                console.log('⚠️ watchPosition failed, trying getCurrentPosition...', error.message);
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+                
+                // Fallback to getCurrentPosition
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        if (!locationReceived) {
+                            locationReceived = true;
+                            console.log('✅ Location obtained via getCurrentPosition:', position.coords.latitude, position.coords.longitude);
+                            
+                            const locationStatusEl = document.getElementById('locationStatus');
+                            const locationInfoEl = document.getElementById('locationInfo');
+                            if (locationStatusEl) locationStatusEl.style.display = 'none';
+                            if (locationInfoEl) locationInfoEl.style.display = 'block';
+                            
+                            initMap(position.coords.latitude, position.coords.longitude);
+                            startTracking();
+                        }
+                    },
+                    function(error2) {
+                        if (!locationReceived) {
+                            locationReceived = true;
+                            console.error('❌ Location error:', error2);
+                            handleLocationError(error2, bookingId);
+                        }
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 600000 // Accept cached location up to 10 minutes old
+                    }
+                );
             },
             {
-                enableHighAccuracy: false, // Use network/IP location (faster, not GPS)
-                timeout: 12000, // 12 second timeout
-                maximumAge: 600000 // Accept location up to 10 minutes old for instant response when permission already granted
+                enableHighAccuracy: false,
+                timeout: 8000,
+                maximumAge: 600000 // Accept cached location up to 10 minutes old
             }
         );
+        
+        // Clear watch after 15 seconds if no location received
+        setTimeout(function() {
+            if (!locationReceived && watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                console.log('⏱️ Watch timeout, location not obtained yet');
+            }
+        }, 15000);
     }
     
     function handleLocationError(error, bookingId) {
