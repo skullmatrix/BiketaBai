@@ -172,8 +172,8 @@
                         <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-2);">
                             <i class="bi bi-terminal"></i> Debug Console
                         </h4>
-                        <div id="debugLog" style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.875rem; max-height: 400px; overflow-y: auto;">
-                            <div>Waiting for logs...</div>
+                        <div id="debugLog" style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.875rem; max-height: 400px; overflow-y: auto; min-height: 150px;">
+                            <div style="color: #858585;">Waiting for logs...</div>
                         </div>
                     </div>
                 </div>
@@ -195,7 +195,21 @@
         const logEntry = `[${timestamp}] ${message}`;
         debugLog.push({ message: logEntry, type: type });
         
+        // Also log to browser console
+        console.log(logEntry);
+        
         const logDiv = document.getElementById('debugLog');
+        if (!logDiv) {
+            console.warn('Debug log div not found!');
+            return;
+        }
+        
+        // Clear "Initializing..." or "Waiting for logs..." message on first log
+        const currentHtml = logDiv.innerHTML || '';
+        if (currentHtml.includes('Initializing') || currentHtml.includes('Waiting for logs') || currentHtml.includes('Waiting')) {
+            logDiv.innerHTML = '';
+        }
+        
         const color = type === 'error' ? '#f48771' : type === 'success' ? '#4ec9b0' : '#d4d4d4';
         logDiv.innerHTML += `<div style="color: ${color};">${logEntry}</div>`;
         logDiv.scrollTop = logDiv.scrollHeight;
@@ -386,31 +400,34 @@
         </text>
     }
 
-    // Check status on page load (EXACT COPY from admin test page)
+    // Check status on page load
     document.addEventListener('DOMContentLoaded', function() {
-        // Add initial log
-        addDebugLog('📍 Page loaded, initializing location tracking...', 'info');
-        addDebugLog('📍 Booking ID: ' + @Model.Booking.BookingId, 'info');
-        
-        // Wait a bit longer for _Layout.cshtml to initialize SignalR
-        setTimeout(() => {
-            checkConnectionStatus(0);
-        }, 2000);
-        
-        // Also check periodically in case connection is initialized later
-        let checkInterval = setInterval(() => {
-            if (typeof window.BiketaBaiNotifications !== 'undefined' && 
-                window.BiketaBaiNotifications.connection) {
-                clearInterval(checkInterval);
+        // Wait a moment for DOM to be ready, then initialize
+        setTimeout(function() {
+            // Add initial logs immediately
+            addDebugLog('📍 Page loaded, initializing location tracking...', 'info');
+            addDebugLog('📍 Booking ID: ' + @Model.Booking.BookingId, 'info');
+            
+            // Wait a bit longer for _Layout.cshtml to initialize SignalR
+            setTimeout(() => {
                 checkConnectionStatus(0);
-            }
-        }, 1000);
-        
-        // Clear interval after 30 seconds
-        setTimeout(() => clearInterval(checkInterval), 30000);
-        
-        // Initialize location tracking
-        checkPermissionAndInitialize();
+            }, 2000);
+            
+            // Also check periodically in case connection is initialized later
+            let checkInterval = setInterval(() => {
+                if (typeof window.BiketaBaiNotifications !== 'undefined' && 
+                    window.BiketaBaiNotifications.connection) {
+                    clearInterval(checkInterval);
+                    checkConnectionStatus(0);
+                }
+            }, 1000);
+            
+            // Clear interval after 30 seconds
+            setTimeout(() => clearInterval(checkInterval), 30000);
+            
+            // Initialize location tracking immediately
+            checkPermissionAndInitialize();
+        }, 500); // Wait 500ms for DOM to be fully ready
         
         // Make functions globally accessible for buttons and debugging after page load
         window.checkPermissionAndInitialize = checkPermissionAndInitialize;
@@ -490,6 +507,16 @@
         const bookingId = @Model.Booking.BookingId;
         const locationStatusEl = document.getElementById('locationStatus');
         
+        if (!navigator.geolocation) {
+            addDebugLog('❌ Geolocation is not supported by your browser', 'error');
+            if (locationStatusEl) {
+                locationStatusEl.innerHTML = 
+                    '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+                    '<p class="mt-2" style="color: var(--error);">Geolocation is not supported by your browser.</p>';
+            }
+            return;
+        }
+        
         addDebugLog('📍 Requesting location access...', 'info');
         
         // Update status to show we're requesting
@@ -500,60 +527,44 @@
                 '<p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: var(--space-2);">Please allow location access when prompted by your browser.</p>';
         }
         
-        // Use getCurrentPosition with multiple fallback strategies
-        requestLocationWithFallback(bookingId, 0);
-    }
-    
-    function requestLocationWithFallback(bookingId, attemptNumber) {
-        const maxAttempts = 3;
-        let locationReceived = false;
-        
-        const options = [
-            { enableHighAccuracy: false, timeout: 3000, maximumAge: 600000 },  // Try cached first (fastest)
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 },       // Try network location
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }        // Try GPS (slowest but most accurate)
-        ];
-        
-        const currentOptions = options[Math.min(attemptNumber, options.length - 1)];
-        addDebugLog(`📍 Attempt ${attemptNumber + 1}/${maxAttempts} with options: timeout=${currentOptions.timeout}ms, maxAge=${currentOptions.maximumAge}ms, highAccuracy=${currentOptions.enableHighAccuracy}`, 'info');
-        
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                if (!locationReceived) {
-                    locationReceived = true;
-                    addDebugLog('✅ Location obtained: ' + position.coords.latitude + ', ' + position.coords.longitude + ' (accuracy: ' + position.coords.accuracy + 'm)', 'success');
-                    
-                    // Hide "Requesting location access" status immediately
-                    const locationStatusEl = document.getElementById('locationStatus');
-                    const locationInfoEl = document.getElementById('locationInfo');
-                    if (locationStatusEl) locationStatusEl.style.display = 'none';
-                    if (locationInfoEl) locationInfoEl.style.display = 'block';
-                    
-                    initMap(position.coords.latitude, position.coords.longitude);
-                    startTracking();
-                }
+        // Use getCurrentPosition first to get initial location quickly
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                addDebugLog('✅ Location obtained: ' + position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6) + ' (accuracy: ' + Math.round(position.coords.accuracy) + 'm)', 'success');
+                
+                // Hide "Requesting location access" status immediately
+                if (locationStatusEl) locationStatusEl.style.display = 'none';
+                const locationInfoEl = document.getElementById('locationInfo');
+                if (locationInfoEl) locationInfoEl.style.display = 'block';
+                
+                initMap(position.coords.latitude, position.coords.longitude);
+                startTracking();
             },
             function(error) {
                 let errorType = 'Unknown';
-                if (error.code === 1) errorType = 'PERMISSION_DENIED';
-                else if (error.code === 2) errorType = 'POSITION_UNAVAILABLE';
-                else if (error.code === 3) errorType = 'TIMEOUT';
+                let errorMessage = error.message || 'Unknown error';
                 
-                addDebugLog(`❌ Attempt ${attemptNumber + 1} failed: ${errorType} - ${error.message}`, 'error');
-                
-                // Try next fallback option
-                if (attemptNumber < maxAttempts - 1) {
-                    addDebugLog(`🔄 Retrying with different options...`, 'info');
-                    setTimeout(() => {
-                        requestLocationWithFallback(bookingId, attemptNumber + 1);
-                    }, 1000);
-                } else {
-                    // All attempts failed
-                    addDebugLog('❌ All location request attempts failed', 'error');
-                    handleLocationError(error, bookingId);
+                if (error.code === 1) {
+                    errorType = 'PERMISSION_DENIED';
+                    errorMessage = 'Location access was denied. Please enable location access in your browser settings.';
+                    showPermissionDeniedUI(bookingId);
+                    return;
+                } else if (error.code === 2) {
+                    errorType = 'POSITION_UNAVAILABLE';
+                    errorMessage = 'Location information is unavailable. Please check your device location settings.';
+                } else if (error.code === 3) {
+                    errorType = 'TIMEOUT';
+                    errorMessage = 'Location request timed out. Please try again.';
                 }
+                
+                addDebugLog('❌ Location error: ' + errorType + ' - ' + errorMessage, 'error');
+                handleLocationError(error, bookingId);
             },
-            currentOptions
+            {
+                enableHighAccuracy: false, // Start with false for faster response
+                timeout: 10000,
+                maximumAge: 60000 // Accept cached location up to 1 minute old
+            }
         );
     }
     
