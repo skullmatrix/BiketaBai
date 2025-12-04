@@ -688,6 +688,16 @@
                 // Create notification element
                 const notificationEl = document.createElement('div');
                 notificationEl.className = 'mini-notification';
+                // Store notification ID as data attribute for easy access
+                const notificationId = notification.notificationId || notification.id || notification.NotificationId;
+                console.log('📌 Notification ID when creating popup:', notificationId);
+                console.log('📌 Full notification object:', notification);
+                if (notificationId) {
+                    notificationEl.setAttribute('data-notification-id', notificationId);
+                    console.log('✅ Stored notification ID on element:', notificationId);
+                } else {
+                    console.warn('⚠️ WARNING: Notification ID not found in notification object!', notification);
+                }
                 notificationEl.style.cssText = `
                     background: white;
                     border-left: 4px solid #3B82F6;
@@ -739,7 +749,7 @@
                     window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
                     
                     // Call API to mark as read (fire and forget - don't wait for response)
-                    fetch('/Notifications?handler=MarkAsRead', {
+                    fetch('/Api/MarkNotificationAsRead', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
@@ -765,12 +775,20 @@
                 const dismissNotification = function(shouldMarkAsRead = false) {
                     // Mark as read if requested (when closed or auto-dismissed)
                     if (shouldMarkAsRead) {
-                        // Try multiple possible property names for notification ID
-                        const notificationId = notification.notificationId || notification.id || notification.NotificationId;
+                        // Get notification ID from data attribute or notification object
+                        const notificationId = notificationEl.getAttribute('data-notification-id') || 
+                                             notification.notificationId || 
+                                             notification.id || 
+                                             notification.NotificationId;
+                        
+                        console.log('🔔 Dismissing notification, marking as read. NotificationId:', notificationId);
+                        
                         if (notificationId) {
                             // Add to processed list immediately to prevent re-showing
                             window.BiketaBaiNotifications.processedNotificationIds.add(notificationId);
                             markNotificationAsRead(notificationId);
+                        } else {
+                            console.warn('⚠️ Cannot mark notification as read: notificationId not found', notification);
                         }
                     }
                     
@@ -827,10 +845,25 @@
                 const closeBtn = notificationEl.querySelector('.mini-notification-close');
                 if (closeBtn) {
                     closeBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
                         e.stopPropagation();
+                        
+                        // Get notification ID from data attribute or notification object
+                        const notificationId = notificationEl.getAttribute('data-notification-id') || 
+                                             notification.notificationId || 
+                                             notification.id || 
+                                             notification.NotificationId;
+                        
+                        console.log('❌ Close button clicked - marking notification as read');
+                        console.log('📌 Notification ID:', notificationId);
+                        console.log('📌 Notification object:', notification);
+                        console.log('📌 Element data attribute:', notificationEl.getAttribute('data-notification-id'));
+                        
                         // Mark as read when user closes the notification
                         dismissNotification(true); // true = mark as read
                     });
+                } else {
+                    console.warn('⚠️ Close button not found in notification element');
                 }
 
                 // Add to container
