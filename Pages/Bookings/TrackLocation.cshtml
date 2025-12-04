@@ -168,20 +168,46 @@
     document.addEventListener('DOMContentLoaded', function() {
         const bookingId = @Model.Booking.BookingId;
         
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    initMap(position.coords.latitude, position.coords.longitude);
-                    startTracking();
-                },
-                async function(error) {
-                    const locationStatusEl = document.getElementById('locationStatus');
-                    locationStatusEl.innerHTML = 
-                        '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
-                        '<p class="mt-2" style="color: var(--error);">Location access denied. Please enable location services.</p>';
-                    
-                    // Notify owner if location permission is denied
-                    if (error.code === error.PERMISSION_DENIED) {
+        if (!navigator.geolocation) {
+            document.getElementById('locationStatus').innerHTML = 
+                '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+                '<p class="mt-2" style="color: var(--error);">Geolocation is not supported by your browser.</p>';
+            return;
+        }
+
+        // Try to get location with timeout and proper error handling
+        console.log('📍 Requesting location access...');
+        
+        // Set a visual timeout - if no response in 5 seconds, show a hint
+        let locationRequestTimeout = setTimeout(function() {
+            const locationStatusEl = document.getElementById('locationStatus');
+            if (locationStatusEl && locationStatusEl.innerHTML.includes('Requesting location access')) {
+                locationStatusEl.innerHTML = 
+                    '<i class="bi bi-hourglass-split" style="font-size: 3rem; color: var(--neutral-400);"></i>' +
+                    '<p class="mt-3" style="color: var(--neutral-600);">Requesting location access... This may take a moment.</p>' +
+                    '<button onclick="window.location.reload()" class="btn-minimal btn-minimal-primary mt-3" style="margin-top: 1rem;">' +
+                    '<i class="bi bi-arrow-clockwise"></i> Refresh Page' +
+                    '</button>';
+            }
+        }, 5000);
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                clearTimeout(locationRequestTimeout);
+                console.log('✅ Location access granted:', position.coords.latitude, position.coords.longitude);
+                initMap(position.coords.latitude, position.coords.longitude);
+                startTracking();
+            },
+            async function(error) {
+                clearTimeout(locationRequestTimeout);
+                console.error('❌ Location access error:', error);
+                const locationStatusEl = document.getElementById('locationStatus');
+                let errorMessage = '';
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = 'Location access denied. Please enable location services in your browser settings.';
+                        // Notify owner if location permission is denied
                         try {
                             const response = await fetch('/Api/LocationPermissionDenied', {
                                 method: 'POST',
@@ -200,15 +226,87 @@
                         } catch (err) {
                             console.error('Error notifying owner:', err);
                         }
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Location information is unavailable. Please check your device location settings.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = 'Location request timed out. Please try again or check your connection.';
+                        // Retry once after timeout
+                        setTimeout(function() {
+                            console.log('🔄 Retrying location request after timeout...');
+                            initializeLocation();
+                        }, 2000);
+                        return;
+                    default:
+                        errorMessage = 'An unknown error occurred while requesting location. Please try again.';
+                        break;
+                }
+                
+                locationStatusEl.innerHTML = 
+                    '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+                    '<p class="mt-2" style="color: var(--error);">' + errorMessage + '</p>' +
+                    '<button onclick="initializeLocation()" class="btn-minimal btn-minimal-primary mt-3" style="margin-top: 1rem;">' +
+                    '<i class="bi bi-arrow-clockwise"></i> Try Again' +
+                    '</button>';
+            },
+            {
+                enableHighAccuracy: false, // Set to false for faster response - use cached location if available
+                timeout: 8000, // 8 second timeout - fail fast if GPS is unavailable
+                maximumAge: 60000 // Accept location up to 1 minute old
+            }
+        );
+    });
+
+    // Make initializeLocation function available globally for retry button
+    function initializeLocation() {
+        const bookingId = @Model.Booking.BookingId;
+        const locationStatusEl = document.getElementById('locationStatus');
+        locationStatusEl.innerHTML = 
+            '<i class="bi bi-hourglass-split" style="font-size: 3rem; color: var(--neutral-400);"></i>' +
+            '<p class="mt-3" style="color: var(--neutral-600);">Requesting location access...</p>';
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    console.log('✅ Location access granted:', position.coords.latitude, position.coords.longitude);
+                    initMap(position.coords.latitude, position.coords.longitude);
+                    startTracking();
+                },
+                async function(error) {
+                    console.error('❌ Location access error:', error);
+                    let errorMessage = '';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location access denied. Please enable location services in your browser settings.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable. Please check your device location settings.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out. Please try again or check your connection.';
+                            break;
+                        default:
+                            errorMessage = 'An unknown error occurred while requesting location. Please try again.';
+                            break;
                     }
+                    
+                    locationStatusEl.innerHTML = 
+                        '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+                        '<p class="mt-2" style="color: var(--error);">' + errorMessage + '</p>' +
+                        '<button onclick="initializeLocation()" class="btn-minimal btn-minimal-primary mt-3" style="margin-top: 1rem;">' +
+                        '<i class="bi bi-arrow-clockwise"></i> Try Again' +
+                        '</button>';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 60000
                 }
             );
-        } else {
-            document.getElementById('locationStatus').innerHTML = 
-                '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
-                '<p class="mt-2" style="color: var(--error);">Geolocation is not supported by your browser.</p>';
         }
-    });
+    }
 
     function initMap(lat, lng) {
         // Store coordinates from model

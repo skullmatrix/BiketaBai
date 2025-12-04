@@ -80,9 +80,9 @@
 
             <form method="post" enctype="multipart/form-data" id="ownerRegistrationForm">
                 <input type="hidden" name="step" value="@Model.CurrentStep" />
-                <input type="hidden" id="storeAddressPlaceId" name="StoreAddressPlaceId" />
-                <input type="hidden" id="storeAddressLatitude" name="StoreAddressLatitude" />
-                <input type="hidden" id="storeAddressLongitude" name="StoreAddressLongitude" />
+                <input type="hidden" id="storeAddressPlaceId" name="Input.StoreAddressPlaceId" />
+                <input type="hidden" id="storeAddressLatitude" name="Input.StoreAddressLatitude" />
+                <input type="hidden" id="storeAddressLongitude" name="Input.StoreAddressLongitude" />
 
                 <!-- Step 1: Store Information -->
                 @if (Model.CurrentStep == 1)
@@ -433,12 +433,14 @@
                 
                 // Store place_id and coordinates in hidden fields
                 $('#storeAddressPlaceId').val(placeId);
-                if (latitude && longitude) {
-                    $('#storeAddressLatitude').val(latitude);
-                    $('#storeAddressLongitude').val(longitude);
+                if (latitude && longitude && !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude))) {
+                    $('#storeAddressLatitude').val(parseFloat(latitude));
+                    $('#storeAddressLongitude').val(parseFloat(longitude));
+                    console.log('✅ Coordinates stored:', parseFloat(latitude), parseFloat(longitude));
                 } else {
                     $('#storeAddressLatitude').val('');
                     $('#storeAddressLongitude').val('');
+                    console.warn('⚠️ No valid coordinates available for selected address');
                 }
                 
                 // Hide suggestions

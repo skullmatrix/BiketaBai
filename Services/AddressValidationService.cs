@@ -164,9 +164,67 @@ public class AddressValidationService
             }
             else
             {
-                result.IsValid = false;
-                result.ErrorMessage = "Address not found. Please check and try again.";
-                Log.Warning("Address not found: {Address}", address);
+                // Address not found in search results
+                // Try one more search without country restriction to be more lenient
+                Log.Information("Address not found with country restriction. Trying broader search for: {Address}", address);
+                try
+                {
+                    var broaderUrl = $"https://nominatim.openstreetmap.org/search?q={encodedAddress}&format=json&addressdetails=1&limit=1";
+                    var broaderResponse = await _httpClient.GetAsync(broaderUrl);
+                    
+                    if (broaderResponse.IsSuccessStatusCode)
+                    {
+                        var broaderContent = await broaderResponse.Content.ReadAsStringAsync();
+                        var broaderJsonDoc = JsonDocument.Parse(broaderContent);
+                        var broaderRoot = broaderJsonDoc.RootElement;
+                        
+                        if (broaderRoot.ValueKind == JsonValueKind.Array && broaderRoot.GetArrayLength() > 0)
+                        {
+                            var firstResult = broaderRoot[0];
+                            var displayName = firstResult.TryGetProperty("display_name", out var displayNameElement)
+                                ? displayNameElement.GetString() ?? ""
+                                : "";
+
+                            var lat = firstResult.TryGetProperty("lat", out var latElement)
+                                ? (double.TryParse(latElement.GetString(), out var latitude) ? latitude : 0)
+                                : 0;
+
+                            var lng = firstResult.TryGetProperty("lon", out var lonElement)
+                                ? (double.TryParse(lonElement.GetString(), out var longitude) ? longitude : 0)
+                                : 0;
+
+                            result.IsValid = true;
+                            result.StandardizedAddress = displayName;
+                            result.FormattedAddress = displayName;
+                            result.Latitude = lat;
+                            result.Longitude = lng;
+
+                            Log.Information("Address validated successfully with broader search: {FormattedAddress}", displayName);
+                            return result;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Broader address search failed for: {Address}", address);
+                }
+                
+                // If still not found, but address seems reasonable (at least 10 characters), accept it
+                // This prevents blocking valid registrations due to API limitations
+                if (address.Length >= 10)
+                {
+                    Log.Warning("Address not found in validation service but accepting as valid (length check): {Address}", address);
+                    result.IsValid = true;
+                    result.StandardizedAddress = address;
+                    result.FormattedAddress = address;
+                    // No coordinates since we couldn't find the address
+                }
+                else
+                {
+                    result.IsValid = false;
+                    result.ErrorMessage = "Address not found. Please select an address from the suggestions or provide a more detailed address.";
+                    Log.Warning("Address not found and too short: {Address}", address);
+                }
             }
         }
         catch (HttpRequestException ex)
