@@ -167,7 +167,7 @@
                             <i class="bi bi-terminal"></i> Debug Console
                         </h4>
                         <div id="debugLog" style="background: #1e1e1e; color: #d4d4d4; padding: var(--space-4); border-radius: var(--radius-md); font-family: monospace; font-size: 0.875rem; max-height: 300px; overflow-y: auto; min-height: 150px;">
-                            <div style="color: #858585;">Waiting for logs...</div>
+                            <div style="color: #858585;">Initializing debug console...</div>
                         </div>
                     </div>
                 </div>
@@ -183,6 +183,17 @@
 <script>
     // Debug logging functions (similar to admin test page)
     let debugLog = [];
+    
+    // Test debug console immediately when script loads
+    (function() {
+        setTimeout(function() {
+            const logDiv = document.getElementById('debugLog');
+            if (logDiv) {
+                logDiv.innerHTML = '<div style="color: #4ec9b0;">[Initializing...] Debug console ready</div>';
+                console.log('📍 Debug console initialized');
+            }
+        }, 100);
+    })();
     
     function addDebugLog(message, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
@@ -200,9 +211,16 @@
         
         const logDiv = document.getElementById('debugLog');
         if (logDiv) {
+            // Clear "Waiting for logs..." or "Initializing..." message on first log
+            if (logDiv.innerHTML.includes('Initializing') || logDiv.innerHTML.includes('Waiting')) {
+                logDiv.innerHTML = '';
+            }
+            
             const color = type === 'error' ? '#f48771' : type === 'success' ? '#4ec9b0' : '#d4d4d4';
             logDiv.innerHTML += `<div style="color: ${color}; margin-bottom: 2px;">${logEntry}</div>`;
             logDiv.scrollTop = logDiv.scrollHeight;
+        } else {
+            console.warn('Debug log div not found!');
         }
     }
     
@@ -216,11 +234,22 @@
     
     // SignalR Connection Status Checker
     function checkSignalRConnection(retryCount = 0) {
+        const statusEl = document.getElementById('signalRStatusText');
+        const stateEl = document.getElementById('signalRStateText');
+        
+        if (!statusEl || !stateEl) {
+            addDebugLog('⚠️ SignalR status elements not found yet. Retrying...', 'info');
+            if (retryCount < 5) {
+                setTimeout(() => checkSignalRConnection(retryCount + 1), 500);
+            }
+            return;
+        }
+        
         addDebugLog('Checking SignalR connection status...', 'info');
         
         if (typeof signalR === 'undefined') {
-            document.getElementById('signalRStatusText').textContent = '❌ SignalR library not loaded';
-            document.getElementById('signalRStateText').textContent = 'N/A';
+            statusEl.textContent = '❌ SignalR library not loaded';
+            stateEl.textContent = 'N/A';
             addDebugLog('ERROR: SignalR library not loaded! Waiting for library...', 'error');
             
             // Retry after 2 seconds if library not loaded
@@ -244,13 +273,16 @@
             // Connection might not be initialized yet - wait and retry
             if (retryCount < 5) {
                 addDebugLog(`⚠️ No SignalR connection found yet (attempt ${retryCount + 1}/5). Waiting 2 seconds...`, 'info');
+                statusEl.textContent = '⏳ Waiting for connection...';
+                stateEl.textContent = 'Checking...';
                 setTimeout(() => checkSignalRConnection(retryCount + 1), 2000);
                 return;
             } else {
                 addDebugLog('❌ WARNING: No SignalR connection found after multiple attempts!', 'error');
                 addDebugLog('💡 Try: 1) Refresh the page, 2) Check browser console for errors, 3) Ensure you are logged in', 'info');
-                document.getElementById('signalRStatusText').textContent = '❌ No Connection';
-                document.getElementById('signalRStateText').textContent = 'Not Found';
+                statusEl.textContent = '❌ No Connection';
+                stateEl.textContent = 'Not Found';
+                return;
             }
         }
         
@@ -273,8 +305,8 @@
                 addDebugLog('Connection state: Reconnecting', 'info');
             }
             
-            document.getElementById('signalRStatusText').textContent = stateText;
-            document.getElementById('signalRStateText').textContent = `State ${stateNum}`;
+            statusEl.textContent = stateText;
+            stateEl.textContent = `State ${stateNum}`;
         }
     }
 
@@ -309,20 +341,35 @@
 
     // Initialize map when page loads
     document.addEventListener('DOMContentLoaded', function() {
-        addDebugLog('📍 Page loaded, initializing location tracking...', 'info');
-        addDebugLog('📍 Booking ID: ' + @Model.Booking.BookingId, 'info');
+        console.log('📍 TrackLocation page DOMContentLoaded fired');
         
-        // Check SignalR connection status
-        setTimeout(() => {
-            checkSignalRConnection();
-        }, 2000);
-        
-        // Also check periodically
-        setInterval(() => {
-            checkSignalRConnection();
-        }, 10000); // Check every 10 seconds
-        
-        checkPermissionAndInitialize();
+        // Wait a moment for DOM to be fully ready, then initialize
+        setTimeout(function() {
+            // Test if debug console div exists
+            const testDiv = document.getElementById('debugLog');
+            if (testDiv) {
+                console.log('✅ Debug console div found');
+            } else {
+                console.error('❌ Debug console div NOT found!');
+            }
+            
+            // Add initial logs
+            addDebugLog('📍 Page loaded, initializing location tracking...', 'info');
+            addDebugLog('📍 Booking ID: ' + @Model.Booking.BookingId, 'info');
+            
+            // Check SignalR connection status after a delay to allow SignalR to load
+            setTimeout(() => {
+                checkSignalRConnection();
+            }, 2000);
+            
+            // Also check periodically
+            setInterval(() => {
+                checkSignalRConnection();
+            }, 10000); // Check every 10 seconds
+            
+            // Initialize location tracking
+            checkPermissionAndInitialize();
+        }, 300); // Small delay to ensure DOM is ready
         
         // Make functions globally accessible for buttons and debugging after page load
         window.checkPermissionAndInitialize = checkPermissionAndInitialize;
