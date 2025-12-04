@@ -23,6 +23,7 @@ public class TrackLocationModel : PageModel
 
     public Booking? Booking { get; set; }
     public User? Owner { get; set; }
+    public Store? PrimaryStore { get; set; }
     public double? StoreLatitude { get; set; }
     public double? StoreLongitude { get; set; }
     public decimal GeofenceRadiusKm { get; set; }
@@ -52,11 +53,15 @@ public class TrackLocationModel : PageModel
 
         Owner = Booking.Bike.Owner;
         
+        // Get primary store
+        PrimaryStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.OwnerId == Owner.UserId && s.IsPrimary && !s.IsDeleted);
+        
         // Get store location
         var (lat, lon) = await _geofencingService.GetStoreLocationAsync(Owner.UserId);
         StoreLatitude = lat;
         StoreLongitude = lon;
-        GeofenceRadiusKm = Owner.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
+        GeofenceRadiusKm = PrimaryStore?.GeofenceRadiusKm ?? _geofencingService.GetDefaultGeofenceRadius();
 
         // Get latest location tracking
         LatestLocation = await _context.LocationTracking

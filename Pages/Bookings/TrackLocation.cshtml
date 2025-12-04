@@ -44,7 +44,7 @@
                         <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.Bike.Owner.FullName</div>
                         
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Store</div>
-                        <div style="font-weight: 600;">@Model.Booking.Bike.Owner.StoreName</div>
+                        <div style="font-weight: 600;">@(Model.PrimaryStore?.StoreName ?? "Store Location")</div>
                     </div>
                     <div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Start</div>
