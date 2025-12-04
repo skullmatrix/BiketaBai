@@ -167,10 +167,34 @@
     // Initialize map when page loads
     document.addEventListener('DOMContentLoaded', function() {
         console.log('📍 Page loaded, initializing location tracking...');
-        initializeLocation();
+        console.log('📍 Booking ID:', @Model.Booking.BookingId);
+        checkPermissionAndInitialize();
+        
+        // Make functions globally accessible for buttons and debugging after page load
+        window.checkPermissionAndInitialize = checkPermissionAndInitialize;
+        window.requestLocationPermission = requestLocationPermission;
+        window.initializeLocation = initializeLocation;
+        window.testLocationAccess = function() {
+            console.log('🧪 Testing location access...');
+            if (!navigator.geolocation) {
+                console.error('❌ Geolocation not supported');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    console.log('✅ Test successful:', pos.coords.latitude, pos.coords.longitude);
+                    alert('Location access works! Coordinates: ' + pos.coords.latitude + ', ' + pos.coords.longitude);
+                },
+                function(err) {
+                    console.error('❌ Test failed:', err.code, err.message);
+                    alert('Location access failed: ' + err.message);
+                }
+            );
+        };
     });
     
-    function initializeLocation() {
+    // Check permission status first, then request location
+    async function checkPermissionAndInitialize() {
         const bookingId = @Model.Booking.BookingId;
         const locationStatusEl = document.getElementById('locationStatus');
         
@@ -183,20 +207,74 @@
             return;
         }
 
+        // Check permission status using Permissions API if available
+        let permissionStatus = 'prompt'; // default
+        
+        try {
+            if (navigator.permissions && navigator.permissions.query) {
+                const result = await navigator.permissions.query({ name: 'geolocation' });
+                permissionStatus = result.state;
+                console.log('🔍 Permission status:', permissionStatus);
+                
+                // Listen for permission changes
+                result.onchange = function() {
+                    console.log('🔔 Permission status changed to:', result.state);
+                    if (result.state === 'granted') {
+                        initializeLocation();
+                    } else if (result.state === 'denied') {
+                        showPermissionDeniedUI(bookingId);
+                    }
+                };
+                
+                if (result.state === 'denied') {
+                    showPermissionDeniedUI(bookingId);
+                    return;
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ Permissions API not available or failed:', error);
+            // Continue to try requesting location anyway
+        }
+        
+        // If permission is granted or prompt, try to get location
+        initializeLocation();
+    }
+    
+    function initializeLocation() {
+        const bookingId = @Model.Booking.BookingId;
+        const locationStatusEl = document.getElementById('locationStatus');
+        
         console.log('📍 Requesting location access...');
         
-        // Use watchPosition which is faster when permission is already granted
-        // It returns immediately with cached location if available
-        let locationReceived = false;
-        let watchId = null;
+        // Update status to show we're requesting
+        if (locationStatusEl) {
+            locationStatusEl.innerHTML = 
+                '<i class="bi bi-hourglass-split" style="font-size: 3rem; color: var(--neutral-400);"></i>' +
+                '<p class="mt-3" style="color: var(--neutral-600);">Requesting location access...</p>' +
+                '<p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: var(--space-2);">Please allow location access when prompted by your browser.</p>';
+        }
         
-        watchId = navigator.geolocation.watchPosition(
+        // Use getCurrentPosition with multiple fallback strategies
+        requestLocationWithFallback(bookingId, 0);
+    }
+    
+    function requestLocationWithFallback(bookingId, attemptNumber) {
+        const maxAttempts = 3;
+        let locationReceived = false;
+        
+        const options = [
+            { enableHighAccuracy: false, timeout: 3000, maximumAge: 600000 },  // Try cached first (fastest)
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 },       // Try network location
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }        // Try GPS (slowest but most accurate)
+        ];
+        
+        const currentOptions = options[Math.min(attemptNumber, options.length - 1)];
+        console.log(`📍 Attempt ${attemptNumber + 1}/${maxAttempts} with options:`, currentOptions);
+        
+        navigator.geolocation.getCurrentPosition(
             function(position) {
                 if (!locationReceived) {
                     locationReceived = true;
-                    if (watchId !== null) {
-                        navigator.geolocation.clearWatch(watchId);
-                    }
                     console.log('✅ Location obtained:', position.coords.latitude, position.coords.longitude);
                     
                     // Hide "Requesting location access" status immediately
@@ -210,74 +288,137 @@
                 }
             },
             function(error) {
-                // If watchPosition fails, fall back to getCurrentPosition
-                console.log('⚠️ watchPosition failed, trying getCurrentPosition...', error.message);
-                if (watchId !== null) {
-                    navigator.geolocation.clearWatch(watchId);
-                }
+                console.error(`❌ Attempt ${attemptNumber + 1} failed:`, error.message, error.code);
                 
-                // Fallback to getCurrentPosition
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        if (!locationReceived) {
-                            locationReceived = true;
-                            console.log('✅ Location obtained via getCurrentPosition:', position.coords.latitude, position.coords.longitude);
-                            
-                            const locationStatusEl = document.getElementById('locationStatus');
-                            const locationInfoEl = document.getElementById('locationInfo');
-                            if (locationStatusEl) locationStatusEl.style.display = 'none';
-                            if (locationInfoEl) locationInfoEl.style.display = 'block';
-                            
-                            initMap(position.coords.latitude, position.coords.longitude);
-                            startTracking();
-                        }
-                    },
-                    function(error2) {
-                        if (!locationReceived) {
-                            locationReceived = true;
-                            console.error('❌ Location error:', error2);
-                            handleLocationError(error2, bookingId);
-                        }
-                    },
-                    {
-                        enableHighAccuracy: false,
-                        timeout: 10000,
-                        maximumAge: 600000 // Accept cached location up to 10 minutes old
-                    }
-                );
+                // Try next fallback option
+                if (attemptNumber < maxAttempts - 1) {
+                    console.log(`🔄 Retrying with different options...`);
+                    setTimeout(() => {
+                        requestLocationWithFallback(bookingId, attemptNumber + 1);
+                    }, 1000);
+                } else {
+                    // All attempts failed
+                    handleLocationError(error, bookingId);
+                }
+            },
+            currentOptions
+        );
+    }
+    
+    function showPermissionDeniedUI(bookingId) {
+        const locationStatusEl = document.getElementById('locationStatus');
+        if (!locationStatusEl) return;
+        
+        locationStatusEl.innerHTML = 
+            '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+            '<h4 style="color: var(--error); margin: var(--space-3) 0;">Location Access Denied</h4>' +
+            '<p style="color: var(--neutral-600); margin-bottom: var(--space-4);">Location tracking is required for this rental. Please enable location access to continue.</p>' +
+            '<div style="display: flex; flex-direction: column; gap: var(--space-2); align-items: center;">' +
+            '<button onclick="requestLocationPermission(' + bookingId + ')" class="btn-minimal btn-minimal-primary">' +
+            '<i class="bi bi-geo-alt"></i> Request Location Permission' +
+            '</button>' +
+            '<p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: var(--space-2);">If you\'ve already denied permission, please enable it in your browser settings.</p>' +
+            '</div>';
+        
+        // Notify owner
+        fetch('/Api/LocationPermissionDenied', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: bookingId })
+        }).catch(err => console.error('Error notifying owner:', err));
+    }
+    
+    function requestLocationPermission(bookingId) {
+        if (!bookingId) {
+            bookingId = @Model.Booking.BookingId;
+        }
+        
+        console.log('🔐 Requesting location permission explicitly...', 'Booking ID:', bookingId);
+        const locationStatusEl = document.getElementById('locationStatus');
+        
+        if (!navigator.geolocation) {
+            console.error('❌ Geolocation API not supported');
+            if (locationStatusEl) {
+                locationStatusEl.innerHTML = 
+                    '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
+                    '<p class="mt-2" style="color: var(--error);">Geolocation is not supported by your browser.</p>';
+            }
+            return;
+        }
+        
+        // Update UI to show we're requesting
+        if (locationStatusEl) {
+            locationStatusEl.innerHTML = 
+                '<i class="bi bi-hourglass-split" style="font-size: 3rem; color: var(--neutral-400);"></i>' +
+                '<p class="mt-3" style="color: var(--neutral-600);">Requesting location permission...</p>' +
+                '<p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: var(--space-2);">Please allow location access when prompted by your browser.</p>';
+        }
+        
+        console.log('📍 Calling navigator.geolocation.getCurrentPosition()...');
+        
+        // Request permission explicitly
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                console.log('✅ Location permission granted!');
+                console.log('📍 Coordinates:', position.coords.latitude, position.coords.longitude);
+                console.log('📍 Accuracy:', position.coords.accuracy, 'meters');
+                
+                const locationStatusEl = document.getElementById('locationStatus');
+                const locationInfoEl = document.getElementById('locationInfo');
+                if (locationStatusEl) locationStatusEl.style.display = 'none';
+                if (locationInfoEl) locationInfoEl.style.display = 'block';
+                
+                initMap(position.coords.latitude, position.coords.longitude);
+                startTracking();
+            },
+            function(error) {
+                console.error('❌ Permission request failed');
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                
+                let errorType = 'Unknown';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorType = 'PERMISSION_DENIED';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorType = 'POSITION_UNAVAILABLE';
+                        break;
+                    case error.TIMEOUT:
+                        errorType = 'TIMEOUT';
+                        break;
+                }
+                console.error('Error type:', errorType);
+                
+                handleLocationError(error, bookingId);
             },
             {
                 enableHighAccuracy: false,
-                timeout: 8000,
-                maximumAge: 600000 // Accept cached location up to 10 minutes old
+                timeout: 10000,
+                maximumAge: 0
             }
         );
-        
-        // Clear watch after 15 seconds if no location received
-        setTimeout(function() {
-            if (!locationReceived && watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                console.log('⏱️ Watch timeout, location not obtained yet');
-            }
-        }, 15000);
     }
     
     function handleLocationError(error, bookingId) {
         const locationStatusEl = document.getElementById('locationStatus');
+        if (!locationStatusEl) return;
+        
         let errorMessage = '';
+        let errorIcon = 'bi-exclamation-triangle';
+        let showPermissionButton = false;
         
         switch(error.code) {
             case error.PERMISSION_DENIED:
-                errorMessage = 'Location access denied. Please enable location services in your browser settings.';
+                errorMessage = 'Location access was denied. Location tracking is required for this rental.';
+                errorIcon = 'bi-shield-exclamation';
+                showPermissionButton = true;
+                
                 // Notify owner if location permission is denied
                 fetch('/Api/LocationPermissionDenied', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        bookingId: bookingId
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: bookingId })
                 }).then(response => response.json())
                   .then(result => {
                       if (result.success) {
@@ -287,22 +428,46 @@
                   .catch(err => console.error('Error notifying owner:', err));
                 break;
             case error.POSITION_UNAVAILABLE:
-                errorMessage = 'Location information is unavailable. Please check your device location settings and ensure GPS/Location is enabled.';
+                errorMessage = 'Location information is unavailable. Please check your device location settings and ensure GPS/Location services are enabled.';
+                errorIcon = 'bi-geo-alt-slash';
                 break;
             case error.TIMEOUT:
                 errorMessage = 'Location request timed out. Your device may be having trouble getting a GPS signal. Please try again.';
+                errorIcon = 'bi-clock-history';
                 break;
             default:
                 errorMessage = 'An unknown error occurred while requesting location. Please try again or refresh the page.';
                 break;
         }
         
+        let buttonHTML = '';
+        if (showPermissionButton) {
+            buttonHTML = 
+                '<button onclick="window.requestLocationPermission(' + bookingId + ')" class="btn-minimal btn-minimal-primary mt-3" style="margin-top: 1rem;">' +
+                '<i class="bi bi-geo-alt"></i> Request Location Permission Again' +
+                '</button>' +
+                '<p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: var(--space-2);">Or enable location access in your browser settings and refresh this page.</p>';
+        } else {
+            buttonHTML = 
+                '<button onclick="window.checkPermissionAndInitialize()" class="btn-minimal btn-minimal-primary mt-3" style="margin-top: 1rem;">' +
+                '<i class="bi bi-arrow-clockwise"></i> Try Again' +
+                '</button>';
+        }
+        
         locationStatusEl.innerHTML = 
-            '<i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--error);"></i>' +
-            '<p class="mt-2" style="color: var(--error);">' + errorMessage + '</p>' +
-            '<button onclick="initializeLocation()" class="btn-minimal btn-minimal-primary mt-3" style="margin-top: 1rem;">' +
-            '<i class="bi bi-arrow-clockwise"></i> Try Again' +
-            '</button>';
+            '<i class="bi ' + errorIcon + '" style="font-size: 3rem; color: var(--error);"></i>' +
+            '<h4 style="color: var(--error); margin: var(--space-3) 0;">Location Access Error</h4>' +
+            '<p style="color: var(--neutral-600); margin-bottom: var(--space-4);">' + errorMessage + '</p>' +
+            buttonHTML +
+            '<div style="margin-top: var(--space-4); padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">' +
+            '<p style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-2);">Troubleshooting Tips:</p>' +
+            '<ul style="font-size: 0.875rem; color: var(--neutral-600); text-align: left; margin: 0; padding-left: var(--space-4);">' +
+            '<li>Check that location services are enabled on your device</li>' +
+            '<li>Ensure your browser has permission to access location</li>' +
+            '<li>Try refreshing the page</li>' +
+            '<li>If using mobile, ensure GPS/Location is turned on</li>' +
+            '</ul>' +
+            '</div>';
     }
 
 
