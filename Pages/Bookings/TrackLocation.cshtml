@@ -48,10 +48,10 @@
                     </div>
                     <div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Start</div>
-                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "MMM dd, yyyy hh:mm tt")</div>
                         
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">End</div>
-                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy hh:mm tt")</div>
                         
                         <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Geofence Radius</div>
                         <div style="font-weight: 600; color: var(--sage-primary);">@Model.GeofenceRadiusKm km</div>

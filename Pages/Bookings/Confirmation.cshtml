@@ -58,10 +58,10 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <p class="text-muted-minimal mb-1"><strong>Start Time:</strong></p>
-                                        <p class="mb-3">@Model.Booking.StartDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p class="mb-3">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "MMM dd, yyyy hh:mm tt")</p>
                                         
                                         <p class="text-muted-minimal mb-1"><strong>End Time:</strong></p>
-                                        <p class="mb-3">@Model.Booking.EndDate.ToString("MMM dd, yyyy hh:mm tt")</p>
+                                        <p class="mb-3">@TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy hh:mm tt")</p>
                                         
                                         <p class="text-muted-minimal mb-1"><strong>Duration:</strong></p>
                                         <p class="mb-0">@Model.Booking.RentalHours.ToString("F1") hours</p>

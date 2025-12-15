@@ -1,0 +1,351 @@
+@page
+@model BiketaBai.Pages.Admin.TestPayMongoModel
+@{
+    ViewData["Title"] = "PayMongo Payment Gateway Test";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-credit-card"></i> PayMongo Payment Gateway Test & Diagnostics
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Configuration Info -->
+                    <div class="mb-4">
+                        <h5 class="text-muted mb-3">
+                            <i class="bi bi-gear"></i> Current Configuration
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 200px;">Secret Key</th>
+                                        <td>
+                                            <code>@Model.ConfigInfo.SecretKeyMasked</code>
+                                            @if (Model.ConfigInfo.SecretKeyMasked == "Not set")
+                                            {
+                                                <span class="badge bg-danger ms-2">Missing</span>
+                                            }
+                                            else if (Model.ConfigInfo.SecretKeyMasked.Contains("sk_test_"))
+                                            {
+                                                <span class="badge bg-info ms-2">Test Key</span>
+                                            }
+                                            else if (Model.ConfigInfo.SecretKeyMasked.Contains("sk_live_"))
+                                            {
+                                                <span class="badge bg-warning ms-2">Live Key</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Public Key</th>
+                                        <td>
+                                            <code>@Model.ConfigInfo.PublicKeyMasked</code>
+                                            @if (Model.ConfigInfo.PublicKeyMasked == "Not set")
+                                            {
+                                                <span class="badge bg-warning ms-2">Optional</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Webhook Secret</th>
+                                        <td>
+                                            <code>@Model.ConfigInfo.WebhookSecretMasked</code>
+                                            @if (Model.ConfigInfo.WebhookSecretMasked == "Not set")
+                                            {
+                                                <span class="badge bg-warning ms-2">Optional</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Base URL</th>
+                                        <td>@Model.ConfigInfo.BaseUrl</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Key Type</th>
+                                        <td>
+                                            @if (Model.ConfigInfo.KeyType.Contains("Test"))
+                                            {
+                                                <span class="badge bg-info">@Model.ConfigInfo.KeyType</span>
+                                            }
+                                            else if (Model.ConfigInfo.KeyType.Contains("Live"))
+                                            {
+                                                <span class="badge bg-warning">@Model.ConfigInfo.KeyType</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">@Model.ConfigInfo.KeyType</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Config Source</th>
+                                        <td>
+                                            @if (Model.ConfigInfo.ConfigSource.Contains("✅"))
+                                            {
+                                                <div class="alert alert-info p-2 mb-0">
+                                                    <pre class="mb-0 small">@Model.ConfigInfo.ConfigSource</pre>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @Model.ConfigInfo.ConfigSource
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                            @if (Model.ConfigInfo.IsConfigured)
+                                            {
+                                                <span class="badge bg-success">Configured</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Not Configured</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <!-- Test Form -->
+                    <form method="post" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="TestAmount" class="form-label">
+                                    <strong>Test Amount (PHP)</strong>
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="TestAmount" 
+                                       name="TestAmount" 
+                                       value="@Model.TestAmount"
+                                       step="0.01"
+                                       min="1"
+                                       placeholder="100.00"
+                                       required />
+                                <small class="form-text text-muted">
+                                    Enter test amount in PHP (minimum: 1.00)
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="TestPaymentMethod" class="form-label">
+                                    <strong>Payment Method</strong>
+                                </label>
+                                <select class="form-select" 
+                                        id="TestPaymentMethod" 
+                                        name="TestPaymentMethod" 
+                                        required>
+                                    <option value="gcash" selected="@(Model.TestPaymentMethod == "gcash")">GCash</option>
+                                    <option value="paymaya" selected="@(Model.TestPaymentMethod == "paymaya")">PayMaya</option>
+                                    <option value="grab_pay" selected="@(Model.TestPaymentMethod == "grab_pay")">GrabPay</option>
+                                    <option value="card" selected="@(Model.TestPaymentMethod == "card")">Credit/Debit Card</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Select payment method to test
+                                </small>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-play-circle"></i> Run PayMongo Test
+                        </button>
+                    </form>
+
+                    <!-- Test Results -->
+                    @if (Model.Result != null)
+                    {
+                        <div class="mt-4">
+                            <h5 class="mb-3">
+                                <i class="bi bi-clipboard-check"></i> Test Results
+                            </h5>
+
+                            @if (Model.Result.Success)
+                            {
+                                <div class="alert alert-success">
+                                    <h6><i class="bi bi-check-circle"></i> Test Completed Successfully!</h6>
+                                    @if (!string.IsNullOrEmpty(Model.Result.PaymentIntentId))
+                                    {
+                                        <p class="mb-1"><strong>Payment Intent ID:</strong> <code>@Model.Result.PaymentIntentId</code></p>
+                                    }
+                                    <p class="mb-0">PayMongo payment gateway is properly configured and working.</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-danger">
+                                    <h6><i class="bi bi-x-circle"></i> Test Failed</h6>
+                                    @if (!string.IsNullOrEmpty(Model.Result.ErrorMessage))
+                                    {
+                                        <p class="mb-2"><strong>Error:</strong> @Model.Result.ErrorMessage</p>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Test Steps -->
+                            <div class="mt-3">
+                                <h6>Test Steps:</h6>
+                                <div class="list-group">
+                                    @foreach (var step in Model.Result.Steps)
+                                    {
+                                        <div class="list-group-item @(step.Success ? "list-group-item-success" : "list-group-item-danger")">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">@step.Name</h6>
+                                                <span>
+                                                    @if (step.Success)
+                                                    {
+                                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                                    }
+                                                </span>
+                                            </div>
+                                            <p class="mb-1">@step.Message</p>
+                                            @if (!string.IsNullOrEmpty(step.Details))
+                                            {
+                                                <small class="text-muted">@step.Details</small>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Response Details -->
+                            @if (!string.IsNullOrEmpty(Model.Result.ResponseDetails))
+                            {
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-secondary" 
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#responseDetails">
+                                        <i class="bi bi-code-slash"></i> Show Response Details
+                                    </button>
+                                    <div class="collapse mt-2" id="responseDetails">
+                                        <div class="card card-body bg-dark text-light">
+                                            <pre class="mb-0 small">@Model.Result.ResponseDetails</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Full Exception Details (for debugging) -->
+                            @if (!string.IsNullOrEmpty(Model.Result.FullException))
+                            {
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-secondary" 
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#exceptionDetails">
+                                        <i class="bi bi-code-slash"></i> Show Full Exception Details
+                                    </button>
+                                    <div class="collapse mt-2" id="exceptionDetails">
+                                        <div class="card card-body bg-dark text-light">
+                                            <pre class="mb-0 small">@Model.Result.FullException</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <!-- Troubleshooting Tips -->
+                    <div class="mt-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-lightbulb"></i> Troubleshooting Tips
+                                </h6>
+                                <ul class="mb-0 small">
+                                    <li><strong>"Payment gateway not configured":</strong> 
+                                        <ul>
+                                            <li>Add your PayMongo Secret Key to <code>appsettings.json</code> or environment variables</li>
+                                            <li>For sandbox testing, use keys starting with <code>sk_test_</code> and <code>pk_test_</code></li>
+                                            <li>Get your keys from PayMongo Dashboard → Developers → API Keys</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>"Invalid Secret Key format":</strong> 
+                                        <ul>
+                                            <li>Secret key must start with <code>sk_test_</code> (sandbox) or <code>sk_live_</code> (production)</li>
+                                            <li>Public key must start with <code>pk_test_</code> (sandbox) or <code>pk_live_</code> (production)</li>
+                                            <li>Ensure there are no extra spaces or characters</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>"Failed to create payment intent":</strong> 
+                                        <ul>
+                                            <li>Check your internet connection</li>
+                                            <li>Verify your API keys are correct and active</li>
+                                            <li>Check PayMongo dashboard for API status</li>
+                                            <li>Review application logs for detailed error messages</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Configuration Location:</strong> 
+                                        <ul>
+                                            <li>Development: <code>appsettings.Development.json</code></li>
+                                            <li>Production: <code>appsettings.json</code> or environment variables</li>
+                                            <li>Environment variables override config files</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Setup Guide -->
+                    <div class="mt-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-info-circle"></i> Quick Setup Guide
+                                </h6>
+                                <ol class="mb-0 small">
+                                    <li>Go to <a href="https://paymongo.com" target="_blank" class="text-white"><u>PayMongo Dashboard</u></a></li>
+                                    <li>Navigate to <strong>Developers</strong> → <strong>API Keys</strong></li>
+                                    <li>Create a new API key pair (for testing, use Sandbox keys)</li>
+                                    <li>Copy your <strong>Secret Key</strong> (starts with <code>sk_test_</code>)</li>
+                                    <li>Copy your <strong>Public Key</strong> (starts with <code>pk_test_</code>)</li>
+                                    <li>Add them to <code>appsettings.json</code>:
+                                        <pre class="bg-dark text-white p-2 mt-2 mb-0 small">"PayMongoSecretKey": "sk_test_YOUR_KEY_HERE",
+"PayMongoPublicKey": "pk_test_YOUR_KEY_HERE"</pre>
+                                    </li>
+                                    <li>Restart your application and run this test again</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .list-group-item {
+        border-left: 4px solid;
+    }
+    .list-group-item-success {
+        border-left-color: #28a745;
+    }
+    .list-group-item-danger {
+        border-left-color: #dc3545;
+    }
+    code {
+        background-color: #f8f9fa;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.9em;
+    }
+</style>
+

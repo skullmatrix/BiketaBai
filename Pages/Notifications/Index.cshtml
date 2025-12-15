@@ -172,7 +172,7 @@
                         <div class="notification-header">
                             <h3 class="notification-title">@notification.Title</h3>
                             <span class="notification-time">
-                                @notification.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                                @TimeZoneHelper.FormatPhilippineTime(notification.CreatedAt, "MMM dd, yyyy hh:mm tt")
                             </span>
                         </div>
                         <p class="notification-message">@notification.Message</p>

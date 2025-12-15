@@ -97,7 +97,7 @@
                                     <div class="home-request-info">
                                         <strong>@request.Renter.FullName</strong>
                                         <span>wants to rent <strong>@request.Bike.Brand @request.Bike.Model</strong></span>
-                                        <small>@request.StartDate.ToString("MMM dd") - @request.EndDate.ToString("MMM dd, yyyy")</small>
+                                        <small>@TimeZoneHelper.FormatPhilippineTime(request.StartDate, "MMM dd") - @TimeZoneHelper.FormatPhilippineTime(request.EndDate, "MMM dd, yyyy")</small>
                                     </div>
                                     <a href="/Owner/RentalRequests" class="home-btn-small">Review</a>
                                 </div>
@@ -185,7 +185,7 @@
                                     <h4>@rental.Bike.Brand @rental.Bike.Model</h4>
                                     <div class="home-rental-dates">
                                         <i class="bi bi-calendar"></i>
-                                        @rental.StartDate.ToString("MMM dd") - @rental.EndDate.ToString("MMM dd")
+                                        @TimeZoneHelper.FormatPhilippineTime(rental.StartDate, "MMM dd") - @TimeZoneHelper.FormatPhilippineTime(rental.EndDate, "MMM dd")
                                     </div>
                                     <div class="home-rental-price">₱@rental.TotalAmount.ToString("N2")</div>
                                 </div>

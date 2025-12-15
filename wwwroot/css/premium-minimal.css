@@ -177,13 +177,41 @@ body {
     transition: all var(--transition-base);
 }
 
+.brand-minimal img.brand-logo {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.brand-minimal img.brand-logo:not([src=""]) {
+    display: block;
+}
+
 .brand-minimal i {
     font-size: 1.5rem;
     color: var(--color-sage-primary);
+    display: block;
+}
+
+.brand-minimal i.brand-icon-fallback {
+    display: none;
+}
+
+.brand-minimal:has(img.brand-logo:not([src=""])) i.brand-icon-fallback {
+    display: none;
+}
+
+.brand-minimal:not(:has(img.brand-logo:not([src=""]))) i.brand-icon-fallback {
+    display: block;
 }
 
 .brand-minimal:hover {
     color: var(--color-sage-primary);
+}
+
+.brand-minimal:hover img.brand-logo {
+    opacity: 0.9;
 }
 
 /* Navigation Links */

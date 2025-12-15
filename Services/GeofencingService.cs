@@ -1,5 +1,6 @@
 using BiketaBai.Data;
 using BiketaBai.Models;
+using BiketaBai.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -437,8 +438,8 @@ public class GeofencingService
             return; // Already sent reminder for this booking
         }
 
-        // Format return time (convert UTC to local time if needed, or use UTC)
-        var returnTime = booking.EndDate.ToString("MMM dd, yyyy hh:mm tt");
+        // Format return time (convert UTC to Philippine time)
+        var returnTime = TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd, yyyy hh:mm tt");
         var minutesLeft = Math.Ceiling(timeRemaining);
 
         // Send reminder SMS
@@ -519,8 +520,8 @@ public class GeofencingService
             }
         }
 
-        // Format return time
-        var returnTime = booking.EndDate.ToString("MMM dd, yyyy hh:mm tt");
+        // Format return time (convert UTC to Philippine time)
+        var returnTime = TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd, yyyy hh:mm tt");
         var overdueHours = Math.Floor(overdueMinutes / 60);
         var overdueMins = Math.Floor(overdueMinutes % 60);
 

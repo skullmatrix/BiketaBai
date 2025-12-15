@@ -78,7 +78,7 @@ else
                         </div>
                         <div class="booking-date">
                             <i class="bi bi-calendar-check"></i>
-                            <span>Completed on @Model.Booking.EndDate.ToString("MMM dd, yyyy")</span>
+                            <span>Completed on @TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy")</span>
                         </div>
                     </div>
                 </div>

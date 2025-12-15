@@ -21,13 +21,46 @@ public class PaymentGatewayService
     {
         _configuration = configuration;
         _httpClient = httpClient;
+        
+        // Get secret key from configuration or environment variables
         _secretKey = _configuration["AppSettings:PayMongoSecretKey"] ?? "";
+        
+        // Check environment variables (they override appsettings)
+        var envSecretKey = Environment.GetEnvironmentVariable("AppSettings__PayMongoSecretKey")
+                         ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey");
+        if (!string.IsNullOrEmpty(envSecretKey))
+        {
+            _secretKey = envSecretKey;
+            Log.Information("PayMongo Secret Key loaded from environment variable");
+        }
+
+        // Log configuration status
+        if (string.IsNullOrEmpty(_secretKey))
+        {
+            Log.Warning("PayMongo Secret Key is not configured. Payment gateway will not work.");
+        }
+        else if (_secretKey.StartsWith("sk_test_", StringComparison.OrdinalIgnoreCase))
+        {
+            Log.Information("PayMongo configured with Sandbox (Test) keys");
+        }
+        else if (_secretKey.StartsWith("sk_live_", StringComparison.OrdinalIgnoreCase))
+        {
+            Log.Warning("PayMongo configured with Live (Production) keys");
+        }
+        else
+        {
+            Log.Warning("PayMongo Secret Key format is invalid. Expected 'sk_test_' or 'sk_live_' prefix");
+        }
 
         // Configure HTTP client
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _httpClient.DefaultRequestHeaders.Clear();
+        
         // PayMongo uses Basic Auth with secret key (sk_test_xxx for sandbox)
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(_secretKey + ":"))}");
+        if (!string.IsNullOrEmpty(_secretKey))
+        {
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(_secretKey + ":"))}");
+        }
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }
 
@@ -45,11 +78,23 @@ public class PaymentGatewayService
         {
             if (string.IsNullOrEmpty(_secretKey))
             {
-                Log.Warning("PayMongo secret key not configured");
+                Log.Warning("PayMongo secret key not configured. Check appsettings.json or environment variables.");
                 return new PaymentIntentResult
                 {
                     Success = false,
-                    ErrorMessage = "Payment gateway not configured"
+                    ErrorMessage = "Payment gateway not configured. Please add PayMongoSecretKey to appsettings.json or environment variables."
+                };
+            }
+
+            // Validate secret key format
+            if (!_secretKey.StartsWith("sk_", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Error("PayMongo secret key has invalid format. Expected 'sk_test_' or 'sk_live_' prefix. Current: {KeyPrefix}", 
+                    _secretKey.Length > 8 ? _secretKey.Substring(0, 8) : "Invalid");
+                return new PaymentIntentResult
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid PayMongo Secret Key format. Expected 'sk_test_' (sandbox) or 'sk_live_' (production) prefix."
                 };
             }
 
