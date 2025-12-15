@@ -230,36 +230,46 @@ public class PaymentGatewayModel : PageModel
 
         try
         {
+            // Validate card details
+            if (string.IsNullOrWhiteSpace(CardPayment.CardNumber) ||
+                CardPayment.ExpMonth <= 0 || CardPayment.ExpMonth > 12 ||
+                CardPayment.ExpYear < DateTime.Now.Year ||
+                string.IsNullOrWhiteSpace(CardPayment.Cvc) ||
+                string.IsNullOrWhiteSpace(CardPayment.CardholderName))
+            {
+                ErrorMessage = "Please fill in all card details correctly.";
+                PaymentIntentId = paymentIntentId;
+                PaymentMethodId = 6; // Card
+                return Page();
+            }
+
             // For PayMongo, create payment method and attach to payment intent
             var cardDetails = new PaymentGatewayService.CardDetails
             {
-                CardNumber = CardPayment.CardNumber.Replace(" ", ""),
+                CardNumber = CardPayment.CardNumber.Replace(" ", "").Replace("-", ""),
                 ExpMonth = CardPayment.ExpMonth,
                 ExpYear = CardPayment.ExpYear,
                 Cvc = CardPayment.Cvc,
                 CardholderName = CardPayment.CardholderName
             };
 
-            // Get booking details
-            var booking = await _context.Bookings
-                .Include(b => b.Bike)
-                .FirstOrDefaultAsync(b => b.BookingId == bookingId);
-
-            if (booking == null)
-            {
-                ErrorMessage = "Booking not found";
-                return Page();
-            }
+            Log.Information("Processing card payment for booking {BookingId}, PaymentIntent {PaymentIntentId}", 
+                bookingId, paymentIntentId);
 
             // Create payment method
             var paymentMethodResult = await _paymentGatewayService.CreatePaymentMethodAsync("card", cardDetails);
 
             if (!paymentMethodResult.Success || string.IsNullOrEmpty(paymentMethodResult.PaymentMethodId))
             {
-                ErrorMessage = paymentMethodResult.ErrorMessage ?? "Failed to process card details";
+                Log.Warning("Failed to create payment method: {Error}", paymentMethodResult.ErrorMessage);
+                ErrorMessage = paymentMethodResult.ErrorMessage ?? "Failed to process card details. Please check your card information and try again.";
                 PaymentIntentId = paymentIntentId;
+                PaymentMethodId = 6; // Card
                 return Page();
             }
+
+            Log.Information("Payment method created: {PaymentMethodId}, attaching to payment intent {PaymentIntentId}", 
+                paymentMethodResult.PaymentMethodId, paymentIntentId);
 
             // Attach payment method to payment intent
             var attachResult = await _paymentGatewayService.AttachPaymentMethodAsync(
@@ -267,45 +277,66 @@ public class PaymentGatewayModel : PageModel
                 paymentMethodResult.PaymentMethodId
             );
 
-            if (attachResult.Success && attachResult.Status == "succeeded")
+            Log.Information("Payment method attached. Status: {Status}, Success: {Success}", 
+                attachResult.Status, attachResult.Success);
+
+            if (attachResult.Success)
             {
-                // Create payment record
-                var payment = new Payment
+                // Check payment status
+                if (attachResult.Status == "succeeded")
                 {
-                    BookingId = bookingId,
-                    PaymentMethod = "Credit/Debit Card",
-                    Amount = booking.TotalAmount,
-                    PaymentStatus = "Completed",
-                    TransactionReference = attachResult.TransactionReference ?? paymentIntentId,
-                    PaymentDate = DateTime.UtcNow
-                };
-
-                _context.Payments.Add(payment);
-
-                // Update booking status
-                booking.BookingStatus = "Active";
-                booking.UpdatedAt = DateTime.UtcNow;
-
-                // Update bike status
-                booking.Bike.AvailabilityStatus = "Rented";
-                booking.Bike.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-
-                return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                    // Payment succeeded immediately - confirm it
+                    var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
+                    if (confirmResult.success)
+                    {
+                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                    }
+                    else
+                    {
+                        ErrorMessage = confirmResult.message ?? "Payment succeeded but confirmation failed. Please contact support.";
+                        PaymentIntentId = paymentIntentId;
+                        PaymentMethodId = 6;
+                        return Page();
+                    }
+                }
+                else if (attachResult.Status == "awaiting_next_action")
+                {
+                    // 3D Secure or other action required - redirect to check status
+                    TempData["PaymentIntentId"] = paymentIntentId;
+                    return RedirectToPage("/Bookings/PaymentGateway", new 
+                    { 
+                        bookingId = bookingId, 
+                        paymentIntentId = paymentIntentId,
+                        action = "confirm"
+                    });
+                }
+                else
+                {
+                    // Payment is processing - check status
+                    TempData["PaymentIntentId"] = paymentIntentId;
+                    return RedirectToPage("/Bookings/PaymentGateway", new 
+                    { 
+                        bookingId = bookingId, 
+                        paymentIntentId = paymentIntentId,
+                        action = "confirm"
+                    });
+                }
             }
             else
             {
+                Log.Warning("Failed to attach payment method: {Error}", attachResult.ErrorMessage);
                 ErrorMessage = attachResult.ErrorMessage ?? "Payment failed. Please check your card details and try again.";
                 PaymentIntentId = paymentIntentId;
+                PaymentMethodId = 6; // Card
                 return Page();
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error processing card payment");
+            Log.Error(ex, "Error processing card payment for booking {BookingId}", bookingId);
             ErrorMessage = "An error occurred while processing your payment. Please try again.";
             PaymentIntentId = paymentIntentId;
+            PaymentMethodId = 6; // Card
             return Page();
         }
     }

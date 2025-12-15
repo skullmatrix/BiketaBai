@@ -220,6 +220,54 @@ public class PaymentGatewayService
                 };
             }
 
+            // Clean and validate card number (remove all non-digits)
+            var cleanCardNumber = cardDetails.CardNumber.Replace(" ", "").Replace("-", "").Replace(".", "");
+            
+            // Validate card number format (should be 13-19 digits)
+            if (string.IsNullOrWhiteSpace(cleanCardNumber) || cleanCardNumber.Length < 13 || cleanCardNumber.Length > 19)
+            {
+                return new PaymentMethodResult
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid card number format. Please enter a valid card number."
+                };
+            }
+
+            // Validate expiry month
+            if (cardDetails.ExpMonth < 1 || cardDetails.ExpMonth > 12)
+            {
+                return new PaymentMethodResult
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid expiry month. Please enter a month between 01 and 12."
+                };
+            }
+
+            // Validate expiry year (should be current year or future)
+            var currentYear = DateTime.Now.Year;
+            if (cardDetails.ExpYear < currentYear)
+            {
+                return new PaymentMethodResult
+                {
+                    Success = false,
+                    ErrorMessage = "Card has expired. Please use a card with a future expiry date."
+                };
+            }
+
+            // Validate CVV (should be 3-4 digits)
+            var cleanCvc = cardDetails.Cvc.Replace(" ", "");
+            if (string.IsNullOrWhiteSpace(cleanCvc) || cleanCvc.Length < 3 || cleanCvc.Length > 4)
+            {
+                return new PaymentMethodResult
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid CVV. Please enter a 3 or 4 digit CVV."
+                };
+            }
+
+            Log.Information("Creating payment method for card ending in {CardLast4}", 
+                cleanCardNumber.Length >= 4 ? cleanCardNumber.Substring(cleanCardNumber.Length - 4) : "****");
+
             // PayMongo payment method creation
             var payload = new
             {
@@ -230,10 +278,10 @@ public class PaymentGatewayService
                         type = "card",
                         details = new
                         {
-                            card_number = cardDetails.CardNumber.Replace(" ", ""),
+                            card_number = cleanCardNumber,
                             exp_month = cardDetails.ExpMonth,
                             exp_year = cardDetails.ExpYear,
-                            cvc = cardDetails.Cvc,
+                            cvc = cleanCvc,
                             billing = new
                             {
                                 name = cardDetails.CardholderName
@@ -269,10 +317,41 @@ public class PaymentGatewayService
             Log.Error("Failed to create payment method. Status: {StatusCode}, Response: {Response}", 
                 response.StatusCode, responseContent);
 
+            // Try to extract detailed error message
+            string errorMessage = "Failed to create payment method";
+            try
+            {
+                var errorResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                if (errorResponse.TryGetProperty("errors", out var errors))
+                {
+                    if (errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
+                    {
+                        var firstError = errors[0];
+                        if (firstError.TryGetProperty("detail", out var detail))
+                        {
+                            errorMessage = $"Failed to create payment method: {detail.GetString()}";
+                        }
+                        else if (firstError.TryGetProperty("message", out var message))
+                        {
+                            errorMessage = $"Failed to create payment method: {message.GetString()}";
+                        }
+                        else if (firstError.TryGetProperty("code", out var code))
+                        {
+                            errorMessage = $"Failed to create payment method: {code.GetString()}";
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // If parsing fails, use default message with response content
+                errorMessage = $"Failed to create payment method. Response: {responseContent}";
+            }
+
             return new PaymentMethodResult
             {
                 Success = false,
-                ErrorMessage = "Failed to create payment method"
+                ErrorMessage = errorMessage
             };
         }
         catch (Exception ex)
