@@ -1,0 +1,69 @@
+PROJECT IDENTIFICATION,,
+Project Name,Bike Ta Bai: Eco-Friendly Bike Rental Platform
+Date Created,,
+Project Sponsor,,
+Project Manager,,
+Project Adviser,,
+Dean,,
+ACCEPTANCE TEST CRITERIA MATRIX,,
+Number,Acceptance Requirement,Critical,Yes,No,Accept,Reject,Comments
+RENTER ACCEPTANCE CRITERIA,,
+1,Renter can successfully Register Account and Log In.,✔,,✔,,,The registration and login functions worked as intended. The system was able to authenticate new and existing users without errors.
+2,Renter can successfully Search/Filter Bikes by type location and price.,✔,,✔,,,Search and filter functions operated correctly allowing users to find available bikes based on their preferences.
+3,Renter can successfully View Bike Details with images pricing and availability.,✔,,✔,,,Bike details page displayed comprehensive information including multiple images pricing and real-time availability status.
+4,Renter can successfully Book a Bike by selecting date and time range.,✔,,✔,,,Booking creation was completed successfully. The interface allowed users to select rental dates and times without issues.
+5,Renter can successfully Process Payment via GCash QRPH PayMaya Card or Cash.,✔,,✔,,,Payment processing functioned correctly for all payment methods. Gateway payments were processed securely through PayMongo.
+6,Renter can successfully View Booking History and Booking Details.,✔,,✔,,,Booking history displayed all past and current bookings correctly. Booking details showed all relevant information accurately.
+7,Renter can successfully Cancel Booking with refund policy applied.,✔,,✔,,,Cancellation function worked as intended with proper refund calculations based on cancellation timing and policy.
+8,Renter can successfully Update Own Profile Information.,✔,,✔,,,Profile update feature allowed users to modify their information and changes were saved and reflected immediately.
+9,Renter can successfully Change Password with old password verification.,✔,,✔,,,Password change function worked correctly requiring old password verification before allowing new password.
+10,Renter can successfully utilize Forgot Password/Account Recovery function.,✔,,✔,,,Password recovery function sent reset emails correctly and allowed users to reset their passwords successfully.
+11,Renter can successfully View Ratings and Reviews for bikes and owners.,✔,,✔,,,Rating and review display functioned correctly showing all ratings and reviews with proper formatting.
+12,Renter can successfully Submit Rating and Review after completed rental.,✔,,✔,,,Rating submission worked correctly allowing users to rate owners and submit written reviews after completed bookings.
+13,Renter can successfully View Real-time Location Tracking on map during active rental.,✔,,✔,,,Location tracking displayed renter's current location on map correctly with real-time updates every 15 seconds.
+14,Renter receives SMS Alerts for geofence violations and overdue rentals.,✔,,✔,,,SMS notifications were delivered correctly when renter left geofence boundary or rental became overdue.
+15,Renter receives Real-time Notifications for booking confirmations and payment alerts.,✔,,✔,,,In-app notifications via SignalR were received instantly and displayed correctly with proper badge count updates.
+16,Renter can successfully View All Notifications in notifications page.,✔,,✔,,,Notifications page displayed all user notifications correctly with proper categorization and read/unread status.
+17,Renter can successfully View Renter Dashboard with active rentals and statistics.,✔,,✔,,,Dashboard displayed active rentals booking statistics total spent and CO2 saved accurately.
+18,Renter can successfully Grant Location Permission before payment.,✔,,✔,,,Location permission request appeared before payment and system correctly validated permission before allowing payment processing.
+OWNER ACCEPTANCE CRITERIA,,
+19,Owner can successfully Register Account upload ID Document and verify identity.,✔,,✔,,,Registration and ID upload functioned correctly. OCR verification extracted information from ID documents accurately.
+20,Owner can successfully Add Bike Listing with details images and pricing.,✔,,✔,,,Bike listing creation worked correctly allowing owners to add multiple images set hourly/daily rates and provide detailed descriptions.
+21,Owner can successfully Edit and Remove Bike Listings.,✔,,✔,,,Bike listing management functions worked correctly. Edit function saved changes properly and remove function prevented deletion if bike has active bookings.
+22,Owner can successfully View Rental Requests and Approve/Reject Bookings.,✔,,✔,,,Rental request management functioned correctly. Owners could view pending bookings and approve or reject them with proper notifications sent to renters.
+23,Owner can successfully Verify Cash Payment and activate booking.,✔,,✔,,,Cash payment verification worked correctly activating bookings and starting rental time when owner confirmed payment receipt.
+24,Owner can successfully View Owner Dashboard with earnings and statistics.,✔,,✔,,,Dashboard displayed total earnings pending earnings active rentals and bike statistics accurately.
+25,Owner can successfully Set Store Location and Geofence Settings.,✔,,✔,,,Store location and geofence radius settings were saved correctly and applied to location tracking and geofence alerts.
+26,Owner can successfully View Live Location of renter during active rental.,✔,,✔,,,Real-time location tracking displayed renter's location on map correctly with bike icon marker and geofence circle visible.
+27,Owner can successfully Receive Geofence Violation Notifications.,✔,,✔,,,Owner received in-app notifications immediately when renter left geofence boundary with accurate distance information.
+28,Owner can successfully Report Lost Bike for overdue rentals.,✔,,✔,,,Lost bike reporting function worked correctly marking bookings as reported lost and sending notifications to renters.
+29,Owner can successfully View Location History trail with color coding.,✔,,✔,,,Location history displayed all tracked locations correctly showing the rental trail with proper visualization.
+30,Owner can successfully Confirm Bike Return and complete booking.,✔,,✔,,,Bike return confirmation function worked correctly marking bookings as completed and making bikes available for new rentals.
+31,Owner can successfully View Payment History and Earnings.,✔,,✔,,,Payment history displayed all transactions correctly showing rental payments service fees and net earnings accurately.
+32,Owner can successfully View Ratings and Reviews received from renters.,✔,,✔,,,Rating display functioned correctly showing all ratings and reviews received from renters with proper calculations of average ratings.
+33,Owner can successfully Rate Renter after completed rental.,✔,,✔,,,Rating submission for renters worked correctly allowing owners to rate renters and submit reviews after bookings were completed.
+34,Owner can successfully View All Notifications including booking requests and alerts.,✔,,✔,,,Notifications page displayed all owner notifications correctly including booking requests payment confirmations and geofence alerts.
+35,Owner can successfully View Verification Status for ID document.,✔,,✔,,,Verification status page displayed current verification status correctly showing pending approved or rejected status with admin feedback.
+ADMIN ACCEPTANCE CRITERIA,,
+36,Admin can successfully Log In and access Admin Dashboard.,✔,,✔,,,Admin login and dashboard access functioned correctly with proper role-based authorization preventing unauthorized access.
+37,Admin can successfully View All Users with search and filter options.,✔,,✔,,,User management page displayed all users correctly with working search and filter functions by role and status.
+38,Admin can successfully Suspend/Enable User Accounts.,✔,,✔,,,User account suspension and activation functions worked correctly preventing or allowing login access as intended.
+39,Admin can successfully Delete User Accounts (except admin accounts).,✔,,✔,,,User deletion function worked correctly with proper validation preventing deletion of admin accounts and users with active bookings.
+40,Admin can successfully View Pending Owner Verifications and verify ID documents.,✔,,✔,,,Owner verification management functioned correctly. Admin could view pending verifications and approve or reject them with proper status updates.
+41,Admin can successfully View All Bike Listings with search and filter options.,✔,,✔,,,Bike listing management page displayed all listings correctly with working search and filter functions.
+42,Admin can successfully Manage Bike Listings (set status delete if no active bookings).,✔,,✔,,,Bike listing management functions worked correctly allowing admins to change bike status and delete listings when appropriate.
+43,Admin can successfully Monitor All Bookings with filters by status and date range.,✔,,✔,,,Booking monitoring function displayed all bookings correctly with working filters for status and date range.
+44,Admin can successfully View Dashboard Statistics (users bikes bookings financial).,✔,,✔,,,Dashboard statistics displayed accurate counts and metrics for users bikes bookings and financial data.
+45,Admin can successfully View and Manage Reports with filters by type status priority.,✔,,✔,,,Report management functioned correctly displaying all reports with proper filtering and allowing status updates.
+46,Admin can successfully Generate Analytics and view trends.,✔,,✔,,,Analytics generation worked correctly producing reports on trends demographics and booking patterns.
+47,Admin can successfully Send Admin Broadcast Notifications to all users.,✔,,✔,,,Admin broadcast function worked correctly sending notifications to all users or selected user groups.
+48,Admin can successfully View All Ratings and Reviews with ability to delete inappropriate content.,✔,,✔,,,Review management functioned correctly allowing admins to view all reviews and delete inappropriate content when necessary.
+OTHER CONSIDERATIONS,,
+Business Objectives - Did the software application/system meet the business objective?,Yes,No
+,✔,,The system successfully provided a comprehensive bike rental marketplace connecting bicycle owners with renters while ensuring security through location tracking geofencing and digital payment processing.
+Does the software application/system require any setups prior to installation? If so please describe.,Yes,No
+,✔,,Initial setup includes database configuration API key configuration (PayMongo iProgSMS Google Cloud Vision OpenStreetMap) and creation of initial Admin accounts.
+APPROVAL,,
+Respondent,Signature,Date,Yes,No
+Acceptance Testing,,
+

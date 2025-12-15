@@ -10,6 +10,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>@ViewData["Title"] - Bike Ta Bai</title>
+    <link rel="icon" type="image/x-icon" href="/src/icon.ico" />
+    <link rel="icon" type="image/png" href="/src/icon.png" />
+    <link rel="apple-touch-icon" href="/src/icon.png" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
@@ -61,7 +64,8 @@
             <div class="container">
                 <!-- Brand -->
                 <a class="navbar-brand brand-minimal" href="/">
-                    <i class="bi bi-bicycle"></i>
+                    <img src="/src/logo.png" alt="Bike Ta Bai" class="brand-logo" style="height: 32px; width: auto; margin-right: 8px; display: inline-block; vertical-align: middle;" onerror="this.style.display='none';" onload="this.nextElementSibling.style.display='none';">
+                    <i class="bi bi-bicycle brand-icon-fallback" style="display: inline-block; vertical-align: middle;"></i>
                     <span>Bike Ta Bai</span>
                 </a>
                 
@@ -274,7 +278,8 @@
                 <!-- Brand & Copyright -->
                 <div class="col-lg-4 col-md-6 mb-3 mb-lg-0 text-center text-md-start">
                     <div class="footer-brand-minimal mb-2">
-                        <i class="bi bi-bicycle"></i>
+                        <img src="/src/logo.png" alt="Bike Ta Bai" class="footer-logo" style="height: 24px; width: auto; margin-right: 8px; display: inline-block; vertical-align: middle;" onerror="this.style.display='none';" onload="this.nextElementSibling.style.display='none';">
+                        <i class="bi bi-bicycle footer-icon-fallback" style="display: inline-block; vertical-align: middle;"></i>
                         <span>Bike Ta Bai</span>
                     </div>
                     <p class="footer-text-minimal mb-0">&copy; 2025 All rights reserved.</p>

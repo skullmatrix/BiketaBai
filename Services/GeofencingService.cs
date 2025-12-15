@@ -211,38 +211,38 @@ public class GeofencingService
                 else
                 {
                     var message = $"⚠️ Geofence Alert: You are {distanceKm:F1}km away from {storeName}. " +
-                                 $"Please return within {radius}km radius. Current distance: {distanceKm:F1}km. - Bike Ta Bai";
+                             $"Please return within {radius}km radius. Current distance: {distanceKm:F1}km. - Bike Ta Bai";
 
                     try
                     {
                         Log.Information("Preparing to send geofence SMS to renter {RenterId} (Phone: {Phone}) for booking {BookingId}. Distance: {Distance}km", 
                             booking.RenterId, booking.Renter.Phone, bookingId, distanceKm);
-                        
-                        var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
-                        if (smsSent)
-                        {
-                            warningMessage = "Warning SMS sent";
-                            
-                            // Create notification record to track that SMS was sent
-                            var notification = new Notification
-                            {
-                                UserId = booking.RenterId,
-                                Title = "Geofence Alert",
+
+                var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
+                if (smsSent)
+                {
+                    warningMessage = "Warning SMS sent";
+                    
+                    // Create notification record to track that SMS was sent
+                    var notification = new Notification
+                    {
+                        UserId = booking.RenterId,
+                        Title = "Geofence Alert",
                                 Message = $"Geofence Alert: You are {distanceKm:F1}km away from {storeName}. Booking #{bookingId}",
-                                NotificationType = "Geofence",
-                                IsRead = false,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            _context.Notifications.Add(notification);
-                            
+                        NotificationType = "Geofence",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Notifications.Add(notification);
+                    
                             Log.Information("✅ Geofence warning SMS sent successfully to renter {RenterId} for booking {BookingId}. Distance: {Distance}km, Phone: {Phone}", 
                                 booking.RenterId, bookingId, distanceKm, booking.Renter.Phone);
-                        }
-                        else
-                        {
+                }
+                else
+                {
                             Log.Warning("❌ Failed to send geofence warning SMS to renter {RenterId} for booking {BookingId}. Phone: {Phone}. Check SMS service logs for details.", 
                                 booking.RenterId, bookingId, booking.Renter.Phone);
-                        }
+                }
                     }
                     catch (Exception ex)
                     {
@@ -281,15 +281,15 @@ public class GeofencingService
     public async Task MonitorActiveBookingsAsync()
     {
         try
-        {
-            var activeBookings = await _context.Bookings
-                .Include(b => b.Bike)
-                    .ThenInclude(bike => bike.Owner)
-                .Include(b => b.Renter)
+    {
+        var activeBookings = await _context.Bookings
+            .Include(b => b.Bike)
+                .ThenInclude(bike => bike.Owner)
+            .Include(b => b.Renter)
                 .Where(b => b.BookingStatus == "Active")
-                .ToListAsync();
+            .ToListAsync();
 
-            Log.Information("Monitoring {Count} active bookings for geofence violations and reminders", activeBookings.Count);
+        Log.Information("Monitoring {Count} active bookings for geofence violations and reminders", activeBookings.Count);
             
             if (activeBookings.Count == 0)
             {
@@ -297,8 +297,8 @@ public class GeofencingService
                 return;
             }
 
-            foreach (var booking in activeBookings)
-            {
+        foreach (var booking in activeBookings)
+        {
             // Check for overdue bookings and send SMS
             await CheckAndSendOverdueNotificationAsync(booking);
 
@@ -352,25 +352,25 @@ public class GeofencingService
 
                     try
                     {
-                        var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
-                        if (smsSent)
+                    var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
+                    if (smsSent)
+                    {
+                        // Create notification record
+                        var notification = new Notification
                         {
-                            // Create notification record
-                            var notification = new Notification
-                            {
-                                UserId = booking.RenterId,
-                                Title = "Geofence Alert",
+                            UserId = booking.RenterId,
+                            Title = "Geofence Alert",
                                 Message = $"Geofence Alert: You are still {distance:F1}km away from {storeName}. Booking #{booking.BookingId}",
-                                NotificationType = "Geofence",
-                                IsRead = false,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            _context.Notifications.Add(notification);
-                            await _context.SaveChangesAsync();
-                            
+                            NotificationType = "Geofence",
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Notifications.Add(notification);
+                        await _context.SaveChangesAsync();
+                        
                             Log.Information("Periodic geofence warning SMS sent to renter {RenterId} for booking {BookingId}. Distance: {Distance}km, Phone: {Phone}", 
                                 booking.RenterId, booking.BookingId, distance, booking.Renter.Phone);
-                        }
+                    }
                         else
                         {
                             Log.Warning("Failed to send periodic geofence warning SMS to renter {RenterId} for booking {BookingId}. Phone: {Phone}", 
@@ -446,30 +446,30 @@ public class GeofencingService
         
         try
         {
-            var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
-            
-            if (smsSent)
+        var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
+        
+        if (smsSent)
+        {
+            // Create notification record
+            var notification = new Notification
             {
-                // Create notification record
-                var notification = new Notification
-                {
-                    UserId = booking.RenterId,
-                    Title = "Return Reminder",
-                    Message = $"Return reminder sent for Booking #{booking.BookingId}. Return by {returnTime}.",
-                    NotificationType = "Reminder",
-                    IsRead = false,
-                    ActionUrl = $"/Bookings/Details/{booking.BookingId}",
-                    CreatedAt = DateTime.UtcNow
-                };
+                UserId = booking.RenterId,
+                Title = "Return Reminder",
+                Message = $"Return reminder sent for Booking #{booking.BookingId}. Return by {returnTime}.",
+                NotificationType = "Reminder",
+                IsRead = false,
+                ActionUrl = $"/Bookings/Details/{booking.BookingId}",
+                CreatedAt = DateTime.UtcNow
+            };
 
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
 
                 Log.Information("Return reminder SMS sent to renter {RenterId} for booking {BookingId}. Time remaining: {Minutes} minutes, Phone: {Phone}", 
                     booking.RenterId, booking.BookingId, minutesLeft, booking.Renter.Phone);
-            }
-            else
-            {
+        }
+        else
+        {
                 Log.Warning("Failed to send return reminder SMS to renter {RenterId} for booking {BookingId}. Phone: {Phone}", 
                     booking.RenterId, booking.BookingId, booking.Renter.Phone);
             }
@@ -530,41 +530,41 @@ public class GeofencingService
         
         try
         {
-            var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
-            
-            if (smsSent)
+        var smsSent = await _smsService.SendSmsAsync(booking.Renter.Phone, message);
+        
+        if (smsSent)
+        {
+            // Create notification record
+            var notification = new Notification
             {
-                // Create notification record
-                var notification = new Notification
-                {
-                    UserId = booking.RenterId,
-                    Title = "Overdue Return",
-                    Message = $"Your bike rental (Booking #{booking.BookingId}) is overdue. Please return immediately.",
-                    NotificationType = "Overdue",
-                    IsRead = false,
-                    ActionUrl = $"/Bookings/Details/{booking.BookingId}",
-                    CreatedAt = DateTime.UtcNow
-                };
+                UserId = booking.RenterId,
+                Title = "Overdue Return",
+                Message = $"Your bike rental (Booking #{booking.BookingId}) is overdue. Please return immediately.",
+                NotificationType = "Overdue",
+                IsRead = false,
+                ActionUrl = $"/Bookings/Details/{booking.BookingId}",
+                CreatedAt = DateTime.UtcNow
+            };
 
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
 
                 // Also notify the owner about overdue return (in-app notification)
-                await _notificationService.CreateNotificationAsync(
-                    booking.Bike.OwnerId,
-                    "Bike Return Overdue",
-                    $"Booking #{booking.BookingId} for {booking.Bike.Brand} {booking.Bike.Model} is overdue. Renter: {booking.Renter.FullName}. Overdue by {overdueHours}h {overdueMins}m.",
-                    "Overdue",
-                    $"/Owner/MyBikes"
-                );
+            await _notificationService.CreateNotificationAsync(
+                booking.Bike.OwnerId,
+                "Bike Return Overdue",
+                $"Booking #{booking.BookingId} for {booking.Bike.Brand} {booking.Bike.Model} is overdue. Renter: {booking.Renter.FullName}. Overdue by {overdueHours}h {overdueMins}m.",
+                "Overdue",
+                $"/Owner/MyBikes"
+            );
 
                 // Note: Owner already receives in-app notification above (phone numbers not required for owners)
 
                 Log.Information("Overdue notification SMS sent to renter {RenterId} for booking {BookingId}. Overdue by {Minutes} minutes, Phone: {Phone}", 
                     booking.RenterId, booking.BookingId, overdueMinutes, booking.Renter.Phone);
-            }
-            else
-            {
+        }
+        else
+        {
                 Log.Warning("Failed to send overdue notification SMS to renter {RenterId} for booking {BookingId}. Phone: {Phone}", 
                     booking.RenterId, booking.BookingId, booking.Renter.Phone);
             }

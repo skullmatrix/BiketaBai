@@ -1,0 +1,76 @@
+Module,Programmer,Feature,Renter,Owner,Admin,No. of Points (1 point per module user)
+Account Management,,,,
+,Planas & Go,Create Account,✓,✓,✓,3
+,Planas & Go,Update Own Profile,✓,✓,✓,3
+,Planas & Go,View and Edit Profile,✓,✓,✓,3
+,Planas & Go,Remove Account,✓,✓,✓,3
+,Planas & Go,Email Verification,✓,✓,✓,3
+,Planas & Go,Phone Verification (OTP),✓,✓,✓,3
+,Planas & Go,Change Password,✓,✓,✓,3
+,Planas & Go,Forgot Password,✓,✓,✓,3
+Bike Listing Management,,,,
+,Tejares & Dinopol,Add Bike,,✓,,1
+,Tejares & Dinopol,Edit Bike Listing,,✓,,1
+,Tejares & Dinopol,Remove Bike,,✓,,1
+,Tejares & Dinopol,Set Availability,,✓,,1
+,Tejares & Dinopol,View Booking Requests,,✓,,1
+,Tejares & Dinopol,Set Geofence Settings,,✓,,1
+Bike Browsing & Booking Management,,,,
+,Dinopol,Search/Filter Bikes,✓,,,1
+,Dinopol,Book a Bike,✓,,,1
+,Dinopol,View Booking History,✓,,,1
+,Dinopol,Cancel Booking,✓,,,1
+,Dinopol,View Booking Details,✓,✓,,2
+Payment & Wallet Management,,,,
+,Planas & Dinopol,Top-up Wallet,✓,✓,,2
+,Planas & Dinopol,View Wallet Balance,✓,✓,✓,3
+,Planas & Dinopol,View Transaction History,✓,✓,✓,3
+,Planas & Dinopol,Receive Rental Payment,,✓,,1
+,Planas & Dinopol,Process Payment,✓,,,1
+,Planas & Dinopol,Verify Cash Payment,,✓,,1
+Ratings & Feedback Management,,,,
+,Go,Rate a User,✓,✓,,2
+,Go,View Ratings,✓,✓,✓,3
+,Go,Submit Feedback/Review,✓,✓,,2
+Location Tracking & Geofencing,,,,
+,Tejares,View Bike Location (Map),✓,✓,,2
+,Tejares,Track During Rental,✓,✓,,2
+,Tejares,Report Lost Bike,✓,✓,,2
+,Tejares,View Location History,,✓,,1
+,Tejares,Receive Geofence Alerts,✓,✓,,2
+Notifications & Alerts,,,,
+,Go,Receive Booking Confirmations,✓,✓,,2
+,Go,Receive Payment Alerts,✓,✓,,2
+,Go,Receive Geofence Notifications,✓,✓,,2
+,Go,View All Notifications,✓,✓,✓,3
+,Go,Admin Broadcasts,,,✓,1
+ID Verification & Document Management,,,,
+,Go,Upload ID Document,,✓,,1
+,Go,Verify ID via OCR,,✓,,1
+,Go,View Verification Status,,✓,,1
+,Go,Admin Verify Owner ID,,,✓,1
+Address Validation & Geocoding,,,,
+,Planas,Validate Address,✓,✓,,2
+,Planas,Autocomplete Address,✓,✓,,2
+,Planas,Set Store Location,,✓,,1
+Admin Dashboard & User Management,,,,
+,Go & Tejares,View All Users,,,✓,1
+,Go & Tejares,Verify Owner Accounts,,,✓,1
+,Go & Tejares,Suspend/Enable Users,,,✓,1
+,Go & Tejares,Delete Users,,,✓,1
+,Go & Tejares,View All Bike Listings,,,✓,1
+,Go & Tejares,Manage Bike Listings,,,✓,1
+,Go & Tejares,Monitor All Bookings,,,✓,1
+,Go & Tejares,View Dashboard Statistics,,,✓,1
+Reports & Analytics,,,,
+,Dinopol,View Reports,,,✓,1
+,Dinopol,Manage Reports,,,✓,1
+,Dinopol,Generate Analytics,,,✓,1
+Testing Tools (Admin),,,,
+,Go,Test Notifications,,,✓,1
+,Go,Test Location Tracking,,,✓,1
+,Go,Test SMS Service,,,✓,1
+,Go,Test Email Service,,,✓,1
+,Go,Test OCR Service,,,✓,1
+,Go,Test Geofencing,,,✓,1
+Total number of Modules,47

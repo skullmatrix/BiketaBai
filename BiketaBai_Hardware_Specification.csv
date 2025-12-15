@@ -1,0 +1,23 @@
+Category,Component,Specification,Examples
+HARDWARE SPECIFICATION FOR DEVELOPMENT,,
+CPU,Processor,"Intel or AMD processor with 64-bit support; 2.4 GHz or faster","Intel Core i5 11th Gen @ 2.40GHz, Intel Core i7 @ 2.80GHz, AMD Ryzen 5 @ 3.60 GHz, Intel Core i5 12th Gen @ 2.50 GHz"
+RAM,Memory,"At least 8 GB DDR4 RAM (16 GB recommended for Visual Studio and MySQL)","8.00 GB DDR4 @3200MHz, 16.00 GB DDR4 @3200MHz, 12.0 GB, 16.00 GB"
+STORAGE,Storage,"256GB SSD minimum, 512GB SSD recommended","512GB Samsung NVMe SSD, 1TB Kingston NVMe, 512GB Crucial SSD, 256GB WD SSD"
+GPU,Graphics,Integrated graphics or dedicated GPU for development,"Intel Iris Xe Graphics, NVIDIA GeForce GTX 1650, AMD Radeon Graphics, Intel UHD Graphics 620"
+DISPLAY,Monitor,"Full HD (1920x1080) minimum for web UI design","24-inch monitors, dual monitor setup recommended"
+KEYBOARD,Input Device,Any standard keyboard,"A4Tech, Logitech K380, Rakk Lam-Ang Pro, Redragon K552"
+MOUSE,Input Device,Any standard mouse,"Rakk Kaptan Wireless, Fantech X4900, Genius NX-7000 (Wireless Mouse), Razer Deathadder, A4Tech"
+HARDWARE SPECIFICATION FOR DEPLOYMENT,,
+CLIENT DEVICES (Desktop/Mobile Web Access),,
+Operating System,Device OS,"Windows 10+, macOS 10.15+, Linux, Android 6.0+ (API level 23), iOS 13+",
+Storage,Device Storage,"Minimum 100MB available storage for browser cache","32GB device storage recommended"
+RAM,Device Memory,"Minimum 2GB RAM","4GB RAM or higher recommended"
+CAMERA,Device Camera,"Rear camera 8MP minimum for bike photo uploads","Front camera for profile pictures"
+GPS/LOCATION,Location Services,"GPS, A-GPS, GLONASS support","Location accuracy within 5 meters"
+NETWORK,Connectivity,"3G/4G/5G cellular connectivity","WiFi 802.11 b/g/n/ac support"
+SCREEN,Display,"Minimum 5.0 inch display (mobile) or 1366x768 (desktop)","Resolution: 720x1280 (HD) or higher for mobile; 1920x1080 (Full HD) recommended for desktop"
+SERVER/HOSTING (Cloud),,
+CPU,Server Processor,"Multi-core processor 2.0 GHz or faster","Intel Xeon, AMD EPYC, or equivalent cloud instance"
+RAM,Server Memory,"Minimum 4GB RAM","8GB RAM recommended for production"
+STORAGE,Server Storage,"100GB SSD minimum","Scalable cloud storage for bike images and data"
+BANDWIDTH,Network Bandwidth,"100 Mbps minimum","Unlimited or high data transfer allowance"

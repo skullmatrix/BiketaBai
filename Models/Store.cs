@@ -58,3 +58,7 @@ public class Store
     public virtual ICollection<Bike> Bikes { get; set; } = new List<Bike>();
 }
 
+
+
+
+
