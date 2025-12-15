@@ -37,7 +37,11 @@ public class PaymentWebhookModel : PageModel
             Log.Information("Payment webhook received: {Body}", body);
 
             // Verify webhook signature (PayMongo sends signature in headers)
-            var webhookSecret = _configuration["AppSettings:PayMongoWebhookSecret"];
+            // Support multiple environment variable formats
+            var webhookSecret = _configuration["AppSettings:PayMongoWebhookSecret"]
+                             ?? Environment.GetEnvironmentVariable("AppSettings__PayMongoWebhookSecret")
+                             ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoWebhookSecret")
+                             ?? Environment.GetEnvironmentVariable("PayMongoWebhookSecret");
             var signature = Request.Headers["Paymongo-Signature"].FirstOrDefault();
             
             // Note: In production, verify the webhook signature using HMAC

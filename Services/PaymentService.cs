@@ -369,7 +369,12 @@ public class PaymentService
 
                 // PayMongo returns public key in ClientKey for frontend integration
                 // For e-wallet payments, redirect to PayMongo checkout
-                var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000";
+                // Get base URL from configuration or environment variables (support multiple formats)
+                var baseUrl = _configuration["AppSettings:BaseUrl"] 
+                           ?? Environment.GetEnvironmentVariable("AppSettings__BaseUrl")
+                           ?? Environment.GetEnvironmentVariable("AppSettings:BaseUrl")
+                           ?? Environment.GetEnvironmentVariable("BaseUrl")
+                           ?? "http://localhost:5000";
                 var redirectUrl = $"{baseUrl}/Bookings/PaymentGateway?bookingId={bookingId}&paymentIntentId={paymentIntent.PaymentIntentId}";
 
                 return (true, paymentIntent.PaymentIntentId, redirectUrl, paymentIntent.ClientKey, "Payment intent created successfully");

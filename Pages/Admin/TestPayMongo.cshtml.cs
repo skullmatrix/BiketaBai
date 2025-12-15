@@ -93,14 +93,19 @@ namespace BiketaBai.Pages.Admin
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000";
 
             // Check environment variables (they override appsettings)
+            // Support multiple formats: AppSettings__Key, AppSettings:Key, Key
             var envSecretKey = Environment.GetEnvironmentVariable("AppSettings__PayMongoSecretKey")
-                             ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey");
+                             ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey")
+                             ?? Environment.GetEnvironmentVariable("PayMongoSecretKey");
             var envPublicKey = Environment.GetEnvironmentVariable("AppSettings__PayMongoPublicKey")
-                            ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey");
+                            ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey")
+                            ?? Environment.GetEnvironmentVariable("PayMongoPublicKey");
             var envWebhookSecret = Environment.GetEnvironmentVariable("AppSettings__PayMongoWebhookSecret")
-                                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoWebhookSecret");
+                                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoWebhookSecret")
+                                 ?? Environment.GetEnvironmentVariable("PayMongoWebhookSecret");
             var envBaseUrl = Environment.GetEnvironmentVariable("AppSettings__BaseUrl")
-                          ?? Environment.GetEnvironmentVariable("AppSettings:BaseUrl");
+                          ?? Environment.GetEnvironmentVariable("AppSettings:BaseUrl")
+                          ?? Environment.GetEnvironmentVariable("BaseUrl");
 
             // Use environment variables if they exist
             if (!string.IsNullOrEmpty(envSecretKey)) secretKey = envSecretKey;
@@ -186,11 +191,13 @@ namespace BiketaBai.Pages.Admin
                 var secretKey = _configuration["AppSettings:PayMongoSecretKey"] ?? "";
                 var publicKey = _configuration["AppSettings:PayMongoPublicKey"] ?? "";
 
-                // Check environment variables
+                // Check environment variables (support multiple formats)
                 var envSecretKey = Environment.GetEnvironmentVariable("AppSettings__PayMongoSecretKey")
-                                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey");
+                                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey")
+                                 ?? Environment.GetEnvironmentVariable("PayMongoSecretKey");
                 var envPublicKey = Environment.GetEnvironmentVariable("AppSettings__PayMongoPublicKey")
-                                ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey");
+                                ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey")
+                                ?? Environment.GetEnvironmentVariable("PayMongoPublicKey");
 
                 if (!string.IsNullOrEmpty(envSecretKey)) secretKey = envSecretKey;
                 if (!string.IsNullOrEmpty(envPublicKey)) publicKey = envPublicKey;

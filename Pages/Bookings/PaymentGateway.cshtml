@@ -8,7 +8,12 @@
     ViewData["Title"] = "Complete Payment";
     var isCardPayment = Model.PaymentMethodId == 6;
     var isEwalletPayment = Model.PaymentMethodId == 2 || Model.PaymentMethodId == 3 || Model.PaymentMethodId == 5;
-    var publicKey = Configuration["AppSettings:PayMongoPublicKey"] ?? "";
+    // Get public key from configuration or environment variables (support multiple formats)
+    var publicKey = Configuration["AppSettings:PayMongoPublicKey"] 
+                 ?? Environment.GetEnvironmentVariable("AppSettings__PayMongoPublicKey")
+                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey")
+                 ?? Environment.GetEnvironmentVariable("PayMongoPublicKey")
+                 ?? "";
     var paymentMethodName = Model.PaymentMethodId switch
     {
         2 => "GCash",

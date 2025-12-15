@@ -26,8 +26,10 @@ public class PaymentGatewayService
         _secretKey = _configuration["AppSettings:PayMongoSecretKey"] ?? "";
         
         // Check environment variables (they override appsettings)
+        // Check multiple formats: AppSettings__PayMongoSecretKey, AppSettings:PayMongoSecretKey, PayMongoSecretKey
         var envSecretKey = Environment.GetEnvironmentVariable("AppSettings__PayMongoSecretKey")
-                         ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey");
+                         ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoSecretKey")
+                         ?? Environment.GetEnvironmentVariable("PayMongoSecretKey");
         if (!string.IsNullOrEmpty(envSecretKey))
         {
             _secretKey = envSecretKey;
@@ -98,8 +100,12 @@ public class PaymentGatewayService
                 };
             }
 
-            // Get base URL for redirects
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000";
+            // Get base URL for redirects (support multiple environment variable formats)
+            var baseUrl = _configuration["AppSettings:BaseUrl"] 
+                       ?? Environment.GetEnvironmentVariable("AppSettings__BaseUrl")
+                       ?? Environment.GetEnvironmentVariable("AppSettings:BaseUrl")
+                       ?? Environment.GetEnvironmentVariable("BaseUrl")
+                       ?? "http://localhost:5000";
             var bookingId = metadata?.GetValueOrDefault("booking_id", "");
             
             // Convert amount to cents (PayMongo uses smallest currency unit)
@@ -155,8 +161,12 @@ public class PaymentGatewayService
                 {
                     Log.Information("PayMongo payment intent created: {PaymentIntentId}", result.Data.Id);
                     
-                    // Get client key for frontend
-                    var clientKey = _configuration["AppSettings:PayMongoPublicKey"] ?? "";
+                    // Get client key for frontend (support multiple environment variable formats)
+                    var clientKey = _configuration["AppSettings:PayMongoPublicKey"] 
+                                 ?? Environment.GetEnvironmentVariable("AppSettings__PayMongoPublicKey")
+                                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey")
+                                 ?? Environment.GetEnvironmentVariable("PayMongoPublicKey")
+                                 ?? "";
                     
                     return new PaymentIntentResult
                     {
