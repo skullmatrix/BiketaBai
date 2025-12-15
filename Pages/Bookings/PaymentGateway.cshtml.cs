@@ -126,6 +126,95 @@ public class PaymentGatewayModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnPostProcessEwalletAsync(int bookingId, string paymentIntentId, int paymentMethodId)
+    {
+        var userId = AuthHelper.GetCurrentUserId(User);
+        if (!userId.HasValue)
+            return RedirectToPage("/Account/Login");
+
+        Booking = await _context.Bookings
+            .Include(b => b.Bike)
+            .Include(b => b.Renter)
+            .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
+
+        if (Booking == null)
+            return NotFound();
+
+        try
+        {
+            // Map payment method ID to PayMongo type
+            var paymentMethodType = paymentMethodId switch
+            {
+                2 => "gcash",
+                5 => "paymaya",
+                3 => "qrph",
+                _ => "gcash"
+            };
+
+            // Create and attach e-wallet payment method server-side
+            var result = await _paymentGatewayService.CreateAndAttachEwalletPaymentMethodAsync(
+                paymentIntentId,
+                paymentMethodType,
+                Booking.Renter.FullName,
+                Booking.Renter.Email ?? ""
+            );
+
+            if (result.Success)
+            {
+                // Check if we need to redirect to payment provider
+                if (result.Status == "awaiting_next_action")
+                {
+                    // The redirect URL should be in the response, but we'll check payment intent status
+                    var statusResult = await _paymentGatewayService.GetPaymentIntentStatusAsync(paymentIntentId);
+                    
+                    // For e-wallets, PayMongo typically provides a redirect URL
+                    // We'll redirect back to this page with action=confirm to check status
+                    TempData["PaymentIntentId"] = paymentIntentId;
+                    TempData["PaymentMethodId"] = paymentMethodId;
+                    return RedirectToPage("/Bookings/PaymentGateway", new 
+                    { 
+                        bookingId = bookingId, 
+                        paymentIntentId = paymentIntentId,
+                        action = "check_status"
+                    });
+                }
+                else if (result.Status == "succeeded")
+                {
+                    // Payment already succeeded - confirm it
+                    var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
+                    if (confirmResult.success)
+                    {
+                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                    }
+                }
+
+                // For other statuses, redirect to check status
+                TempData["PaymentIntentId"] = paymentIntentId;
+                return RedirectToPage("/Bookings/PaymentGateway", new 
+                { 
+                    bookingId = bookingId, 
+                    paymentIntentId = paymentIntentId,
+                    action = "confirm"
+                });
+            }
+            else
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to process e-wallet payment";
+                PaymentIntentId = paymentIntentId;
+                PaymentMethodId = paymentMethodId;
+                return Page();
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error processing e-wallet payment");
+            ErrorMessage = "An error occurred while processing your payment. Please try again.";
+            PaymentIntentId = paymentIntentId;
+            PaymentMethodId = paymentMethodId;
+            return Page();
+        }
+    }
+
     public async Task<IActionResult> OnPostProcessCardAsync(int bookingId, string paymentIntentId)
     {
         var userId = AuthHelper.GetCurrentUserId(User);

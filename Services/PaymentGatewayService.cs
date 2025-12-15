@@ -287,6 +287,87 @@ public class PaymentGatewayService
     }
 
     /// <summary>
+    /// Creates and attaches a payment method for e-wallet payments (server-side)
+    /// Returns the redirect URL if needed
+    /// </summary>
+    public async Task<PaymentResult> CreateAndAttachEwalletPaymentMethodAsync(
+        string paymentIntentId,
+        string paymentMethodType,
+        string customerName,
+        string customerEmail)
+    {
+        try
+        {
+            // For e-wallets, we need to create a payment method first
+            var paymentMethodPayload = new
+            {
+                data = new
+                {
+                    attributes = new
+                    {
+                        type = paymentMethodType,
+                        billing = new
+                        {
+                            name = customerName,
+                            email = customerEmail
+                        }
+                    }
+                }
+            };
+
+            var methodJson = JsonSerializer.Serialize(paymentMethodPayload);
+            var methodContent = new StringContent(methodJson, Encoding.UTF8, "application/json");
+
+            Log.Information("Creating e-wallet payment method: Type={Type}, PaymentIntent={PaymentIntentId}", 
+                paymentMethodType, paymentIntentId);
+
+            var methodResponse = await _httpClient.PostAsync("/v1/payment_methods", methodContent);
+            var methodResponseContent = await methodResponse.Content.ReadAsStringAsync();
+
+            if (!methodResponse.IsSuccessStatusCode)
+            {
+                Log.Error("Failed to create e-wallet payment method. Status: {StatusCode}, Response: {Response}", 
+                    methodResponse.StatusCode, methodResponseContent);
+                return new PaymentResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Failed to create payment method: {methodResponseContent}"
+                };
+            }
+
+            var methodResult = JsonSerializer.Deserialize<PayMongoPaymentMethodResponse>(methodResponseContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (methodResult?.Data == null || string.IsNullOrEmpty(methodResult.Data.Id))
+            {
+                Log.Error("Payment method creation response missing data. Response: {Response}", methodResponseContent);
+                return new PaymentResult
+                {
+                    Success = false,
+                    ErrorMessage = "Failed to create payment method: Invalid response"
+                };
+            }
+
+            var paymentMethodId = methodResult.Data.Id;
+            Log.Information("E-wallet payment method created: {PaymentMethodId}", paymentMethodId);
+
+            // Now attach the payment method to the payment intent
+            return await AttachPaymentMethodAsync(paymentIntentId, paymentMethodId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating and attaching e-wallet payment method");
+            return new PaymentResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
     /// Attaches a payment method to a payment intent (PayMongo pattern)
     /// </summary>
     public async Task<PaymentResult> AttachPaymentMethodAsync(
@@ -308,6 +389,9 @@ public class PaymentGatewayService
 
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            Log.Information("Attaching payment method {PaymentMethodId} to payment intent {PaymentIntentId}", 
+                paymentMethodId, paymentIntentId);
 
             var response = await _httpClient.PostAsync($"/v1/payment_intents/{paymentIntentId}/attach", content);
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -337,10 +421,36 @@ public class PaymentGatewayService
             Log.Error("Failed to attach payment method. Status: {StatusCode}, Response: {Response}", 
                 response.StatusCode, responseContent);
 
+            // Try to extract more details from the error response
+            string errorDetails = "Failed to attach payment method";
+            try
+            {
+                var errorResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                if (errorResponse.TryGetProperty("errors", out var errors))
+                {
+                    if (errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
+                    {
+                        var firstError = errors[0];
+                        if (firstError.TryGetProperty("detail", out var detail))
+                        {
+                            errorDetails = $"Failed to attach payment method: {detail.GetString()}";
+                        }
+                        else if (firstError.TryGetProperty("message", out var message))
+                        {
+                            errorDetails = $"Failed to attach payment method: {message.GetString()}";
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // If parsing fails, use default message
+            }
+
             return new PaymentResult
             {
                 Success = false,
-                ErrorMessage = "Failed to attach payment method"
+                ErrorMessage = errorDetails
             };
         }
         catch (Exception ex)

@@ -189,43 +189,107 @@
             const container = document.getElementById('ewalletPaymentContainer');
             container.innerHTML = '<div style="text-align: center; padding: var(--space-6);"><div class="spinner-border text-primary" role="status" style="margin-bottom: var(--space-4);"><span class="visually-hidden">Loading...</span></div><p>Processing @paymentMethodName payment...</p></div>';
 
-            // For e-wallet payments, PayMongo requires creating a payment method and attaching it
-            // This is typically done through their payment form or redirect
-            // For now, we'll create a payment method and attach it
-            paymongo.paymentMethods.create({
-                type: paymentMethod,
-                billing: {
-                    name: '@Model.Booking.Renter.FullName',
-                    email: '@Model.Booking.Renter.Email'
-                }
-            }).then(function(paymentMethod) {
-                // Attach payment method to payment intent
-                return paymongo.paymentIntents.attach(paymentIntentId, paymentMethod.id);
-            }).then(function(result) {
-                if (result.status === 'succeeded') {
-                    // Payment successful - redirect to confirmation
-                    window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
-                } else if (result.status === 'awaiting_next_action') {
-                    // Redirect to payment provider
-                    if (result.next_action && result.next_action.redirect) {
-                        window.location.href = result.next_action.redirect.url;
-                    }
-                } else {
-                    container.innerHTML = '<div class="alert-minimal alert-minimal-error"><i class="bi bi-exclamation-triangle-fill"></i><div>Payment processing. Please wait...</div></div>';
-                    // Poll for status update
-                    setTimeout(function() {
+            // For e-wallet payments (GCash, PayMaya, GrabPay), PayMongo requires creating a payment method and attaching it
+            // This will return a redirect URL to complete the payment on the provider's page
+            // First, check the payment intent status
+            paymongo.paymentIntents.retrieve(paymentIntentId)
+                .then(function(paymentIntent) {
+                    // If payment intent is already succeeded, redirect to confirmation
+                    if (paymentIntent.status === 'succeeded') {
                         window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
-                    }, 3000);
-                }
-            }).catch(function(error) {
-                console.error('PayMongo error:', error);
-                container.innerHTML = 
-                    '<div class="alert-minimal alert-minimal-error">' +
-                    '<i class="bi bi-exclamation-triangle-fill"></i>' +
-                    '<div>Payment failed: ' + (error.message || 'Unknown error') + '</div>' +
-                    '<a href="/Bookings/Payment/@Model.Booking.BookingId" class="btn-minimal btn-minimal-outline mt-3">Try Again</a>' +
-                    '</div>';
-            });
+                        return;
+                    }
+
+                    // Create payment method for e-wallet
+                    return paymongo.paymentMethods.create({
+                        type: paymentMethod,
+                        billing: {
+                            name: '@Model.Booking.Renter.FullName',
+                            email: '@Model.Booking.Renter.Email'
+                        }
+                    });
+                })
+                .then(function(paymentMethod) {
+                    if (!paymentMethod) return; // Already redirected above
+                    
+                    // Attach payment method to payment intent
+                    return paymongo.paymentIntents.attach(paymentIntentId, paymentMethod.id);
+                })
+                .then(function(result) {
+                    if (!result) return; // Already redirected above
+                    
+                    if (result.status === 'succeeded') {
+                        // Payment successful - redirect to confirmation
+                        window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
+                    } else if (result.status === 'awaiting_next_action') {
+                        // Redirect to payment provider (GCash, PayMaya, etc.)
+                        if (result.next_action && result.next_action.redirect && result.next_action.redirect.url) {
+                            window.location.href = result.next_action.redirect.url;
+                        } else {
+                            // Fallback: poll for status
+                            container.innerHTML = '<div class="alert-minimal alert-minimal-warning"><i class="bi bi-hourglass-split"></i><div>Processing payment. Please wait...</div></div>';
+                            setTimeout(function() {
+                                window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
+                            }, 3000);
+                        }
+                    } else if (result.status === 'awaiting_payment_method') {
+                        // Still waiting for payment method - this shouldn't happen but handle it
+                        container.innerHTML = '<div class="alert-minimal alert-minimal-warning"><i class="bi bi-hourglass-split"></i><div>Setting up payment. Please wait...</div></div>';
+                        setTimeout(function() {
+                            window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
+                        }, 2000);
+                    } else {
+                        // Other status - poll for updates
+                        container.innerHTML = '<div class="alert-minimal alert-minimal-info"><i class="bi bi-info-circle"></i><div>Payment status: ' + result.status + '. Checking...</div></div>';
+                        setTimeout(function() {
+                            window.location.href = '/Bookings/PaymentGateway?bookingId=@Model.Booking.BookingId&action=confirm&payment_intent_id=' + paymentIntentId;
+                        }, 3000);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('PayMongo error:', error);
+                    var errorMessage = 'Unknown error';
+                    var errorDetails = '';
+                    
+                    // Extract error message
+                    if (error.message) {
+                        errorMessage = error.message;
+                    } else if (error.error) {
+                        if (error.error.message) {
+                            errorMessage = error.error.message;
+                        }
+                        if (error.error.detail) {
+                            errorDetails = error.error.detail;
+                        }
+                    } else if (typeof error === 'string') {
+                        errorMessage = error;
+                    }
+                    
+                    // If client-side fails, try server-side fallback
+                    var errorHtml = 
+                        '<div class="alert-minimal alert-minimal-error">' +
+                        '<i class="bi bi-exclamation-triangle-fill"></i>' +
+                        '<div><strong>Payment Error:</strong><br/>' + errorMessage;
+                    
+                    if (errorDetails) {
+                        errorHtml += '<br/><small>' + errorDetails + '</small>';
+                    }
+                    
+                    errorHtml += '</div>' +
+                        '<div class="mt-3">' +
+                        '<form method="post" action="?handler=ProcessEwallet" style="display: inline;">' +
+                        '<input type="hidden" name="bookingId" value="@Model.Booking.BookingId" />' +
+                        '<input type="hidden" name="paymentIntentId" value="' + paymentIntentId + '" />' +
+                        '<input type="hidden" name="paymentMethodId" value="@Model.PaymentMethodId" />' +
+                        '<button type="submit" class="btn-minimal btn-minimal-outline">Try Server-Side Processing</button>' +
+                        '</form> ' +
+                        '<a href="/Bookings/Payment/@Model.Booking.BookingId" class="btn-minimal btn-minimal-outline ms-2">Try Again</a> ' +
+                        '<a href="/Bookings/Details/@Model.Booking.BookingId" class="btn-minimal btn-minimal-outline ms-2">Back to Booking</a>' +
+                        '</div>' +
+                        '</div>';
+                    
+                    container.innerHTML = errorHtml;
+                });
         });
     </script>
 }
