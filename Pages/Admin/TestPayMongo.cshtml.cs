@@ -292,19 +292,36 @@ namespace BiketaBai.Pages.Admin
 
                 // Step 3: Verify Payment Intent Status
                 var step3 = new TestStep { Name = "3. Payment Intent Verification" };
+                
+                // Wait a moment for the payment intent to be fully created
+                await Task.Delay(500);
+                
                 var statusResult = await _paymentGatewayService.GetPaymentIntentStatusAsync(testResult.PaymentIntentId);
 
                 if (!statusResult.Success)
                 {
                     step3.Success = false;
                     step3.Message = "⚠️ Could not verify payment intent status";
-                    step3.Details = statusResult.ErrorMessage ?? "Status check failed";
+                    step3.Details = statusResult.ErrorMessage ?? "Status check failed. This may be normal if the payment intent was just created.";
                 }
                 else
                 {
                     step3.Success = true;
                     step3.Message = "✅ Payment intent verified";
-                    step3.Details = $"Status: {statusResult.Status ?? "Unknown"}";
+                    
+                    // Provide more context about the status
+                    var status = statusResult.Status ?? "Unknown";
+                    var statusDescription = status switch
+                    {
+                        "awaiting_payment_method" => "Awaiting payment method (normal for new payment intents)",
+                        "awaiting_next_action" => "Awaiting next action (e.g., 3D Secure)",
+                        "processing" => "Processing payment",
+                        "succeeded" => "Payment succeeded",
+                        "payment_failed" => "Payment failed",
+                        _ => $"Status: {status}"
+                    };
+                    
+                    step3.Details = $"{statusDescription}";
                 }
 
                 result.Steps.Add(step3);

@@ -414,11 +414,15 @@ public class PaymentGatewayService
                 if (result?.Data != null)
                 {
                     var status = result.Data.Attributes.Status;
-                    var isSuccess = status == "succeeded";
+                    // Return success if we can retrieve the status (regardless of status value)
+                    // Status can be: awaiting_payment_method, awaiting_next_action, processing, succeeded, payment_failed
+                    var isPaymentSucceeded = status == "succeeded";
+
+                    Log.Information("Retrieved payment intent status: {PaymentIntentId}, Status: {Status}", paymentIntentId, status);
 
                     return new PaymentResult
                     {
-                        Success = isSuccess,
+                        Success = true, // Success means we retrieved the status, not that payment succeeded
                         PaymentIntentId = paymentIntentId,
                         Status = status,
                         TransactionReference = result.Data.Id
@@ -426,15 +430,18 @@ public class PaymentGatewayService
                 }
             }
 
+            Log.Warning("Failed to retrieve payment intent status. Status Code: {StatusCode}, Response: {Response}", 
+                response.StatusCode, responseContent);
+
             return new PaymentResult
             {
                 Success = false,
-                ErrorMessage = "Failed to retrieve payment status"
+                ErrorMessage = $"Failed to retrieve payment status. HTTP {response.StatusCode}: {responseContent}"
             };
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error retrieving payment status");
+            Log.Error(ex, "Error retrieving payment status for payment intent: {PaymentIntentId}", paymentIntentId);
             return new PaymentResult
             {
                 Success = false,
