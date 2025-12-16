@@ -60,12 +60,49 @@
 
             @if (Model.ExistingPayment != null)
             {
-                <div class="alert-minimal alert-minimal-info mb-4">
-                    <i class="bi bi-info-circle-fill"></i>
+                var canContinue = (Model.ExistingPayment.PaymentStatus == "Pending" || 
+                                  Model.ExistingPayment.PaymentStatus == "Cancelled" || 
+                                  Model.ExistingPayment.PaymentStatus == "Failed") && 
+                                 !string.IsNullOrEmpty(Model.ExistingPayment.TransactionReference);
+                
+                <div class="alert-minimal @(Model.ExistingPayment.PaymentStatus == "Pending" ? "alert-minimal-warning" : Model.ExistingPayment.PaymentStatus == "Cancelled" ? "alert-minimal-info" : "alert-minimal-error") mb-4">
+                    <i class="bi @(Model.ExistingPayment.PaymentStatus == "Pending" ? "bi-hourglass-split" : Model.ExistingPayment.PaymentStatus == "Cancelled" ? "bi-x-circle-fill" : "bi-exclamation-triangle-fill")"></i>
                     <div>
-                        <strong>Current Payment:</strong> @Model.ExistingPayment.PaymentMethod (@Model.ExistingPayment.PaymentStatus)
+                        <strong>Previous Payment:</strong> @Model.ExistingPayment.PaymentMethod 
+                        <span class="badge-minimal @(Model.ExistingPayment.PaymentStatus == "Pending" ? "badge-minimal-warning" : Model.ExistingPayment.PaymentStatus == "Cancelled" ? "badge-minimal-info" : "badge-minimal-danger")">
+                            @Model.ExistingPayment.PaymentStatus
+                        </span>
                         <br />
-                        <small>You can change your payment method below.</small>
+                        @if (canContinue)
+                        {
+                            <small style="margin-top: var(--space-2); display: block;">
+                                @if (Model.ExistingPayment.PaymentStatus == "Pending")
+                                {
+                                    <text>You have a pending payment. You can continue with the same payment method or choose a different one.</text>
+                                }
+                                else if (Model.ExistingPayment.PaymentStatus == "Cancelled")
+                                {
+                                    <text>Your previous payment was cancelled. You can continue with the same payment method or choose a different one.</text>
+                                }
+                                else
+                                {
+                                    <text>Your previous payment failed. You can try again with the same payment method or choose a different one.</text>
+                                }
+                            </small>
+                            <form method="post" asp-page-handler="ContinuePayment" style="margin-top: var(--space-3);">
+                                <input type="hidden" name="bookingId" value="@Model.Booking.BookingId" />
+                                <input type="hidden" name="paymentIntentId" value="@Model.ExistingPayment.TransactionReference" />
+                                <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                                    <i class="bi bi-arrow-right-circle"></i> Continue Payment
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <small class="text-muted" style="margin-top: var(--space-2); display: block;">
+                                You can change your payment method below.
+                            </small>
+                        }
                     </div>
                 </div>
             }

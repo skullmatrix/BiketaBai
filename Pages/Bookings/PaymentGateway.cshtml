@@ -80,6 +80,83 @@
                 </div>
             }
 
+            @if (Model.IsProcessingPayment && !string.IsNullOrEmpty(Model.PaymentIntentId))
+            {
+                <!-- Payment Processing Status -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-body" style="text-align: center; padding: var(--space-6);">
+                        <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <h3 style="margin-bottom: var(--space-2);">Processing Your Payment</h3>
+                        <p style="color: var(--neutral-600); margin-bottom: var(--space-4);">
+                            Please wait while we process your @paymentMethodName payment. This may take a few moments.
+                        </p>
+                        <div id="paymentStatusCheck" style="display: none;">
+                            <small style="color: var(--neutral-500);">Checking payment status...</small>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    // Poll for payment status
+                    (function() {
+                        const paymentIntentId = '@Model.PaymentIntentId';
+                        const bookingId = @Model.Booking.BookingId;
+                        let checkCount = 0;
+                        const maxChecks = 30; // Check for 30 seconds (30 * 1 second intervals)
+
+                        function checkPaymentStatus() {
+                            checkCount++;
+                            if (checkCount > maxChecks) {
+                                document.getElementById('paymentStatusCheck').innerHTML = 
+                                    '<div class="alert-minimal alert-minimal-warning mt-3">' +
+                                    '<i class="bi bi-exclamation-triangle-fill"></i>' +
+                                    '<div>Payment is taking longer than expected. <a href="/Bookings/PaymentGateway?bookingId=' + bookingId + '&paymentIntentId=' + paymentIntentId + '&action=check_status">Check status manually</a></div>' +
+                                    '</div>';
+                                return;
+                            }
+
+                            fetch('/Bookings/PaymentGateway?bookingId=' + bookingId + '&paymentIntentId=' + paymentIntentId + '&handler=CheckStatus', {
+                                method: 'GET',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.status === 'succeeded') {
+                                    // Payment succeeded - redirect to confirmation
+                                    if (data.redirect) {
+                                        window.location.href = data.redirect;
+                                    } else {
+                                        window.location.href = '/Bookings/Confirmation?bookingId=' + bookingId;
+                                    }
+                                } else if (data.status === 'payment_failed') {
+                                    // Payment failed
+                                    window.location.href = '/Bookings/Payment?bookingId=' + bookingId;
+                                } else if (data.status === 'awaiting_payment_method' || data.status === 'awaiting_next_action' || data.status === 'processing') {
+                                    // Still processing - check again in 1 second
+                                    setTimeout(checkPaymentStatus, 1000);
+                                } else {
+                                    // Unknown status - check again in 2 seconds
+                                    setTimeout(checkPaymentStatus, 2000);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error checking payment status:', error);
+                                // Continue checking
+                                setTimeout(checkPaymentStatus, 2000);
+                            });
+                        }
+
+                        // Start checking after 2 seconds
+                        setTimeout(checkPaymentStatus, 2000);
+                    })();
+                </script>
+            }
+
             @if (isEwalletPayment)
             {
                 <!-- E-Wallet Payment (GCash, PayMaya, QRPH) -->

@@ -12,11 +12,13 @@ public class PaymentModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly PaymentService _paymentService;
+    private readonly IConfiguration _configuration;
 
-    public PaymentModel(BiketaBaiDbContext context, PaymentService paymentService)
+    public PaymentModel(BiketaBaiDbContext context, PaymentService paymentService, IConfiguration configuration)
     {
         _context = context;
         _paymentService = paymentService;
+        _configuration = configuration;
     }
 
     public Booking? Booking { get; set; }
@@ -45,10 +47,12 @@ public class PaymentModel : PageModel
         if (Booking == null)
             return NotFound();
 
-        // Check for existing pending payment
+        // Check for existing pending, failed, or cancelled payment (that can be resumed)
         ExistingPayment = Booking.Payments
             .OrderByDescending(p => p.PaymentDate)
-            .FirstOrDefault(p => p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed");
+            .FirstOrDefault(p => p.PaymentStatus == "Pending" || 
+                                p.PaymentStatus == "Failed" || 
+                                (p.PaymentStatus == "Cancelled" && !string.IsNullOrEmpty(p.TransactionReference)));
 
         if (ExistingPayment != null)
         {
@@ -96,10 +100,12 @@ public class PaymentModel : PageModel
         {
             ErrorMessage = "Location permission is required to proceed with payment. Please enable location access first.";
             
-            // Check for existing pending payment
+            // Check for existing pending, failed, or cancelled payment
             ExistingPayment = Booking.Payments
                 .OrderByDescending(p => p.PaymentDate)
-                .FirstOrDefault(p => p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed");
+                .FirstOrDefault(p => p.PaymentStatus == "Pending" || 
+                                    p.PaymentStatus == "Failed" || 
+                                    (p.PaymentStatus == "Cancelled" && !string.IsNullOrEmpty(p.TransactionReference)));
             
             if (ExistingPayment != null)
             {
@@ -183,6 +189,78 @@ public class PaymentModel : PageModel
                 return Page();
             }
         }
+    }
+
+    public async Task<IActionResult> OnPostContinuePaymentAsync(int bookingId, string paymentIntentId)
+    {
+        var userId = AuthHelper.GetCurrentUserId(User);
+        if (!userId.HasValue)
+            return RedirectToPage("/Account/Login");
+
+        Booking = await _context.Bookings
+            .Include(b => b.Bike)
+            .Include(b => b.Payments)
+            .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
+
+        if (Booking == null)
+            return NotFound();
+
+        // Validate location permission
+        if (!Booking.LocationPermissionGranted)
+        {
+            ErrorMessage = "Location permission is required to proceed with payment. Please enable location access first.";
+            ExistingPayment = Booking.Payments
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefault(p => p.TransactionReference == paymentIntentId);
+            if (ExistingPayment != null)
+            {
+                CurrentPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
+                PaymentMethodId = CurrentPaymentMethodId ?? 2;
+            }
+            return Page();
+        }
+
+        // Find the payment with this transaction reference
+        var payment = Booking.Payments
+            .FirstOrDefault(p => p.TransactionReference == paymentIntentId);
+
+        if (payment == null)
+        {
+            ErrorMessage = "Payment not found. Please start a new payment.";
+            return Page();
+        }
+
+        // Map payment method to ID
+        var paymentMethodId = MapPaymentMethodToId(payment.PaymentMethod);
+        if (!paymentMethodId.HasValue)
+        {
+            ErrorMessage = "Could not determine payment method. Please start a new payment.";
+            return Page();
+        }
+
+        // Update payment status back to Pending if it was Cancelled
+        if (payment.PaymentStatus == "Cancelled")
+        {
+            payment.PaymentStatus = "Pending";
+            payment.Notes = "Resumed payment";
+            await _context.SaveChangesAsync();
+        }
+
+        // Redirect to payment gateway with existing payment intent
+        TempData["PaymentIntentId"] = paymentIntentId;
+        TempData["ClientKey"] = _configuration["AppSettings:PayMongoPublicKey"] 
+                             ?? Environment.GetEnvironmentVariable("AppSettings__PayMongoPublicKey")
+                             ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey")
+                             ?? Environment.GetEnvironmentVariable("PayMongoPublicKey")
+                             ?? "";
+        TempData["PaymentMethodId"] = paymentMethodId.Value.ToString();
+
+        return RedirectToPage("/Bookings/PaymentGateway", new 
+        { 
+            bookingId = bookingId, 
+            paymentIntentId = paymentIntentId,
+            paymentMethodId = paymentMethodId.Value
+        });
     }
 
     private int? MapPaymentMethodToId(string paymentMethod)

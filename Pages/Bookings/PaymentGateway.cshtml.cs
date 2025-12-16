@@ -31,6 +31,7 @@ public class PaymentGatewayModel : PageModel
     public string? ErrorMessage { get; set; }
     public string? SuccessMessage { get; set; }
     public int? PaymentMethodId { get; set; } // To determine if it's e-wallet or card
+    public bool IsProcessingPayment { get; set; } // Indicates payment is being processed
 
     [BindProperty]
     public CardPaymentModel CardPayment { get; set; } = new();
@@ -61,8 +62,8 @@ public class PaymentGatewayModel : PageModel
         if (Booking == null)
             return NotFound();
 
-        // Handle redirect from PayMongo after payment
-        if (action == "confirm")
+        // Handle redirect from PayMongo after payment or status check
+        if (action == "confirm" || action == "check_status")
         {
             // Get payment intent ID from query string (PayMongo passes it as payment_intent_id)
             var intentId = Request.Query["payment_intent_id"].FirstOrDefault() 
@@ -72,17 +73,83 @@ public class PaymentGatewayModel : PageModel
             
             if (!string.IsNullOrEmpty(intentId))
             {
-                // Confirm payment
-                var result = await _paymentService.ConfirmGatewayPaymentAsync(intentId);
+                // First, check the payment intent status
+                var statusResult = await _paymentGatewayService.GetPaymentIntentStatusAsync(intentId);
                 
-                if (result.success)
+                if (statusResult.Success)
                 {
-                    TempData["SuccessMessage"] = "Payment confirmed successfully!";
-                    return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                    var status = statusResult.Status ?? "unknown";
+                    
+                    Log.Information("Payment intent status check: {PaymentIntentId}, Status: {Status}", intentId, status);
+                    
+                    if (status == "succeeded")
+                    {
+                        // Payment succeeded - confirm it
+                        var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(intentId);
+                        
+                        if (confirmResult.success)
+                        {
+                            TempData["SuccessMessage"] = "Payment confirmed successfully!";
+                            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        }
+                        else
+                        {
+                            TempData["ErrorMessage"] = confirmResult.message ?? "Payment succeeded but confirmation failed.";
+                            return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
+                        }
+                    }
+                    else if (status == "awaiting_payment_method" || status == "awaiting_next_action" || status == "processing")
+                    {
+                        // Payment is still processing - show processing page and poll for status
+                        PaymentIntentId = intentId;
+                        PaymentMethodId = paymentMethodId ?? 6; // Default to card if not specified
+                        IsProcessingPayment = true;
+                        TempData["ProcessingPayment"] = true;
+                        TempData["PaymentIntentId"] = intentId;
+                        // Don't redirect - show the processing page
+                    }
+                    else if (status == "payment_failed")
+                    {
+                        TempData["ErrorMessage"] = "Payment failed. Please try again with a different payment method.";
+                        return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
+                    }
+                    else
+                    {
+                        // Unknown status - try to confirm anyway
+                        var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(intentId);
+                        
+                        if (confirmResult.success)
+                        {
+                            TempData["SuccessMessage"] = "Payment confirmed successfully!";
+                            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        }
+                        else
+                        {
+                            TempData["ErrorMessage"] = confirmResult.message ?? $"Payment status: {status}. Please try again.";
+                            return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
+                        }
+                    }
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result.message;
+                    // Could not retrieve status - try to find payment record
+                    var latestPayment = await _context.Payments
+                        .Where(p => p.BookingId == bookingId && p.PaymentStatus == "Pending")
+                        .OrderByDescending(p => p.PaymentDate)
+                        .FirstOrDefaultAsync();
+                    
+                    if (latestPayment != null && !string.IsNullOrEmpty(latestPayment.TransactionReference))
+                    {
+                        var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(latestPayment.TransactionReference);
+                        
+                        if (confirmResult.success)
+                        {
+                            TempData["SuccessMessage"] = "Payment confirmed successfully!";
+                            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        }
+                    }
+                    
+                    TempData["ErrorMessage"] = statusResult.ErrorMessage ?? "Could not verify payment status. Please try again.";
                     return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
                 }
             }
@@ -117,6 +184,9 @@ public class PaymentGatewayModel : PageModel
         {
             PaymentMethodId = methodId;
         }
+
+        // Check if payment is being processed
+        IsProcessingPayment = TempData["ProcessingPayment"] != null && (bool)TempData["ProcessingPayment"];
 
         if (string.IsNullOrEmpty(PaymentIntentId))
         {
@@ -299,27 +369,33 @@ public class PaymentGatewayModel : PageModel
                         return Page();
                     }
                 }
-                else if (attachResult.Status == "awaiting_next_action")
+                else if (attachResult.Status == "awaiting_next_action" || attachResult.Status == "processing")
                 {
-                    // 3D Secure or other action required - redirect to check status
+                    // 3D Secure or payment processing - show processing page
+                    PaymentIntentId = paymentIntentId;
+                    PaymentMethodId = 6; // Card
+                    TempData["ProcessingPayment"] = true;
                     TempData["PaymentIntentId"] = paymentIntentId;
-                    return RedirectToPage("/Bookings/PaymentGateway", new 
-                    { 
-                        bookingId = bookingId, 
-                        paymentIntentId = paymentIntentId,
-                        action = "confirm"
-                    });
+                    // Show the page with processing status - it will poll for updates
+                    return Page();
                 }
                 else
                 {
-                    // Payment is processing - check status
-                    TempData["PaymentIntentId"] = paymentIntentId;
-                    return RedirectToPage("/Bookings/PaymentGateway", new 
-                    { 
-                        bookingId = bookingId, 
-                        paymentIntentId = paymentIntentId,
-                        action = "confirm"
-                    });
+                    // Other status - check what it is
+                    Log.Warning("Unexpected payment status after attach: {Status}", attachResult.Status);
+                    
+                    // Try to confirm anyway - might be succeeded
+                    var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
+                    if (confirmResult.success)
+                    {
+                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                    }
+                    
+                    // If not succeeded, show processing page
+                    PaymentIntentId = paymentIntentId;
+                    PaymentMethodId = 6;
+                    TempData["ProcessingPayment"] = true;
+                    return Page();
                 }
             }
             else
@@ -358,6 +434,59 @@ public class PaymentGatewayModel : PageModel
         {
             TempData["ErrorMessage"] = result.message;
             return RedirectToPage("/Bookings/Payment", new { bookingId = bookingId });
+        }
+    }
+
+    public async Task<IActionResult> OnGetCheckStatusAsync(int bookingId, string paymentIntentId)
+    {
+        // AJAX endpoint to check payment status
+        if (string.IsNullOrEmpty(paymentIntentId))
+        {
+            return new JsonResult(new { success = false, message = "Payment intent ID required" });
+        }
+
+        try
+        {
+            var statusResult = await _paymentGatewayService.GetPaymentIntentStatusAsync(paymentIntentId);
+            
+            if (statusResult.Success)
+            {
+                var status = statusResult.Status ?? "unknown";
+                
+                if (status == "succeeded")
+                {
+                    // Confirm the payment
+                    var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
+                    if (confirmResult.success)
+                    {
+                        return new JsonResult(new { success = true, status = "succeeded", redirect = $"/Bookings/Confirmation?bookingId={bookingId}" });
+                    }
+                    else
+                    {
+                        return new JsonResult(new { success = false, status = status, message = confirmResult.message });
+                    }
+                }
+                
+                return new JsonResult(new { 
+                    success = true, 
+                    status = status 
+                });
+            }
+
+            return new JsonResult(new { 
+                success = false, 
+                status = "unknown",
+                message = statusResult.ErrorMessage 
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error checking payment status via AJAX");
+            return new JsonResult(new { 
+                success = false, 
+                status = "error",
+                message = ex.Message 
+            });
         }
     }
 }

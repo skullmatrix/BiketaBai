@@ -61,7 +61,7 @@ public class PaymentGatewayService
         // PayMongo uses Basic Auth with secret key (sk_test_xxx for sandbox)
         if (!string.IsNullOrEmpty(_secretKey))
         {
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(_secretKey + ":"))}");
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(_secretKey + ":"))}");
         }
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }

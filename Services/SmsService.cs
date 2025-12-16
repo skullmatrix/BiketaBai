@@ -26,11 +26,15 @@ public class SmsService
     {
         try
         {
-            var apiToken = _configuration["AppSettings:IprogSmsApiToken"];
+            // Get API token from configuration or environment variables (support multiple formats)
+            var apiToken = _configuration["AppSettings:IprogSmsApiToken"] 
+                        ?? Environment.GetEnvironmentVariable("AppSettings__IprogSmsApiToken")
+                        ?? Environment.GetEnvironmentVariable("AppSettings:IprogSmsApiToken")
+                        ?? Environment.GetEnvironmentVariable("IprogSmsApiToken");
             
             if (string.IsNullOrEmpty(apiToken))
             {
-                Log.Error("IPROG SMS API token not configured. Cannot send SMS. Please check appsettings.json.");
+                Log.Error("IPROG SMS API token not configured. Cannot send SMS. Please check appsettings.json or environment variables.");
                 return false;
             }
 
@@ -42,8 +46,13 @@ public class SmsService
                 return false;
             }
 
-            // Get sender name from configuration (default: "Ka Prets")
-            var senderName = _configuration["AppSettings:IprogSmsSenderName"] ?? "Ka Prets";
+            // Get sender name from configuration or environment variables (support multiple formats)
+            // Default: "kaprets"
+            var senderName = _configuration["AppSettings:IprogSmsSenderName"] 
+                          ?? Environment.GetEnvironmentVariable("AppSettings__IprogSmsSenderName")
+                          ?? Environment.GetEnvironmentVariable("AppSettings:IprogSmsSenderName")
+                          ?? Environment.GetEnvironmentVariable("IprogSmsSenderName")
+                          ?? "kaprets";
 
             // Build API URL with query parameters (api_token, phone_number, message)
             var apiUrl = $"https://www.iprogsms.com/api/v1/sms_messages" +

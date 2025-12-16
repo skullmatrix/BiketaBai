@@ -88,15 +88,43 @@
                         </div>
 
                         <!-- Payment Waiting Status (for Cash Payments) -->
-                        @if (Model.Booking.BookingStatus == "Pending" && Model.Booking.Payments.Any() && Model.Booking.Payments.First().PaymentStatus == "Pending")
+                        @if (Model.Booking.BookingStatus == "Pending" && Model.Booking.Payments.Any())
                         {
-                            <div class="alert-minimal alert-minimal-info mb-4" id="paymentWaitingAlert">
-                                <i class="bi bi-hourglass-split"></i>
-                                <div>
-                                    <strong>Waiting for Payment Verification</strong>
-                                    <p class="mb-0" id="paymentWaitingText">Your cash payment is pending verification by the owner. Once verified, your rental will automatically start and you'll be redirected to location tracking.</p>
+                            var latestPayment = Model.Booking.Payments.OrderByDescending(p => p.PaymentDate).First();
+                            var isCashPayment = latestPayment.PaymentMethod == "Cash";
+                            var canContinuePayment = (latestPayment.PaymentStatus == "Pending" || 
+                                                     latestPayment.PaymentStatus == "Cancelled" || 
+                                                     latestPayment.PaymentStatus == "Failed") && 
+                                                    !string.IsNullOrEmpty(latestPayment.TransactionReference) &&
+                                                    !isCashPayment;
+                            
+                            @if (isCashPayment && latestPayment.PaymentStatus == "Pending")
+                            {
+                                <div class="alert-minimal alert-minimal-info mb-4" id="paymentWaitingAlert">
+                                    <i class="bi bi-hourglass-split"></i>
+                                    <div>
+                                        <strong>Waiting for Payment Verification</strong>
+                                        <p class="mb-0" id="paymentWaitingText">Your cash payment is pending verification by the owner. Once verified, your rental will automatically start and you'll be redirected to location tracking.</p>
+                                    </div>
                                 </div>
-                            </div>
+                            }
+                            else if (canContinuePayment)
+                            {
+                                <div class="alert-minimal @(latestPayment.PaymentStatus == "Pending" ? "alert-minimal-warning" : latestPayment.PaymentStatus == "Cancelled" ? "alert-minimal-info" : "alert-minimal-error") mb-4">
+                                    <i class="bi @(latestPayment.PaymentStatus == "Pending" ? "bi-hourglass-split" : latestPayment.PaymentStatus == "Cancelled" ? "bi-x-circle-fill" : "bi-exclamation-triangle-fill")"></i>
+                                    <div>
+                                        <strong>Payment @latestPayment.PaymentStatus</strong>
+                                        <p class="mb-2">Your @latestPayment.PaymentMethod payment is @latestPayment.PaymentStatus.ToLower(). You can continue the payment process to complete your booking.</p>
+                                        <form method="post" asp-page="/Bookings/Payment" asp-page-handler="ContinuePayment" style="margin-top: var(--space-2);">
+                                            <input type="hidden" name="bookingId" value="@Model.Booking.BookingId" />
+                                            <input type="hidden" name="paymentIntentId" value="@latestPayment.TransactionReference" />
+                                            <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                                                <i class="bi bi-arrow-right-circle"></i> Continue Payment
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            }
                         }
 
                         <!-- Location Tracking Info -->
