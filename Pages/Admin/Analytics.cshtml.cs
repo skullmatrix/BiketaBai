@@ -280,6 +280,9 @@ namespace BiketaBai.Pages.Admin
                         .ThenInclude(bike => bike.Owner)
                     .Include(b => b.Ratings)
                     .Where(b => b.BookingStatus == "Completed")
+                    .ToListAsync();
+
+                var topBikesGrouped = topBikesData
                     .GroupBy(b => new { b.BikeId, b.Bike.Brand, b.Bike.Model, b.Bike.Owner.FullName })
                     .Select(g => new TopBike
                     {
@@ -290,14 +293,15 @@ namespace BiketaBai.Pages.Admin
                         TotalEarnings = g.Sum(b => b.TotalAmount * 0.9m), // 90% after service fee
                         AvgRating = g.SelectMany(b => b.Ratings)
                             .Where(r => r.RatingValue > 0)
-                            .DefaultIfEmpty()
-                            .Average(r => r != null ? (decimal)r.RatingValue : 0)
+                            .Select(r => (decimal)r.RatingValue)
+                            .DefaultIfEmpty(0)
+                            .Average()
                     })
                     .OrderByDescending(b => b.TotalEarnings)
                     .Take(10)
-                    .ToListAsync();
+                    .ToList();
 
-                TopBikes = topBikesData;
+                TopBikes = topBikesGrouped;
 
                 // Top Owners
                 var topOwnersData = await _context.Bikes

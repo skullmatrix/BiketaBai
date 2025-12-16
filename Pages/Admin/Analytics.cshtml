@@ -1,0 +1,805 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@model BiketaBai.Pages.Admin.AnalyticsModel
+@{
+    ViewData["Title"] = "Admin Analytics";
+}
+
+<link rel="stylesheet" href="~/css/admin-dashboard.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<div class="admin-dashboard-wrapper">
+    <div class="admin-dashboard-container">
+        
+        <!-- Dashboard Header -->
+        <div class="admin-dashboard-header">
+            <div class="admin-dashboard-title">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h1>Analytics Dashboard</h1>
+            </div>
+            <div class="admin-dashboard-actions">
+                <form method="get" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <label for="days" style="font-size: 0.875rem; color: var(--admin-gray-600);">Date Range:</label>
+                    <select name="days" id="days" class="form-select" style="width: auto; padding: 0.5rem 1rem;" onchange="this.form.submit()">
+                        <option value="7" selected="@(Model.Days == 7)">Last 7 Days</option>
+                        <option value="30" selected="@(Model.Days == 30)">Last 30 Days</option>
+                        <option value="90" selected="@(Model.Days == 90)">Last 90 Days</option>
+                        <option value="180" selected="@(Model.Days == 180)">Last 6 Months</option>
+                        <option value="365" selected="@(Model.Days == 365)">Last Year</option>
+                    </select>
+                </form>
+                <button class="admin-refresh-btn" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Overall Statistics -->
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalUsers</div>
+                        <div class="admin-stat-label">Total Users</div>
+                    </div>
+                    <div class="admin-stat-icon sage">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    @if (Model.UserGrowthRate >= 0)
+                    {
+                        <span style="color: var(--admin-success);">
+                            <i class="bi bi-arrow-up"></i> @Model.UserGrowthRate.ToString("F1")%
+                        </span>
+                    }
+                    else
+                    {
+                        <span style="color: var(--admin-danger);">
+                            <i class="bi bi-arrow-down"></i> @Math.Abs(Model.UserGrowthRate).ToString("F1")%
+                        </span>
+                    }
+                    Growth Rate
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalBikes</div>
+                        <div class="admin-stat-label">Total Bikes</div>
+                    </div>
+                    <div class="admin-stat-icon blue">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    Active Listings
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalBookings</div>
+                        <div class="admin-stat-label">Total Bookings</div>
+                    </div>
+                    <div class="admin-stat-icon amber">
+                        <i class="bi bi-calendar-check-fill"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    @if (Model.BookingGrowthRate >= 0)
+                    {
+                        <span style="color: var(--admin-success);">
+                            <i class="bi bi-arrow-up"></i> @Model.BookingGrowthRate.ToString("F1")%
+                        </span>
+                    }
+                    else
+                    {
+                        <span style="color: var(--admin-danger);">
+                            <i class="bi bi-arrow-down"></i> @Math.Abs(Model.BookingGrowthRate).ToString("F1")%
+                        </span>
+                    }
+                    Growth Rate
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">₱@Model.TotalRevenue.ToString("N0")</div>
+                        <div class="admin-stat-label">Platform Revenue</div>
+                    </div>
+                    <div class="admin-stat-icon emerald">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    @if (Model.RevenueGrowthRate >= 0)
+                    {
+                        <span style="color: var(--admin-success);">
+                            <i class="bi bi-arrow-up"></i> @Model.RevenueGrowthRate.ToString("F1")%
+                        </span>
+                    }
+                    else
+                    {
+                        <span style="color: var(--admin-danger);">
+                            <i class="bi bi-arrow-down"></i> @Math.Abs(Model.RevenueGrowthRate).ToString("F1")%
+                        </span>
+                    }
+                    Growth Rate
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="admin-stat-header">
+                    <div>
+                        <div class="admin-stat-value">@Model.TotalCO2Saved.ToString("F1") kg</div>
+                        <div class="admin-stat-label">CO₂ Saved</div>
+                    </div>
+                    <div class="admin-stat-icon emerald">
+                        <i class="bi bi-tree"></i>
+                    </div>
+                </div>
+                <div class="admin-stat-meta">
+                    Environmental Impact
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--admin-space-xl); margin-bottom: var(--admin-space-xl);">
+            
+            <!-- Daily Bookings Chart -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-calendar-day"></i>
+                        <h2>Daily Bookings</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="dailyBookingsChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Daily Revenue Chart -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-currency-dollar"></i>
+                        <h2>Daily Revenue</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="dailyRevenueChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Charts -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--admin-space-xl); margin-bottom: var(--admin-space-xl);">
+            
+            <!-- Monthly Bookings Chart -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-calendar-month"></i>
+                        <h2>Monthly Bookings</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="monthlyBookingsChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Monthly Revenue Chart -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-graph-up"></i>
+                        <h2>Monthly Revenue</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="monthlyRevenueChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribution Charts -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: var(--admin-space-xl); margin-bottom: var(--admin-space-xl);">
+            
+            <!-- Payment Method Distribution -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-credit-card"></i>
+                        <h2>Payment Methods</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="paymentMethodChart" style="max-height: 250px;"></canvas>
+                    <div style="margin-top: var(--admin-space-md);">
+                        @foreach (var stat in Model.PaymentMethodStats)
+                        {
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--admin-gray-200);">
+                                <span><strong>@stat.PaymentMethod</strong></span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="color: var(--admin-gray-600);">@stat.Count</span>
+                                    <span class="admin-badge sage">@stat.Percentage.ToString("F1")%</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bike Type Distribution -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-pie-chart"></i>
+                        <h2>Bike Types</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="bikeTypeChart" style="max-height: 250px;"></canvas>
+                    <div style="margin-top: var(--admin-space-md);">
+                        @foreach (var stat in Model.BikeTypeStats)
+                        {
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--admin-gray-200);">
+                                <span><strong>@stat.TypeName</strong></span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="color: var(--admin-gray-600);">@stat.Count</span>
+                                    <span class="admin-badge blue">@stat.Percentage.ToString("F1")%</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Status Distribution -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-info-circle"></i>
+                        <h2>Booking Status</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body" style="padding: var(--admin-space-lg);">
+                    <canvas id="bookingStatusChart" style="max-height: 250px;"></canvas>
+                    <div style="margin-top: var(--admin-space-md);">
+                        @foreach (var stat in Model.BookingStatusStats)
+                        {
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--admin-gray-200);">
+                                <span><strong>@stat.Status</strong></span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="color: var(--admin-gray-600);">@stat.Count</span>
+                                    <span class="admin-badge amber">@stat.Percentage.ToString("F1")%</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--admin-space-xl); margin-bottom: var(--admin-space-xl);">
+            
+            <!-- Top Bikes -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-trophy"></i>
+                        <h2>Top Performing Bikes</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.TopBikes.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Bike</th>
+                                        <th>Owner</th>
+                                        <th class="text-end">Bookings</th>
+                                        <th class="text-end">Earnings</th>
+                                        <th class="text-end">Rating</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int bikeRank = 1;
+                                    }
+                                    @foreach (var bike in Model.TopBikes)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (bikeRank == 1)
+                                                {
+                                                    <span class="admin-badge amber">🥇 @bikeRank</span>
+                                                }
+                                                else if (bikeRank == 2)
+                                                {
+                                                    <span class="admin-badge gray">🥈 @bikeRank</span>
+                                                }
+                                                else if (bikeRank == 3)
+                                                {
+                                                    <span class="admin-badge amber" style="background: #D4A574; color: white;">🥉 @bikeRank</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="admin-badge gray">@bikeRank</span>
+                                                }
+                                            </td>
+                                            <td><strong>@bike.BikeName</strong></td>
+                                            <td>@bike.OwnerName</td>
+                                            <td class="text-end">@bike.BookingCount</td>
+                                            <td class="text-end">
+                                                <strong style="color: var(--admin-sage-dark);">
+                                                    ₱@bike.TotalEarnings.ToString("N2")
+                                                </strong>
+                                            </td>
+                                            <td class="text-end">
+                                                @if (bike.AvgRating > 0)
+                                                {
+                                                    <span class="admin-badge emerald">
+                                                        <i class="bi bi-star-fill"></i> @bike.AvgRating.ToString("F1")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="color: var(--admin-gray-600);">N/A</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        bikeRank++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No bike performance data available</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Top Owners -->
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <div class="admin-section-title">
+                        <i class="bi bi-award"></i>
+                        <h2>Top Performing Owners</h2>
+                    </div>
+                </div>
+                <div class="admin-section-body">
+                    @if (Model.TopOwners.Any())
+                    {
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Owner</th>
+                                        <th class="text-end">Bikes</th>
+                                        <th class="text-end">Bookings</th>
+                                        <th class="text-end">Earnings</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int ownerRank = 1;
+                                    }
+                                    @foreach (var owner in Model.TopOwners)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (ownerRank == 1)
+                                                {
+                                                    <span class="admin-badge amber">🥇 @ownerRank</span>
+                                                }
+                                                else if (ownerRank == 2)
+                                                {
+                                                    <span class="admin-badge gray">🥈 @ownerRank</span>
+                                                }
+                                                else if (ownerRank == 3)
+                                                {
+                                                    <span class="admin-badge amber" style="background: #D4A574; color: white;">🥉 @ownerRank</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="admin-badge gray">@ownerRank</span>
+                                                }
+                                            </td>
+                                            <td><strong>@owner.OwnerName</strong></td>
+                                            <td class="text-end">@owner.BikeCount</td>
+                                            <td class="text-end">@owner.BookingCount</td>
+                                            <td class="text-end">
+                                                <strong style="color: var(--admin-sage-dark);">
+                                                    ₱@owner.TotalEarnings.ToString("N2")
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                        ownerRank++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="admin-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No owner performance data available</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .text-end {
+        text-align: right;
+    }
+    
+    .form-select {
+        border: 1px solid var(--admin-gray-300);
+        border-radius: var(--admin-radius-sm);
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        background: white;
+        color: var(--admin-gray-900);
+    }
+    
+    .form-select:focus {
+        outline: none;
+        border-color: var(--admin-sage-primary);
+        box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.1);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Chart.js configuration
+        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#6B7280';
+        
+        const chartColors = {
+            primary: '#87A96B',
+            secondary: '#A4C49A',
+            accent: '#6B8E5F',
+            blue: '#3B82F6',
+            amber: '#F59E0B',
+            emerald: '#10B981',
+            red: '#EF4444',
+            purple: '#8B5CF6'
+        };
+
+        // Daily Bookings Chart
+        const dailyBookingsCtx = document.getElementById('dailyBookingsChart');
+        if (dailyBookingsCtx) {
+            new Chart(dailyBookingsCtx, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.DailyBookings.Select(d => $"'{d.Date}'")))],
+                    datasets: [{
+                        label: 'Bookings',
+                        data: [@string.Join(",", Model.DailyBookings.Select(d => d.Count))],
+                        borderColor: chartColors.primary,
+                        backgroundColor: chartColors.primary + '20',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Daily Revenue Chart
+        const dailyRevenueCtx = document.getElementById('dailyRevenueChart');
+        if (dailyRevenueCtx) {
+            new Chart(dailyRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.DailyRevenue.Select(d => $"'{d.Date}'")))],
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: [@string.Join(",", Model.DailyRevenue.Select(d => d.Amount))],
+                        backgroundColor: chartColors.emerald + '80',
+                        borderColor: chartColors.emerald,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    return '₱' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Monthly Bookings Chart
+        const monthlyBookingsCtx = document.getElementById('monthlyBookingsChart');
+        if (monthlyBookingsCtx) {
+            new Chart(monthlyBookingsCtx, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.MonthlyBookings.Select(m => $"'{m.Month}'")))],
+                    datasets: [{
+                        label: 'Bookings',
+                        data: [@string.Join(",", Model.MonthlyBookings.Select(m => m.Count))],
+                        borderColor: chartColors.blue,
+                        backgroundColor: chartColors.blue + '20',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Monthly Revenue Chart
+        const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart');
+        if (monthlyRevenueCtx) {
+            new Chart(monthlyRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.MonthlyRevenue.Select(m => $"'{m.Month}'")))],
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: [@string.Join(",", Model.MonthlyRevenue.Select(m => m.Amount))],
+                        backgroundColor: chartColors.amber + '80',
+                        borderColor: chartColors.amber,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    return '₱' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Payment Method Chart
+        const paymentMethodCtx = document.getElementById('paymentMethodChart');
+        if (paymentMethodCtx) {
+            new Chart(paymentMethodCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.PaymentMethodStats.Select(p => $"'{p.PaymentMethod}'")))],
+                    datasets: [{
+                        data: [@string.Join(",", Model.PaymentMethodStats.Select(p => p.Count))],
+                        backgroundColor: [
+                            chartColors.primary,
+                            chartColors.blue,
+                            chartColors.amber,
+                            chartColors.emerald,
+                            chartColors.purple,
+                            chartColors.red
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Bike Type Chart
+        const bikeTypeCtx = document.getElementById('bikeTypeChart');
+        if (bikeTypeCtx) {
+            new Chart(bikeTypeCtx, {
+                type: 'pie',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.BikeTypeStats.Select(b => $"'{b.TypeName}'")))],
+                    datasets: [{
+                        data: [@string.Join(",", Model.BikeTypeStats.Select(b => b.Count))],
+                        backgroundColor: [
+                            chartColors.primary,
+                            chartColors.blue,
+                            chartColors.amber,
+                            chartColors.emerald,
+                            chartColors.purple,
+                            chartColors.red
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Booking Status Chart
+        const bookingStatusCtx = document.getElementById('bookingStatusChart');
+        if (bookingStatusCtx) {
+            new Chart(bookingStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.BookingStatusStats.Select(s => $"'{s.Status}'")))],
+                    datasets: [{
+                        data: [@string.Join(",", Model.BookingStatusStats.Select(s => s.Count))],
+                        backgroundColor: [
+                            chartColors.emerald,
+                            chartColors.blue,
+                            chartColors.amber,
+                            chartColors.red,
+                            chartColors.purple
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        console.log('✅ Admin Analytics Dashboard initialized successfully');
+    </script>
+}
+
