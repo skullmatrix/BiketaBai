@@ -495,13 +495,15 @@
         // Daily Bookings Chart
         const dailyBookingsCtx = document.getElementById('dailyBookingsChart');
         if (dailyBookingsCtx) {
+            const dailyBookingsLabels = [@Html.Raw(Model.DailyBookings != null && Model.DailyBookings.Any() ? string.Join(",", Model.DailyBookings.Select(d => $"'{d.Date}'")) : "")];
+            const dailyBookingsData = [@(Model.DailyBookings != null && Model.DailyBookings.Any() ? string.Join(",", Model.DailyBookings.Select(d => d.Count)) : "")];
             new Chart(dailyBookingsCtx, {
                 type: 'line',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.DailyBookings.Select(d => $"'{d.Date}'")))],
+                    labels: dailyBookingsLabels,
                     datasets: [{
                         label: 'Bookings',
-                        data: [@string.Join(",", Model.DailyBookings.Select(d => d.Count))],
+                        data: dailyBookingsData,
                         borderColor: chartColors.primary,
                         backgroundColor: chartColors.primary + '20',
                         borderWidth: 2,
@@ -538,13 +540,15 @@
         // Daily Revenue Chart
         const dailyRevenueCtx = document.getElementById('dailyRevenueChart');
         if (dailyRevenueCtx) {
+            const dailyRevenueLabels = [@Html.Raw(Model.DailyRevenue != null && Model.DailyRevenue.Any() ? string.Join(",", Model.DailyRevenue.Select(d => $"'{d.Date}'")) : "")];
+            const dailyRevenueData = [@(Model.DailyRevenue != null && Model.DailyRevenue.Any() ? string.Join(",", Model.DailyRevenue.Select(d => d.Amount)) : "")];
             new Chart(dailyRevenueCtx, {
                 type: 'bar',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.DailyRevenue.Select(d => $"'{d.Date}'")))],
+                    labels: dailyRevenueLabels,
                     datasets: [{
                         label: 'Revenue (₱)',
-                        data: [@string.Join(",", Model.DailyRevenue.Select(d => d.Amount))],
+                        data: dailyRevenueData,
                         backgroundColor: chartColors.emerald + '80',
                         borderColor: chartColors.emerald,
                         borderWidth: 2
@@ -584,13 +588,15 @@
         // Monthly Bookings Chart
         const monthlyBookingsCtx = document.getElementById('monthlyBookingsChart');
         if (monthlyBookingsCtx) {
+            const monthlyBookingsLabels = [@Html.Raw(Model.MonthlyBookings != null && Model.MonthlyBookings.Any() ? string.Join(",", Model.MonthlyBookings.Select(m => $"'{m.Month}'")) : "")];
+            const monthlyBookingsData = [@(Model.MonthlyBookings != null && Model.MonthlyBookings.Any() ? string.Join(",", Model.MonthlyBookings.Select(m => m.Count)) : "")];
             new Chart(monthlyBookingsCtx, {
                 type: 'line',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.MonthlyBookings.Select(m => $"'{m.Month}'")))],
+                    labels: monthlyBookingsLabels,
                     datasets: [{
                         label: 'Bookings',
-                        data: [@string.Join(",", Model.MonthlyBookings.Select(m => m.Count))],
+                        data: monthlyBookingsData,
                         borderColor: chartColors.blue,
                         backgroundColor: chartColors.blue + '20',
                         borderWidth: 2,
@@ -625,13 +631,15 @@
         // Monthly Revenue Chart
         const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart');
         if (monthlyRevenueCtx) {
+            const monthlyRevenueLabels = [@Html.Raw(Model.MonthlyRevenue != null && Model.MonthlyRevenue.Any() ? string.Join(",", Model.MonthlyRevenue.Select(m => $"'{m.Month}'")) : "")];
+            const monthlyRevenueData = [@(Model.MonthlyRevenue != null && Model.MonthlyRevenue.Any() ? string.Join(",", Model.MonthlyRevenue.Select(m => m.Amount)) : "")];
             new Chart(monthlyRevenueCtx, {
                 type: 'bar',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.MonthlyRevenue.Select(m => $"'{m.Month}'")))],
+                    labels: monthlyRevenueLabels,
                     datasets: [{
                         label: 'Revenue (₱)',
-                        data: [@string.Join(",", Model.MonthlyRevenue.Select(m => m.Amount))],
+                        data: monthlyRevenueData,
                         backgroundColor: chartColors.amber + '80',
                         borderColor: chartColors.amber,
                         borderWidth: 2
@@ -671,12 +679,14 @@
         // Payment Method Chart
         const paymentMethodCtx = document.getElementById('paymentMethodChart');
         if (paymentMethodCtx) {
+            const paymentMethodLabels = [@Html.Raw(Model.PaymentMethodStats != null && Model.PaymentMethodStats.Any() ? string.Join(",", Model.PaymentMethodStats.Select(p => $"'{p.PaymentMethod}'")) : "")];
+            const paymentMethodData = [@(Model.PaymentMethodStats != null && Model.PaymentMethodStats.Any() ? string.Join(",", Model.PaymentMethodStats.Select(p => p.Count)) : "")];
             new Chart(paymentMethodCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.PaymentMethodStats.Select(p => $"'{p.PaymentMethod}'")))],
+                    labels: paymentMethodLabels,
                     datasets: [{
-                        data: [@string.Join(",", Model.PaymentMethodStats.Select(p => p.Count))],
+                        data: paymentMethodData,
                         backgroundColor: [
                             chartColors.primary,
                             chartColors.blue,
@@ -715,12 +725,14 @@
         // Bike Type Chart
         const bikeTypeCtx = document.getElementById('bikeTypeChart');
         if (bikeTypeCtx) {
+            const bikeTypeLabels = [@Html.Raw(Model.BikeTypeStats != null && Model.BikeTypeStats.Any() ? string.Join(",", Model.BikeTypeStats.Select(b => $"'{b.TypeName}'")) : "")];
+            const bikeTypeData = [@(Model.BikeTypeStats != null && Model.BikeTypeStats.Any() ? string.Join(",", Model.BikeTypeStats.Select(b => b.Count)) : "")];
             new Chart(bikeTypeCtx, {
                 type: 'pie',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.BikeTypeStats.Select(b => $"'{b.TypeName}'")))],
+                    labels: bikeTypeLabels,
                     datasets: [{
-                        data: [@string.Join(",", Model.BikeTypeStats.Select(b => b.Count))],
+                        data: bikeTypeData,
                         backgroundColor: [
                             chartColors.primary,
                             chartColors.blue,
@@ -759,12 +771,14 @@
         // Booking Status Chart
         const bookingStatusCtx = document.getElementById('bookingStatusChart');
         if (bookingStatusCtx) {
+            const bookingStatusLabels = [@Html.Raw(Model.BookingStatusStats != null && Model.BookingStatusStats.Any() ? string.Join(",", Model.BookingStatusStats.Select(s => $"'{s.Status}'")) : "")];
+            const bookingStatusData = [@(Model.BookingStatusStats != null && Model.BookingStatusStats.Any() ? string.Join(",", Model.BookingStatusStats.Select(s => s.Count)) : "")];
             new Chart(bookingStatusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: [@Html.Raw(string.Join(",", Model.BookingStatusStats.Select(s => $"'{s.Status}'")))],
+                    labels: bookingStatusLabels,
                     datasets: [{
-                        data: [@string.Join(",", Model.BookingStatusStats.Select(s => s.Count))],
+                        data: bookingStatusData,
                         backgroundColor: [
                             chartColors.emerald,
                             chartColors.blue,
@@ -800,6 +814,21 @@
         }
 
         console.log('✅ Admin Analytics Dashboard initialized successfully');
+        console.log('📊 Data Summary:', {
+            totalUsers: @Model.TotalUsers,
+            totalBikes: @Model.TotalBikes,
+            totalBookings: @Model.TotalBookings,
+            totalRevenue: @Model.TotalRevenue,
+            dailyBookings: @Model.DailyBookings.Count,
+            dailyRevenue: @Model.DailyRevenue.Count,
+            monthlyBookings: @Model.MonthlyBookings.Count,
+            monthlyRevenue: @Model.MonthlyRevenue.Count,
+            paymentMethods: @Model.PaymentMethodStats.Count,
+            bikeTypes: @Model.BikeTypeStats.Count,
+            bookingStatuses: @Model.BookingStatusStats.Count,
+            topBikes: @Model.TopBikes.Count,
+            topOwners: @Model.TopOwners.Count
+        });
     </script>
 }
 

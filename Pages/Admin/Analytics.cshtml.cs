@@ -111,27 +111,33 @@ namespace BiketaBai.Pages.Admin
 
             try
             {
-                var startDate = DateTime.UtcNow.AddDays(-Days);
-                var previousPeriodStart = DateTime.UtcNow.AddDays(-Days * 2);
-                var previousPeriodEnd = DateTime.UtcNow.AddDays(-Days);
+                var startDate = DateTime.UtcNow.AddDays(-Days).Date;
+                var previousPeriodStart = DateTime.UtcNow.AddDays(-Days * 2).Date;
+                var previousPeriodEnd = DateTime.UtcNow.AddDays(-Days).Date;
 
                 // Overall Statistics
                 TotalUsers = await _context.Users.CountAsync();
                 TotalBikes = await _context.Bikes.CountAsync();
                 TotalBookings = await _context.Bookings.CountAsync();
                 
-                TotalRevenue = await _context.Bookings
+                var revenueResult = await _context.Bookings
                     .Where(b => b.BookingStatus == "Completed")
-                    .SumAsync(b => b.ServiceFee);
+                    .Select(b => b.ServiceFee)
+                    .ToListAsync();
+                TotalRevenue = revenueResult.Sum();
 
                 var totalKmSaved = await _context.Bookings
                     .Where(b => b.DistanceSavedKm.HasValue)
-                    .SumAsync(b => b.DistanceSavedKm ?? 0);
-                TotalCO2Saved = totalKmSaved * 0.2m;
+                    .Select(b => b.DistanceSavedKm ?? 0)
+                    .ToListAsync();
+                TotalCO2Saved = totalKmSaved.Sum() * 0.2m;
 
                 // Daily Bookings (last N days)
                 var dailyBookingsData = await _context.Bookings
                     .Where(b => b.CreatedAt >= startDate)
+                    .ToListAsync();
+
+                DailyBookings = dailyBookingsData
                     .GroupBy(b => b.CreatedAt.Date)
                     .Select(g => new DailyStat
                     {
@@ -140,13 +146,14 @@ namespace BiketaBai.Pages.Admin
                         Amount = g.Sum(b => b.TotalAmount)
                     })
                     .OrderBy(d => d.Date)
-                    .ToListAsync();
-
-                DailyBookings = dailyBookingsData;
+                    .ToList();
 
                 // Daily Revenue (from completed bookings)
                 var dailyRevenueData = await _context.Bookings
                     .Where(b => b.BookingStatus == "Completed" && b.CreatedAt >= startDate)
+                    .ToListAsync();
+
+                DailyRevenue = dailyRevenueData
                     .GroupBy(b => b.CreatedAt.Date)
                     .Select(g => new DailyStat
                     {
@@ -155,13 +162,14 @@ namespace BiketaBai.Pages.Admin
                         Amount = g.Sum(b => b.ServiceFee)
                     })
                     .OrderBy(d => d.Date)
-                    .ToListAsync();
-
-                DailyRevenue = dailyRevenueData;
+                    .ToList();
 
                 // Monthly Bookings (last 12 months)
-                var monthlyBookingsData = await _context.Bookings
+                var monthlyBookingsRaw = await _context.Bookings
                     .Where(b => b.CreatedAt >= DateTime.UtcNow.AddMonths(-12))
+                    .ToListAsync();
+
+                MonthlyBookings = monthlyBookingsRaw
                     .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
                     .Select(g => new MonthlyStat
                     {
@@ -170,13 +178,14 @@ namespace BiketaBai.Pages.Admin
                         Amount = g.Sum(b => b.TotalAmount)
                     })
                     .OrderBy(m => m.Month)
-                    .ToListAsync();
-
-                MonthlyBookings = monthlyBookingsData;
+                    .ToList();
 
                 // Monthly Revenue
-                var monthlyRevenueData = await _context.Bookings
+                var monthlyRevenueRaw = await _context.Bookings
                     .Where(b => b.BookingStatus == "Completed" && b.CreatedAt >= DateTime.UtcNow.AddMonths(-12))
+                    .ToListAsync();
+
+                MonthlyRevenue = monthlyRevenueRaw
                     .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
                     .Select(g => new MonthlyStat
                     {
@@ -185,21 +194,22 @@ namespace BiketaBai.Pages.Admin
                         Amount = g.Sum(b => b.ServiceFee)
                     })
                     .OrderBy(m => m.Month)
-                    .ToListAsync();
-
-                MonthlyRevenue = monthlyRevenueData;
+                    .ToList();
 
                 // Payment Method Statistics
-                var paymentStats = await _context.Payments
+                var paymentStatsRaw = await _context.Payments
                     .Where(p => p.PaymentStatus == "Completed")
-                    .GroupBy(p => p.PaymentMethod)
+                    .ToListAsync();
+
+                var paymentStats = paymentStatsRaw
+                    .GroupBy(p => p.PaymentMethod ?? "Unknown")
                     .Select(g => new PaymentMethodStat
                     {
-                        PaymentMethod = g.Key ?? "Unknown",
+                        PaymentMethod = g.Key,
                         Count = g.Count(),
                         TotalAmount = g.Sum(p => p.Amount)
                     })
-                    .ToListAsync();
+                    .ToList();
 
                 var totalPayments = paymentStats.Sum(p => p.Count);
                 foreach (var stat in paymentStats)
@@ -209,15 +219,19 @@ namespace BiketaBai.Pages.Admin
                 PaymentMethodStats = paymentStats.OrderByDescending(p => p.Count).ToList();
 
                 // Bike Type Statistics
-                var bikeTypeStats = await _context.Bikes
+                var bikeTypeStatsRaw = await _context.Bikes
                     .Include(b => b.BikeType)
-                    .GroupBy(b => b.BikeType.TypeName)
+                    .Where(b => b.BikeType != null)
+                    .ToListAsync();
+
+                var bikeTypeStats = bikeTypeStatsRaw
+                    .GroupBy(b => b.BikeType!.TypeName)
                     .Select(g => new BikeTypeStat
                     {
                         TypeName = g.Key,
                         Count = g.Count()
                     })
-                    .ToListAsync();
+                    .ToList();
 
                 var totalBikesForType = bikeTypeStats.Sum(b => b.Count);
                 foreach (var stat in bikeTypeStats)
@@ -227,14 +241,17 @@ namespace BiketaBai.Pages.Admin
                 BikeTypeStats = bikeTypeStats.OrderByDescending(b => b.Count).ToList();
 
                 // Booking Status Statistics
-                var statusStats = await _context.Bookings
-                    .GroupBy(b => b.BookingStatus)
+                var statusStatsRaw = await _context.Bookings
+                    .ToListAsync();
+
+                var statusStats = statusStatsRaw
+                    .GroupBy(b => b.BookingStatus ?? "Unknown")
                     .Select(g => new StatusStat
                     {
                         Status = g.Key,
                         Count = g.Count()
                     })
-                    .ToListAsync();
+                    .ToList();
 
                 var totalBookingsForStatus = statusStats.Sum(s => s.Count);
                 foreach (var stat in statusStats)
@@ -264,12 +281,18 @@ namespace BiketaBai.Pages.Admin
                     ? ((decimal)(currentPeriodBookings - previousPeriodBookings) / previousPeriodBookings) * 100 
                     : (currentPeriodBookings > 0 ? 100 : 0);
 
-                var currentPeriodRevenue = await _context.Bookings
+                var currentPeriodRevenueList = await _context.Bookings
                     .Where(b => b.BookingStatus == "Completed" && b.CreatedAt >= startDate)
-                    .SumAsync(b => b.ServiceFee);
-                var previousPeriodRevenue = await _context.Bookings
+                    .Select(b => b.ServiceFee)
+                    .ToListAsync();
+                var currentPeriodRevenue = currentPeriodRevenueList.Sum();
+                
+                var previousPeriodRevenueList = await _context.Bookings
                     .Where(b => b.BookingStatus == "Completed" && b.CreatedAt >= previousPeriodStart && b.CreatedAt < previousPeriodEnd)
-                    .SumAsync(b => b.ServiceFee);
+                    .Select(b => b.ServiceFee)
+                    .ToListAsync();
+                var previousPeriodRevenue = previousPeriodRevenueList.Sum();
+                
                 RevenueGrowthRate = previousPeriodRevenue > 0 
                     ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
                     : (currentPeriodRevenue > 0 ? 100 : 0);
@@ -279,16 +302,21 @@ namespace BiketaBai.Pages.Admin
                     .Include(b => b.Bike)
                         .ThenInclude(bike => bike.Owner)
                     .Include(b => b.Ratings)
-                    .Where(b => b.BookingStatus == "Completed")
+                    .Where(b => b.BookingStatus == "Completed" && b.Bike != null && b.Bike.Owner != null)
                     .ToListAsync();
 
                 var topBikesGrouped = topBikesData
-                    .GroupBy(b => new { b.BikeId, b.Bike.Brand, b.Bike.Model, b.Bike.Owner.FullName })
+                    .GroupBy(b => new { 
+                        b.BikeId, 
+                        Brand = b.Bike!.Brand ?? "Unknown", 
+                        Model = b.Bike.Model ?? "Unknown", 
+                        OwnerName = b.Bike.Owner!.FullName ?? "Unknown" 
+                    })
                     .Select(g => new TopBike
                     {
                         BikeId = g.Key.BikeId,
                         BikeName = $"{g.Key.Brand} {g.Key.Model}",
-                        OwnerName = g.Key.FullName,
+                        OwnerName = g.Key.OwnerName,
                         BookingCount = g.Count(),
                         TotalEarnings = g.Sum(b => b.TotalAmount * 0.9m), // 90% after service fee
                         AvgRating = g.SelectMany(b => b.Ratings)
@@ -304,14 +332,18 @@ namespace BiketaBai.Pages.Admin
                 TopBikes = topBikesGrouped;
 
                 // Top Owners
-                var topOwnersData = await _context.Bikes
+                var topOwnersRaw = await _context.Bikes
                     .Include(b => b.Owner)
                     .Include(b => b.Bookings)
-                    .GroupBy(b => new { b.OwnerId, b.Owner.FullName })
+                    .Where(b => b.Owner != null)
+                    .ToListAsync();
+
+                var topOwnersData = topOwnersRaw
+                    .GroupBy(b => new { b.OwnerId, OwnerName = b.Owner!.FullName })
                     .Select(g => new TopOwner
                     {
                         OwnerId = g.Key.OwnerId,
-                        OwnerName = g.Key.FullName,
+                        OwnerName = g.Key.OwnerName,
                         BikeCount = g.Count(),
                         BookingCount = g.SelectMany(b => b.Bookings).Count(),
                         TotalEarnings = g.SelectMany(b => b.Bookings)
@@ -320,15 +352,31 @@ namespace BiketaBai.Pages.Admin
                     })
                     .OrderByDescending(o => o.TotalEarnings)
                     .Take(10)
-                    .ToListAsync();
+                    .ToList();
 
                 TopOwners = topOwnersData;
 
-                Log.Information("Admin analytics loaded successfully for {Days} days", Days);
+                Log.Information("Admin analytics loaded successfully for {Days} days. Users: {Users}, Bikes: {Bikes}, Bookings: {Bookings}, Revenue: {Revenue}", 
+                    Days, TotalUsers, TotalBikes, TotalBookings, TotalRevenue);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error loading admin analytics");
+                Log.Error(ex, "Error loading admin analytics: {Message}", ex.Message);
+                // Set default values to prevent null reference errors
+                TotalUsers = 0;
+                TotalBikes = 0;
+                TotalBookings = 0;
+                TotalRevenue = 0;
+                TotalCO2Saved = 0;
+                DailyBookings = new List<DailyStat>();
+                DailyRevenue = new List<DailyStat>();
+                MonthlyBookings = new List<MonthlyStat>();
+                MonthlyRevenue = new List<MonthlyStat>();
+                PaymentMethodStats = new List<PaymentMethodStat>();
+                BikeTypeStats = new List<BikeTypeStat>();
+                BookingStatusStats = new List<StatusStat>();
+                TopBikes = new List<TopBike>();
+                TopOwners = new List<TopOwner>();
             }
 
             return Page();
