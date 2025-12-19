@@ -110,6 +110,8 @@ builder.Services.AddHttpClient<PaymentGatewayService>();
 builder.Services.AddScoped<PaymentGatewayService>();
 builder.Services.AddScoped<GeofencingService>();
 builder.Services.AddHostedService<GeofencingBackgroundService>();
+builder.Services.AddScoped<RenterFlagService>();
+builder.Services.AddHostedService<BookingAutoCancelService>();
 
 // Add HttpContextAccessor for accessing HttpContext in services
 builder.Services.AddHttpContextAccessor();

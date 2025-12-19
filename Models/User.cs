@@ -128,5 +128,7 @@ public class User
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<Store> Stores { get; set; } = new List<Store>();
     public virtual ICollection<Payment> PaymentsVerified { get; set; } = new List<Payment>();
+    public virtual ICollection<RenterFlag> RenterFlagsGiven { get; set; } = new List<RenterFlag>();
+    public virtual ICollection<RenterFlag> RenterFlagsReceived { get; set; } = new List<RenterFlag>();
 }
 

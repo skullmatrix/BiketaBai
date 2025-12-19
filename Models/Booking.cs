@@ -108,6 +108,12 @@ public class Booking
     [Column("lost_report_notes")]
     public string? LostReportNotes { get; set; }
 
+    [Column("terms_acknowledged")]
+    public bool TermsAcknowledged { get; set; } = false;
+
+    [Column("terms_acknowledged_at")]
+    public DateTime? TermsAcknowledgedAt { get; set; }
+
     // Navigation properties
     [ForeignKey("RenterId")]
     public virtual User Renter { get; set; } = null!;
@@ -118,5 +124,6 @@ public class Booking
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
     public virtual ICollection<LocationTracking> LocationTracking { get; set; } = new List<LocationTracking>();
+    public virtual ICollection<RenterFlag> RenterFlags { get; set; } = new List<RenterFlag>();
 }
 

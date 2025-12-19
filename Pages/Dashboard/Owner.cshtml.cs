@@ -31,8 +31,20 @@ public class OwnerDashboardModel : PageModel
     public int OverdueCount { get; set; }
     public decimal TotalEarnings { get; set; }
     public decimal PendingEarnings { get; set; }
+    public decimal DailyEarnings { get; set; }
+    public decimal WeeklyEarnings { get; set; }
+    public decimal MonthlyEarnings { get; set; }
+    public Dictionary<string, int> BikeTypeCounts { get; set; } = new();
+    public Dictionary<string, int> BikeTypeAvailableCounts { get; set; } = new();
     public double AverageRating { get; set; }
     public int UnreadNotifications { get; set; }
+    public List<EarningsData> EarningsHistory { get; set; } = new();
+    
+    public class EarningsData
+    {
+        public DateTime Date { get; set; }
+        public decimal Amount { get; set; }
+    }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -111,13 +123,67 @@ public class OwnerDashboardModel : PageModel
         PendingRequestsCount = PendingBookings.Count;
         OverdueCount = OverdueBookings.Count;
         
+        // Calculate earnings (90% after service fee)
+        // 'now' is already defined above for overdue bookings
+        var todayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
+        var weekStart = todayStart.AddDays(-(int)todayStart.DayOfWeek);
+        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        
         TotalEarnings = await _context.Bookings
             .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Completed")
-            .SumAsync(b => b.TotalAmount * 0.9m); // 90% after service fee
+            .SumAsync(b => b.TotalAmount * 0.9m);
 
         PendingEarnings = await _context.Bookings
             .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Active")
             .SumAsync(b => b.TotalAmount * 0.9m);
+
+        DailyEarnings = await _context.Bookings
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                       b.BookingStatus == "Completed" &&
+                       b.UpdatedAt >= todayStart)
+            .SumAsync(b => b.TotalAmount * 0.9m);
+
+        WeeklyEarnings = await _context.Bookings
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                       b.BookingStatus == "Completed" &&
+                       b.UpdatedAt >= weekStart)
+            .SumAsync(b => b.TotalAmount * 0.9m);
+
+        MonthlyEarnings = await _context.Bookings
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                       b.BookingStatus == "Completed" &&
+                       b.UpdatedAt >= monthStart)
+            .SumAsync(b => b.TotalAmount * 0.9m);
+
+        // Get earnings history for last 30 days
+        var thirtyDaysAgo = now.AddDays(-30);
+        EarningsHistory = await _context.Bookings
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                       b.BookingStatus == "Completed" &&
+                       b.UpdatedAt >= thirtyDaysAgo)
+            .GroupBy(b => b.UpdatedAt.Date)
+            .Select(g => new EarningsData
+            {
+                Date = g.Key,
+                Amount = g.Sum(b => b.TotalAmount * 0.9m)
+            })
+            .OrderBy(e => e.Date)
+            .ToListAsync();
+
+        // Calculate bike type counts
+        var bikesWithTypes = await _context.Bikes
+            .Include(b => b.BikeType)
+            .Where(b => b.OwnerId == userId.Value)
+            .ToListAsync();
+
+        BikeTypeCounts = bikesWithTypes
+            .GroupBy(b => b.BikeType.TypeName)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        BikeTypeAvailableCounts = bikesWithTypes
+            .Where(b => b.AvailabilityStatus == "Available")
+            .GroupBy(b => b.BikeType.TypeName)
+            .ToDictionary(g => g.Key, g => g.Sum(b => b.Quantity));
 
         var ownerRatings = await _context.Ratings
             .Where(r => r.RatedUserId == userId.Value && r.IsRenterRatingOwner)

@@ -267,6 +267,39 @@
                         </div>
                     </div>
 
+                    <!-- Terms and Conditions -->
+                    <div class="card-minimal card-minimal-compact mb-4" style="background: #f8f9fa; border: 1px solid var(--neutral-200);">
+                        <div class="card-minimal-header">
+                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-3); color: var(--neutral-900);">
+                                <i class="bi bi-file-text"></i> Terms and Conditions
+                            </h3>
+                        </div>
+                        <div style="max-height: 200px; overflow-y: auto; padding: var(--space-2); background: white; border-radius: var(--radius-md); margin-bottom: var(--space-3); font-size: 0.875rem; line-height: 1.6;">
+                            <p><strong>Bike Return Policy:</strong></p>
+                            <ul style="margin-left: var(--space-4); padding-left: 0;">
+                                <li>Bike must be returned in the same condition as received</li>
+                                <li>Any damage or loss will result in charges for repair or replacement</li>
+                                <li>Bike must be returned on or before the scheduled return date and time</li>
+                                <li>Late returns will incur additional charges</li>
+                                <li>Location tracking must remain enabled throughout the rental period</li>
+                                <li>Renter is responsible for the bike's safety and security</li>
+                                <li>Report any issues or damages immediately to the owner</li>
+                                <li>Follow all traffic laws and safety regulations</li>
+                                <li>Do not modify or tamper with the bike</li>
+                                <li>Return the bike to the agreed return location</li>
+                            </ul>
+                            <p style="margin-top: var(--space-3);"><strong>By proceeding with payment, you acknowledge that you have read, understood, and agree to these terms and conditions.</strong></p>
+                        </div>
+                        <div class="form-group-minimal">
+                            <label class="label-minimal" style="display: flex; align-items: start; gap: var(--space-2); cursor: pointer;">
+                                <input type="checkbox" name="TermsAcknowledged" id="termsAcknowledged" required style="margin-top: 0.25rem; cursor: pointer;" />
+                                <span style="font-size: 0.875rem; line-height: 1.5;">
+                                    I acknowledge that I have read and agree to the Terms and Conditions and Bike Return Policy
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5);">
                         <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg" id="submitBtn" disabled>
@@ -543,7 +576,7 @@
             });
         }
 
-        // Prevent form submission if location not granted
+        // Prevent form submission if location not granted or terms not acknowledged
         form.addEventListener('submit', function(e) {
             if (!locationPermissionGranted) {
                 e.preventDefault();
@@ -551,7 +584,27 @@
                 alert('Please enable location access before proceeding with payment.');
                 return false;
             }
+            
+            const termsCheckbox = document.getElementById('termsAcknowledged');
+            if (!termsCheckbox || !termsCheckbox.checked) {
+                e.preventDefault();
+                alert('Please acknowledge the Terms and Conditions before proceeding with payment.');
+                termsCheckbox.focus();
+                return false;
+            }
         });
+        
+        // Enable/disable submit button based on terms acknowledgment
+        const termsCheckbox = document.getElementById('termsAcknowledged');
+        if (termsCheckbox) {
+            termsCheckbox.addEventListener('change', function() {
+                if (locationPermissionGranted && this.checked) {
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.disabled = true;
+                }
+            });
+        }
 
         // Payment method selection
         const radioButtons = document.querySelectorAll('input[name="PaymentMethodId"]');

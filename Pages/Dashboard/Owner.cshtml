@@ -73,8 +73,10 @@
             <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
                 @{
                     var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatus == "Available");
+                    var totalAvailableQty = Model.Bikes.Where(b => b.AvailabilityStatus == "Available").Sum(b => b.Quantity);
                 }
-                <i class="bi bi-check-circle"></i> @availableBikes Available
+                <div><i class="bi bi-check-circle"></i> @availableBikes Listings Available</div>
+                <div><i class="bi bi-bicycle"></i> @totalAvailableQty Total Bikes Available</div>
             </div>
         </div>
 
@@ -98,12 +100,15 @@
             </div>
             <div class="stat-value">₱@Model.TotalEarnings.ToString("F0")</div>
             <div class="stat-label">Total Earnings</div>
-            @if (Model.PendingEarnings > 0)
-            {
-                <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
-                    <i class="bi bi-hourglass-split"></i> ₱@Model.PendingEarnings.ToString("F0") Pending
-                </div>
-            }
+            <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                <div><i class="bi bi-calendar-day"></i> Today: ₱@Model.DailyEarnings.ToString("F0")</div>
+                <div><i class="bi bi-calendar-week"></i> This Week: ₱@Model.WeeklyEarnings.ToString("F0")</div>
+                <div><i class="bi bi-calendar-month"></i> This Month: ₱@Model.MonthlyEarnings.ToString("F0")</div>
+                @if (Model.PendingEarnings > 0)
+                {
+                    <div style="margin-top: var(--space-1);"><i class="bi bi-hourglass-split"></i> Pending: ₱@Model.PendingEarnings.ToString("F0")</div>
+                }
+            </div>
         </div>
 
         <div class="stat-card-minimal">
@@ -318,6 +323,68 @@
                         </div>
                     </div>
                 }
+            </div>
+        </div>
+    }
+
+    <!-- Earnings Analytics -->
+    @if (Model.EarningsHistory.Any())
+    {
+        <div class="card-minimal mb-5">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-graph-up"></i> Earnings Analytics (Last 30 Days)
+                </h2>
+            </div>
+            <div style="padding: var(--space-4);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
+                    <div style="text-align: center; padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Today</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary);">₱@Model.DailyEarnings.ToString("F0")</div>
+                    </div>
+                    <div style="text-align: center; padding: var(--space-3); background: #E8F4FD; border-radius: var(--radius-md);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">This Week</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0066CC;">₱@Model.WeeklyEarnings.ToString("F0")</div>
+                    </div>
+                    <div style="text-align: center; padding: var(--space-3); background: #FFF4E6; border-radius: var(--radius-md);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">This Month</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800;">₱@Model.MonthlyEarnings.ToString("F0")</div>
+                    </div>
+                    <div style="text-align: center; padding: var(--space-3); background: #E8F5E9; border-radius: var(--radius-md);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Total Lifetime</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #4CAF50;">₱@Model.TotalEarnings.ToString("F0")</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.875rem; color: var(--neutral-600); padding: var(--space-3); background: #f8f9fa; border-radius: var(--radius-md);">
+                    <p style="margin: 0;"><strong>Note:</strong> Earnings shown are after the 10% platform service fee. You receive 90% of the total booking amount.</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Bike Types Breakdown -->
+    @if (Model.BikeTypeCounts.Any())
+    {
+        <div class="card-minimal mb-5">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-grid-3x3"></i> Bike Types Breakdown
+                </h2>
+            </div>
+            <div style="padding: var(--space-4);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
+                    @foreach (var typeCount in Model.BikeTypeCounts)
+                    {
+                        var availableCount = Model.BikeTypeAvailableCounts.ContainsKey(typeCount.Key) ? Model.BikeTypeAvailableCounts[typeCount.Key] : 0;
+                        <div style="padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md); border-left: 4px solid var(--sage-primary);">
+                            <div style="font-weight: 600; color: var(--neutral-900); margin-bottom: var(--space-2);">@typeCount.Key</div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                                <div>Total Listings: <strong>@typeCount.Value</strong></div>
+                                <div>Available Bikes: <strong>@availableCount</strong></div>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     }

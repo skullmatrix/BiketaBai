@@ -21,6 +21,7 @@ public class BiketaBaiDbContext : DbContext
     public DbSet<PhoneOtp> PhoneOtps { get; set; }
     public DbSet<LocationTracking> LocationTracking { get; set; }
     public DbSet<Store> Stores { get; set; }
+    public DbSet<RenterFlag> RenterFlags { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -169,6 +170,18 @@ public class BiketaBaiDbContext : DbContext
 
         modelBuilder.Entity<Rating>()
             .HasIndex(r => r.IsFlagged);
+
+        modelBuilder.Entity<RenterFlag>()
+            .HasOne(f => f.Owner)
+            .WithMany(u => u.RenterFlagsGiven)
+            .HasForeignKey(f => f.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RenterFlag>()
+            .HasOne(f => f.Renter)
+            .WithMany(u => u.RenterFlagsReceived)
+            .HasForeignKey(f => f.RenterId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Global query filters for soft delete
         modelBuilder.Entity<User>()

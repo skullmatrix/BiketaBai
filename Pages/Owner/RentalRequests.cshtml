@@ -42,8 +42,13 @@
     <!-- Filter Tabs -->
     <ul class="nav nav-pills mb-4">
         <li class="nav-item">
-            <button class="nav-link active" data-filter="pending">
-                <i class="bi bi-clock-history"></i> Pending (@Model.PendingRequests.Count())
+            <button class="nav-link active" data-filter="cash-pending">
+                <i class="bi bi-cash"></i> Cash Payment (@Model.CashPaymentRequests.Count())
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-filter="pending">
+                <i class="bi bi-clock-history"></i> Other Pending (@Model.OtherPendingRequests.Count())
             </button>
         </li>
         <li class="nav-item">
@@ -58,12 +63,174 @@
         </li>
     </ul>
 
-    <!-- Pending Requests -->
-    <div class="request-section" data-section="pending">
-        @if (Model.PendingRequests.Any())
+    <!-- Cash Payment Requests -->
+    <div class="request-section" data-section="cash-pending">
+        @if (Model.CashPaymentRequests.Any())
+        {
+            <div class="alert alert-info mb-3">
+                <i class="bi bi-info-circle"></i> <strong>Cash Payment Requests</strong><br>
+                <small>These bookings require cash payment verification. Unpaid bookings will be automatically cancelled after 5 minutes.</small>
+            </div>
+            <div class="row">
+                @foreach (var booking in Model.CashPaymentRequests)
+                {
+                    var cashPayment = booking.Payments?.FirstOrDefault(p => p.PaymentMethod == "Cash" && p.PaymentStatus == "Pending");
+                    var needsVerification = cashPayment != null;
+                    
+                    <div class="col-12 mb-3">
+                        <div class="card rental-request-card shadow-sm border-0" style="border-left: 4px solid #ffc107;">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <!-- Bike Image -->
+                                    <div class="col-md-2">
+                                        @if (booking.Bike.BikeImages.Any())
+                                        {
+                                            <img src="@booking.Bike.BikeImages.First().ImageUrl" 
+                                                 class="img-fluid rounded request-bike-image" 
+                                                 alt="@booking.Bike.Brand @booking.Bike.Model" />
+                                        }
+                                        else
+                                        {
+                                            <div class="placeholder-request-image">
+                                                <i class="bi bi-bicycle"></i>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <!-- Bike & Renter Info -->
+                                    <div class="col-md-4">
+                                        <div class="mb-2">
+                                            <span class="badge bg-warning" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">
+                                                <i class="bi bi-cash"></i> Cash Payment - Booking #@booking.BookingId.ToString("D6")
+                                            </span>
+                                        </div>
+                                        <h5 class="mb-2">@booking.Bike.Brand @booking.Bike.Model</h5>
+                                        @if (booking.Quantity > 1)
+                                        {
+                                            <p class="mb-1">
+                                                <span class="badge bg-info">@booking.Quantity bikes</span>
+                                            </p>
+                                        }
+                                        <p class="mb-1">
+                                            <strong><i class="bi bi-person"></i> Renter:</strong> <span style="font-weight: 600; color: var(--sage-primary);">@booking.Renter.FullName</span>
+                                        </p>
+                                        <p class="mb-1 small text-muted">
+                                            <i class="bi bi-envelope"></i> @booking.Renter.Email
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-telephone"></i> @booking.Renter.Phone
+                                        </p>
+                                    </div>
+
+                                    <!-- Rental Details -->
+                                    <div class="col-md-3">
+                                        <div class="rental-details">
+                                            <p class="mb-2">
+                                                <strong><i class="bi bi-calendar-check"></i> Start:</strong><br>
+                                                <span class="text-primary">@TimeZoneHelper.FormatPhilippineTime(booking.StartDate, "MMM dd, yyyy hh:mm tt")</span>
+                                            </p>
+                                            <p class="mb-2">
+                                                <strong><i class="bi bi-calendar-x"></i> End:</strong><br>
+                                                <span class="text-danger">@TimeZoneHelper.FormatPhilippineTime(booking.EndDate, "MMM dd, yyyy hh:mm tt")</span>
+                                            </p>
+                                            <p class="mb-0">
+                                                <strong><i class="bi bi-clock"></i> Duration:</strong>
+                                                @{
+                                                    var duration = booking.EndDate - booking.StartDate;
+                                                    var days = duration.Days;
+                                                    var hours = duration.Hours;
+                                                }
+                                                <span class="badge bg-info">
+                                                    @if (days > 0)
+                                                    {
+                                                        @($"{days}d {hours}h")
+                                                    }
+                                                    else
+                                                    {
+                                                        @($"{hours}h")
+                                                    }
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Earnings & Actions -->
+                                    <div class="col-md-3 text-end">
+                                        <div class="earnings-box mb-3">
+                                            <p class="mb-1 text-muted small">Total Amount</p>
+                                            <h4 class="text-success mb-0">₱@booking.TotalAmount.ToString("N2")</h4>
+                                            @if (booking.Quantity > 1)
+                                            {
+                                                <small class="text-muted">@booking.Quantity bikes × ₱@((booking.TotalAmount / booking.Quantity).ToString("N2"))</small>
+                                            }
+                                            <small class="text-muted d-block">You earn: ₱@((booking.TotalAmount * 0.9m).ToString("N2"))</small>
+                                        </div>
+
+                                        @if (!booking.LocationPermissionGranted)
+                                        {
+                                            <div class="alert alert-danger mb-3">
+                                                <i class="bi bi-exclamation-triangle-fill"></i> <strong>Location Permission Required</strong><br>
+                                                <small>Renter has not granted location access. Please advise them to enable location before you can verify payment and release the bike.</small>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-success mb-3" style="padding: 0.5rem;">
+                                                <i class="bi bi-check-circle"></i> <small>Location permission granted ✓</small>
+                                            </div>
+                                        }
+
+                                        <div class="request-actions">
+                                            <form method="post" asp-page-handler="VerifyPayment" asp-route-id="@booking.BookingId" class="d-inline mb-2">
+                                                <button type="submit" class="btn btn-success w-100 mb-2" onclick="return confirm('Booking #@booking.BookingId.ToString("D6")\n\nRenter: @booking.Renter.FullName\nAmount: ₱@booking.TotalAmount.ToString("N2")\n\nHave you received the cash payment?\n\nClick OK to verify and activate this booking.')">
+                                                    <i class="bi bi-check-circle"></i> Verify Payment & Activate
+                                                </button>
+                                            </form>
+                                            <small class="text-muted d-block text-center" style="font-size: 0.75rem;">
+                                                <i class="bi bi-info-circle"></i> Unpaid bookings are automatically cancelled after 5 minutes
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Request Timestamp -->
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock-history"></i> Requested @TimeZoneHelper.FormatPhilippineTime(booking.CreatedAt, "MMM dd, yyyy hh:mm tt")
+                                            @{
+                                                var timeSinceCreated = DateTime.UtcNow - booking.CreatedAt;
+                                                var minutesRemaining = 5 - (int)timeSinceCreated.TotalMinutes;
+                                            }
+                                            @if (minutesRemaining > 0 && minutesRemaining <= 5)
+                                            {
+                                                <span class="badge bg-danger ms-2">Auto-cancel in @minutesRemaining minute(s)</span>
+                                            }
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-requests-state">
+                <i class="bi bi-cash"></i>
+                <h4>No Cash Payment Requests</h4>
+                <p>Cash payment requests will appear here.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Other Pending Requests -->
+    <div class="request-section" data-section="pending" style="display: none;">
+        @if (Model.OtherPendingRequests.Any())
         {
             <div class="row">
-                @foreach (var booking in Model.PendingRequests)
+                @foreach (var booking in Model.OtherPendingRequests)
                 {
                     <div class="col-12 mb-3">
                         <div class="card rental-request-card shadow-sm border-0">
@@ -211,6 +378,9 @@
                                                         <i class="bi bi-check-circle"></i> Verify Payment & Activate
                                                     </button>
                                                 </form>
+                                                <small class="text-muted d-block text-center" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-info-circle"></i> Unpaid bookings are automatically cancelled after 5 minutes
+                                                </small>
                                             }
                                             else
                                             {
@@ -219,12 +389,12 @@
                                                         <i class="bi bi-check-circle"></i> Accept Request
                                                     </button>
                                                 </form>
+                                                <button type="button" class="btn btn-outline-danger w-100" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#rejectModal@(booking.BookingId)">
+                                                    <i class="bi bi-x-circle"></i> Reject
+                                                </button>
                                             }
-                                            <button type="button" class="btn btn-outline-danger w-100" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#rejectModal@(booking.BookingId)">
-                                                <i class="bi bi-x-circle"></i> Reject
-                                            </button>
                                         </div>
                                     </div>
                                 </div>

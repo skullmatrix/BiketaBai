@@ -241,7 +241,7 @@ public class BookingService
         await _notificationService.CreateNotificationAsync(
             booking.Bike.OwnerId,
             "Rental Completed",
-            $"Booking #{bookingId} has been completed. Please rate the renter!",
+            $"Booking #{bookingId} has been completed. You can flag the renter if there were any issues.",
             "Booking",
             $"/Bookings/Details/{bookingId}"
         );

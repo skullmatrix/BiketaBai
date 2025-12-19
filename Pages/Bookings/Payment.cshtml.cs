@@ -30,6 +30,9 @@ public class PaymentModel : PageModel
     [BindProperty]
     public int PaymentMethodId { get; set; } = 2; // Default to GCash (Wallet removed)
 
+    [BindProperty]
+    public bool TermsAcknowledged { get; set; } = false;
+
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
         var userId = AuthHelper.GetCurrentUserId(User);
@@ -115,6 +118,32 @@ public class PaymentModel : PageModel
             
             return Page();
         }
+
+        // Validate terms acknowledgment
+        if (!TermsAcknowledged)
+        {
+            ErrorMessage = "You must acknowledge the Terms and Conditions before proceeding with payment.";
+            
+            // Check for existing pending, failed, or cancelled payment
+            ExistingPayment = Booking.Payments
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefault(p => p.PaymentStatus == "Pending" || 
+                                    p.PaymentStatus == "Failed" || 
+                                    (p.PaymentStatus == "Cancelled" && !string.IsNullOrEmpty(p.TransactionReference)));
+            
+            if (ExistingPayment != null)
+            {
+                CurrentPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
+                PaymentMethodId = CurrentPaymentMethodId ?? 2;
+            }
+            
+            return Page();
+        }
+
+        // Record terms acknowledgment
+        Booking.TermsAcknowledged = true;
+        Booking.TermsAcknowledgedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
 
         // Check for existing pending payment
         ExistingPayment = Booking.Payments

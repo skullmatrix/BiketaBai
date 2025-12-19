@@ -26,6 +26,8 @@ public class RentalRequestsModel : PageModel
     }
 
     public List<Booking> PendingRequests { get; set; } = new();
+    public List<Booking> CashPaymentRequests { get; set; } = new();
+    public List<Booking> OtherPendingRequests { get; set; } = new();
     public List<Booking> AcceptedRequests { get; set; } = new();
     public List<Booking> AllRequests { get; set; } = new();
 
@@ -61,6 +63,15 @@ public class RentalRequestsModel : PageModel
             .Where(b => ownerBikes.Contains(b.BikeId) && b.BookingStatus == "Pending")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
+
+        // Separate cash payment requests from other pending requests
+        CashPaymentRequests = PendingRequests
+            .Where(b => b.Payments != null && b.Payments.Any(p => p.PaymentMethod == "Cash" && p.PaymentStatus == "Pending"))
+            .ToList();
+
+        OtherPendingRequests = PendingRequests
+            .Where(b => !(b.Payments != null && b.Payments.Any(p => p.PaymentMethod == "Cash" && p.PaymentStatus == "Pending")))
+            .ToList();
 
         // Get accepted requests (Active - Booking Status ID 2)
         AcceptedRequests = await _context.Bookings
