@@ -20,6 +20,9 @@
                 <a href="/Owner/AddBike" class="btn-minimal btn-minimal-primary">
                     <i class="bi bi-plus-circle-fill"></i> Add Bike
                 </a>
+                <a href="/Owner/Analytics" class="btn-minimal btn-minimal-primary">
+                    <i class="bi bi-graph-up-arrow"></i> Analytics
+                </a>
                 <a href="/Owner/MyBikes" class="btn-minimal btn-minimal-ghost">
                     <i class="bi bi-list-ul"></i> Manage
                 </a>
@@ -135,29 +138,33 @@
             </h2>
         </div>
         <div class="grid-minimal grid-minimal-4">
-            <a href="/Owner/MyBikes" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
-                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/MyBikes" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4);">
+                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
                     <i class="bi bi-grid-3x3-gap"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800);">Manage Listings</div>
+                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">Manage Listings</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600);">View and edit your bikes</div>
             </a>
-            <a href="/Owner/RentalRequests" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
-                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/RentalRequests" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4);">
+                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
                     <i class="bi bi-inbox"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800);">View Requests</div>
+                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">View Requests</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600);">Review rental requests</div>
             </a>
-            <a href="/Wallet/Index" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
-                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
-                    <i class="bi bi-wallet2"></i>
+            <a href="/Owner/Analytics" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4); background: linear-gradient(135deg, var(--sage-subtle) 0%, #E8F4FD 100%);">
+                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+                    <i class="bi bi-graph-up-arrow"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800);">My Wallet</div>
+                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">Analytics</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600);">Detailed insights & graphs</div>
             </a>
-            <a href="/Owner/GeofenceSettings" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
-                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/GeofenceSettings" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4);">
+                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
                     <i class="bi bi-geo-alt-fill"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800);">Geofence</div>
+                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">Geofence</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600);">Location tracking settings</div>
             </a>
         </div>
     </div>
@@ -327,40 +334,40 @@
         </div>
     }
 
-    <!-- Earnings Analytics -->
-    @if (Model.EarningsHistory.Any())
-    {
-        <div class="card-minimal mb-5">
-            <div class="card-minimal-header">
-                <h2 class="card-minimal-title">
-                    <i class="bi bi-graph-up"></i> Earnings Analytics (Last 30 Days)
-                </h2>
+    <!-- Earnings Summary -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-graph-up"></i> Earnings Summary
+            </h2>
+            <a href="/Owner/Analytics" class="btn-minimal btn-minimal-primary btn-minimal-sm">
+                <i class="bi bi-graph-up-arrow"></i> View Detailed Analytics
+            </a>
+        </div>
+        <div style="padding: var(--space-4);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
+                <div style="text-align: center; padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);">
+                    <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Today</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary);">₱@Model.DailyEarnings.ToString("F0")</div>
+                </div>
+                <div style="text-align: center; padding: var(--space-3); background: #E8F4FD; border-radius: var(--radius-md);">
+                    <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">This Week</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #0066CC;">₱@Model.WeeklyEarnings.ToString("F0")</div>
+                </div>
+                <div style="text-align: center; padding: var(--space-3); background: #FFF4E6; border-radius: var(--radius-md);">
+                    <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">This Month</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800;">₱@Model.MonthlyEarnings.ToString("F0")</div>
+                </div>
+                <div style="text-align: center; padding: var(--space-3); background: #E8F5E9; border-radius: var(--radius-md);">
+                    <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Total Lifetime</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #4CAF50;">₱@Model.TotalEarnings.ToString("F0")</div>
+                </div>
             </div>
-            <div style="padding: var(--space-4);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
-                    <div style="text-align: center; padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);">
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Today</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary);">₱@Model.DailyEarnings.ToString("F0")</div>
-                    </div>
-                    <div style="text-align: center; padding: var(--space-3); background: #E8F4FD; border-radius: var(--radius-md);">
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">This Week</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #0066CC;">₱@Model.WeeklyEarnings.ToString("F0")</div>
-                    </div>
-                    <div style="text-align: center; padding: var(--space-3); background: #FFF4E6; border-radius: var(--radius-md);">
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">This Month</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800;">₱@Model.MonthlyEarnings.ToString("F0")</div>
-                    </div>
-                    <div style="text-align: center; padding: var(--space-3); background: #E8F5E9; border-radius: var(--radius-md);">
-                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Total Lifetime</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #4CAF50;">₱@Model.TotalEarnings.ToString("F0")</div>
-                    </div>
-                </div>
-                <div style="font-size: 0.875rem; color: var(--neutral-600); padding: var(--space-3); background: #f8f9fa; border-radius: var(--radius-md);">
-                    <p style="margin: 0;"><strong>Note:</strong> Earnings shown are after the 10% platform service fee. You receive 90% of the total booking amount.</p>
-                </div>
+            <div style="font-size: 0.875rem; color: var(--neutral-600); padding: var(--space-3); background: #f8f9fa; border-radius: var(--radius-md);">
+                <p style="margin: 0;"><strong>Note:</strong> Earnings shown are after the 10% platform service fee. You receive 90% of the total booking amount. <a href="/Owner/Analytics" style="color: var(--sage-primary); text-decoration: underline;">View detailed analytics with graphs →</a></p>
             </div>
         </div>
-    }
+    </div>
 
     <!-- Bike Types Breakdown -->
     @if (Model.BikeTypeCounts.Any())

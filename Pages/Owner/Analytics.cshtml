@@ -1,0 +1,516 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model AnalyticsModel
+@{
+    ViewData["Title"] = "Owner Analytics";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<div class="page-container">
+    <div class="page-header">
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-graph-up-arrow"></i> Detailed Analytics
+                </h1>
+                <p class="page-subtitle">Comprehensive insights into your bike rental business</p>
+            </div>
+            <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid-minimal grid-minimal-4 mb-5">
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="stat-value">₱@Model.TotalEarnings.ToString("F0")</div>
+            <div class="stat-label">Total Earnings</div>
+            <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                <div>Today: ₱@Model.DailyEarnings.ToString("F0")</div>
+                <div>This Week: ₱@Model.WeeklyEarnings.ToString("F0")</div>
+                <div>This Month: ₱@Model.MonthlyEarnings.ToString("F0")</div>
+            </div>
+        </div>
+
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="stat-value">@Model.TotalBookings</div>
+            <div class="stat-label">Total Bookings</div>
+            <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                <div>Completed: @Model.CompletedBookings</div>
+                <div>Active: @Model.ActiveBookings</div>
+            </div>
+        </div>
+
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-bicycle"></i>
+            </div>
+            <div class="stat-value">@Model.TotalBikes</div>
+            <div class="stat-label">Total Bikes</div>
+        </div>
+
+        <div class="stat-card-minimal">
+            <div class="stat-icon stat-icon-primary">
+                <i class="bi bi-star-fill"></i>
+            </div>
+            <div class="stat-value">@Model.AverageRating.ToString("F1")</div>
+            <div class="stat-label">Average Rating</div>
+        </div>
+    </div>
+
+    <!-- Daily Earnings Chart -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-graph-up"></i> Daily Earnings (Last 30 Days)
+            </h2>
+        </div>
+        <div style="padding: var(--space-4);">
+            <canvas id="dailyEarningsChart" style="max-height: 400px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Weekly Earnings Chart -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-bar-chart"></i> Weekly Earnings (Last 12 Weeks)
+            </h2>
+        </div>
+        <div style="padding: var(--space-4);">
+            <canvas id="weeklyEarningsChart" style="max-height: 400px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Monthly Earnings Chart -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-graph-up-arrow"></i> Monthly Earnings (Last 12 Months)
+            </h2>
+        </div>
+        <div style="padding: var(--space-4);">
+            <canvas id="monthlyEarningsChart" style="max-height: 400px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-5);">
+        <!-- Bike Type Earnings -->
+        <div class="card-minimal">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-pie-chart"></i> Earnings by Bike Type
+                </h2>
+            </div>
+            <div style="padding: var(--space-4);">
+                <canvas id="bikeTypeEarningsChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+
+        <!-- Booking Status -->
+        <div class="card-minimal">
+            <div class="card-minimal-header">
+                <h2 class="card-minimal-title">
+                    <i class="bi bi-pie-chart-fill"></i> Booking Status Distribution
+                </h2>
+            </div>
+            <div style="padding: var(--space-4);">
+                <canvas id="bookingStatusChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performing Bikes -->
+    <div class="card-minimal mb-5">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-trophy"></i> Top Performing Bikes
+            </h2>
+        </div>
+        <div style="padding: var(--space-4);">
+            <canvas id="topBikesChart" style="max-height: 400px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Earnings Explanation -->
+    <div class="card-minimal">
+        <div class="card-minimal-header">
+            <h2 class="card-minimal-title">
+                <i class="bi bi-info-circle"></i> Understanding Your Earnings
+            </h2>
+        </div>
+        <div style="padding: var(--space-4);">
+            <div style="font-size: 0.875rem; line-height: 1.6; color: var(--neutral-700);">
+                <p style="margin-bottom: var(--space-3);">
+                    <strong>How Earnings Are Calculated:</strong>
+                </p>
+                <ul style="margin-left: var(--space-4); margin-bottom: var(--space-3);">
+                    <li><strong>Total Booking Amount:</strong> The full amount paid by the renter</li>
+                    <li><strong>Platform Service Fee:</strong> 10% of the total booking amount (retained by the platform)</li>
+                    <li><strong>Your Earnings:</strong> 90% of the total booking amount (what you receive)</li>
+                </ul>
+                <p style="margin-bottom: var(--space-3);">
+                    <strong>Example:</strong> If a renter pays ₱1,000 for a booking:
+                </p>
+                <ul style="margin-left: var(--space-4); margin-bottom: var(--space-3);">
+                    <li>Platform fee (10%): ₱100</li>
+                    <li>Your earnings (90%): ₱900</li>
+                </ul>
+                <p style="margin-bottom: var(--space-2);">
+                    <strong>Time Periods:</strong>
+                </p>
+                <ul style="margin-left: var(--space-4);">
+                    <li><strong>Daily:</strong> Earnings from completed bookings today</li>
+                    <li><strong>Weekly:</strong> Earnings from completed bookings this week (Sunday to Saturday)</li>
+                    <li><strong>Monthly:</strong> Earnings from completed bookings this calendar month</li>
+                    <li><strong>Total Lifetime:</strong> All earnings from all completed bookings since you started</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Chart.js configuration
+        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#6B7280';
+        
+        const chartColors = {
+            primary: '#87A96B',
+            secondary: '#A4C49A',
+            accent: '#6B8E5F',
+            blue: '#3B82F6',
+            amber: '#F59E0B',
+            emerald: '#10B981',
+            red: '#EF4444',
+            purple: '#8B5CF6',
+            orange: '#FF9800'
+        };
+
+        // Daily Earnings Chart
+        const dailyEarningsCtx = document.getElementById('dailyEarningsChart');
+        if (dailyEarningsCtx) {
+            const dailyLabels = [@Html.Raw(string.Join(",", Model.DailyEarningsChart.Select(d => $"'{d.Date}'")))];
+            const dailyData = [@string.Join(",", Model.DailyEarningsChart.Select(d => d.Amount))];
+            
+            new Chart(dailyEarningsCtx, {
+                type: 'line',
+                data: {
+                    labels: dailyLabels,
+                    datasets: [{
+                        label: 'Daily Earnings (₱)',
+                        data: dailyData,
+                        borderColor: chartColors.primary,
+                        backgroundColor: chartColors.primary + '20',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₱' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Weekly Earnings Chart
+        const weeklyEarningsCtx = document.getElementById('weeklyEarningsChart');
+        if (weeklyEarningsCtx) {
+            const weeklyLabels = [@Html.Raw(string.Join(",", Model.WeeklyEarningsChart.Select(w => $"'{w.Week}'")))];
+            const weeklyData = [@string.Join(",", Model.WeeklyEarningsChart.Select(w => w.Amount))];
+            
+            new Chart(weeklyEarningsCtx, {
+                type: 'bar',
+                data: {
+                    labels: weeklyLabels,
+                    datasets: [{
+                        label: 'Weekly Earnings (₱)',
+                        data: weeklyData,
+                        backgroundColor: chartColors.blue + '80',
+                        borderColor: chartColors.blue,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₱' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Monthly Earnings Chart
+        const monthlyEarningsCtx = document.getElementById('monthlyEarningsChart');
+        if (monthlyEarningsCtx) {
+            const monthlyLabels = [@Html.Raw(string.Join(",", Model.MonthlyEarningsChart.Select(m => $"'{m.Month}'")))];
+            const monthlyData = [@string.Join(",", Model.MonthlyEarningsChart.Select(m => m.Amount))];
+            
+            new Chart(monthlyEarningsCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Monthly Earnings (₱)',
+                        data: monthlyData,
+                        borderColor: chartColors.emerald,
+                        backgroundColor: chartColors.emerald + '20',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₱' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Bike Type Earnings Chart
+        const bikeTypeEarningsCtx = document.getElementById('bikeTypeEarningsChart');
+        if (bikeTypeEarningsCtx) {
+            const bikeTypeLabels = [@Html.Raw(string.Join(",", Model.BikeTypeEarningsChart.Select(b => $"'{b.TypeName}'")))];
+            const bikeTypeData = [@string.Join(",", Model.BikeTypeEarningsChart.Select(b => b.Amount))];
+            const bikeTypeColors = [
+                chartColors.primary,
+                chartColors.blue,
+                chartColors.emerald,
+                chartColors.amber,
+                chartColors.purple,
+                chartColors.orange,
+                chartColors.red
+            ];
+            
+            new Chart(bikeTypeEarningsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: bikeTypeLabels,
+                    datasets: [{
+                        data: bikeTypeData,
+                        backgroundColor: bikeTypeColors.slice(0, bikeTypeLabels.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ₱' + value.toFixed(2) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Booking Status Chart
+        const bookingStatusCtx = document.getElementById('bookingStatusChart');
+        if (bookingStatusCtx) {
+            const statusLabels = [@Html.Raw(string.Join(",", Model.BookingStatusChart.Select(b => $"'{b.Status}'")))];
+            const statusData = [@string.Join(",", Model.BookingStatusChart.Select(b => b.Count))];
+            const statusColors = {
+                'Completed': chartColors.emerald,
+                'Active': chartColors.blue,
+                'Pending': chartColors.amber,
+                'Cancelled': chartColors.red
+            };
+            
+            new Chart(bookingStatusCtx, {
+                type: 'pie',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: statusLabels.map(label => statusColors[label] || chartColors.primary),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Top Bikes Chart
+        const topBikesCtx = document.getElementById('topBikesChart');
+        if (topBikesCtx) {
+            const topBikesLabels = [@Html.Raw(string.Join(",", Model.TopBikesChart.Select(b => $"'{b.BikeName}'")))];
+            const topBikesData = [@string.Join(",", Model.TopBikesChart.Select(b => b.Earnings))];
+            
+            new Chart(topBikesCtx, {
+                type: 'bar',
+                data: {
+                    labels: topBikesLabels,
+                    datasets: [{
+                        label: 'Earnings (₱)',
+                        data: topBikesData,
+                        backgroundColor: chartColors.primary + '80',
+                        borderColor: chartColors.primary,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const index = context.dataIndex;
+                                    const bookings = [@string.Join(",", Model.TopBikesChart.Select(b => b.Bookings))];
+                                    return 'Bookings: ' + bookings[index];
+                                },
+                                label: function(context) {
+                                    return '₱' + context.parsed.x.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}
+
+<style>
+    @@media (max-width: 768px) {
+        div[style*="grid-template-columns: 1fr 1fr"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+
