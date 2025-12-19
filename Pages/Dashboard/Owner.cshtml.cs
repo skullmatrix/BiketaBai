@@ -39,6 +39,7 @@ public class OwnerDashboardModel : PageModel
     public double AverageRating { get; set; }
     public int UnreadNotifications { get; set; }
     public List<EarningsData> EarningsHistory { get; set; } = new();
+    public Dictionary<int, bool> BookingFlaggedStatus { get; set; } = new();
     
     public class EarningsData
     {
@@ -194,6 +195,14 @@ public class OwnerDashboardModel : PageModel
         // Get unread notifications count
         var notificationService = HttpContext.RequestServices.GetRequiredService<NotificationService>();
         UnreadNotifications = await notificationService.GetUnreadCountAsync(userId.Value);
+
+        // Check which completed bookings have been flagged
+        var renterFlagService = HttpContext.RequestServices.GetRequiredService<RenterFlagService>();
+        var completedBookings = RecentBookings.Where(b => b.BookingStatus == "Completed").ToList();
+        foreach (var booking in completedBookings)
+        {
+            BookingFlaggedStatus[booking.BookingId] = await renterFlagService.HasFlaggedBookingAsync(booking.BookingId, userId.Value);
+        }
 
         return Page();
     }

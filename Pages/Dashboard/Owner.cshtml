@@ -482,6 +482,7 @@
                             <th>Dates</th>
                             <th>Earning</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -512,6 +513,23 @@
                                         case "Cancelled":
                                             <span class="badge-minimal badge-minimal-danger">Cancelled</span>
                                             break;
+                                    }
+                                </td>
+                                <td>
+                                    @if (booking.BookingStatus == "Completed")
+                                    {
+                                        @if (Model.BookingFlaggedStatus.ContainsKey(booking.BookingId) && Model.BookingFlaggedStatus[booking.BookingId])
+                                        {
+                                            <span class="badge-minimal badge-minimal-warning" style="font-size: 0.75rem;">
+                                                <i class="bi bi-flag-fill"></i> Flagged
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <a href="/Owner/FlagRenter/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="color: var(--danger); border-color: var(--danger);">
+                                                <i class="bi bi-flag-fill"></i> Flag Renter
+                                            </a>
+                                        }
                                     }
                                 </td>
                             </tr>

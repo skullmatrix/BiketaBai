@@ -1,0 +1,151 @@
+@page "{bookingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model FlagRenterModel
+@{
+    ViewData["Title"] = "Flag Renter";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 800px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
+        @if (Model.Booking == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Booking not found</div>
+            </div>
+        }
+        else
+        {
+            <!-- Header -->
+            <div class="page-header" style="margin-bottom: var(--space-5);">
+                <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost btn-minimal-sm" style="margin-bottom: var(--space-3);">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+                <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
+                    <i class="bi bi-flag-fill"></i> Flag Renter
+                </h1>
+                <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Booking #@Model.Booking.BookingId.ToString("D6")</p>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@TempData["ErrorMessage"]</div>
+                </div>
+            }
+
+            @if (Model.HasFlagged)
+            {
+                <div class="alert-minimal alert-minimal-warning mb-4">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <div>
+                        <strong>Already Flagged</strong>
+                        <p style="margin: var(--space-2) 0 0 0; font-size: 0.875rem;">You have already flagged this renter for this booking. Administrators will review your report.</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Booking Summary -->
+            <div class="card-minimal card-minimal-compact mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                        <i class="bi bi-info-circle"></i> Booking Details
+                    </h2>
+                </div>
+                <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--space-4); align-items: start;">
+                    @if (Model.Booking.Bike.BikeImages.Any())
+                    {
+                        <img src="@Model.Booking.Bike.BikeImages.First().ImageUrl" 
+                             alt="@Model.Booking.Bike.Brand @Model.Booking.Bike.Model"
+                             style="width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md);" />
+                    }
+                    else
+                    {
+                        <div style="width: 120px; height: 120px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
+                        </div>
+                    }
+                    <div>
+                        <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">
+                            @Model.Booking.Bike.Brand @Model.Booking.Bike.Model
+                        </h3>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                            <div><strong>Renter:</strong> @Model.Booking.Renter.FullName</div>
+                            <div><strong>Email:</strong> @Model.Booking.Renter.Email</div>
+                            <div><strong>Phone:</strong> @Model.Booking.Renter.Phone</div>
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                            <div><strong>Rental Period:</strong> @TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "MMM dd, yyyy") - @TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy")</div>
+                            <div><strong>Status:</strong> <span class="badge-minimal badge-minimal-success">Completed</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!Model.HasFlagged)
+            {
+                <!-- Flag Form -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                            <i class="bi bi-flag-fill"></i> Report Issue
+                        </h2>
+                    </div>
+                    <form method="post">
+                        <div style="padding: var(--space-4);">
+                            <div class="alert-minimal alert-minimal-info mb-4">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <div>
+                                    <strong>Why Flag a Renter?</strong>
+                                    <p style="margin: var(--space-2) 0 0 0; font-size: 0.875rem;">Flagging helps us maintain a safe community. Please report any issues such as damage, late returns, or misconduct. Administrators will review your report and take appropriate action.</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                                <label class="label-minimal">Reason for Flagging <span style="color: var(--danger);">*</span></label>
+                                <select asp-for="FlagReason" class="input-minimal" required>
+                                    <option value="">-- Select a reason --</option>
+                                    <option value="Damage">Damage to Bike</option>
+                                    <option value="LateReturn">Late Return</option>
+                                    <option value="Misconduct">Misconduct or Inappropriate Behavior</option>
+                                    <option value="Other">Other Issue</option>
+                                </select>
+                                <span asp-validation-for="FlagReason" class="text-danger" style="font-size: 0.875rem;"></span>
+                            </div>
+
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">Additional Details (Optional)</label>
+                                <textarea asp-for="FlagDescription" 
+                                          class="input-minimal" 
+                                          rows="5" 
+                                          placeholder="Please provide any additional details about the issue..."></textarea>
+                                <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                    Provide specific details about what happened. This will help administrators review the case.
+                                </small>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
+                                <button type="submit" class="btn-minimal btn-minimal-danger btn-minimal-lg" style="flex: 1;">
+                                    <i class="bi bi-flag-fill"></i> Flag Renter
+                                </button>
+                                <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost btn-minimal-lg">
+                                    Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
