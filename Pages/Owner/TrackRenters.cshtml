@@ -84,6 +84,18 @@
                                             Calculating...
                                         </span>
                                     </p>
+                                    @if (booking.BikeConditionPhotos.Any())
+                                    {
+                                        <p style="margin: 0; color: var(--success); font-weight: 600;">
+                                            <i class="bi bi-camera-fill"></i> Condition Photos: @booking.BikeConditionPhotos.Count uploaded
+                                        </p>
+                                    }
+                                    else
+                                    {
+                                        <p style="margin: 0; color: var(--warning); font-size: 0.8125rem;">
+                                            <i class="bi bi-camera"></i> No condition photos yet
+                                        </p>
+                                    }
                                     @if (isOverdue)
                                     {
                                         <p style="margin: 0; color: var(--error); font-weight: 600;">

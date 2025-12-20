@@ -25,6 +25,7 @@ public class TrackRenterModel : PageModel
     public double? StoreLongitude { get; set; }
     public decimal? GeofenceRadiusKm { get; set; }
     public string? StoreName { get; set; }
+    public List<BikeConditionPhoto> ConditionPhotos { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
@@ -67,6 +68,12 @@ public class TrackRenterModel : PageModel
             .OrderByDescending(lt => lt.TrackedAt)
             .Take(100)
             .OrderBy(lt => lt.TrackedAt)
+            .ToListAsync();
+
+        // Get condition photos
+        ConditionPhotos = await _context.BikeConditionPhotos
+            .Where(p => p.BookingId == bookingId)
+            .OrderByDescending(p => p.TakenAt)
             .ToListAsync();
 
         return Page();

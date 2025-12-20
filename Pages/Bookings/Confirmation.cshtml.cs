@@ -30,6 +30,7 @@ public class ConfirmationModel : PageModel
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.Owner)
             .Include(b => b.Payments)
+            .Include(b => b.BikeConditionPhotos)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
         if (Booking == null)

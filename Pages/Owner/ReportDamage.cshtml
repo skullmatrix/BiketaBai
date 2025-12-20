@@ -1,0 +1,196 @@
+@page "{bookingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model ReportDamageModel
+@{
+    ViewData["Title"] = "Report Damage";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 800px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
+        @if (Model.Booking == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Booking not found</div>
+            </div>
+        }
+        else
+        {
+            <!-- Header -->
+            <div class="page-header" style="margin-bottom: var(--space-5);">
+                <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost btn-minimal-sm" style="margin-bottom: var(--space-3);">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+                <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
+                    <i class="bi bi-exclamation-triangle-fill" style="color: var(--danger);"></i> Report Damage
+                </h1>
+                <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Booking #@Model.Booking.BookingId.ToString("D6")</p>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@TempData["ErrorMessage"]</div>
+                </div>
+            }
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert-minimal alert-minimal-success mb-4">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>@TempData["SuccessMessage"]</div>
+                </div>
+            }
+
+            <!-- Booking Summary -->
+            <div class="card-minimal card-minimal-compact mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                        <i class="bi bi-info-circle"></i> Booking Details
+                    </h2>
+                </div>
+                <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--space-4); align-items: start;">
+                    @if (Model.Booking.Bike.BikeImages.Any())
+                    {
+                        <img src="@Model.Booking.Bike.BikeImages.First().ImageUrl" 
+                             alt="@Model.Booking.Bike.Brand @Model.Booking.Bike.Model"
+                             style="width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md);" />
+                    }
+                    else
+                    {
+                        <div style="width: 120px; height: 120px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
+                        </div>
+                    }
+                    <div>
+                        <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">
+                            @Model.Booking.Bike.Brand @Model.Booking.Bike.Model
+                        </h3>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                            <div><strong>Renter:</strong> @Model.Booking.Renter.FullName</div>
+                            <div><strong>Email:</strong> @Model.Booking.Renter.Email</div>
+                            <div><strong>Phone:</strong> @Model.Booking.Renter.Phone</div>
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                            <div><strong>Rental Period:</strong> @TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "MMM dd, yyyy") - @TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy")</div>
+                            <div><strong>Status:</strong> <span class="badge-minimal badge-minimal-success">Completed</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Existing Damages -->
+            @if (Model.ExistingDamages.Any())
+            {
+                <div class="card-minimal mb-4" style="border-left: 4px solid var(--warning);">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                            <i class="bi bi-list-ul"></i> Existing Damage Reports
+                        </h2>
+                    </div>
+                    <div style="padding: var(--space-4);">
+                        @foreach (var damage in Model.ExistingDamages)
+                        {
+                            <div style="padding: var(--space-3); background: #fffbf0; border-radius: var(--radius-md); margin-bottom: var(--space-2); border: 1px solid #ffcc80;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-2);">
+                                    <div>
+                                        <strong style="color: var(--neutral-900);">@damage.DamageDescription</strong>
+                                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                            @damage.DamageDetails
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--danger);">₱@damage.DamageCost.ToString("F2")</div>
+                                        <span class="badge-minimal @(damage.DamageStatus == "Paid" ? "badge-minimal-success" : "badge-minimal-warning")" style="font-size: 0.75rem;">
+                                            @damage.DamageStatus
+                                        </span>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(damage.DamageImageUrl))
+                                {
+                                    <img src="@damage.DamageImageUrl" alt="Damage photo" style="max-width: 200px; max-height: 150px; border-radius: var(--radius-md); margin-top: var(--space-2);" />
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Damage Report Form -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Report New Damage
+                    </h2>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    <div style="padding: var(--space-4);">
+                        <div class="alert-minimal alert-minimal-info mb-4">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <div>
+                                <strong>Damage Reporting</strong>
+                                <p style="margin: var(--space-2) 0 0 0; font-size: 0.875rem;">Report any damage to the bike caused by misuse. The renter will be charged the damage cost you specify. Please be accurate and fair in your assessment.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                            <label class="label-minimal">Damage Description <span style="color: var(--danger);">*</span></label>
+                            <input type="text" asp-for="DamageDescription" class="input-minimal" placeholder="e.g., Scratched frame, Broken brake lever, Flat tire" required />
+                            <span asp-validation-for="DamageDescription" class="text-danger" style="font-size: 0.875rem;"></span>
+                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                Brief description of the damage
+                            </small>
+                        </div>
+
+                        <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                            <label class="label-minimal">Damage Details (Optional)</label>
+                            <textarea asp-for="DamageDetails" 
+                                      class="input-minimal" 
+                                      rows="4" 
+                                      placeholder="Provide detailed information about the damage, location on the bike, extent of damage, etc..."></textarea>
+                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                Additional details about the damage
+                            </small>
+                        </div>
+
+                        <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                            <label class="label-minimal">Damage Cost (₱) <span style="color: var(--danger);">*</span></label>
+                            <input type="number" asp-for="DamageCost" class="input-minimal" step="0.01" min="0.01" placeholder="0.00" required />
+                            <span asp-validation-for="DamageCost" class="text-danger" style="font-size: 0.875rem;"></span>
+                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                The amount the renter must pay for this damage
+                            </small>
+                        </div>
+
+                        <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                            <label class="label-minimal">Damage Photo URL (Optional)</label>
+                            <input type="url" asp-for="DamageImageUrl" class="input-minimal" placeholder="https://example.com/damage-photo.jpg" />
+                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                URL to a photo of the damage (you can upload to a file hosting service first)
+                            </small>
+                        </div>
+
+                        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
+                            <button type="submit" class="btn-minimal btn-minimal-danger btn-minimal-lg" style="flex: 1;">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Report Damage
+                            </button>
+                            <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost btn-minimal-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

@@ -125,5 +125,8 @@ public class Booking
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
     public virtual ICollection<LocationTracking> LocationTracking { get; set; } = new List<LocationTracking>();
     public virtual ICollection<RenterFlag> RenterFlags { get; set; } = new List<RenterFlag>();
+    public virtual ICollection<BikeDamage> BikeDamages { get; set; } = new List<BikeDamage>();
+    public virtual ICollection<RenterRedTag> RenterRedTags { get; set; } = new List<RenterRedTag>();
+    public virtual ICollection<BikeConditionPhoto> BikeConditionPhotos { get; set; } = new List<BikeConditionPhoto>();
 }
 

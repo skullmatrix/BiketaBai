@@ -47,6 +47,7 @@ public class TrackRentersModel : PageModel
         ActiveBookings = await _context.Bookings
             .Include(b => b.Bike)
             .Include(b => b.Renter)
+            .Include(b => b.BikeConditionPhotos)
             .Include(b => b.LocationTracking.OrderByDescending(lt => lt.TrackedAt).Take(1))
             .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatus == "Active")
             .OrderByDescending(b => b.StartDate)

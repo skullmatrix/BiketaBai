@@ -1,0 +1,225 @@
+@page "{redTagId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model RedTaggedRenterDetailsModel
+@{
+    ViewData["Title"] = "Red Tagged Renter Details";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 1200px; margin: 0 auto;">
+        @if (Model.RedTag == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Red tag not found or you don't have permission to view this</div>
+            </div>
+        }
+        else
+        {
+            <div class="page-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+                    <div>
+                        <h1 class="page-title" style="color: var(--danger);">
+                            <i class="bi bi-flag-fill"></i> Red Tagged Renter Details
+                        </h1>
+                        <p class="page-subtitle">Red Tag #@Model.RedTag.RedTagId.ToString().PadLeft(6, '0')</p>
+                    </div>
+                    <a href="/Owner/MyBikes" class="btn-minimal btn-minimal-ghost">
+                        <i class="bi bi-arrow-left"></i> Back to My Bikes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Warning Alert -->
+            <div class="alert-minimal alert-minimal-danger mb-4">
+                <i class="bi bi-flag-fill"></i>
+                <div>
+                    <strong>Renter Red Tagged</strong>
+                    <p class="mb-0">This renter was red tagged on @TimeZoneHelper.FormatPhilippineTime(Model.RedTag.CreatedAt). Reason: @Model.RedTag.RedTagReason</p>
+                </div>
+            </div>
+
+            <!-- Renter Information -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-person-fill"></i> Renter Information
+                    </h2>
+                </div>
+                <div class="grid-minimal grid-minimal-2">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Full Name</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.RedTag.Renter.FullName</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Email</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.RedTag.Renter.Email</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Phone Number</div>
+                        <div style="font-weight: 600;">@(Model.RedTag.Renter.Phone ?? "Not provided")</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Address</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@(Model.RedTag.Renter.Address ?? "Not provided")</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Red Tag Status</div>
+                        <div style="margin-bottom: var(--space-3);">
+                            @if (Model.RedTag.IsActive)
+                            {
+                                <span class="badge-minimal badge-minimal-danger">
+                                    <i class="bi bi-flag-fill"></i> Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-minimal badge-minimal-success">
+                                    <i class="bi bi-check-circle"></i> Resolved
+                                </span>
+                            }
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.RedTag.Renter.IdDocumentUrl))
+                        {
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">ID Document</div>
+                            <div>
+                                <a href="@Model.RedTag.Renter.IdDocumentUrl" target="_blank" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                    <i class="bi bi-image"></i> View ID
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Red Tag Details -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-info-circle"></i> Red Tag Details
+                    </h2>
+                </div>
+                <div class="grid-minimal grid-minimal-2">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Reason</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-3);">@Model.RedTag.RedTagReason</div>
+                        
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Created At</div>
+                        <div style="font-weight: 600;">@TimeZoneHelper.FormatPhilippineTime(Model.RedTag.CreatedAt)</div>
+                    </div>
+                    <div>
+                        @if (Model.RedTag.BookingId.HasValue && Model.RedTag.Booking != null)
+                        {
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Related Booking</div>
+                            <div style="font-weight: 600; margin-bottom: var(--space-3);">
+                                <a href="/Bookings/Details/@Model.RedTag.BookingId" class="text-sage">
+                                    Booking #@Model.RedTag.BookingId.ToString().PadLeft(6, '0') - @Model.RedTag.Booking.Bike.Brand @Model.RedTag.Booking.Bike.Model
+                                </a>
+                            </div>
+                        }
+                        
+                        @if (!Model.RedTag.IsActive && Model.RedTag.ResolvedAt.HasValue)
+                        {
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Resolved At</div>
+                            <div style="font-weight: 600;">@TimeZoneHelper.FormatPhilippineTime(Model.RedTag.ResolvedAt.Value)</div>
+                        }
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.RedTag.RedTagDescription))
+                {
+                    <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--neutral-200);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Description</div>
+                        <div style="font-weight: 400; color: var(--neutral-800);">@Model.RedTag.RedTagDescription</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Unpaid Damages -->
+            @if (Model.UnpaidDamages.Any())
+            {
+                <div class="card-minimal mb-4" style="border-left: 4px solid var(--warning);">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Unpaid Damages (@Model.UnpaidDamages.Count)
+                        </h2>
+                    </div>
+                    <div style="padding: var(--space-4);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-3);">
+                            Total unpaid: <strong>₱@Model.UnpaidDamages.Sum(d => d.DamageCost).ToString("F2")</strong>
+                        </div>
+                        @foreach (var damage in Model.UnpaidDamages)
+                        {
+                            <div style="padding: var(--space-3); background: #fffbf0; border-radius: var(--radius-md); margin-bottom: var(--space-2); border: 1px solid #ffcc80;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-2);">
+                                    <div>
+                                        <strong style="color: var(--neutral-900);">@damage.DamageDescription</strong>
+                                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                            @damage.DamageDetails
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                            Booking #@damage.BookingId - @damage.Bike.Brand @damage.Bike.Model
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--danger);">₱@damage.DamageCost.ToString("F2")</div>
+                                        <span class="badge-minimal badge-minimal-warning" style="font-size: 0.75rem;">
+                                            @damage.DamageStatus
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Related Bookings -->
+            @if (Model.RelatedBookings.Any())
+            {
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-calendar-check"></i> Related Bookings
+                        </h2>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="table-minimal">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Bike</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var booking in Model.RelatedBookings)
+                                {
+                                    <tr>
+                                        <td>#@booking.BookingId.ToString("D6")</td>
+                                        <td>@booking.Bike.Brand @booking.Bike.Model</td>
+                                        <td>
+                                            <span class="badge-minimal badge-minimal-@(booking.BookingStatus == "Completed" ? "success" : booking.BookingStatus == "Active" ? "primary" : booking.BookingStatus == "Pending" ? "warning" : "danger")">
+                                                @booking.BookingStatus
+                                            </span>
+                                        </td>
+                                        <td>@TimeZoneHelper.FormatPhilippineTime(booking.CreatedAt, "MMM dd, yyyy")</td>
+                                        <td>
+                                            <a href="/Bookings/Details/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+

@@ -22,6 +22,9 @@ public class BiketaBaiDbContext : DbContext
     public DbSet<LocationTracking> LocationTracking { get; set; }
     public DbSet<Store> Stores { get; set; }
     public DbSet<RenterFlag> RenterFlags { get; set; }
+    public DbSet<BikeDamage> BikeDamages { get; set; }
+    public DbSet<RenterRedTag> RenterRedTags { get; set; }
+    public DbSet<BikeConditionPhoto> BikeConditionPhotos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -182,6 +185,53 @@ public class BiketaBaiDbContext : DbContext
             .WithMany(u => u.RenterFlagsReceived)
             .HasForeignKey(f => f.RenterId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BikeDamage>()
+            .HasOne(d => d.Owner)
+            .WithMany(u => u.BikeDamagesReported)
+            .HasForeignKey(d => d.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BikeDamage>()
+            .HasOne(d => d.Renter)
+            .WithMany(u => u.BikeDamagesOwed)
+            .HasForeignKey(d => d.RenterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BikeDamage>()
+            .HasOne(d => d.Bike)
+            .WithMany(b => b.BikeDamages)
+            .HasForeignKey(d => d.BikeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RenterRedTag>()
+            .HasOne(t => t.Renter)
+            .WithMany(u => u.RenterRedTagsReceived)
+            .HasForeignKey(t => t.RenterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RenterRedTag>()
+            .HasOne(t => t.Owner)
+            .WithMany(u => u.RenterRedTagsGiven)
+            .HasForeignKey(t => t.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RenterRedTag>()
+            .HasOne(t => t.Resolver)
+            .WithMany()
+            .HasForeignKey(t => t.ResolvedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Configure decimal precision for damage cost
+        modelBuilder.Entity<BikeDamage>()
+            .Property(d => d.DamageCost)
+            .HasPrecision(10, 2);
+
+        modelBuilder.Entity<BikeConditionPhoto>()
+            .HasOne(p => p.Booking)
+            .WithMany(b => b.BikeConditionPhotos)
+            .HasForeignKey(p => p.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Global query filters for soft delete
         modelBuilder.Entity<User>()

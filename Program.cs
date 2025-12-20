@@ -112,6 +112,8 @@ builder.Services.AddScoped<GeofencingService>();
 builder.Services.AddHostedService<GeofencingBackgroundService>();
 builder.Services.AddScoped<RenterFlagService>();
 builder.Services.AddHostedService<BookingAutoCancelService>();
+builder.Services.AddScoped<BikeDamageService>();
+builder.Services.AddScoped<RenterRedTagService>();
 
 // Add HttpContextAccessor for accessing HttpContext in services
 builder.Services.AddHttpContextAccessor();

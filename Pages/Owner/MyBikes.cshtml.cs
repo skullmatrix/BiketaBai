@@ -21,9 +21,12 @@ public class MyBikesModel : PageModel
     public Dictionary<int, double> BikeRatings { get; set; } = new();
     public List<Booking> ActiveBookings { get; set; } = new();
     public List<Booking> LostBookings { get; set; } = new();
+    public List<Booking> CompletedBookings { get; set; } = new();
     public Dictionary<int, int> AvailableQuantities { get; set; } = new(); // BikeId -> Available Quantity
     public Dictionary<int, List<Booking>> BikeActiveBookings { get; set; } = new(); // BikeId -> List of Active Bookings
     public Dictionary<int, bool> OverdueBookings { get; set; } = new(); // BookingId -> Is Overdue
+    public Dictionary<int, bool> RenterRedTaggedStatus { get; set; } = new(); // RenterId -> Is Red Tagged
+    public List<(RenterRedTag RedTag, Booking? Booking)> RedTaggedRentersList { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(string filter = "all")
     {
@@ -56,6 +59,38 @@ public class MyBikesModel : PageModel
             .Where(b => b.Bike.OwnerId == userId.Value && b.IsReportedLost)
             .OrderByDescending(b => b.ReportedLostAt)
             .ToListAsync();
+
+        // Get completed bookings (for red tagging)
+        CompletedBookings = await _context.Bookings
+            .Include(b => b.Renter)
+            .Include(b => b.Bike)
+            .Where(b => b.Bike.OwnerId == userId.Value && b.BookingStatus == "Completed")
+            .OrderByDescending(b => b.UpdatedAt)
+            .Take(20) // Recent completed bookings
+            .ToListAsync();
+
+        // Check which renters are red-tagged and build red tagged renters list
+        var redTagService = HttpContext.RequestServices.GetRequiredService<RenterRedTagService>();
+        foreach (var booking in CompletedBookings)
+        {
+            if (!RenterRedTaggedStatus.ContainsKey(booking.RenterId))
+            {
+                RenterRedTaggedStatus[booking.RenterId] = await redTagService.IsRenterRedTaggedAsync(booking.RenterId);
+            }
+
+            // If red-tagged, get the red tag details
+            if (RenterRedTaggedStatus[booking.RenterId])
+            {
+                var activeRedTags = await redTagService.GetActiveRedTagsForRenterAsync(booking.RenterId);
+                foreach (var redTag in activeRedTags.Where(rt => rt.OwnerId == userId.Value))
+                {
+                    if (!RedTaggedRentersList.Any(r => r.RedTag.RedTagId == redTag.RedTagId))
+                    {
+                        RedTaggedRentersList.Add((redTag, booking));
+                    }
+                }
+            }
+        }
 
         // Group active bookings by bike
         foreach (var bike in allBikes)
@@ -292,6 +327,61 @@ public class MyBikesModel : PageModel
         catch (Exception ex)
         {
             TempData["ErrorMessage"] = $"Error reporting lost bike: {ex.Message}";
+            return RedirectToPage();
+        }
+    }
+
+    public async Task<IActionResult> OnPostRedTagRenterAsync(int bookingId, string redTagReason, string? redTagDescription = null)
+    {
+        try
+        {
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "You must be logged in";
+                return RedirectToPage("/Account/Login");
+            }
+
+            var booking = await _context.Bookings
+                .Include(b => b.Bike)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+
+            if (booking == null)
+            {
+                TempData["ErrorMessage"] = "Booking not found or you don't have permission";
+                return RedirectToPage();
+            }
+
+            if (string.IsNullOrWhiteSpace(redTagReason))
+            {
+                TempData["ErrorMessage"] = "Please select a reason for red tagging";
+                return RedirectToPage();
+            }
+
+            var redTagService = HttpContext.RequestServices.GetRequiredService<RenterRedTagService>();
+            var result = await redTagService.RedTagRenterAsync(
+                booking.RenterId,
+                userId.Value,
+                redTagReason,
+                redTagDescription,
+                bookingId
+            );
+
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+            }
+
+            return RedirectToPage();
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Error red tagging renter: {ex.Message}";
             return RedirectToPage();
         }
     }

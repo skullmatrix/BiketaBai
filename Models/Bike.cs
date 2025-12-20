@@ -83,5 +83,6 @@ public class Bike
     public virtual ICollection<BikeImage> BikeImages { get; set; } = new List<BikeImage>();
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+    public virtual ICollection<BikeDamage> BikeDamages { get; set; } = new List<BikeDamage>();
 }
 

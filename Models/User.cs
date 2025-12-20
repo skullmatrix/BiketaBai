@@ -130,5 +130,9 @@ public class User
     public virtual ICollection<Payment> PaymentsVerified { get; set; } = new List<Payment>();
     public virtual ICollection<RenterFlag> RenterFlagsGiven { get; set; } = new List<RenterFlag>();
     public virtual ICollection<RenterFlag> RenterFlagsReceived { get; set; } = new List<RenterFlag>();
+    public virtual ICollection<BikeDamage> BikeDamagesReported { get; set; } = new List<BikeDamage>();
+    public virtual ICollection<BikeDamage> BikeDamagesOwed { get; set; } = new List<BikeDamage>();
+    public virtual ICollection<RenterRedTag> RenterRedTagsGiven { get; set; } = new List<RenterRedTag>();
+    public virtual ICollection<RenterRedTag> RenterRedTagsReceived { get; set; } = new List<RenterRedTag>();
 }
 

@@ -1,0 +1,192 @@
+@page "{renterId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model RedTagRenterModel
+@{
+    ViewData["Title"] = "Red Tag Renter";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 800px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
+        @if (Model.Renter == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Renter not found</div>
+            </div>
+        }
+        else
+        {
+            <!-- Header -->
+            <div class="page-header" style="margin-bottom: var(--space-5);">
+                <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost btn-minimal-sm" style="margin-bottom: var(--space-3);">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+                <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
+                    <i class="bi bi-flag-fill" style="color: var(--danger);"></i> Red Tag Renter
+                </h1>
+                <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Mark renter as delinquent</p>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@TempData["ErrorMessage"]</div>
+                </div>
+            }
+
+            @if (Model.IsAlreadyRedTagged)
+            {
+                <div class="alert-minimal alert-minimal-warning mb-4" style="border-left: 4px solid var(--danger);">
+                    <i class="bi bi-flag-fill" style="color: var(--danger);"></i>
+                    <div>
+                        <strong>⚠️ This Renter is Already Red Tagged</strong>
+                        <p style="margin: var(--space-2) 0 0 0; font-size: 0.875rem;">This renter has already been marked as delinquent. Red tagging is a serious action that restricts the renter's ability to make new bookings.</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Renter Information -->
+            <div class="card-minimal card-minimal-compact mb-4" style="border-left: 4px solid var(--danger);">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem; color: var(--danger);">
+                        <i class="bi bi-person-fill"></i> Renter Information
+                    </h2>
+                </div>
+                <div style="padding: var(--space-4);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Name</div>
+                            <div style="font-weight: 600; font-size: 1.125rem;">@Model.Renter.FullName</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Email</div>
+                            <div style="font-weight: 600;">@Model.Renter.Email</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Phone</div>
+                            <div style="font-weight: 600;">@Model.Renter.Phone</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Status</div>
+                            @if (Model.IsAlreadyRedTagged)
+                            {
+                                <span class="badge-minimal badge-minimal-danger" style="font-size: 0.875rem;">
+                                    <i class="bi bi-flag-fill"></i> RED TAGGED
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-minimal badge-minimal-success" style="font-size: 0.875rem;">Active</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unpaid Damages -->
+            @if (Model.UnpaidDamages.Any())
+            {
+                <div class="card-minimal mb-4" style="border-left: 4px solid var(--warning);">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Unpaid Damages
+                        </h2>
+                    </div>
+                    <div style="padding: var(--space-4);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-3);">
+                            This renter has <strong>@Model.UnpaidDamages.Count</strong> unpaid damage report(s) totaling <strong>₱@Model.UnpaidDamages.Sum(d => d.DamageCost).ToString("F2")</strong>
+                        </div>
+                        @foreach (var damage in Model.UnpaidDamages)
+                        {
+                            <div style="padding: var(--space-2); background: #fffbf0; border-radius: var(--radius-md); margin-bottom: var(--space-2);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>@damage.DamageDescription</strong>
+                                        <div style="font-size: 0.75rem; color: var(--neutral-600);">Booking #@damage.BookingId</div>
+                                    </div>
+                                    <div style="font-weight: 700; color: var(--danger);">₱@damage.DamageCost.ToString("F2")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (!Model.IsAlreadyRedTagged)
+            {
+                <!-- Red Tag Form -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title" style="font-size: 1.125rem; color: var(--danger);">
+                            <i class="bi bi-flag-fill"></i> Red Tag Renter
+                        </h2>
+                    </div>
+                    <form method="post">
+                        <input type="hidden" name="BookingId" value="@Model.BookingId" />
+                        <div style="padding: var(--space-4);">
+                            <div class="alert-minimal alert-minimal-danger mb-4">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <div>
+                                    <strong>⚠️ Warning: Red Tagging is a Serious Action</strong>
+                                    <p style="margin: var(--space-2) 0 0 0; font-size: 0.875rem;">
+                                        Red tagging a renter will restrict their ability to make new bookings. This action is typically used for:
+                                        <ul style="margin: var(--space-2) 0 0 var(--space-4); font-size: 0.875rem;">
+                                            <li>Delinquent renters who fail to pay damages</li>
+                                            <li>Renters with multiple violations</li>
+                                            <li>Fraudulent behavior</li>
+                                            <li>Repeated misconduct</li>
+                                        </ul>
+                                        Administrators will be notified and will review this action.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                                <label class="label-minimal">Reason for Red Tagging <span style="color: var(--danger);">*</span></label>
+                                <select asp-for="RedTagReason" class="input-minimal" required>
+                                    <option value="">-- Select a reason --</option>
+                                    <option value="Delinquent">Delinquent - Unpaid damages or fees</option>
+                                    <option value="UnpaidDamages">Unpaid Damages - Multiple unpaid damage reports</option>
+                                    <option value="MultipleViolations">Multiple Violations - Repeated policy violations</option>
+                                    <option value="Fraud">Fraud - Fraudulent behavior or false information</option>
+                                    <option value="Other">Other - Please specify in description</option>
+                                </select>
+                                <span asp-validation-for="RedTagReason" class="text-danger" style="font-size: 0.875rem;"></span>
+                            </div>
+
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">Additional Details (Optional)</label>
+                                <textarea asp-for="RedTagDescription" 
+                                          class="input-minimal" 
+                                          rows="5" 
+                                          placeholder="Provide detailed information about why this renter is being red tagged..."></textarea>
+                                <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                    Provide specific details about the violations or issues. This will help administrators review the case.
+                                </small>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
+                                <button type="submit" class="btn-minimal btn-minimal-danger btn-minimal-lg" style="flex: 1;" onclick="return confirm('Are you sure you want to RED TAG this renter? This is a serious action that will restrict their account. Administrators will be notified.');">
+                                    <i class="bi bi-flag-fill"></i> Red Tag Renter
+                                </button>
+                                <a href="/Dashboard/Owner" class="btn-minimal btn-minimal-ghost btn-minimal-lg">
+                                    Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

@@ -425,14 +425,14 @@ public class PaymentService
 
                 await _context.SaveChangesAsync();
 
-                // Send notifications with geofencing link
+                // Send notifications with geofencing link and condition photo reminder
                 var endDatePHT = TimeZoneHelper.FormatPhilippineTime(payment.Booking.EndDate);
                 await _notificationService.CreateNotificationAsync(
                     payment.Booking.RenterId,
                     "Payment Successful - Rental Active",
-                    $"Your payment of ₱{payment.Amount:F2} has been processed. Your rental is now active and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                    $"Your payment of ₱{payment.Amount:F2} has been processed. Your rental is now active and will end on {endDatePHT}. Please upload bike condition photos and start location tracking.",
                     "Payment",
-                    $"/Bookings/TrackLocation/{payment.Booking.BookingId}"
+                    $"/Bookings/Confirmation/{payment.Booking.BookingId}"
                 );
 
                 await _notificationService.CreateNotificationAsync(

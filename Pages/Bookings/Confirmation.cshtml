@@ -25,6 +25,24 @@
                         <h1 class="page-title-minimal mb-3">Booking Confirmed!</h1>
                         <p class="text-muted-minimal mb-4">Your booking has been successfully created and payment processed.</p>
 
+                        <!-- Countdown Timer - Prominent Display -->
+                        @if (Model.Booking.BookingStatus == "Active")
+                        {
+                            <div class="card-minimal mb-4" style="background: linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-secondary) 100%); border: none; box-shadow: 0 8px 24px rgba(135, 169, 107, 0.3);">
+                                <div class="card-body-minimal text-center" style="padding: var(--space-5);">
+                                    <h3 style="color: white; margin-bottom: var(--space-3); font-weight: 600;">
+                                        <i class="bi bi-clock-history"></i> Rental Time Remaining
+                                    </h3>
+                                    <div id="countdownTimer" style="font-size: 3rem; font-weight: 700; color: white; font-family: 'Courier New', monospace; letter-spacing: 2px; margin: var(--space-4) 0;">
+                                        <div id="countdownDisplay">Calculating...</div>
+                                    </div>
+                                    <p style="color: rgba(255, 255, 255, 0.9); margin: 0; font-size: 0.875rem;">
+                                        Your rental ends on <strong>@TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy hh:mm tt")</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        }
+
                         <!-- Booking ID/Number -->
                         <div class="alert-minimal alert-minimal-info mb-4" style="background: var(--sage-subtle); border: 2px solid var(--sage-primary);">
                             <div style="text-align: center;">
@@ -139,10 +157,44 @@
                             </div>
                         }
 
+                        <!-- Condition Photos Section -->
+                        @if (Model.Booking.BikeConditionPhotos.Any())
+                        {
+                            <div class="card-minimal card-minimal-secondary mb-4">
+                                <div class="card-body-minimal">
+                                    <h5 class="card-title-minimal mb-3">
+                                        <i class="bi bi-camera-fill"></i> Condition Photos (@Model.Booking.BikeConditionPhotos.Count)
+                                    </h5>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2);">
+                                        @foreach (var photo in Model.Booking.BikeConditionPhotos.OrderByDescending(p => p.TakenAt))
+                                        {
+                                            <a href="@photo.PhotoUrl" target="_blank" style="display: block;">
+                                                <img src="@photo.PhotoUrl" 
+                                                     alt="Condition photo"
+                                                     style="width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2">
                             @if (Model.Booking.BookingStatus == "Active")
                             {
+                                @if (!Model.Booking.BikeConditionPhotos.Any())
+                                {
+                                    <a href="/Bookings/UploadConditionPhoto/@Model.Booking.BookingId" class="btn-minimal btn-minimal-primary" style="background: var(--warning); border-color: var(--warning);">
+                                        <i class="bi bi-camera-fill"></i> Upload Bike Condition Photo (Recommended)
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a href="/Bookings/UploadConditionPhoto/@Model.Booking.BookingId" class="btn-minimal btn-minimal-outline">
+                                        <i class="bi bi-camera-fill"></i> Add More Condition Photos
+                                    </a>
+                                }
                                 <a href="/Bookings/TrackLocation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-primary" id="trackLocationBtn">
                                     <i class="bi bi-geo-alt-fill"></i> Track Location
                                 </a>
@@ -162,6 +214,65 @@
 {
     <!-- SignalR Library -->
     <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@7.0.0/dist/browser/signalr.min.js"></script>
+    
+    @if (Model.Booking.BookingStatus == "Active")
+    {
+        var endDateStr = Model.Booking.EndDate.ToString("yyyy-MM-ddTHH:mm:ss");
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const endDate = new Date('@endDateStr');
+                const countdownDisplay = document.getElementById('countdownDisplay');
+                
+                if (countdownDisplay) {
+                    function updateCountdown() {
+                        const now = new Date();
+                        const timeLeft = endDate - now;
+                        
+                        if (timeLeft <= 0) {
+                            countdownDisplay.innerHTML = '<span style="color: #fee2e2;">RENTAL EXPIRED</span>';
+                            countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
+                            return;
+                        }
+                        
+                        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                        
+                        let displayText = '';
+                        if (days > 0) {
+                            displayText = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
+                        } else if (hours > 0) {
+                            displayText = hours + 'h ' + minutes + 'm ' + seconds + 's';
+                        } else if (minutes > 0) {
+                            displayText = minutes + 'm ' + seconds + 's';
+                        } else {
+                            displayText = seconds + 's';
+                        }
+                        
+                        countdownDisplay.innerHTML = displayText;
+                        
+                        // Change color as time runs out
+                        const oneHour = 3600000;
+                        const threeHours = 10800000;
+                        const isLessThanOneHour = timeLeft < oneHour;
+                        const isLessThanThreeHours = timeLeft < threeHours;
+                        if (isLessThanOneHour) {
+                            countdownDisplay.style.color = '#fee2e2';
+                            countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                        } else if (isLessThanThreeHours) {
+                            countdownDisplay.style.color = '#fef3c7';
+                            countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)';
+                        }
+                    }
+                    
+                    // Update countdown immediately and then every second
+                    updateCountdown();
+                    setInterval(updateCountdown, 1000);
+                }
+            });
+        </script>
+    }
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {

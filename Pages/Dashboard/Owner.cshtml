@@ -525,18 +525,26 @@
                                 <td>
                                     @if (booking.BookingStatus == "Completed")
                                     {
-                                        @if (Model.BookingFlaggedStatus.ContainsKey(booking.BookingId) && Model.BookingFlaggedStatus[booking.BookingId])
-                                        {
-                                            <span class="badge-minimal badge-minimal-warning" style="font-size: 0.75rem;">
-                                                <i class="bi bi-flag-fill"></i> Flagged
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <a href="/Owner/FlagRenter/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="color: var(--danger); border-color: var(--danger);">
-                                                <i class="bi bi-flag-fill"></i> Flag Renter
+                                        <div style="display: flex; gap: var(--space-1); flex-wrap: wrap;">
+                                            <a href="/Owner/ReportDamage/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="color: var(--warning); border-color: var(--warning);" title="Report Damage">
+                                                <i class="bi bi-exclamation-triangle-fill"></i> Damage
                                             </a>
-                                        }
+                                            @if (Model.BookingFlaggedStatus.ContainsKey(booking.BookingId) && Model.BookingFlaggedStatus[booking.BookingId])
+                                            {
+                                                <span class="badge-minimal badge-minimal-warning" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-flag-fill"></i> Flagged
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <a href="/Owner/FlagRenter/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="color: var(--danger); border-color: var(--danger);" title="Flag Renter">
+                                                    <i class="bi bi-flag-fill"></i> Flag
+                                                </a>
+                                            }
+                                            <a href="/Owner/RedTagRenter/@booking.RenterId?bookingId=@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="color: var(--danger); border-color: var(--danger); background: #fee2e2;" title="Red Tag Renter">
+                                                <i class="bi bi-flag-fill"></i> Red Tag
+                                            </a>
+                                        </div>
                                     }
                                 </td>
                             </tr>

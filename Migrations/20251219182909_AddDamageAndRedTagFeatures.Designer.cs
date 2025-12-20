@@ -3,6 +3,7 @@ using System;
 using BiketaBai.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BiketaBai.Migrations
 {
     [DbContext(typeof(BiketaBaiDbContext))]
-    partial class BiketaBaiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251219182909_AddDamageAndRedTagFeatures")]
+    partial class AddDamageAndRedTagFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -122,47 +125,6 @@ namespace BiketaBai.Migrations
                     b.HasIndex("HourlyRate", "DailyRate");
 
                     b.ToTable("bikes");
-                });
-
-            modelBuilder.Entity("BiketaBai.Models.BikeConditionPhoto", b =>
-                {
-                    b.Property<int>("ConditionPhotoId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("condition_photo_id");
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int")
-                        .HasColumnName("booking_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("PhotoDescription")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
-                        .HasColumnName("photo_description");
-
-                    b.Property<string>("PhotoUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("photo_url");
-
-                    b.Property<DateTime>("TakenAt")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("taken_at");
-
-                    b.Property<bool>("TakenByRenter")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("taken_by_renter");
-
-                    b.HasKey("ConditionPhotoId");
-
-                    b.HasIndex("BookingId");
-
-                    b.ToTable("bike_condition_photos");
                 });
 
             modelBuilder.Entity("BiketaBai.Models.BikeDamage", b =>
@@ -1228,17 +1190,6 @@ namespace BiketaBai.Migrations
                     b.Navigation("Store");
                 });
 
-            modelBuilder.Entity("BiketaBai.Models.BikeConditionPhoto", b =>
-                {
-                    b.HasOne("BiketaBai.Models.Booking", "Booking")
-                        .WithMany("BikeConditionPhotos")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-                });
-
             modelBuilder.Entity("BiketaBai.Models.BikeDamage", b =>
                 {
                     b.HasOne("BiketaBai.Models.Bike", "Bike")
@@ -1500,8 +1451,6 @@ namespace BiketaBai.Migrations
 
             modelBuilder.Entity("BiketaBai.Models.Booking", b =>
                 {
-                    b.Navigation("BikeConditionPhotos");
-
                     b.Navigation("BikeDamages");
 
                     b.Navigation("LocationTracking");
