@@ -291,12 +291,29 @@
                             <p style="margin-top: var(--space-3);"><strong>By proceeding with payment, you acknowledge that you have read, understood, and agree to these terms and conditions.</strong></p>
                         </div>
                         <div class="form-group-minimal">
-                            <label class="label-minimal" style="display: flex; align-items: start; gap: var(--space-2); cursor: pointer;">
-                                <input type="checkbox" name="TermsAcknowledged" id="termsAcknowledged" required style="margin-top: 0.25rem; cursor: pointer;" />
-                                <span style="font-size: 0.875rem; line-height: 1.5;">
-                                    I acknowledge that I have read and agree to the Terms and Conditions and Bike Return Policy
-                                </span>
-                            </label>
+                            @if (Model.Booking?.TermsAcknowledged == true)
+                            {
+                                <!-- Hidden input to ensure value is sent when already acknowledged -->
+                                <input type="hidden" name="TermsAcknowledged" value="true" />
+                                <div style="padding: var(--space-2); background: var(--sage-subtle); border-radius: var(--radius-md); border-left: 3px solid var(--sage-primary);">
+                                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                                        <i class="bi bi-check-circle-fill" style="color: var(--sage-primary); font-size: 1.25rem;"></i>
+                                        <span style="font-size: 0.875rem; color: var(--neutral-700); font-weight: 500;">
+                                            Terms and Conditions already acknowledged
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <label class="label-minimal" style="display: flex; align-items: start; gap: var(--space-2); cursor: pointer;">
+                                    <input type="checkbox" asp-for="TermsAcknowledged" id="termsAcknowledged" required style="margin-top: 0.25rem; cursor: pointer;" />
+                                    <span style="font-size: 0.875rem; line-height: 1.5;">
+                                        I acknowledge that I have read and agree to the Terms and Conditions and Bike Return Policy
+                                    </span>
+                                </label>
+                                <span asp-validation-for="TermsAcknowledged" class="text-danger-minimal"></span>
+                            }
                         </div>
                     </div>
 
@@ -576,6 +593,9 @@
             });
         }
 
+        // Check if terms are already acknowledged from server
+        const termsAlreadyAcknowledged = @(Model.Booking?.TermsAcknowledged == true ? "true" : "false");
+        
         // Prevent form submission if location not granted or terms not acknowledged
         form.addEventListener('submit', function(e) {
             if (!locationPermissionGranted) {
@@ -585,25 +605,38 @@
                 return false;
             }
             
-            const termsCheckbox = document.getElementById('termsAcknowledged');
-            if (!termsCheckbox || !termsCheckbox.checked) {
-                e.preventDefault();
-                alert('Please acknowledge the Terms and Conditions before proceeding with payment.');
-                termsCheckbox.focus();
-                return false;
+            // Only check checkbox if terms haven't been acknowledged yet
+            if (!termsAlreadyAcknowledged) {
+                const termsCheckbox = document.getElementById('termsAcknowledged');
+                if (!termsCheckbox || !termsCheckbox.checked) {
+                    e.preventDefault();
+                    alert('Please acknowledge the Terms and Conditions before proceeding with payment.');
+                    if (termsCheckbox) {
+                        termsCheckbox.focus();
+                    }
+                    return false;
+                }
             }
         });
         
         // Enable/disable submit button based on terms acknowledgment
-        const termsCheckbox = document.getElementById('termsAcknowledged');
-        if (termsCheckbox) {
-            termsCheckbox.addEventListener('change', function() {
-                if (locationPermissionGranted && this.checked) {
-                    submitBtn.disabled = false;
-                } else {
-                    submitBtn.disabled = true;
-                }
-            });
+        if (termsAlreadyAcknowledged) {
+            // Terms already acknowledged, enable button if location is granted
+            if (locationPermissionGranted) {
+                submitBtn.disabled = false;
+            }
+        } else {
+            // Terms not yet acknowledged, require checkbox
+            const termsCheckbox = document.getElementById('termsAcknowledged');
+            if (termsCheckbox) {
+                termsCheckbox.addEventListener('change', function() {
+                    if (locationPermissionGranted && this.checked) {
+                        submitBtn.disabled = false;
+                    } else {
+                        submitBtn.disabled = true;
+                    }
+                });
+            }
         }
 
         // Payment method selection

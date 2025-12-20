@@ -78,6 +78,12 @@ public class PaymentModel : PageModel
             SuccessMessage = "Location permission granted. You can proceed with payment.";
         }
 
+        // If terms are already acknowledged, set the checkbox to checked
+        if (Booking.TermsAcknowledged)
+        {
+            TermsAcknowledged = true;
+        }
+
         return Page();
     }
 
@@ -119,31 +125,37 @@ public class PaymentModel : PageModel
             return Page();
         }
 
-        // Validate terms acknowledgment
-        if (!TermsAcknowledged)
+        // Check if terms were already acknowledged (for retries or payment method changes)
+        // If not already acknowledged, validate the checkbox
+        if (!Booking.TermsAcknowledged)
         {
-            ErrorMessage = "You must acknowledge the Terms and Conditions before proceeding with payment.";
-            
-            // Check for existing pending, failed, or cancelled payment
-            ExistingPayment = Booking.Payments
-                .OrderByDescending(p => p.PaymentDate)
-                .FirstOrDefault(p => p.PaymentStatus == "Pending" || 
-                                    p.PaymentStatus == "Failed" || 
-                                    (p.PaymentStatus == "Cancelled" && !string.IsNullOrEmpty(p.TransactionReference)));
-            
-            if (ExistingPayment != null)
+            // Validate terms acknowledgment from form
+            if (!TermsAcknowledged)
             {
-                CurrentPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
-                PaymentMethodId = CurrentPaymentMethodId ?? 2;
+                ErrorMessage = "You must acknowledge the Terms and Conditions before proceeding with payment.";
+                
+                // Check for existing pending, failed, or cancelled payment
+                ExistingPayment = Booking.Payments
+                    .OrderByDescending(p => p.PaymentDate)
+                    .FirstOrDefault(p => p.PaymentStatus == "Pending" || 
+                                        p.PaymentStatus == "Failed" || 
+                                        (p.PaymentStatus == "Cancelled" && !string.IsNullOrEmpty(p.TransactionReference)));
+                
+                if (ExistingPayment != null)
+                {
+                    CurrentPaymentMethodId = MapPaymentMethodToId(ExistingPayment.PaymentMethod);
+                    PaymentMethodId = CurrentPaymentMethodId ?? 2;
+                }
+                
+                return Page();
             }
-            
-            return Page();
-        }
 
-        // Record terms acknowledgment
-        Booking.TermsAcknowledged = true;
-        Booking.TermsAcknowledgedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+            // Record terms acknowledgment (first time)
+            Booking.TermsAcknowledged = true;
+            Booking.TermsAcknowledgedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+        // If already acknowledged, proceed without requiring checkbox again
 
         // Check for existing pending payment
         ExistingPayment = Booking.Payments
