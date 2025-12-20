@@ -1,6 +1,7 @@
 using BiketaBai.Data;
 using BiketaBai.Models;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace BiketaBai.Services;
 
@@ -32,18 +33,30 @@ public class RenterFlagService
             .FirstOrDefaultAsync(b => b.BookingId == bookingId);
 
         if (booking == null)
+        {
+            Log.Warning("FlagRenterAsync: Booking {BookingId} not found", bookingId);
             return false;
+        }
 
         // Verify the owner owns the bike
         if (booking.Bike == null || booking.Bike.OwnerId != ownerId)
+        {
+            Log.Warning("FlagRenterAsync: Owner {OwnerId} does not own bike for booking {BookingId}", ownerId, bookingId);
             return false;
+        }
 
         // Only allow flagging completed bookings
         if (booking.BookingStatus != "Completed")
+        {
+            Log.Warning("FlagRenterAsync: Booking {BookingId} is not completed (status: {Status})", bookingId, booking.BookingStatus);
             return false;
+        }
 
-        if (booking.Renter == null)
+        if (booking.Renter == null || booking.RenterId <= 0)
+        {
+            Log.Warning("FlagRenterAsync: Booking {BookingId} has invalid RenterId: {RenterId}", bookingId, booking.RenterId);
             return false;
+        }
 
         var flag = new RenterFlag
         {
@@ -63,6 +76,12 @@ public class RenterFlagService
         {
             try
             {
+                // Validate that RenterId is set
+                if (booking.RenterId <= 0)
+                {
+                    throw new InvalidOperationException($"Invalid RenterId for booking {bookingId}. Cannot create damage record.");
+                }
+
                 var bikeDamage = new BikeDamage
                 {
                     BookingId = bookingId,
@@ -81,8 +100,8 @@ public class RenterFlagService
                 _context.BikeDamages.Add(bikeDamage);
                 await _context.SaveChangesAsync();
 
-                // Notify renter about the damage charge
-                if (booking.Renter != null)
+                // Notify renter about the damage charge with the damage ID in the URL
+                if (booking.Renter != null && booking.RenterId > 0)
                 {
                     await _notificationService.CreateNotificationAsync(
                         booking.RenterId,
@@ -93,10 +112,13 @@ public class RenterFlagService
                     );
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Log error but don't fail the flag operation
-                // Flag was already saved successfully
+                // Log error for debugging
+                Log.Error(ex, "Error creating BikeDamage record for booking {BookingId} during flagging. RenterId: {RenterId}, OwnerId: {OwnerId}. Flag was still created.", 
+                    bookingId, booking.RenterId, ownerId);
+                // Don't fail the flag operation - flag was already saved successfully
+                // But this means the damage record might not exist, which could cause the "damage record not found" error
             }
         }
 

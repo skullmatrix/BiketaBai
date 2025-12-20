@@ -4,13 +4,13 @@
 @attribute [Authorize]
 @model UploadConditionPhotoModel
 @{
-    ViewData["Title"] = "Upload Bike Condition Photo";
+    ViewData["Title"] = "Take Bike Condition Photo";
 }
 
 <link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
 
 <div class="page-container">
-    <div style="max-width: 800px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
+    <div style="max-width: 600px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
         @if (Model.Booking == null)
         {
             <div class="alert-minimal alert-minimal-error">
@@ -26,7 +26,7 @@
                     <i class="bi bi-arrow-left"></i> Back to Dashboard
                 </a>
                 <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
-                    <i class="bi bi-camera-fill"></i> Upload Bike Condition Photo
+                    <i class="bi bi-camera-fill"></i> Take Bike Condition Photo
                 </h1>
                 <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Booking #@Model.Booking.BookingId.ToString().PadLeft(6, '0')</p>
             </div>
@@ -49,31 +49,26 @@
 
             <!-- Booking Summary -->
             <div class="card-minimal card-minimal-compact mb-4">
-                <div class="card-minimal-header">
-                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
-                        <i class="bi bi-info-circle"></i> Booking Details
-                    </h2>
-                </div>
-                <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--space-4); align-items: start; padding: var(--space-4);">
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: var(--space-3); align-items: start; padding: var(--space-3);">
                     @if (Model.Booking.Bike.BikeImages.Any())
                     {
                         <img src="@Model.Booking.Bike.BikeImages.First().ImageUrl" 
                              alt="@Model.Booking.Bike.Brand @Model.Booking.Bike.Model"
-                             style="width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md);" />
+                             style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md);" />
                     }
                     else
                     {
-                        <div style="width: 120px; height: 120px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-bicycle" style="font-size: 2rem; color: var(--neutral-400);"></i>
+                        <div style="width: 80px; height: 80px; background: var(--neutral-200); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-bicycle" style="font-size: 1.5rem; color: var(--neutral-400);"></i>
                         </div>
                     }
                     <div>
-                        <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: var(--space-2);">
+                        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: var(--space-1); color: var(--neutral-900);">
                             @Model.Booking.Bike.Brand @Model.Booking.Bike.Model
                         </h3>
-                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
-                            <div><strong>Type:</strong> @Model.Booking.Bike.BikeType.TypeName</div>
-                            <div><strong>Rental Period:</strong> @TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "MMM dd, yyyy") - @TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy")</div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); line-height: 1.5;">
+                            <div><i class="bi bi-tag"></i> @Model.Booking.Bike.BikeType.TypeName</div>
+                            <div><i class="bi bi-calendar"></i> @TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "MMM dd") - @TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd")</div>
                         </div>
                     </div>
                 </div>
@@ -81,14 +76,9 @@
 
             <!-- Info Alert -->
             <div class="alert-minimal alert-minimal-info mb-4">
-                <i class="bi bi-info-circle-fill"></i>
-                <div>
-                    <strong>Why Upload Condition Photos?</strong>
-                    <p style="margin: var(--space-2) 0 0 0; font-size: 0.875rem;">
-                        Taking photos of the bike's condition before you start renting helps protect both you and the owner. 
-                        These photos document the bike's condition at the start of your rental and can be used as evidence 
-                        if there are any disputes about damages later. Both you and the owner can view these photos.
-                    </p>
+                <i class="bi bi-shield-check-fill"></i>
+                <div style="font-size: 0.875rem;">
+                    <strong>Protect Yourself:</strong> Document the bike's condition before your rental starts. These photos protect both you and the owner in case of disputes.
                 </div>
             </div>
 
@@ -98,26 +88,23 @@
                 <div class="card-minimal mb-4">
                     <div class="card-minimal-header">
                         <h2 class="card-minimal-title" style="font-size: 1.125rem;">
-                            <i class="bi bi-images"></i> Uploaded Condition Photos (@Model.ExistingPhotos.Count)
+                            <i class="bi bi-images"></i> Uploaded Photos (@Model.ExistingPhotos.Count)
                         </h2>
                     </div>
-                    <div style="padding: var(--space-4);">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3);">
+                    <div style="padding: var(--space-3);">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2);">
                             @foreach (var photo in Model.ExistingPhotos)
                             {
-                                <div style="position: relative;">
+                                <div style="position: relative; border-radius: var(--radius-md); overflow: hidden;">
                                     <img src="@photo.PhotoUrl" 
                                          alt="Condition photo"
-                                         style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                                         style="width: 100%; height: 150px; object-fit: cover;" />
                                     @if (!string.IsNullOrEmpty(photo.PhotoDescription))
                                     {
-                                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: white; padding: var(--space-2); border-radius: 0 0 var(--radius-md) var(--radius-md); font-size: 0.75rem;">
+                                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); color: white; padding: var(--space-2); font-size: 0.75rem;">
                                             @photo.PhotoDescription
                                         </div>
                                     }
-                                    <div style="position: absolute; top: var(--space-1); right: var(--space-1); background: rgba(255, 255, 255, 0.9); padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; color: var(--neutral-600);">
-                                        @TimeZoneHelper.FormatPhilippineTime(photo.TakenAt, "MMM dd, hh:mm")
-                                    </div>
                                 </div>
                             }
                         </div>
@@ -129,20 +116,60 @@
             <div class="card-minimal mb-4">
                 <div class="card-minimal-header">
                     <h2 class="card-minimal-title" style="font-size: 1.125rem;">
-                        <i class="bi bi-camera-fill"></i> Upload New Photo
+                        <i class="bi bi-camera-fill"></i> Take Bike Condition Photo
                     </h2>
                 </div>
                 <form method="post" enctype="multipart/form-data">
                     <div style="padding: var(--space-4);">
                         <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
                             <label class="label-minimal">Bike Condition Photo <span style="color: var(--danger);">*</span></label>
-                            <input type="file" asp-for="PhotoFile" class="input-minimal" accept="image/*" required />
-                            <span asp-validation-for="PhotoFile" class="text-danger" style="font-size: 0.875rem;"></span>
-                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
-                                Upload a clear photo showing the bike's condition. Accepted formats: JPG, PNG, WEBP (max 5MB)
+                            
+                            <!-- Camera Capture Button (Mobile-Friendly) -->
+                            <div style="position: relative;">
+                                <input type="file" 
+                                       asp-for="PhotoFile" 
+                                       id="cameraInput" 
+                                       accept="image/*" 
+                                       capture="environment" 
+                                       required 
+                                       style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
+                                
+                                <label for="cameraInput" 
+                                       style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-5); border: 2px dashed var(--sage-primary); border-radius: var(--radius-md); background: var(--sage-subtle); cursor: pointer; transition: all var(--transition-base); min-height: 200px; text-align: center;"
+                                       onmouseover="this.style.borderColor='var(--sage-primary)'; this.style.background='var(--sage-subtle)';"
+                                       onmouseout="this.style.borderColor='var(--sage-primary)'; this.style.background='var(--sage-subtle)';">
+                                    <i class="bi bi-camera-fill" style="font-size: 3rem; color: var(--sage-primary); margin-bottom: var(--space-3);"></i>
+                                    <div style="font-weight: 600; color: var(--neutral-900); margin-bottom: var(--space-1); font-size: 1.125rem;">
+                                        Tap to Take Photo
+                                    </div>
+                                    <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                                        Use your camera to capture the bike's condition
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <span asp-validation-for="PhotoFile" class="text-danger" style="font-size: 0.875rem; display: block; margin-top: var(--space-2);"></span>
+                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-2); display: block;">
+                                <i class="bi bi-info-circle"></i> Please use your device's camera to take a photo of the bike's current condition. This helps protect both you and the owner.
                             </small>
-                            <div id="imagePreview" style="margin-top: var(--space-3); display: none;">
-                                <img id="previewImg" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                            
+                            <!-- Image Preview -->
+                            <div id="imagePreview" style="margin-top: var(--space-4); display: none; text-align: center;">
+                                <div style="position: relative; display: inline-block; max-width: 100%;">
+                                    <img id="previewImg" 
+                                         src="" 
+                                         alt="Preview" 
+                                         style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 2px solid var(--sage-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+                                    <button type="button" 
+                                            id="removePreviewBtn" 
+                                            onclick="removePreview()"
+                                            style="position: absolute; top: var(--space-2); right: var(--space-2); background: var(--danger); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                                <div style="margin-top: var(--space-2); font-size: 0.875rem; color: var(--success); font-weight: 500;">
+                                    <i class="bi bi-check-circle-fill"></i> Photo ready to upload
+                                </div>
                             </div>
                         </div>
 
@@ -150,26 +177,30 @@
                             <label class="label-minimal">Photo Description (Optional)</label>
                             <textarea asp-for="PhotoDescription" 
                                       class="input-minimal" 
-                                      rows="3" 
-                                      placeholder="e.g., Front view showing handlebars and frame, Side view showing wheels, etc..."></textarea>
+                                      rows="2" 
+                                      placeholder="e.g., Front view, Side view, Wheels, etc."></textarea>
                             <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
-                                Add a brief description of what part of the bike this photo shows
+                                Briefly describe what part of the bike this photo shows
                             </small>
                         </div>
 
-                        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
-                            <button type="submit" class="btn-minimal btn-minimal-primary btn-minimal-lg" style="flex: 1;">
-                                <i class="bi bi-upload"></i> Upload Photo
+                        <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5);">
+                            <button type="submit" 
+                                    class="btn-minimal btn-minimal-primary btn-minimal-lg" 
+                                    id="uploadBtn"
+                                    style="width: 100%;"
+                                    disabled>
+                                <i class="bi bi-upload"></i> <span id="uploadBtnText">Upload Photo</span>
                             </button>
                             @if (Model.ExistingPhotos.Any())
                             {
-                                <a href="/Bookings/Confirmation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-success btn-minimal-lg">
+                                <a href="/Bookings/Confirmation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-success btn-minimal-lg" style="width: 100%; text-align: center; text-decoration: none;">
                                     <i class="bi bi-check-circle"></i> Continue to Rental
                                 </a>
                             }
                             else
                             {
-                                <a href="/Bookings/Confirmation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-ghost btn-minimal-lg">
+                                <a href="/Bookings/Confirmation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-ghost btn-minimal-lg" style="width: 100%; text-align: center; text-decoration: none;">
                                     <i class="bi bi-arrow-right"></i> Skip & Continue
                                 </a>
                             }
@@ -184,21 +215,49 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Image preview
-        document.getElementById('PhotoFile').addEventListener('change', function(e) {
+        const cameraInput = document.getElementById('cameraInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadBtnText = document.getElementById('uploadBtnText');
+        const removePreviewBtn = document.getElementById('removePreviewBtn');
+
+        // Image preview and enable upload button
+        cameraInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const preview = document.getElementById('imagePreview');
-                    const previewImg = document.getElementById('previewImg');
                     previewImg.src = e.target.result;
-                    preview.style.display = 'block';
+                    imagePreview.style.display = 'block';
+                    uploadBtn.disabled = false;
+                    uploadBtnText.textContent = 'Upload Photo';
                 };
                 reader.readAsDataURL(file);
             } else {
-                document.getElementById('imagePreview').style.display = 'none';
+                removePreview();
             }
+        });
+
+        // Remove preview function
+        function removePreview() {
+            imagePreview.style.display = 'none';
+            cameraInput.value = '';
+            uploadBtn.disabled = true;
+            uploadBtnText.textContent = 'Take Photo First';
+        }
+
+        // Form submission
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!cameraInput.files || cameraInput.files.length === 0) {
+                e.preventDefault();
+                alert('Please take a photo of the bike condition before uploading.');
+                return false;
+            }
+            
+            // Show loading state
+            uploadBtn.disabled = true;
+            uploadBtnText.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
         });
     </script>
 }

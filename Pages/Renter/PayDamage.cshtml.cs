@@ -41,6 +41,18 @@ public class PayDamageModel : PageModel
         if (!AuthHelper.IsRenter(User))
             return RedirectToPage("/Account/AccessDenied");
 
+        // First check if damage exists at all
+        var damageExists = await _context.BikeDamages
+            .AnyAsync(d => d.DamageId == damageId);
+
+        if (!damageExists)
+        {
+            TempData["ErrorMessage"] = "Damage record not found. The damage record may not have been created properly.";
+            ErrorMessage = "Damage record not found. The damage record may not have been created properly.";
+            return RedirectToPage("/Renter/Damages");
+        }
+
+        // Then check if it belongs to this renter
         Damage = await _context.BikeDamages
             .Include(d => d.Owner)
             .Include(d => d.Bike)
@@ -49,8 +61,20 @@ public class PayDamageModel : PageModel
 
         if (Damage == null)
         {
-            TempData["ErrorMessage"] = "Damage record not found.";
-            ErrorMessage = "Damage record not found.";
+            // Check if damage exists but belongs to different renter
+            var damageForOtherRenter = await _context.BikeDamages
+                .FirstOrDefaultAsync(d => d.DamageId == damageId);
+            
+            if (damageForOtherRenter != null && damageForOtherRenter.RenterId != userId.Value)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to access this damage record.";
+                ErrorMessage = "You do not have permission to access this damage record.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Damage record not found or you do not have permission to access it.";
+                ErrorMessage = "Damage record not found or you do not have permission to access it.";
+            }
             return RedirectToPage("/Renter/Damages");
         }
 
@@ -79,14 +103,45 @@ public class PayDamageModel : PageModel
         if (!AuthHelper.IsRenter(User))
             return RedirectToPage("/Account/AccessDenied");
 
+        // First check if damage exists at all
+        var damageExists = await _context.BikeDamages
+            .AnyAsync(d => d.DamageId == damageId);
+
+        if (!damageExists)
+        {
+            TempData["ErrorMessage"] = "Damage record not found. The damage record may not have been created properly.";
+            ErrorMessage = "Damage record not found. The damage record may not have been created properly.";
+            return RedirectToPage("/Renter/Damages");
+        }
+
+        // Then check if it belongs to this renter
         Damage = await _context.BikeDamages
             .Include(d => d.Booking)
             .FirstOrDefaultAsync(d => d.DamageId == damageId && d.RenterId == userId.Value);
 
-        if (Damage == null || Damage.DamageStatus != "Pending")
+        if (Damage == null)
         {
-            TempData["ErrorMessage"] = "Invalid damage record or already paid.";
-            ErrorMessage = "Invalid damage record or already paid.";
+            // Check if damage exists but belongs to different renter
+            var damageForOtherRenter = await _context.BikeDamages
+                .FirstOrDefaultAsync(d => d.DamageId == damageId);
+            
+            if (damageForOtherRenter != null && damageForOtherRenter.RenterId != userId.Value)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to access this damage record.";
+                ErrorMessage = "You do not have permission to access this damage record.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Damage record not found or you do not have permission to access it.";
+                ErrorMessage = "Damage record not found or you do not have permission to access it.";
+            }
+            return RedirectToPage("/Renter/Damages");
+        }
+
+        if (Damage.DamageStatus != "Pending")
+        {
+            TempData["ErrorMessage"] = "This damage has already been paid or resolved.";
+            ErrorMessage = "This damage has already been paid or resolved.";
             return RedirectToPage("/Renter/Damages");
         }
 
