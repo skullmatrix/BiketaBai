@@ -24,15 +24,15 @@ public class RenterRedTagService
     {
         // Check if renter is already red-tagged (active)
         var existingRedTag = await _context.RenterRedTags
-            .FirstOrDefaultAsync(t => t.RenterId == renterId && t.OwnerId == ownerId && t.IsActive);
+            .FirstOrDefaultAsync(t => t.RenterId == renterId && t.IsActive);
 
         if (existingRedTag != null)
-            return (false, 0, "This renter is already red-tagged by you");
+            return (false, 0, "This renter is already red-tagged");
 
-        // Verify owner exists
+        // Verify owner exists (for reference, but admin can red tag on behalf of owner)
         var owner = await _context.Users.FindAsync(ownerId);
-        if (owner == null || !owner.IsOwner)
-            return (false, 0, "Invalid owner");
+        if (owner == null)
+            return (false, 0, "Invalid owner reference");
 
         // Verify renter exists
         var renter = await _context.Users.FindAsync(renterId);

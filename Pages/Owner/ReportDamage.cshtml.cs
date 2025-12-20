@@ -39,9 +39,6 @@ public class ReportDamageModel : PageModel
     [BindProperty]
     public IFormFile? DamagePhotoFile { get; set; }
 
-    [BindProperty]
-    public string? DamageImageUrl { get; set; }
-
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
         var userId = AuthHelper.GetCurrentUserId(User);
@@ -131,7 +128,7 @@ public class ReportDamageModel : PageModel
         }
 
         // Handle photo upload
-        string? photoUrl = DamageImageUrl;
+        string? photoUrl = null;
         
         if (DamagePhotoFile != null && DamagePhotoFile.Length > 0)
         {

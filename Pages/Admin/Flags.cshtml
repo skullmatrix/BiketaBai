@@ -1,0 +1,282 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model FlagsModel
+@{
+    ViewData["Title"] = "Renter Flags";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-4);">
+        <!-- Header -->
+        <div class="page-header" style="margin-bottom: var(--space-5);">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-4);">
+                <div>
+                    <h1 class="page-title">
+                        <i class="bi bi-flag-fill"></i> Renter Flags
+                    </h1>
+                    <p class="page-subtitle">Review and manage flags raised by owners against renters</p>
+                </div>
+                <a href="/Admin/Dashboard" class="btn-minimal btn-minimal-ghost">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert-minimal alert-minimal-success mb-4">
+                <i class="bi bi-check-circle-fill"></i>
+                <div>@TempData["SuccessMessage"]</div>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert-minimal alert-minimal-error mb-4">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>@TempData["ErrorMessage"]</div>
+            </div>
+        }
+
+        <!-- Filter Tabs -->
+        <div class="card-minimal mb-4">
+            <div style="display: flex; gap: var(--space-2); border-bottom: 1px solid var(--neutral-200); padding: var(--space-3);">
+                <a href="?filter=pending" 
+                   class="btn-minimal @(Model.Filter == "pending" ? "btn-minimal-primary" : "btn-minimal-ghost")" 
+                   style="text-decoration: none;">
+                    <i class="bi bi-clock-history"></i> Pending (@Model.PendingFlags.Count)
+                </a>
+                <a href="?filter=resolved" 
+                   class="btn-minimal @(Model.Filter == "resolved" ? "btn-minimal-primary" : "btn-minimal-ghost")" 
+                   style="text-decoration: none;">
+                    <i class="bi bi-check-circle"></i> Resolved (@Model.ResolvedFlags.Count)
+                </a>
+            </div>
+        </div>
+
+        <!-- Flags List -->
+        @if (!Model.Flags.Any())
+        {
+            <div class="card-minimal">
+                <div style="text-align: center; padding: var(--space-5);">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--neutral-400); margin-bottom: var(--space-3);"></i>
+                    <p style="color: var(--neutral-600); font-size: 1.125rem;">No @(Model.Filter == "pending" ? "pending" : "resolved") flags found.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var flag in Model.Flags)
+            {
+                var redTagService = HttpContext.RequestServices.GetRequiredService<RenterRedTagService>();
+                var damageService = HttpContext.RequestServices.GetRequiredService<BikeDamageService>();
+                var isRedTagged = await redTagService.IsRenterRedTaggedAsync(flag.RenterId);
+                var unpaidDamages = await damageService.GetDamagesForRenterAsync(flag.RenterId);
+                var totalUnpaidDamage = unpaidDamages.Sum(d => d.DamageCost);
+
+                <div class="card-minimal mb-4" style="border-left: 4px solid @(flag.IsResolved ? "var(--success)" : "var(--warning)");">
+                    <div class="card-minimal-header">
+                        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-3);">
+                            <div>
+                                <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                                    <i class="bi bi-flag-fill" style="color: var(--warning);"></i> Flag #@flag.FlagId.ToString("D6")
+                                </h2>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                    <span class="badge-minimal @(flag.IsResolved ? "badge-minimal-success" : "badge-minimal-warning")">
+                                        @(flag.IsResolved ? "Resolved" : "Pending")
+                                    </span>
+                                    <span style="margin-left: var(--space-2);">
+                                        Flagged on @TimeZoneHelper.FormatPhilippineTime(flag.CreatedAt)
+                                    </span>
+                                </div>
+                            </div>
+                            @if (!flag.IsResolved)
+                            {
+                                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                                    @if (!isRedTagged)
+                                    {
+                                        <button type="button" 
+                                                class="btn-minimal btn-minimal-danger btn-minimal-sm red-tag-btn" 
+                                                data-flag-id="@flag.FlagId"
+                                                data-renter-name="@flag.Renter?.FullName"
+                                                data-owner-name="@flag.Owner?.FullName"
+                                                data-booking-id="@flag.BookingId"
+                                                data-flag-reason="@flag.FlagReason">
+                                            <i class="bi bi-flag-fill"></i> Red Tag Renter
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-minimal badge-minimal-danger">
+                                            <i class="bi bi-flag-fill"></i> Already Red Tagged
+                                        </span>
+                                    }
+                                    <form method="post" asp-page-handler="ResolveFlag" asp-route-flagId="@flag.FlagId" class="d-inline">
+                                        <button type="submit" class="btn-minimal btn-minimal-success btn-minimal-sm" onclick="return confirm('Mark this flag as resolved?');">
+                                            <i class="bi bi-check-circle"></i> Resolve Flag
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div style="padding: var(--space-4);">
+                        <!-- Flag Details -->
+                        <div class="grid-minimal grid-minimal-2 mb-4">
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Renter</div>
+                                <div style="font-weight: 600; margin-bottom: var(--space-3);">
+                                    @flag.Renter?.FullName
+                                    @if (isRedTagged)
+                                    {
+                                        <span class="badge-minimal badge-minimal-danger" style="margin-left: var(--space-2);">
+                                            <i class="bi bi-flag-fill"></i> RED TAGGED
+                                        </span>
+                                    }
+                                </div>
+                                
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Flagged By</div>
+                                <div style="font-weight: 600;">@flag.Owner?.FullName</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Booking</div>
+                                <div style="font-weight: 600; margin-bottom: var(--space-3);">
+                                    <a href="/Bookings/Details/@flag.BookingId" class="text-sage">
+                                        Booking #@flag.BookingId.ToString("D6")
+                                    </a>
+                                    @if (flag.Booking?.Bike != null)
+                                    {
+                                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                            @flag.Booking.Bike.Brand @flag.Booking.Bike.Model
+                                        </div>
+                                    }
+                                </div>
+                                
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Reason</div>
+                                <div style="font-weight: 600; color: var(--warning);">@flag.FlagReason</div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(flag.FlagDescription))
+                        {
+                            <div style="padding: var(--space-3); background: var(--neutral-50); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Description</div>
+                                <p style="margin: 0; font-weight: 500;">@flag.FlagDescription</p>
+                            </div>
+                        }
+
+                        @if (unpaidDamages.Any())
+                        {
+                            <div style="padding: var(--space-3); background: #fffbf0; border-left: 3px solid var(--warning); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                                    <strong>Unpaid Damages:</strong> @unpaidDamages.Count damage report(s) totaling ₱@totalUnpaidDamage.ToString("F2")
+                                </div>
+                                <div style="font-size: 0.875rem;">
+                                    @foreach (var damage in unpaidDamages.Take(3))
+                                    {
+                                        <div style="margin-bottom: var(--space-1);">
+                                            • @damage.DamageDescription - ₱@damage.DamageCost.ToString("F2")
+                                        </div>
+                                    }
+                                    @if (unpaidDamages.Count > 3)
+                                    {
+                                        <div style="color: var(--neutral-600);">... and @(unpaidDamages.Count - 3) more</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (flag.IsResolved && flag.ResolvedAt.HasValue)
+                        {
+                            <div style="padding: var(--space-2); background: var(--success-subtle); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--success);">
+                                <i class="bi bi-check-circle-fill"></i> Resolved on @TimeZoneHelper.FormatPhilippineTime(flag.ResolvedAt.Value)
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Red Tag Modal -->
+<div class="modal fade" id="redTagModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header-premium">
+                <div class="modal-icon-danger">
+                    <i class="bi bi-flag-fill"></i>
+                </div>
+                <h5>Red Tag Renter</h5>
+                <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body-premium">
+                <p id="redTagMessage"></p>
+                <div class="warning-box" style="background: #FEE2E2; border-left: 3px solid #DC2626; padding: var(--space-3); border-radius: var(--radius-md); margin-top: var(--space-3);">
+                    <i class="bi bi-info-circle-fill" style="color: #DC2626;"></i>
+                    <span style="font-size: 0.875rem;">Red tagging a renter will mark them as delinquent and may restrict their ability to rent bikes in the future.</span>
+                </div>
+                <form method="post" asp-page-handler="RedTag" style="margin-top: var(--space-3);">
+                    <input type="hidden" asp-for="RedTagInput.FlagId" id="redTagFlagId" />
+                    <div class="form-group-minimal mb-3">
+                        <label for="redTagReason" class="form-label-minimal">Reason <span style="color: var(--danger);">*</span></label>
+                        <select asp-for="RedTagInput.Reason" id="redTagReason" class="input-minimal" required>
+                            <option value="">Select a reason</option>
+                            <option value="Delinquent">Delinquent (e.g., late payments)</option>
+                            <option value="UnpaidDamages">Unpaid Damages</option>
+                            <option value="MultipleViolations">Multiple Policy Violations</option>
+                            <option value="Fraud">Fraudulent Activity</option>
+                            <option value="Other">Other (please specify in description)</option>
+                        </select>
+                        <span asp-validation-for="RedTagInput.Reason" class="text-danger-minimal"></span>
+                    </div>
+                    <div class="form-group-minimal mb-3">
+                        <label for="redTagDescription" class="form-label-minimal">Description (Optional)</label>
+                        <textarea asp-for="RedTagInput.Description" id="redTagDescription" class="input-minimal" rows="3" placeholder="Additional details about why this renter is being red-tagged..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn-modal-danger">
+                            <i class="bi bi-flag-fill"></i> Red Tag Renter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // Red Tag Modal
+            $('.red-tag-btn').on('click', function() {
+                const flagId = $(this).data('flag-id');
+                const renterName = $(this).data('renter-name');
+                const ownerName = $(this).data('owner-name');
+                const bookingId = $(this).data('booking-id');
+                const flagReason = $(this).data('flag-reason');
+                
+                $('#redTagFlagId').val(flagId);
+                $('#redTagMessage').html(`
+                    <strong>Flag #${flagId.toString().padStart(6, '0')}</strong><br>
+                    <strong>Renter:</strong> ${renterName}<br>
+                    <strong>Flagged By:</strong> ${ownerName}<br>
+                    <strong>Booking:</strong> #${bookingId.toString().padStart(6, '0')}<br>
+                    <strong>Flag Reason:</strong> ${flagReason}<br><br>
+                    Please provide a reason for red tagging this renter.
+                `);
+                
+                const modal = new bootstrap.Modal(document.getElementById('redTagModal'));
+                modal.show();
+            });
+        });
+    </script>
+}
+

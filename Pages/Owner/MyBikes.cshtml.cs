@@ -331,59 +331,5 @@ public class MyBikesModel : PageModel
         }
     }
 
-    public async Task<IActionResult> OnPostRedTagRenterAsync(int bookingId, string redTagReason, string? redTagDescription = null)
-    {
-        try
-        {
-            var userId = AuthHelper.GetCurrentUserId(User);
-            if (!userId.HasValue)
-            {
-                TempData["ErrorMessage"] = "You must be logged in";
-                return RedirectToPage("/Account/Login");
-            }
-
-            var booking = await _context.Bookings
-                .Include(b => b.Bike)
-                .Include(b => b.Renter)
-                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
-
-            if (booking == null)
-            {
-                TempData["ErrorMessage"] = "Booking not found or you don't have permission";
-                return RedirectToPage();
-            }
-
-            if (string.IsNullOrWhiteSpace(redTagReason))
-            {
-                TempData["ErrorMessage"] = "Please select a reason for red tagging";
-                return RedirectToPage();
-            }
-
-            var redTagService = HttpContext.RequestServices.GetRequiredService<RenterRedTagService>();
-            var result = await redTagService.RedTagRenterAsync(
-                booking.RenterId,
-                userId.Value,
-                redTagReason,
-                redTagDescription,
-                bookingId
-            );
-
-            if (result.Success)
-            {
-                TempData["SuccessMessage"] = result.Message;
-            }
-            else
-            {
-                TempData["ErrorMessage"] = result.Message;
-            }
-
-            return RedirectToPage();
-        }
-        catch (Exception ex)
-        {
-            TempData["ErrorMessage"] = $"Error red tagging renter: {ex.Message}";
-            return RedirectToPage();
-        }
-    }
 }
 
