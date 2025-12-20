@@ -6,6 +6,7 @@ using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
 using BiketaBai.Services;
+using System;
 
 namespace BiketaBai.Pages.Owner;
 
@@ -14,11 +15,13 @@ public class ReportDamageModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly BikeDamageService _bikeDamageService;
+    private readonly IWebHostEnvironment _environment;
 
-    public ReportDamageModel(BiketaBaiDbContext context, BikeDamageService bikeDamageService)
+    public ReportDamageModel(BiketaBaiDbContext context, BikeDamageService bikeDamageService, IWebHostEnvironment environment)
     {
         _context = context;
         _bikeDamageService = bikeDamageService;
+        _environment = environment;
     }
 
     public Booking? Booking { get; set; }
@@ -34,6 +37,9 @@ public class ReportDamageModel : PageModel
     public decimal DamageCost { get; set; }
 
     [BindProperty]
+    public IFormFile? DamagePhotoFile { get; set; }
+
+    [BindProperty]
     public string? DamageImageUrl { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int bookingId)
@@ -45,12 +51,21 @@ public class ReportDamageModel : PageModel
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
 
-        Booking = await _context.Bookings
-            .Include(b => b.Bike)
-                .ThenInclude(bike => bike.BikeImages)
-            .Include(b => b.Bike.BikeType)
-            .Include(b => b.Renter)
-            .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+        try
+        {
+            Booking = await _context.Bookings
+                .Include(b => b.Bike)
+                    .ThenInclude(bike => bike.BikeImages)
+                .Include(b => b.Bike)
+                    .ThenInclude(bike => bike.BikeType)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike != null && b.Bike.OwnerId == userId.Value);
+        }
+        catch
+        {
+            TempData["ErrorMessage"] = "An error occurred while loading the booking information.";
+            return RedirectToPage("/Dashboard/Owner");
+        }
 
         if (Booking == null)
             return NotFound();
@@ -77,10 +92,19 @@ public class ReportDamageModel : PageModel
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
 
-        Booking = await _context.Bookings
-            .Include(b => b.Bike)
-            .Include(b => b.Renter)
-            .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+        try
+        {
+            Booking = await _context.Bookings
+                .Include(b => b.Bike)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike != null && b.Bike.OwnerId == userId.Value);
+        }
+        catch
+        {
+            TempData["ErrorMessage"] = "An error occurred while loading the booking information.";
+            ExistingDamages = new List<BikeDamage>();
+            return Page();
+        }
 
         if (Booking == null)
             return NotFound();
@@ -106,23 +130,82 @@ public class ReportDamageModel : PageModel
             return Page();
         }
 
-        var result = await _bikeDamageService.ReportDamageAsync(
-            bookingId,
-            userId.Value,
-            DamageDescription,
-            DamageCost,
-            DamageDetails,
-            DamageImageUrl
-        );
+        // Handle photo upload
+        string? photoUrl = DamageImageUrl;
+        
+        if (DamagePhotoFile != null && DamagePhotoFile.Length > 0)
+        {
+            // Validate file type
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var fileExtension = Path.GetExtension(DamagePhotoFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                ModelState.AddModelError(nameof(DamagePhotoFile), "Please upload a valid image file (JPG, PNG, or WEBP).");
+                ExistingDamages = await _bikeDamageService.GetDamagesForBookingAsync(bookingId);
+                return Page();
+            }
 
-        if (result.Success)
-        {
-            TempData["SuccessMessage"] = result.Message;
-            return RedirectToPage("/Dashboard/Owner");
+            // Validate file size (max 5MB)
+            if (DamagePhotoFile.Length > 5 * 1024 * 1024)
+            {
+                ModelState.AddModelError(nameof(DamagePhotoFile), "Photo size must be less than 5MB.");
+                ExistingDamages = await _bikeDamageService.GetDamagesForBookingAsync(bookingId);
+                return Page();
+            }
+
+            try
+            {
+                // Save file to wwwroot/uploads/damage-photos
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "damage-photos");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = $"damage_{bookingId}_{Guid.NewGuid()}{fileExtension}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await DamagePhotoFile.CopyToAsync(fileStream);
+                }
+
+                photoUrl = $"/uploads/damage-photos/{uniqueFileName}";
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(nameof(DamagePhotoFile), $"Error uploading photo: {ex.Message}");
+                ExistingDamages = await _bikeDamageService.GetDamagesForBookingAsync(bookingId);
+                return Page();
+            }
         }
-        else
+
+        try
         {
-            TempData["ErrorMessage"] = result.Message;
+            var result = await _bikeDamageService.ReportDamageAsync(
+                bookingId,
+                userId.Value,
+                DamageDescription,
+                DamageCost,
+                DamageDetails,
+                photoUrl
+            );
+
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+                return RedirectToPage("/Dashboard/Owner");
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+                ExistingDamages = await _bikeDamageService.GetDamagesForBookingAsync(bookingId);
+                return Page();
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = "An error occurred while reporting the damage. Please try again.";
             ExistingDamages = await _bikeDamageService.GetDamagesForBookingAsync(bookingId);
             return Page();
         }

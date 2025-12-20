@@ -15,7 +15,7 @@ public class BikeDamageService
         _notificationService = notificationService;
     }
 
-    public async Task<(bool Success, int DamageId, string Message)> ReportDamageAsync(
+    public async Task<(bool Success, string Message)> ReportDamageAsync(
         int bookingId,
         int ownerId,
         string damageDescription,
@@ -26,23 +26,27 @@ public class BikeDamageService
         // Get booking to verify ownership
         var booking = await _context.Bookings
             .Include(b => b.Bike)
+                .ThenInclude(bike => bike.Owner)
             .Include(b => b.Renter)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId);
 
         if (booking == null)
-            return (false, 0, "Booking not found");
+            return (false, "Booking not found");
 
         // Verify the owner owns the bike
-        if (booking.Bike.OwnerId != ownerId)
-            return (false, 0, "You do not have permission to report damage for this booking");
+        if (booking.Bike?.OwnerId != ownerId)
+            return (false, "You do not have permission to report damage for this booking");
 
         // Only allow damage reporting for completed bookings
         if (booking.BookingStatus != "Completed")
-            return (false, 0, "You can only report damages for completed bookings");
+            return (false, "You can only report damages for completed bookings");
 
         // Validate damage cost
         if (damageCost <= 0)
-            return (false, 0, "Damage cost must be greater than zero");
+            return (false, "Damage cost must be greater than zero");
+
+        if (booking.Bike == null || booking.Renter == null)
+            return (false, "Booking data is incomplete");
 
         var damage = new BikeDamage
         {
@@ -63,42 +67,68 @@ public class BikeDamageService
         await _context.SaveChangesAsync();
 
         // Notify renter about the damage charge
-        await _notificationService.CreateNotificationAsync(
-            booking.RenterId,
-            "Damage Charge Reported",
-            $"The owner has reported damage to the bike from booking #{bookingId}. Damage cost: ₱{damageCost:F2}. Please review and pay the damage fee.",
-            "Damage",
-            $"/Renter/Damages/{damage.DamageId}"
-        );
-
-        // Notify admins
-        var admins = await _context.Users
-            .Where(u => u.IsAdmin)
-            .ToListAsync();
-
-        foreach (var admin in admins)
+        try
         {
-            await _notificationService.CreateNotificationAsync(
-                admin.UserId,
-                "Damage Reported",
-                $"Owner {booking.Bike.Owner.FullName} reported damage for booking #{bookingId}. Cost: ₱{damageCost:F2}",
-                "Damage",
-                $"/Admin/Damages/{damage.DamageId}"
-            );
+            if (booking.RenterId > 0)
+            {
+                await _notificationService.CreateNotificationAsync(
+                    booking.RenterId,
+                    "Damage Charge Reported",
+                    $"The owner has reported damage to the bike from booking #{bookingId}. Damage cost: ₱{damageCost:F2}. Please review and pay the damage fee.",
+                    "Damage",
+                    $"/Renter/Damages/{damage.DamageId}"
+                );
+            }
+        }
+        catch
+        {
+            // Log error but don't fail the damage report
         }
 
-        return (true, damage.DamageId, $"Damage reported successfully. Renter has been notified and must pay ₱{damageCost:F2}");
+        // Notify admins
+        try
+        {
+            var admins = await _context.Users
+                .Where(u => u.IsAdmin)
+                .ToListAsync();
+
+            var ownerName = booking.Bike?.Owner?.FullName ?? "Unknown Owner";
+
+            foreach (var admin in admins)
+            {
+                await _notificationService.CreateNotificationAsync(
+                    admin.UserId,
+                    "Damage Reported",
+                    $"Owner {ownerName} reported damage for booking #{bookingId}. Cost: ₱{damageCost:F2}",
+                    "Damage",
+                    $"/Admin/Damages/{damage.DamageId}"
+                );
+            }
+        }
+        catch
+        {
+            // Log error but don't fail the damage report
+        }
+
+        return (true, $"Damage reported successfully. Renter has been notified and must pay ₱{damageCost:F2}");
     }
 
     public async Task<List<BikeDamage>> GetDamagesForBookingAsync(int bookingId)
     {
-        return await _context.BikeDamages
-            .Include(d => d.Owner)
-            .Include(d => d.Renter)
-            .Include(d => d.Bike)
-            .Where(d => d.BookingId == bookingId)
-            .OrderByDescending(d => d.CreatedAt)
-            .ToListAsync();
+        try
+        {
+            return await _context.BikeDamages
+                .Include(d => d.Owner)
+                .Include(d => d.Renter)
+                .Include(d => d.Bike)
+                .Where(d => d.BookingId == bookingId)
+                .OrderByDescending(d => d.CreatedAt)
+                .ToListAsync();
+        }
+        catch
+        {
+            return new List<BikeDamage>();
+        }
     }
 
     public async Task<List<BikeDamage>> GetDamagesForRenterAsync(int renterId)
@@ -133,7 +163,8 @@ public class BikeDamageService
     public async Task<bool> MarkDamageAsPaidAsync(int damageId, int renterId, string? paymentNotes = null)
     {
         var damage = await _context.BikeDamages
-            .Include(d => d.Owner)
+            .Include(d => d.Renter)
+            .Include(d => d.Booking)
             .FirstOrDefaultAsync(d => d.DamageId == damageId && d.RenterId == renterId);
 
         if (damage == null)
@@ -144,19 +175,28 @@ public class BikeDamageService
 
         damage.DamageStatus = "Paid";
         damage.PaidAt = DateTime.UtcNow;
-        damage.PaymentNotes = paymentNotes;
         damage.UpdatedAt = DateTime.UtcNow;
+        damage.PaymentNotes = paymentNotes;
 
         await _context.SaveChangesAsync();
 
         // Notify owner
-        await _notificationService.CreateNotificationAsync(
-            damage.OwnerId,
-            "Damage Fee Paid",
-            $"Renter {damage.Renter.FullName} has paid the damage fee of ₱{damage.DamageCost:F2} for booking #{damage.BookingId}",
-            "Payment",
-            $"/Owner/Damages/{damage.DamageId}"
-        );
+        try
+        {
+            var renterName = damage.Renter?.FullName ?? "Unknown Renter";
+            var ownerId = damage.OwnerId; // Use OwnerId directly from damage
+            await _notificationService.CreateNotificationAsync(
+                ownerId,
+                "Damage Fee Paid",
+                $"Renter {renterName} has paid the damage fee of ₱{damage.DamageCost:F2} for booking #{damage.BookingId}",
+                "Payment",
+                $"/Owner/Damages/{damage.DamageId}"
+            );
+        }
+        catch
+        {
+            // Log error but don't fail the payment update
+        }
 
         return true;
     }

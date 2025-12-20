@@ -206,10 +206,11 @@
         // Daily Earnings Chart
         const dailyEarningsCtx = document.getElementById('dailyEarningsChart');
         if (dailyEarningsCtx) {
-            const dailyLabels = [@Html.Raw(string.Join(",", Model.DailyEarningsChart.Select(d => $"'{d.Date}'")))];
-            const dailyData = [@string.Join(",", Model.DailyEarningsChart.Select(d => d.Amount))];
+            const dailyLabels = [@Html.Raw(Model.DailyEarningsChart != null && Model.DailyEarningsChart.Any() ? string.Join(",", Model.DailyEarningsChart.Select(d => $"'{d.Date}'")) : "")];
+            const dailyData = [@(Model.DailyEarningsChart != null && Model.DailyEarningsChart.Any() ? string.Join(",", Model.DailyEarningsChart.Select(d => d.Amount)) : "0")];
             
-            new Chart(dailyEarningsCtx, {
+            if (dailyLabels.length > 0 && dailyData.length > 0) {
+                new Chart(dailyEarningsCtx, {
                 type: 'line',
                 data: {
                     labels: dailyLabels,
@@ -252,16 +253,20 @@
                         }
                     }
                 }
-            });
+                });
+            } else {
+                dailyEarningsCtx.parentElement.innerHTML = '<p style="text-align: center; color: var(--neutral-600); padding: var(--space-4);">No daily earnings data available.</p>';
+            }
         }
 
         // Weekly Earnings Chart
         const weeklyEarningsCtx = document.getElementById('weeklyEarningsChart');
         if (weeklyEarningsCtx) {
-            const weeklyLabels = [@Html.Raw(string.Join(",", Model.WeeklyEarningsChart.Select(w => $"'{w.Week}'")))];
-            const weeklyData = [@string.Join(",", Model.WeeklyEarningsChart.Select(w => w.Amount))];
+            const weeklyLabels = [@Html.Raw(Model.WeeklyEarningsChart != null && Model.WeeklyEarningsChart.Any() ? string.Join(",", Model.WeeklyEarningsChart.Select(w => $"'{w.Week}'")) : "")];
+            const weeklyData = [@(Model.WeeklyEarningsChart != null && Model.WeeklyEarningsChart.Any() ? string.Join(",", Model.WeeklyEarningsChart.Select(w => w.Amount)) : "0")];
             
-            new Chart(weeklyEarningsCtx, {
+            if (weeklyLabels.length > 0 && weeklyData.length > 0) {
+                new Chart(weeklyEarningsCtx, {
                 type: 'bar',
                 data: {
                     labels: weeklyLabels,
@@ -300,14 +305,17 @@
                         }
                     }
                 }
-            });
+                });
+            } else {
+                weeklyEarningsCtx.parentElement.innerHTML = '<p style="text-align: center; color: var(--neutral-600); padding: var(--space-4);">No weekly earnings data available.</p>';
+            }
         }
 
         // Monthly Earnings Chart
         const monthlyEarningsCtx = document.getElementById('monthlyEarningsChart');
         if (monthlyEarningsCtx) {
-            const monthlyLabels = [@Html.Raw(string.Join(",", Model.MonthlyEarningsChart.Select(m => $"'{m.Month}'")))];
-            const monthlyData = [@string.Join(",", Model.MonthlyEarningsChart.Select(m => m.Amount))];
+            const monthlyLabels = [@Html.Raw(Model.MonthlyEarningsChart != null && Model.MonthlyEarningsChart.Any() ? string.Join(",", Model.MonthlyEarningsChart.Select(m => $"'{m.Month}'")) : "")];
+            const monthlyData = [@(Model.MonthlyEarningsChart != null && Model.MonthlyEarningsChart.Any() ? string.Join(",", Model.MonthlyEarningsChart.Select(m => m.Amount)) : "0")];
             
             new Chart(monthlyEarningsCtx, {
                 type: 'line',
@@ -358,8 +366,8 @@
         // Bike Type Earnings Chart
         const bikeTypeEarningsCtx = document.getElementById('bikeTypeEarningsChart');
         if (bikeTypeEarningsCtx) {
-            const bikeTypeLabels = [@Html.Raw(string.Join(",", Model.BikeTypeEarningsChart.Select(b => $"'{b.TypeName}'")))];
-            const bikeTypeData = [@string.Join(",", Model.BikeTypeEarningsChart.Select(b => b.Amount))];
+            const bikeTypeLabels = [@Html.Raw(Model.BikeTypeEarningsChart != null && Model.BikeTypeEarningsChart.Any() ? string.Join(",", Model.BikeTypeEarningsChart.Select(b => $"'{b.TypeName}'")) : "")];
+            const bikeTypeData = [@(Model.BikeTypeEarningsChart != null && Model.BikeTypeEarningsChart.Any() ? string.Join(",", Model.BikeTypeEarningsChart.Select(b => b.Amount)) : "0")];
             const bikeTypeColors = [
                 chartColors.primary,
                 chartColors.blue,
@@ -407,8 +415,8 @@
         // Booking Status Chart
         const bookingStatusCtx = document.getElementById('bookingStatusChart');
         if (bookingStatusCtx) {
-            const statusLabels = [@Html.Raw(string.Join(",", Model.BookingStatusChart.Select(b => $"'{b.Status}'")))];
-            const statusData = [@string.Join(",", Model.BookingStatusChart.Select(b => b.Count))];
+            const statusLabels = [@Html.Raw(Model.BookingStatusChart != null && Model.BookingStatusChart.Any() ? string.Join(",", Model.BookingStatusChart.Select(b => $"'{b.Status}'")) : "")];
+            const statusData = [@(Model.BookingStatusChart != null && Model.BookingStatusChart.Any() ? string.Join(",", Model.BookingStatusChart.Select(b => b.Count)) : "0")];
             const statusColors = {
                 'Completed': chartColors.emerald,
                 'Active': chartColors.blue,
@@ -453,8 +461,8 @@
         // Top Bikes Chart
         const topBikesCtx = document.getElementById('topBikesChart');
         if (topBikesCtx) {
-            const topBikesLabels = [@Html.Raw(string.Join(",", Model.TopBikesChart.Select(b => $"'{b.BikeName}'")))];
-            const topBikesData = [@string.Join(",", Model.TopBikesChart.Select(b => b.Earnings))];
+            const topBikesLabels = [@Html.Raw(Model.TopBikesChart != null && Model.TopBikesChart.Any() ? string.Join(",", Model.TopBikesChart.Select(b => $"'{b.BikeName}'")) : "")];
+            const topBikesData = [@(Model.TopBikesChart != null && Model.TopBikesChart.Any() ? string.Join(",", Model.TopBikesChart.Select(b => b.Earnings)) : "0")];
             
             new Chart(topBikesCtx, {
                 type: 'bar',
@@ -481,8 +489,8 @@
                             callbacks: {
                                 afterLabel: function(context) {
                                     const index = context.dataIndex;
-                                    const bookings = [@string.Join(",", Model.TopBikesChart.Select(b => b.Bookings))];
-                                    return 'Bookings: ' + bookings[index];
+                                    const bookings = [@(Model.TopBikesChart != null && Model.TopBikesChart.Any() ? string.Join(",", Model.TopBikesChart.Select(b => b.Bookings)) : "0")];
+                                    return 'Bookings: ' + (bookings[index] || 0);
                                 },
                                 label: function(context) {
                                     return '₱' + context.parsed.x.toFixed(2);

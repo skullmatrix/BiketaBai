@@ -6,6 +6,7 @@ using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
 using BiketaBai.Services;
+using System;
 
 namespace BiketaBai.Pages.Owner;
 
@@ -39,12 +40,21 @@ public class FlagRenterModel : PageModel
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
 
-        Booking = await _context.Bookings
-            .Include(b => b.Bike)
-                .ThenInclude(bike => bike.BikeImages)
-            .Include(b => b.Bike.BikeType)
-            .Include(b => b.Renter)
-            .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+        try
+        {
+            Booking = await _context.Bookings
+                .Include(b => b.Bike)
+                    .ThenInclude(bike => bike.BikeImages)
+                .Include(b => b.Bike)
+                    .ThenInclude(bike => bike.BikeType)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike != null && b.Bike.OwnerId == userId.Value);
+        }
+        catch
+        {
+            TempData["ErrorMessage"] = "An error occurred while loading the booking information.";
+            return RedirectToPage("/Dashboard/Owner");
+        }
 
         if (Booking == null)
             return NotFound();
@@ -71,10 +81,18 @@ public class FlagRenterModel : PageModel
         if (!AuthHelper.IsOwner(User))
             return RedirectToPage("/Account/AccessDenied");
 
-        Booking = await _context.Bookings
-            .Include(b => b.Bike)
-            .Include(b => b.Renter)
-            .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike.OwnerId == userId.Value);
+        try
+        {
+            Booking = await _context.Bookings
+                .Include(b => b.Bike)
+                .Include(b => b.Renter)
+                .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.Bike != null && b.Bike.OwnerId == userId.Value);
+        }
+        catch
+        {
+            TempData["ErrorMessage"] = "An error occurred while loading the booking information.";
+            return RedirectToPage("/Dashboard/Owner");
+        }
 
         if (Booking == null)
             return NotFound();
@@ -99,16 +117,26 @@ public class FlagRenterModel : PageModel
             return RedirectToPage("/Dashboard/Owner");
         }
 
-        var success = await _renterFlagService.FlagRenterAsync(bookingId, userId.Value, FlagReason, FlagDescription);
+        try
+        {
+            var success = await _renterFlagService.FlagRenterAsync(bookingId, userId.Value, FlagReason, FlagDescription);
 
-        if (success)
-        {
-            TempData["SuccessMessage"] = $"Renter {Booking.Renter.FullName} has been flagged. Administrators will review this report.";
-            return RedirectToPage("/Dashboard/Owner");
+            if (success)
+            {
+                var renterName = Booking.Renter?.FullName ?? "the renter";
+                TempData["SuccessMessage"] = $"Renter {renterName} has been flagged. Administrators will review this report.";
+                return RedirectToPage("/Dashboard/Owner");
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to flag renter. Please try again.";
+                HasFlagged = await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value);
+                return Page();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            TempData["ErrorMessage"] = "Failed to flag renter. Please try again.";
+            TempData["ErrorMessage"] = "An error occurred while flagging the renter. Please try again.";
             HasFlagged = await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value);
             return Page();
         }

@@ -181,7 +181,10 @@
 
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2">
-                            @if (Model.Booking.BookingStatus == "Active")
+                            @{
+                                var hasCompletedPayment = Model.Booking.Payments.Any(p => p.PaymentStatus == "Completed");
+                            }
+                            @if (hasCompletedPayment)
                             {
                                 @if (!Model.Booking.BikeConditionPhotos.Any())
                                 {
@@ -195,6 +198,9 @@
                                         <i class="bi bi-camera-fill"></i> Add More Condition Photos
                                     </a>
                                 }
+                            }
+                            @if (Model.Booking.BookingStatus == "Active")
+                            {
                                 <a href="/Bookings/TrackLocation/@Model.Booking.BookingId" class="btn-minimal btn-minimal-primary" id="trackLocationBtn">
                                     <i class="bi bi-geo-alt-fill"></i> Track Location
                                 </a>

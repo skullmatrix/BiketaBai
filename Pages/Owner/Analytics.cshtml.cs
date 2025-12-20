@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
+using System;
 
 namespace BiketaBai.Pages.Owner;
 
@@ -76,12 +77,14 @@ public class AnalyticsModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int days = 30)
     {
-        var userId = AuthHelper.GetCurrentUserId(User);
-        if (!userId.HasValue)
-            return RedirectToPage("/Account/Login");
+        try
+        {
+            var userId = AuthHelper.GetCurrentUserId(User);
+            if (!userId.HasValue)
+                return RedirectToPage("/Account/Login");
 
-        if (!AuthHelper.IsOwner(User))
-            return RedirectToPage("/Account/AccessDenied");
+            if (!AuthHelper.IsOwner(User))
+                return RedirectToPage("/Account/AccessDenied");
 
         // Get owner's bike IDs
         var ownerBikeIds = await _context.Bikes
@@ -144,112 +147,179 @@ public class AnalyticsModel : PageModel
         AverageRating = ownerRatings.Any() ? ownerRatings.Average() : 0;
 
         // Daily Earnings Chart (last 30 days)
-        var dailyEarningsData = await _context.Bookings
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                       b.BookingStatus == "Completed" &&
-                       b.UpdatedAt >= now.AddDays(-30))
-            .GroupBy(b => b.UpdatedAt.Date)
-            .Select(g => new DailyEarningsData
-            {
-                Date = g.Key.ToString("MMM dd"),
-                Amount = g.Sum(b => b.TotalAmount * 0.9m)
-            })
-            .OrderBy(e => e.Date)
-            .ToListAsync();
-        DailyEarningsChart = dailyEarningsData;
+        try
+        {
+            var dailyEarningsData = await _context.Bookings
+                .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                           b.BookingStatus == "Completed" &&
+                           b.UpdatedAt >= now.AddDays(-30))
+                .Where(b => b.UpdatedAt != null)
+                .GroupBy(b => b.UpdatedAt.Date)
+                .Select(g => new DailyEarningsData
+                {
+                    Date = g.Key.ToString("MMM dd"),
+                    Amount = g.Sum(b => b.TotalAmount * 0.9m)
+                })
+                .OrderBy(e => e.Date)
+                .ToListAsync();
+            DailyEarningsChart = dailyEarningsData ?? new List<DailyEarningsData>();
+        }
+        catch
+        {
+            DailyEarningsChart = new List<DailyEarningsData>();
+        }
 
         // Weekly Earnings Chart (last 12 weeks)
-        var weeklyEarningsData = await _context.Bookings
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                       b.BookingStatus == "Completed" &&
-                       b.UpdatedAt >= now.AddDays(-84))
-            .ToListAsync();
+        try
+        {
+            var weeklyEarningsData = await _context.Bookings
+                .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                           b.BookingStatus == "Completed" &&
+                           b.UpdatedAt >= now.AddDays(-84))
+                .ToListAsync();
 
-        WeeklyEarningsChart = weeklyEarningsData
-            .GroupBy(b => new { 
-                Year = b.UpdatedAt.Year, 
-                Week = GetWeekOfYear(b.UpdatedAt) 
-            })
-            .Select(g => new WeeklyEarningsData
-            {
-                Week = $"Week {g.Key.Week}, {g.Key.Year}",
-                Amount = g.Sum(b => b.TotalAmount * 0.9m)
-            })
-            .OrderBy(w => w.Week)
-            .Take(12)
-            .ToList();
+            WeeklyEarningsChart = weeklyEarningsData
+                .Where(b => b.UpdatedAt != null)
+                .GroupBy(b => new { 
+                    Year = b.UpdatedAt.Year, 
+                    Week = GetWeekOfYear(b.UpdatedAt) 
+                })
+                .Select(g => new WeeklyEarningsData
+                {
+                    Week = $"Week {g.Key.Week}, {g.Key.Year}",
+                    Amount = g.Sum(b => b.TotalAmount * 0.9m)
+                })
+                .OrderBy(w => w.Week)
+                .Take(12)
+                .ToList();
+        }
+        catch
+        {
+            WeeklyEarningsChart = new List<WeeklyEarningsData>();
+        }
 
         // Monthly Earnings Chart (last 12 months)
-        var monthlyEarningsData = await _context.Bookings
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                       b.BookingStatus == "Completed" &&
-                       b.UpdatedAt >= now.AddMonths(-12))
-            .GroupBy(b => new { b.UpdatedAt.Year, b.UpdatedAt.Month })
-            .Select(g => new MonthlyEarningsData
-            {
-                Month = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"),
-                Amount = g.Sum(b => b.TotalAmount * 0.9m)
-            })
-            .OrderBy(m => m.Month)
-            .ToListAsync();
-        MonthlyEarningsChart = monthlyEarningsData;
+        try
+        {
+            var monthlyEarningsData = await _context.Bookings
+                .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                           b.BookingStatus == "Completed" &&
+                           b.UpdatedAt >= now.AddMonths(-12))
+                .Where(b => b.UpdatedAt != null)
+                .GroupBy(b => new { b.UpdatedAt.Year, b.UpdatedAt.Month })
+                .Select(g => new MonthlyEarningsData
+                {
+                    Month = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"),
+                    Amount = g.Sum(b => b.TotalAmount * 0.9m)
+                })
+                .OrderBy(m => m.Month)
+                .ToListAsync();
+            MonthlyEarningsChart = monthlyEarningsData ?? new List<MonthlyEarningsData>();
+        }
+        catch
+        {
+            MonthlyEarningsChart = new List<MonthlyEarningsData>();
+        }
 
         // Bike Type Earnings
-        var bikeTypeEarnings = await _context.Bookings
-            .Include(b => b.Bike)
-                .ThenInclude(bike => bike.BikeType)
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                       b.BookingStatus == "Completed" &&
-                       b.UpdatedAt >= startDate)
-            .GroupBy(b => b.Bike.BikeType.TypeName)
-            .Select(g => new BikeTypeEarningsData
-            {
-                TypeName = g.Key,
-                Amount = g.Sum(b => b.TotalAmount * 0.9m),
-                Count = g.Count()
-            })
-            .OrderByDescending(b => b.Amount)
-            .ToListAsync();
-        BikeTypeEarningsChart = bikeTypeEarnings;
+        try
+        {
+            var bikeTypeEarnings = await _context.Bookings
+                .Include(b => b.Bike)
+                    .ThenInclude(bike => bike.BikeType)
+                .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                           b.BookingStatus == "Completed" &&
+                           b.UpdatedAt >= startDate &&
+                           b.Bike != null &&
+                           b.Bike.BikeType != null)
+                .GroupBy(b => b.Bike.BikeType.TypeName)
+                .Select(g => new BikeTypeEarningsData
+                {
+                    TypeName = g.Key ?? "Unknown",
+                    Amount = g.Sum(b => b.TotalAmount * 0.9m),
+                    Count = g.Count()
+                })
+                .OrderByDescending(b => b.Amount)
+                .ToListAsync();
+            BikeTypeEarningsChart = bikeTypeEarnings ?? new List<BikeTypeEarningsData>();
+        }
+        catch
+        {
+            BikeTypeEarningsChart = new List<BikeTypeEarningsData>();
+        }
 
         // Booking Status Chart
-        var bookingStatusData = await _context.Bookings
-            .Where(b => ownerBikeIds.Contains(b.BikeId))
-            .GroupBy(b => b.BookingStatus)
-            .Select(g => new BookingStatusData
-            {
-                Status = g.Key,
-                Count = g.Count()
-            })
-            .ToListAsync();
-        BookingStatusChart = bookingStatusData;
+        try
+        {
+            var bookingStatusData = await _context.Bookings
+                .Where(b => ownerBikeIds.Contains(b.BikeId) && !string.IsNullOrEmpty(b.BookingStatus))
+                .GroupBy(b => b.BookingStatus)
+                .Select(g => new BookingStatusData
+                {
+                    Status = g.Key ?? "Unknown",
+                    Count = g.Count()
+                })
+                .ToListAsync();
+            BookingStatusChart = bookingStatusData ?? new List<BookingStatusData>();
+        }
+        catch
+        {
+            BookingStatusChart = new List<BookingStatusData>();
+        }
 
         // Top Performing Bikes
-        var topBikes = await _context.Bookings
-            .Include(b => b.Bike)
-            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                       b.BookingStatus == "Completed" &&
-                       b.UpdatedAt >= startDate)
-            .GroupBy(b => new { b.BikeId, b.Bike.Brand, b.Bike.Model })
-            .Select(g => new TopBikeData
-            {
-                BikeName = $"{g.Key.Brand} {g.Key.Model}",
-                Earnings = g.Sum(b => b.TotalAmount * 0.9m),
-                Bookings = g.Count()
-            })
-            .OrderByDescending(b => b.Earnings)
-            .Take(10)
-            .ToListAsync();
-        TopBikesChart = topBikes;
+        try
+        {
+            var topBikes = await _context.Bookings
+                .Include(b => b.Bike)
+                .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                           b.BookingStatus == "Completed" &&
+                           b.UpdatedAt >= startDate &&
+                           b.Bike != null)
+                .GroupBy(b => new { b.BikeId, b.Bike.Brand, b.Bike.Model })
+                .Select(g => new TopBikeData
+                {
+                    BikeName = $"{g.Key.Brand ?? "Unknown"} {g.Key.Model ?? ""}".Trim(),
+                    Earnings = g.Sum(b => b.TotalAmount * 0.9m),
+                    Bookings = g.Count()
+                })
+                .OrderByDescending(b => b.Earnings)
+                .Take(10)
+                .ToListAsync();
+            TopBikesChart = topBikes ?? new List<TopBikeData>();
+        }
+        catch
+        {
+            TopBikesChart = new List<TopBikeData>();
+        }
 
-        return Page();
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            // Log error (you can add logging here)
+            // For now, return page with empty data to prevent crash
+            return Page();
+        }
     }
 
     private int GetWeekOfYear(DateTime date)
     {
-        var culture = System.Globalization.CultureInfo.CurrentCulture;
-        var calendar = culture.Calendar;
-        return calendar.GetWeekOfYear(date, culture.DateTimeFormat.CalendarWeekRule, culture.DateTimeFormat.FirstDayOfWeek);
+        try
+        {
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
+            var calendar = culture.Calendar;
+            return calendar.GetWeekOfYear(date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Sunday);
+        }
+        catch
+        {
+            // Fallback calculation if culture-specific method fails
+            var jan1 = new DateTime(date.Year, 1, 1);
+            var daysOffset = (int)jan1.DayOfWeek;
+            var firstWeekDay = jan1.AddDays(-daysOffset);
+            var weekNum = ((date - firstWeekDay).Days / 7) + 1;
+            return weekNum;
+        }
     }
 }
 

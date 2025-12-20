@@ -38,8 +38,10 @@ public class UploadConditionPhotoModel : PageModel
         Booking = await _context.Bookings
             .Include(b => b.Bike)
                 .ThenInclude(bike => bike.BikeImages)
-            .Include(b => b.Bike.BikeType)
+            .Include(b => b.Bike)
+                .ThenInclude(bike => bike.BikeType)
             .Include(b => b.Renter)
+            .Include(b => b.Payments)
             .Include(b => b.BikeConditionPhotos)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
@@ -51,7 +53,7 @@ public class UploadConditionPhotoModel : PageModel
         if (Booking.BookingStatus != "Active" && !(Booking.BookingStatus == "Pending" && hasCompletedPayment))
         {
             TempData["ErrorMessage"] = "You can only upload condition photos for active or paid bookings.";
-            return RedirectToPage("/Dashboard/Renter");
+            return RedirectToPage("/Bookings/Confirmation", new { bookingId });
         }
 
         ExistingPhotos = Booking.BikeConditionPhotos.OrderByDescending(p => p.TakenAt).ToList();
@@ -67,11 +69,21 @@ public class UploadConditionPhotoModel : PageModel
 
         Booking = await _context.Bookings
             .Include(b => b.Bike)
+            .Include(b => b.Payments)
             .Include(b => b.BikeConditionPhotos)
             .FirstOrDefaultAsync(b => b.BookingId == bookingId && b.RenterId == userId.Value);
 
         if (Booking == null)
             return NotFound();
+
+        // Only allow photo upload for Active bookings or Pending bookings with completed payment
+        var hasCompletedPayment = Booking.Payments.Any(p => p.PaymentStatus == "Completed");
+        if (Booking.BookingStatus != "Active" && !(Booking.BookingStatus == "Pending" && hasCompletedPayment))
+        {
+            TempData["ErrorMessage"] = "You can only upload condition photos for active or paid bookings.";
+            ExistingPhotos = Booking.BikeConditionPhotos.OrderByDescending(p => p.TakenAt).ToList();
+            return Page();
+        }
 
         if (PhotoFile == null || PhotoFile.Length == 0)
         {

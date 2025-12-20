@@ -168,10 +168,22 @@
                         </div>
 
                         <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
-                            <label class="label-minimal">Damage Photo URL (Optional)</label>
+                            <label class="label-minimal">Damage Photo <span style="color: var(--neutral-500); font-weight: normal;">(Optional)</span></label>
+                            <input type="file" asp-for="DamagePhotoFile" class="input-minimal" accept="image/*" />
+                            <span asp-validation-for="DamagePhotoFile" class="text-danger" style="font-size: 0.875rem;"></span>
+                            <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                Upload a clear photo showing the damage. Accepted formats: JPG, PNG, WEBP (max 5MB)
+                            </small>
+                            <div id="damagePhotoPreview" style="margin-top: var(--space-3); display: none;">
+                                <img id="previewDamageImg" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                            </div>
+                        </div>
+
+                        <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                            <label class="label-minimal">Or Provide Photo URL <span style="color: var(--neutral-500); font-weight: normal;">(Optional)</span></label>
                             <input type="url" asp-for="DamageImageUrl" class="input-minimal" placeholder="https://example.com/damage-photo.jpg" />
                             <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
-                                URL to a photo of the damage (you can upload to a file hosting service first)
+                                Alternatively, provide a URL to a photo hosted elsewhere
                             </small>
                         </div>
 
@@ -192,5 +204,28 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Image preview for damage photo
+        document.getElementById('DamagePhotoFile')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('damagePhotoPreview');
+                    const previewImg = document.getElementById('previewDamageImg');
+                    if (preview && previewImg) {
+                        previewImg.src = e.target.result;
+                        preview.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const preview = document.getElementById('damagePhotoPreview');
+                if (preview) {
+                    preview.style.display = 'none';
+                }
+            }
+        });
+    </script>
 }
 
