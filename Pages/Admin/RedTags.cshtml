@@ -1,0 +1,328 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@using BiketaBai.Services
+@attribute [Authorize]
+@model RedTagsModel
+@{
+    ViewData["Title"] = "Red Tags Management";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-4);">
+        <!-- Header -->
+        <div class="page-header" style="margin-bottom: var(--space-5);">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-4);">
+                <div>
+                    <h1 class="page-title">
+                        <i class="bi bi-flag-fill" style="color: var(--danger);"></i> Red Tags Management
+                    </h1>
+                    <p class="page-subtitle">View and manage red-tagged renters. Resolve red tags to restore account access.</p>
+                </div>
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                    <a href="/Admin/Flags" class="btn-minimal btn-minimal-outline">
+                        <i class="bi bi-flag"></i> View Flags
+                    </a>
+                    <a href="/Admin/Dashboard" class="btn-minimal btn-minimal-ghost">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert-minimal alert-minimal-success mb-4">
+                <i class="bi bi-check-circle-fill"></i>
+                <div>@TempData["SuccessMessage"]</div>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert-minimal alert-minimal-error mb-4">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>@TempData["ErrorMessage"]</div>
+            </div>
+        }
+
+        <!-- Summary Cards -->
+        <div class="grid-minimal grid-minimal-3 mb-5">
+            <div class="stat-card-minimal" style="border-left: 4px solid var(--danger);">
+                <div class="stat-icon" style="background: #FEE2E2; color: var(--danger);">
+                    <i class="bi bi-flag-fill"></i>
+                </div>
+                <div class="stat-value">@Model.ActiveRedTags.Count</div>
+                <div class="stat-label">Active Red Tags</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                    Renters currently blocked
+                </div>
+            </div>
+            <div class="stat-card-minimal" style="border-left: 4px solid var(--success);">
+                <div class="stat-icon stat-icon-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-value">@Model.ResolvedRedTags.Count</div>
+                <div class="stat-label">Resolved Red Tags</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                    Previously resolved
+                </div>
+            </div>
+            <div class="stat-card-minimal" style="border-left: 4px solid var(--neutral-400);">
+                <div class="stat-icon" style="background: var(--neutral-100); color: var(--neutral-600);">
+                    <i class="bi bi-list-ul"></i>
+                </div>
+                <div class="stat-value">@(Model.ActiveRedTags.Count + Model.ResolvedRedTags.Count)</div>
+                <div class="stat-label">Total Red Tags</div>
+                <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                    All time
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="card-minimal mb-4">
+            <div style="display: flex; gap: var(--space-2); border-bottom: 1px solid var(--neutral-200); padding: var(--space-3);">
+                <a href="?filter=active" 
+                   class="btn-minimal @(Model.Filter == "active" ? "btn-minimal-danger" : "btn-minimal-ghost")" 
+                   style="text-decoration: none;">
+                    <i class="bi bi-flag-fill"></i> Active (@Model.ActiveRedTags.Count)
+                </a>
+                <a href="?filter=resolved" 
+                   class="btn-minimal @(Model.Filter == "resolved" ? "btn-minimal-success" : "btn-minimal-ghost")" 
+                   style="text-decoration: none;">
+                    <i class="bi bi-check-circle"></i> Resolved (@Model.ResolvedRedTags.Count)
+                </a>
+            </div>
+        </div>
+
+        <!-- Red Tags List -->
+        @if (!Model.RedTags.Any())
+        {
+            <div class="card-minimal">
+                <div style="text-align: center; padding: var(--space-5);">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--neutral-400); margin-bottom: var(--space-3);"></i>
+                    <p style="color: var(--neutral-600); font-size: 1.125rem;">No @(Model.Filter == "active" ? "active" : "resolved") red tags found.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var redTag in Model.RedTags)
+            {
+                <div class="card-minimal mb-4" style="border-left: 4px solid @(redTag.IsActive ? "var(--danger)" : "var(--success)");">
+                    <div class="card-minimal-header">
+                        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-3);">
+                            <div>
+                                <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                                    <i class="bi bi-flag-fill" style="color: @(redTag.IsActive ? "var(--danger)" : "var(--success)");"></i> 
+                                    Red Tag #@redTag.RedTagId.ToString("D6")
+                                </h2>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                    <span class="badge-minimal @(redTag.IsActive ? "badge-minimal-danger" : "badge-minimal-success")">
+                                        @(redTag.IsActive ? "Active - Account Blocked" : "Resolved")
+                                    </span>
+                                    <span style="margin-left: var(--space-2);">
+                                        Issued on @TimeZoneHelper.FormatPhilippineTime(redTag.CreatedAt)
+                                    </span>
+                                    @if (!redTag.IsActive && redTag.ResolvedAt.HasValue)
+                                    {
+                                        <span style="margin-left: var(--space-2);">
+                                            • Resolved on @TimeZoneHelper.FormatPhilippineTime(redTag.ResolvedAt.Value)
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            @if (redTag.IsActive)
+                            {
+                                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                                    <button type="button" 
+                                            class="btn-minimal btn-minimal-success btn-minimal-sm resolve-red-tag-btn" 
+                                            data-red-tag-id="@redTag.RedTagId"
+                                            data-renter-name="@redTag.Renter?.FullName">
+                                        <i class="bi bi-check-circle"></i> Resolve Red Tag
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div style="padding: var(--space-4);">
+                        <!-- Red Tag Details -->
+                        <div class="grid-minimal grid-minimal-2 mb-4">
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Renter</div>
+                                <div style="font-weight: 600; margin-bottom: var(--space-3); color: var(--danger);">
+                                    @redTag.Renter?.FullName
+                                    <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1); font-weight: normal;">
+                                        Email: @redTag.Renter?.Email
+                                    </div>
+                                </div>
+                                
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Flagged By</div>
+                                <div style="font-weight: 600;">@redTag.Owner?.FullName</div>
+                            </div>
+                            <div>
+                                @if (redTag.BookingId.HasValue && redTag.Booking != null)
+                                {
+                                    <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Booking</div>
+                                    <div style="font-weight: 600; margin-bottom: var(--space-3);">
+                                        <a href="/Bookings/Details/@redTag.BookingId" class="text-sage">
+                                            Booking #@redTag.BookingId.Value.ToString("D6")
+                                        </a>
+                                        @if (redTag.Booking.Bike != null)
+                                        {
+                                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1); font-weight: normal;">
+                                                @redTag.Booking.Bike.Brand @redTag.Booking.Bike.Model
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Reason</div>
+                                <div style="font-weight: 600; color: var(--warning);">@redTag.RedTagReason</div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(redTag.RedTagDescription))
+                        {
+                            <div style="padding: var(--space-3); background: #FFFBF0; border-left: 3px solid var(--warning); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Description</div>
+                                <p style="margin: 0; font-weight: 500;">@redTag.RedTagDescription</p>
+                            </div>
+                        }
+
+                        @if (!redTag.IsActive && redTag.Resolver != null)
+                        {
+                            <div style="padding: var(--space-3); background: var(--success-subtle); border-left: 3px solid var(--success); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">
+                                    <i class="bi bi-check-circle-fill" style="color: var(--success);"></i> Resolved by
+                                </div>
+                                <div style="font-weight: 600; margin-bottom: var(--space-2);">@redTag.Resolver.FullName</div>
+                                @if (!string.IsNullOrEmpty(redTag.ResolutionNotes))
+                                {
+                                    <div style="font-size: 0.875rem; color: var(--neutral-700);">
+                                        <strong>Resolution Notes:</strong> @redTag.ResolutionNotes
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (redTag.IsActive)
+                        {
+                            <div style="padding: var(--space-3); background: #FEE2E2; border-left: 3px solid var(--danger); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: start; gap: var(--space-2);">
+                                    <i class="bi bi-exclamation-triangle-fill" style="color: var(--danger); font-size: 1.25rem; margin-top: 0.125rem;"></i>
+                                    <div>
+                                        <strong style="color: var(--danger); display: block; margin-bottom: var(--space-1);">Account Status: BLOCKED</strong>
+                                        <p style="margin: 0; font-size: 0.875rem; color: #991B1B; line-height: 1.6;">
+                                            This renter cannot log in to their account. They must contact the administrator to resolve this issue. Resolving this red tag will restore their account access.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Resolve Red Tag Modal -->
+<div class="modal fade" id="resolveRedTagModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header-premium">
+                <div class="modal-icon-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <h5>Resolve Red Tag</h5>
+                <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body-premium">
+                <div id="resolveRedTagMessage" style="padding: var(--space-3); background: var(--neutral-50); border-radius: var(--radius-md); margin-bottom: var(--space-3);"></div>
+                
+                <div class="warning-box" style="background: #D1FAE5; border-left: 4px solid var(--success); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+                    <div style="display: flex; align-items: start; gap: var(--space-2);">
+                        <i class="bi bi-info-circle-fill" style="color: var(--success); font-size: 1.5rem; margin-top: 0.125rem;"></i>
+                        <div>
+                            <strong style="color: var(--success); display: block; margin-bottom: var(--space-1);">Account Restoration</strong>
+                            <p style="margin: 0; font-size: 0.875rem; color: #065F46; line-height: 1.6;">
+                                Resolving this red tag will <strong>immediately restore the renter's account access</strong>. They will be able to log in and make bookings again. A notification will be sent to the renter.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="post" asp-page-handler="Resolve">
+                    <input type="hidden" asp-for="ResolveInput.RedTagId" id="resolveRedTagId" />
+                    <div class="form-group-minimal mb-4">
+                        <label for="resolutionNotes" class="form-label-minimal">
+                            <i class="bi bi-file-text"></i> Resolution Notes (Optional)
+                        </label>
+                        <textarea asp-for="ResolveInput.ResolutionNotes" 
+                                  id="resolutionNotes" 
+                                  class="input-minimal" 
+                                  rows="4" 
+                                  placeholder="Optional: Add notes about why this red tag is being resolved, what actions were taken, or any other relevant information..."></textarea>
+                        <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                            These notes will be visible in the red tag history
+                        </small>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn-modal-success" id="resolveSubmitBtn">
+                            <i class="bi bi-check-circle-fill"></i> Resolve Red Tag & Restore Access
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // Resolve Red Tag Modal
+            $('.resolve-red-tag-btn').on('click', function() {
+                const redTagId = $(this).data('red-tag-id');
+                const renterName = $(this).data('renter-name');
+                
+                $('#resolveRedTagId').val(redTagId);
+                $('#resolveRedTagMessage').html(`
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Red Tag ID</div>
+                            <div style="font-weight: 600; color: var(--danger);">#${redTagId.toString().padStart(6, '0')}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Renter</div>
+                            <div style="font-weight: 600; color: var(--danger);">${renterName}</div>
+                        </div>
+                    </div>
+                `);
+                
+                // Reset form
+                $('#resolutionNotes').val('');
+                
+                const modal = new bootstrap.Modal(document.getElementById('resolveRedTagModal'));
+                modal.show();
+            });
+            
+            // Form submission handler
+            $('#resolveRedTagModal form').on('submit', function() {
+                const submitBtn = $('#resolveSubmitBtn');
+                submitBtn.html('<span class="spinner-border spinner-border-sm me-2"></span>Processing...').prop('disabled', true);
+            });
+        });
+    </script>
+}
+
