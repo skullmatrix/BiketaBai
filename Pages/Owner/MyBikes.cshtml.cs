@@ -27,6 +27,13 @@ public class MyBikesModel : PageModel
     public Dictionary<int, bool> OverdueBookings { get; set; } = new(); // BookingId -> Is Overdue
     public Dictionary<int, bool> RenterRedTaggedStatus { get; set; } = new(); // RenterId -> Is Red Tagged
     public List<(RenterRedTag RedTag, Booking? Booking)> RedTaggedRentersList { get; set; } = new();
+    
+    // Total quantities by status
+    public int TotalAvailableQuantity { get; set; }
+    public int TotalRentedQuantity { get; set; }
+    public int TotalMaintenanceQuantity { get; set; }
+    public int TotalInactiveQuantity { get; set; }
+    public int TotalBikesQuantity { get; set; }
 
     public async Task<IActionResult> OnGetAsync(string filter = "all")
     {
@@ -137,6 +144,13 @@ public class MyBikesModel : PageModel
             
             BikeRatings[bike.BikeId] = ratings.Any() ? ratings.Average() : 0;
         }
+
+        // Calculate total quantities by status
+        TotalBikesQuantity = Bikes.Sum(b => b.Quantity);
+        TotalAvailableQuantity = Bikes.Where(b => b.AvailabilityStatus == "Available").Sum(b => b.Quantity);
+        TotalRentedQuantity = Bikes.Where(b => b.AvailabilityStatus == "Rented").Sum(b => b.Quantity);
+        TotalMaintenanceQuantity = Bikes.Where(b => b.AvailabilityStatus == "Maintenance").Sum(b => b.Quantity);
+        TotalInactiveQuantity = Bikes.Where(b => b.AvailabilityStatus == "Inactive").Sum(b => b.Quantity);
 
         return Page();
     }

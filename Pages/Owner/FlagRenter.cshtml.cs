@@ -15,11 +15,15 @@ public class FlagRenterModel : PageModel
 {
     private readonly BiketaBaiDbContext _context;
     private readonly RenterFlagService _renterFlagService;
+    private readonly BikeDamageService _bikeDamageService;
+    private readonly IWebHostEnvironment _environment;
 
-    public FlagRenterModel(BiketaBaiDbContext context, RenterFlagService renterFlagService)
+    public FlagRenterModel(BiketaBaiDbContext context, RenterFlagService renterFlagService, BikeDamageService bikeDamageService, IWebHostEnvironment environment)
     {
         _context = context;
         _renterFlagService = renterFlagService;
+        _bikeDamageService = bikeDamageService;
+        _environment = environment;
     }
 
     public Booking? Booking { get; set; }
@@ -30,6 +34,13 @@ public class FlagRenterModel : PageModel
 
     [BindProperty]
     public string? FlagDescription { get; set; }
+
+    // Damage-specific fields
+    [BindProperty]
+    public decimal? DamageCost { get; set; }
+
+    [BindProperty]
+    public IFormFile? DamagePhotoFile { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int bookingId)
     {
@@ -110,6 +121,24 @@ public class FlagRenterModel : PageModel
             return Page();
         }
 
+        // Validate damage fields if Damage is selected
+        if (FlagReason == "Damage")
+        {
+            if (!DamageCost.HasValue || DamageCost.Value <= 0)
+            {
+                ModelState.AddModelError(nameof(DamageCost), "Please enter a valid damage cost greater than zero.");
+                HasFlagged = await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value);
+                return Page();
+            }
+
+            if (string.IsNullOrWhiteSpace(FlagDescription))
+            {
+                ModelState.AddModelError(nameof(FlagDescription), "Please provide a description of the damage.");
+                HasFlagged = await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value);
+                return Page();
+            }
+        }
+
         // Check if already flagged
         if (await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value))
         {
@@ -119,12 +148,63 @@ public class FlagRenterModel : PageModel
 
         try
         {
-            var success = await _renterFlagService.FlagRenterAsync(bookingId, userId.Value, FlagReason, FlagDescription);
+            // Handle damage photo upload
+            string? damagePhotoUrl = null;
+            if (FlagReason == "Damage" && DamagePhotoFile != null && DamagePhotoFile.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                var fileExtension = System.IO.Path.GetExtension(DamagePhotoFile.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    ModelState.AddModelError(nameof(DamagePhotoFile), "Please upload a valid image file (JPG, PNG, or WEBP).");
+                    HasFlagged = await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value);
+                    return Page();
+                }
+
+                if (DamagePhotoFile.Length > 5 * 1024 * 1024) // Max 5MB
+                {
+                    ModelState.AddModelError(nameof(DamagePhotoFile), "Photo size must be less than 5MB.");
+                    HasFlagged = await _renterFlagService.HasFlaggedBookingAsync(bookingId, userId.Value);
+                    return Page();
+                }
+
+                var uploadsFolder = System.IO.Path.Combine(_environment.WebRootPath, "uploads", "damage-photos");
+                if (!System.IO.Directory.Exists(uploadsFolder))
+                {
+                    System.IO.Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = $"damage_{bookingId}_{Guid.NewGuid()}{fileExtension}";
+                var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                {
+                    await DamagePhotoFile.CopyToAsync(fileStream);
+                }
+                damagePhotoUrl = $"/uploads/damage-photos/{uniqueFileName}";
+            }
+
+            // Flag the renter (this will also create damage if Damage is selected)
+            var success = await _renterFlagService.FlagRenterAsync(
+                bookingId, 
+                userId.Value, 
+                FlagReason, 
+                FlagDescription,
+                FlagReason == "Damage" ? DamageCost : null,
+                damagePhotoUrl
+            );
 
             if (success)
             {
                 var renterName = Booking.Renter?.FullName ?? "the renter";
-                TempData["SuccessMessage"] = $"Renter {renterName} has been flagged. Administrators will review this report.";
+                if (FlagReason == "Damage" && DamageCost.HasValue)
+                {
+                    TempData["SuccessMessage"] = $"Renter {renterName} has been flagged for damage. Damage charge of ₱{DamageCost.Value:F2} has been applied. The renter has been notified and can pay through their dashboard.";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = $"Renter {renterName} has been flagged. Administrators will review this report.";
+                }
                 return RedirectToPage("/Dashboard/Owner");
             }
             else

@@ -1,0 +1,121 @@
+@page "{damageId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model PayDamageModel
+@{
+    ViewData["Title"] = "Pay Damage Charge";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 600px; margin: 0 auto; padding: var(--space-4) var(--space-3);">
+        @if (Model.Damage == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Damage record not found</div>
+            </div>
+        }
+        else
+        {
+            <!-- Header -->
+            <div class="page-header" style="margin-bottom: var(--space-5);">
+                <a href="/Renter/Damages" class="btn-minimal btn-minimal-ghost btn-minimal-sm" style="margin-bottom: var(--space-3);">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
+                    <i class="bi bi-credit-card-2-front"></i> Pay Damage Charge
+                </h1>
+                <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Damage Charge #@Model.Damage.DamageId.ToString("D6")</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@Model.ErrorMessage</div>
+                </div>
+            }
+
+            <!-- Damage Details -->
+            <div class="card-minimal mb-4" style="border-left: 4px solid var(--warning);">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Damage Details
+                    </h2>
+                </div>
+                <div style="padding: var(--space-4);">
+                    <div style="margin-bottom: var(--space-3);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Description</div>
+                        <div style="font-weight: 600; font-size: 1.125rem; color: var(--neutral-900);">@Model.Damage.DamageDescription</div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Damage.DamageDetails))
+                    {
+                        <div style="margin-bottom: var(--space-3);">
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Details</div>
+                            <div style="color: var(--neutral-700);">@Model.Damage.DamageDetails</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Damage.DamageImageUrl))
+                    {
+                        <div style="margin-bottom: var(--space-3);">
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Photo</div>
+                            <a href="@Model.Damage.DamageImageUrl" target="_blank">
+                                <img src="@Model.Damage.DamageImageUrl" alt="Damage photo" style="max-width: 100%; max-height: 200px; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                            </a>
+                        </div>
+                    }
+                    <div style="padding: var(--space-3); background: var(--warning-subtle); border-radius: var(--radius-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Amount to Pay</div>
+                                <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">₱@Model.Damage.DamageCost.ToString("F2")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method Selection -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.125rem;">
+                        <i class="bi bi-credit-card-2-front"></i> Select Payment Method
+                    </h2>
+                </div>
+                <form method="post">
+                    <div style="padding: var(--space-4);">
+                        <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
+                            <label class="label-minimal">Payment Method <span style="color: var(--danger);">*</span></label>
+                            <select asp-for="PaymentMethodId" class="input-minimal" required>
+                                <option value="0">-- Select payment method --</option>
+                                <option value="2">GCash</option>
+                                <option value="5">PayMaya</option>
+                                <option value="3">QRPH</option>
+                                <option value="6">Credit/Debit Card</option>
+                                <option value="4">Cash (Pay directly to owner)</option>
+                            </select>
+                            <span asp-validation-for="PaymentMethodId" class="text-danger" style="font-size: 0.875rem;"></span>
+                        </div>
+
+                        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
+                            <button type="submit" class="btn-minimal btn-minimal-warning btn-minimal-lg" style="flex: 1;">
+                                <i class="bi bi-credit-card-fill"></i> Proceed to Payment
+                            </button>
+                            <a href="/Renter/Damages" class="btn-minimal btn-minimal-ghost btn-minimal-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

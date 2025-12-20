@@ -38,12 +38,18 @@
             <div class="stat-value">₱@Model.TotalSpent.ToString("F0")</div>
             <div class="stat-label">Total Spent</div>
         </div>
-        <div class="stat-card-minimal">
-            <div class="stat-icon stat-icon-primary">
-                <i class="bi bi-leaf"></i>
+        <div class="stat-card-minimal @(Model.PendingDamagesCount > 0 ? "" : "")" style="@(Model.PendingDamagesCount > 0 ? "border-left: 4px solid var(--warning);" : "")">
+            <div class="stat-icon" style="@(Model.PendingDamagesCount > 0 ? "background: #FFFBF0; color: var(--warning);" : "background: var(--sage-subtle); color: var(--sage-primary);")">
+                <i class="bi bi-exclamation-triangle-fill"></i>
             </div>
-            <div class="stat-value">@Model.CO2Saved.ToString("F0")</div>
-            <div class="stat-label">kg CO₂ Saved</div>
+            <div class="stat-value" style="@(Model.PendingDamagesCount > 0 ? "color: var(--warning);" : "")">@Model.PendingDamagesCount</div>
+            <div class="stat-label">Pending Damages</div>
+            @if (Model.PendingDamagesCount > 0)
+            {
+                <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
+                    ₱@Model.PendingDamagesAmount.ToString("F2") to pay
+                </div>
+            }
         </div>
     </div>
 
@@ -129,11 +135,11 @@
                 </div>
                 <div style="font-weight: 600; color: var(--neutral-800);">Rental History</div>
             </a>
-            <a href="/Wallet/Index" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
-                <div style="font-size: 2rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
-                    <i class="bi bi-wallet2"></i>
+            <a href="/Renter/Damages" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base);">
+                <div style="font-size: 2rem; color: var(--warning); margin-bottom: var(--space-2);">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800);">My Wallet</div>
+                <div style="font-weight: 600; color: var(--neutral-800);">Damage Charges</div>
             </a>
         </div>
         <div class="grid-minimal grid-minimal-4" style="margin-top: var(--space-3);">

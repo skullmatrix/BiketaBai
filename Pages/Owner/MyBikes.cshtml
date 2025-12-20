@@ -21,7 +21,7 @@
                     <h1 class="page-title" style="font-size: 1.75rem; margin-bottom: var(--space-1);">
                         <i class="bi bi-bicycle"></i> My Bikes
                     </h1>
-                    <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">@Model.Bikes.Count listings</p>
+                    <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">@Model.Bikes.Count listings • @Model.TotalBikesQuantity total bikes</p>
                 </div>
                 <div style="display: flex; gap: var(--space-2);">
                     <a href="/Owner/TrackRenters" class="btn-minimal btn-minimal-primary btn-minimal-sm">
@@ -60,34 +60,46 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
                     <div style="text-align: center; padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: var(--sage-primary); margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Available")
+                            @Model.TotalAvailableQuantity
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-check-circle-fill"></i> Available
                         </div>
+                        <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Available") listings
+                        </div>
                     </div>
                     <div style="text-align: center; padding: var(--space-3); background: #E8F4FD; border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: #0066CC; margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Rented")
+                            @Model.TotalRentedQuantity
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-bicycle"></i> Rented
                         </div>
+                        <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Rented") listings
+                        </div>
                     </div>
                     <div style="text-align: center; padding: var(--space-3); background: #FFF4E6; border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800; margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Maintenance")
+                            @Model.TotalMaintenanceQuantity
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-tools"></i> Maintenance
                         </div>
+                        <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Maintenance") listings
+                        </div>
                     </div>
                     <div style="text-align: center; padding: var(--space-3); background: var(--neutral-100); border-radius: var(--radius-md);">
                         <div style="font-size: 1.5rem; font-weight: 700; color: var(--neutral-600); margin-bottom: var(--space-1);">
-                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Inactive")
+                            @Model.TotalInactiveQuantity
                         </div>
                         <div style="font-size: 0.875rem; color: var(--neutral-600);">
                             <i class="bi bi-pause-circle-fill"></i> Inactive
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: var(--space-1);">
+                            @Model.Bikes.Count(b => b.AvailabilityStatus == "Inactive") listings
                         </div>
                     </div>
                 </div>

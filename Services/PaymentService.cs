@@ -462,5 +462,67 @@ public class PaymentService
             return (false, $"Error: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Creates a payment intent for damage charges
+    /// </summary>
+    public async Task<(bool success, string? paymentIntentId, string? clientKey, string message)> CreateGatewayPaymentForDamageAsync(
+        int damageId, 
+        int paymentMethodId, 
+        decimal amount)
+    {
+        try
+        {
+            var damage = await _context.BikeDamages
+                .Include(d => d.Renter)
+                .Include(d => d.Booking)
+                .FirstOrDefaultAsync(d => d.DamageId == damageId);
+
+            if (damage == null)
+                return (false, null, null, "Damage record not found");
+
+            if (damage.DamageStatus != "Pending")
+                return (false, null, null, "This damage has already been paid or resolved");
+
+            var paymentMethodType = paymentMethodId switch
+            {
+                2 => "gcash",
+                5 => "paymaya",
+                3 => "qrph",
+                6 => "card",
+                _ => "gcash"
+            };
+
+            var renterEmail = damage.Renter?.Email ?? "";
+            var renterName = damage.Renter?.FullName ?? "Customer";
+
+            var paymentIntent = await _paymentGatewayService.CreatePaymentIntentAsync(
+                amount,
+                "PHP",
+                paymentMethodType,
+                $"Damage charge for booking #{damage.BookingId}",
+                new Dictionary<string, string>
+                {
+                    { "damage_id", damageId.ToString() },
+                    { "booking_id", damage.BookingId.ToString() },
+                    { "renter_id", damage.RenterId.ToString() },
+                    { "customer_email", renterEmail },
+                    { "customer_name", renterName }
+                }
+            );
+
+            if (paymentIntent.Success && !string.IsNullOrEmpty(paymentIntent.PaymentIntentId))
+            {
+                return (true, paymentIntent.PaymentIntentId, paymentIntent.ClientKey, "Payment intent created successfully");
+            }
+
+            return (false, null, null, paymentIntent.ErrorMessage ?? "Failed to create payment intent");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating gateway payment for damage {DamageId}", damageId);
+            return (false, null, null, $"Error: {ex.Message}");
+        }
+    }
 }
 

@@ -1,0 +1,191 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@using BiketaBai.Helpers
+@attribute [Authorize]
+@model DamagesModel
+@{
+    ViewData["Title"] = "Damage Charges";
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-4);">
+        <!-- Header -->
+        <div class="page-header" style="margin-bottom: var(--space-5);">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-4);">
+                <div>
+                    <h1 class="page-title">
+                        <i class="bi bi-exclamation-triangle-fill" style="color: var(--warning);"></i> Damage Charges
+                    </h1>
+                    <p class="page-subtitle">View and pay for bike damage charges</p>
+                </div>
+                <a href="/Dashboard/Renter" class="btn-minimal btn-minimal-ghost">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert-minimal alert-minimal-error mb-4">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>@TempData["ErrorMessage"]</div>
+            </div>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert-minimal alert-minimal-success mb-4">
+                <i class="bi bi-check-circle-fill"></i>
+                <div>@TempData["SuccessMessage"]</div>
+            </div>
+        }
+
+        <!-- Summary Card -->
+        @if (Model.PendingDamages.Any())
+        {
+            <div class="card-minimal mb-5" style="background: linear-gradient(135deg, #FFFBF0 0%, #FFFBEB 100%); border-left: 4px solid var(--warning);">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title" style="font-size: 1.25rem;">
+                        <i class="bi bi-exclamation-triangle-fill" style="color: var(--warning);"></i> Outstanding Damage Charges
+                    </h2>
+                </div>
+                <div style="padding: var(--space-4);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3);">
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Total Pending</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">₱@Model.TotalPendingAmount.ToString("F2")</div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-top: var(--space-1);">
+                                @Model.PendingDamages.Count damage charge(s) pending payment
+                            </div>
+                        </div>
+                        <div>
+                            @if (Model.PendingDamages.Count == 1)
+                            {
+                                <form method="post" asp-page-handler="PayDamage" asp-route-damageId="@Model.PendingDamages.First().DamageId" class="d-inline">
+                                    <button type="submit" class="btn-minimal btn-minimal-warning btn-minimal-lg">
+                                        <i class="bi bi-credit-card-fill"></i> Pay Now
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Pending Damages -->
+        @if (Model.PendingDamages.Any())
+        {
+            <div class="card-minimal mb-5">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-clock-history"></i> Pending Payments (@Model.PendingDamages.Count)
+                    </h2>
+                </div>
+                <div style="padding: var(--space-4);">
+                    @foreach (var damage in Model.PendingDamages)
+                    {
+                        <div class="card-minimal mb-3" style="border-left: 4px solid var(--warning); background: #FFFBF0;">
+                            <div style="padding: var(--space-4);">
+                                <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: start;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+                                            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--neutral-900);">
+                                                @damage.DamageDescription
+                                            </h3>
+                                            <span class="badge-minimal badge-minimal-warning">Pending</span>
+                                        </div>
+                                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
+                                            <div><strong>Booking:</strong> #@damage.BookingId.ToString("D6")</div>
+                                            <div><strong>Bike:</strong> @damage.Bike?.Brand @damage.Bike?.Model</div>
+                                            <div><strong>Owner:</strong> @damage.Owner?.FullName</div>
+                                            <div><strong>Reported:</strong> @TimeZoneHelper.FormatPhilippineTime(damage.CreatedAt)</div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(damage.DamageDetails))
+                                        {
+                                            <div style="padding: var(--space-2); background: white; border-radius: var(--radius-sm); margin-top: var(--space-2); font-size: 0.875rem; color: var(--neutral-700);">
+                                                @damage.DamageDetails
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(damage.DamageImageUrl))
+                                        {
+                                            <div style="margin-top: var(--space-2);">
+                                                <a href="@damage.DamageImageUrl" target="_blank" style="display: inline-block;">
+                                                    <img src="@damage.DamageImageUrl" alt="Damage photo" style="max-width: 200px; max-height: 150px; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.75rem; font-weight: 700; color: var(--warning); margin-bottom: var(--space-3);">
+                                            ₱@damage.DamageCost.ToString("F2")
+                                        </div>
+                                        <form method="post" asp-page-handler="PayDamage" asp-route-damageId="@damage.DamageId">
+                                            <button type="submit" class="btn-minimal btn-minimal-warning">
+                                                <i class="bi bi-credit-card-fill"></i> Pay Now
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Paid Damages -->
+        @if (Model.PaidDamages.Any())
+        {
+            <div class="card-minimal mb-5">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-check-circle-fill"></i> Paid Damages (@Model.PaidDamages.Count)
+                    </h2>
+                </div>
+                <div style="padding: var(--space-4);">
+                    @foreach (var damage in Model.PaidDamages)
+                    {
+                        <div class="card-minimal mb-3" style="border-left: 4px solid var(--success); background: #ECFDF5;">
+                            <div style="padding: var(--space-4);">
+                                <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: start;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+                                            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--neutral-900);">
+                                                @damage.DamageDescription
+                                            </h3>
+                                            <span class="badge-minimal badge-minimal-success">Paid</span>
+                                        </div>
+                                        <div style="font-size: 0.875rem; color: var(--neutral-600);">
+                                            <div><strong>Booking:</strong> #@damage.BookingId.ToString("D6")</div>
+                                            <div><strong>Bike:</strong> @damage.Bike?.Brand @damage.Bike?.Model</div>
+                                            <div><strong>Paid on:</strong> @(damage.PaidAt.HasValue ? TimeZoneHelper.FormatPhilippineTime(damage.PaidAt.Value) : "N/A")</div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">
+                                            ₱@damage.DamageCost.ToString("F2")
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (!Model.PendingDamages.Any() && !Model.PaidDamages.Any())
+        {
+            <div class="card-minimal">
+                <div style="text-align: center; padding: var(--space-5);">
+                    <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: var(--success); margin-bottom: var(--space-3);"></i>
+                    <p style="color: var(--neutral-600); font-size: 1.125rem;">No damage charges found.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+

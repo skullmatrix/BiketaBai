@@ -535,9 +535,6 @@
                                     @if (booking.BookingStatus == "Completed")
                                     {
                                         <div style="display: flex; gap: var(--space-1); flex-wrap: wrap;">
-                                            <a href="/Owner/ReportDamage/@booking.BookingId" class="btn-minimal btn-minimal-outline btn-minimal-sm" style="color: var(--warning); border-color: var(--warning);" title="Report Damage">
-                                                <i class="bi bi-exclamation-triangle-fill"></i> Damage
-                                            </a>
                                             @if (Model.BookingFlaggedStatus.ContainsKey(booking.BookingId) && Model.BookingFlaggedStatus[booking.BookingId])
                                             {
                                                 <span class="badge-minimal badge-minimal-warning" style="font-size: 0.75rem;">

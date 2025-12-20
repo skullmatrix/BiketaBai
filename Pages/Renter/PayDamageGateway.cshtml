@@ -1,0 +1,271 @@
+@page "{damageId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@attribute [Authorize]
+@model PayDamageGatewayModel
+@{
+    ViewData["Title"] = "Pay Damage Charge";
+    var isCardPayment = Model.PaymentMethodId == 6;
+    var isEwalletPayment = Model.PaymentMethodId == 2 || Model.PaymentMethodId == 3 || Model.PaymentMethodId == 5;
+    var publicKey = Configuration["AppSettings:PayMongoPublicKey"] 
+                 ?? Environment.GetEnvironmentVariable("AppSettings__PayMongoPublicKey")
+                 ?? Environment.GetEnvironmentVariable("AppSettings:PayMongoPublicKey")
+                 ?? Environment.GetEnvironmentVariable("PayMongoPublicKey")
+                 ?? "";
+    var paymentMethodName = Model.PaymentMethodId switch
+    {
+        2 => "GCash",
+        3 => "QRPH",
+        5 => "PayMaya",
+        6 => "Credit/Debit Card",
+        _ => "Payment"
+    };
+}
+
+<link rel="stylesheet" href="~/css/premium-minimal.css" asp-append-version="true" />
+
+<div class="page-container">
+    <div style="max-width: 800px; margin: 0 auto;">
+        @if (Model.Damage == null)
+        {
+            <div class="alert-minimal alert-minimal-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Damage record not found</div>
+            </div>
+        }
+        else
+        {
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="bi bi-credit-card"></i> Pay Damage Charge
+                </h1>
+            </div>
+
+            <!-- Damage Summary -->
+            <div class="card-minimal mb-4">
+                <div class="card-minimal-header">
+                    <h2 class="card-minimal-title">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Damage Charge Summary
+                    </h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); padding: var(--space-4);">
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Description</div>
+                        <div style="font-weight: 600;">@Model.Damage.DamageDescription</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Amount to Pay</div>
+                        <div style="font-weight: 700; color: var(--warning); font-size: 1.5rem;">₱@Model.Damage.DamageCost.ToString("F2")</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Payment Method</div>
+                        <div style="font-weight: 600;">@paymentMethodName</div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert-minimal alert-minimal-error mb-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>@Model.ErrorMessage</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert-minimal alert-minimal-success mb-4">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>@Model.SuccessMessage</div>
+                </div>
+            }
+
+            @if (Model.IsProcessingPayment && !string.IsNullOrEmpty(Model.PaymentIntentId))
+            {
+                <!-- Payment Processing Status -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-body" style="text-align: center; padding: var(--space-6);">
+                        <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <h3 style="margin-bottom: var(--space-2);">Processing Your Payment</h3>
+                        <p style="color: var(--neutral-600); margin-bottom: var(--space-4);">
+                            Please wait while we process your @paymentMethodName payment. This may take a few moments.
+                        </p>
+                        <div id="paymentStatusCheck" style="display: none;">
+                            <small style="color: var(--neutral-500);">Checking payment status...</small>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    // Poll for payment status
+                    (function() {
+                        const paymentIntentId = '@Model.PaymentIntentId';
+                        const damageId = @Model.Damage.DamageId;
+                        let checkCount = 0;
+                        const maxChecks = 30;
+
+                        function checkPaymentStatus() {
+                            checkCount++;
+                            if (checkCount > maxChecks) {
+                                document.getElementById('paymentStatusCheck').innerHTML = 
+                                    '<div class="alert-minimal alert-minimal-warning mt-3">' +
+                                    '<i class="bi bi-exclamation-triangle-fill"></i>' +
+                                    '<div>Payment is taking longer than expected. <a href="/Renter/PayDamageGateway?damageId=' + damageId + '&paymentIntentId=' + paymentIntentId + '&action=check_status">Check status manually</a></div>' +
+                                    '</div>';
+                                return;
+                            }
+
+                            fetch('/Renter/PayDamageGateway?damageId=' + damageId + '&paymentIntentId=' + paymentIntentId + '&handler=CheckStatus', {
+                                method: 'GET',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.status === 'succeeded') {
+                                    window.location.href = '/Renter/Damages';
+                                } else if (data.status === 'payment_failed') {
+                                    window.location.href = '/Renter/PayDamage?damageId=' + damageId;
+                                } else {
+                                    setTimeout(checkPaymentStatus, 2000);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error checking payment status:', error);
+                                setTimeout(checkPaymentStatus, 2000);
+                            });
+                        }
+
+                        setTimeout(checkPaymentStatus, 2000);
+                    })();
+                </script>
+            }
+
+            @if (isEwalletPayment)
+            {
+                <!-- E-Wallet Payment -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-phone"></i> Pay with @paymentMethodName
+                        </h2>
+                    </div>
+                    <div id="ewalletPaymentContainer">
+                        <div style="text-align: center; padding: var(--space-6);">
+                            <div class="spinner-border text-primary" role="status" style="margin-bottom: var(--space-4);">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Preparing @paymentMethodName payment...</p>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (isCardPayment)
+            {
+                <!-- Card Payment Form -->
+                <div class="card-minimal mb-4">
+                    <div class="card-minimal-header">
+                        <h2 class="card-minimal-title">
+                            <i class="bi bi-credit-card"></i> Card Details
+                        </h2>
+                    </div>
+                    <form method="post" asp-page-handler="ProcessCard" id="cardPaymentForm">
+                        <input type="hidden" name="paymentIntentId" value="@Model.PaymentIntentId" />
+                        
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Cardholder Name <span class="text-danger">*</span></label>
+                            <input type="text" class="input-minimal" asp-for="CardPayment.CardholderName" 
+                                   placeholder="John Doe" required />
+                        </div>
+
+                        <div class="form-group-minimal">
+                            <label class="label-minimal">Card Number <span class="text-danger">*</span></label>
+                            <input type="text" class="input-minimal" asp-for="CardPayment.CardNumber" 
+                                   placeholder="1234 5678 9012 3456" maxlength="19" required />
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">Expiry Date <span class="text-danger">*</span></label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);">
+                                    <input type="number" class="input-minimal" asp-for="CardPayment.ExpMonth" 
+                                           placeholder="MM" min="1" max="12" required />
+                                    <input type="number" class="input-minimal" asp-for="CardPayment.ExpYear" 
+                                           placeholder="YYYY" min="@DateTime.Now.Year" required />
+                                </div>
+                            </div>
+                            <div class="form-group-minimal">
+                                <label class="label-minimal">CVV <span class="text-danger">*</span></label>
+                                <input type="text" class="input-minimal" asp-for="CardPayment.Cvc" 
+                                       placeholder="123" maxlength="4" required />
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-6);">
+                            <button type="submit" class="btn-minimal btn-minimal-warning btn-minimal-lg">
+                                <i class="bi bi-lock-fill"></i> Pay ₱@Model.Damage.DamageCost.ToString("F2")
+                            </button>
+                            <a href="/Renter/PayDamage/@Model.Damage.DamageId" class="btn-minimal btn-minimal-ghost">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@if (isEwalletPayment && !string.IsNullOrEmpty(publicKey) && !string.IsNullOrEmpty(Model.PaymentIntentId))
+{
+    <script src="https://js.paymongo.com/v1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const publicKey = '@publicKey';
+            const paymentIntentId = '@Model.PaymentIntentId';
+            const paymentMethod = '@(Model.PaymentMethodId == 2 ? "gcash" : Model.PaymentMethodId == 5 ? "paymaya" : "grab_pay")';
+            
+            if (!publicKey || !paymentIntentId) {
+                document.getElementById('ewalletPaymentContainer').innerHTML = 
+                    '<div class="alert-minimal alert-minimal-error"><i class="bi bi-exclamation-triangle-fill"></i><div>Payment configuration error. Please contact support.</div></div>';
+                return;
+            }
+
+            const paymongo = Paymongo(publicKey);
+            const container = document.getElementById('ewalletPaymentContainer');
+            
+            paymongo.paymentIntents.retrieve(paymentIntentId)
+                .then(function(paymentIntent) {
+                    if (paymentIntent.status === 'succeeded') {
+                        window.location.href = '/Renter/Damages';
+                        return;
+                    }
+                    return paymongo.paymentMethods.create({
+                        type: paymentMethod,
+                        billing: {
+                            name: '@Model.Damage.Renter?.FullName',
+                            email: '@Model.Damage.Renter?.Email'
+                        }
+                    });
+                })
+                .then(function(paymentMethod) {
+                    if (!paymentMethod) return;
+                    return paymongo.paymentIntents.attach(paymentIntentId, paymentMethod.id);
+                })
+                .then(function(result) {
+                    if (result && result.next_action) {
+                        window.location.href = result.next_action.redirect.url;
+                    }
+                })
+                .catch(function(error) {
+                    container.innerHTML = '<div class="alert-minimal alert-minimal-error"><i class="bi bi-exclamation-triangle-fill"></i><div>Error processing payment: ' + error.message + '</div></div>';
+                });
+        });
+    </script>
+}
+

@@ -15,7 +15,7 @@ public class RenterFlagService
         _notificationService = notificationService;
     }
 
-    public async Task<bool> FlagRenterAsync(int bookingId, int ownerId, string flagReason, string? flagDescription = null)
+    public async Task<bool> FlagRenterAsync(int bookingId, int ownerId, string flagReason, string? flagDescription = null, decimal? damageCost = null, string? damagePhotoUrl = null)
     {
         // Check if flag already exists for this booking
         var existingFlag = await _context.RenterFlags
@@ -57,6 +57,48 @@ public class RenterFlagService
 
         _context.RenterFlags.Add(flag);
         await _context.SaveChangesAsync();
+
+        // If flagging for damage, create a BikeDamage record
+        if (flagReason == "Damage" && damageCost.HasValue && damageCost.Value > 0)
+        {
+            try
+            {
+                var bikeDamage = new BikeDamage
+                {
+                    BookingId = bookingId,
+                    BikeId = booking.BikeId,
+                    OwnerId = ownerId,
+                    RenterId = booking.RenterId,
+                    DamageDescription = flagDescription ?? "Damage reported via flag",
+                    DamageDetails = flagDescription,
+                    DamageCost = damageCost.Value,
+                    DamageImageUrl = damagePhotoUrl,
+                    DamageStatus = "Pending",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.BikeDamages.Add(bikeDamage);
+                await _context.SaveChangesAsync();
+
+                // Notify renter about the damage charge
+                if (booking.Renter != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        booking.RenterId,
+                        "Damage Charge Reported",
+                        $"The owner has reported damage to the bike from booking #{bookingId}. Damage cost: ₱{damageCost.Value:F2}. Please review and pay the damage fee.",
+                        "Damage",
+                        $"/Renter/Damages"
+                    );
+                }
+            }
+            catch
+            {
+                // Log error but don't fail the flag operation
+                // Flag was already saved successfully
+            }
+        }
 
         // Notify admin about the flag
         try

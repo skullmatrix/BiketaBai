@@ -96,7 +96,7 @@
                             <i class="bi bi-flag-fill"></i> Report Issue
                         </h2>
                     </div>
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         <div style="padding: var(--space-4);">
                             <div class="alert-minimal alert-minimal-info mb-4">
                                 <i class="bi bi-info-circle-fill"></i>
@@ -108,7 +108,7 @@
 
                             <div class="form-group-minimal" style="margin-bottom: var(--space-4);">
                                 <label class="label-minimal">Reason for Flagging <span style="color: var(--danger);">*</span></label>
-                                <select asp-for="FlagReason" class="input-minimal" required>
+                                <select asp-for="FlagReason" class="input-minimal" required id="flagReasonSelect">
                                     <option value="">-- Select a reason --</option>
                                     <option value="Damage">Damage to Bike</option>
                                     <option value="LateReturn">Late Return</option>
@@ -118,8 +118,41 @@
                                 <span asp-validation-for="FlagReason" class="text-danger" style="font-size: 0.875rem;"></span>
                             </div>
 
-                            <div class="form-group-minimal">
-                                <label class="label-minimal">Additional Details (Optional)</label>
+                            <div class="form-group-minimal" id="damageDescriptionGroup" style="display: none; margin-bottom: var(--space-4);">
+                                <label class="label-minimal">Damage Description <span style="color: var(--danger);">*</span></label>
+                                <textarea asp-for="FlagDescription" 
+                                          class="input-minimal" 
+                                          rows="4" 
+                                          placeholder="Please describe the damage to the bike (e.g., Scratched frame, Broken brake lever, Flat tire)..."></textarea>
+                                <span asp-validation-for="FlagDescription" class="text-danger" style="font-size: 0.875rem;"></span>
+                                <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                    Provide a clear description of the damage. This will be used as the damage report.
+                                </small>
+                            </div>
+
+                            <div class="form-group-minimal" id="damageCostGroup" style="display: none; margin-bottom: var(--space-4);">
+                                <label class="label-minimal">Damage Cost (₱) <span style="color: var(--danger);">*</span></label>
+                                <input type="number" asp-for="DamageCost" class="input-minimal" step="0.01" min="0.01" placeholder="0.00" />
+                                <span asp-validation-for="DamageCost" class="text-danger" style="font-size: 0.875rem;"></span>
+                                <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                    The amount the renter must pay for this damage
+                                </small>
+                            </div>
+
+                            <div class="form-group-minimal" id="damagePhotoGroup" style="display: none; margin-bottom: var(--space-4);">
+                                <label class="label-minimal">Damage Photo <span style="color: var(--neutral-500); font-weight: normal;">(Optional)</span></label>
+                                <input type="file" asp-for="DamagePhotoFile" class="input-minimal" accept="image/*" />
+                                <span asp-validation-for="DamagePhotoFile" class="text-danger" style="font-size: 0.875rem;"></span>
+                                <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                    Upload a clear photo showing the damage. Accepted formats: JPG, PNG, WEBP (max 5MB)
+                                </small>
+                                <div id="damagePhotoPreview" style="margin-top: var(--space-3); display: none;">
+                                    <img id="previewDamageImg" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: var(--radius-md); border: 2px solid var(--neutral-200);" />
+                                </div>
+                            </div>
+
+                            <div class="form-group-minimal" id="otherDescriptionGroup">
+                                <label class="label-minimal">Additional Details <span id="descriptionRequired" style="display: none; color: var(--danger);">*</span></label>
                                 <textarea asp-for="FlagDescription" 
                                           class="input-minimal" 
                                           rows="5" 
@@ -147,5 +180,52 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flagReasonSelect = document.getElementById('flagReasonSelect');
+            const damageDescriptionGroup = document.getElementById('damageDescriptionGroup');
+            const damageCostGroup = document.getElementById('damageCostGroup');
+            const damagePhotoGroup = document.getElementById('damagePhotoGroup');
+            const otherDescriptionGroup = document.getElementById('otherDescriptionGroup');
+            const descriptionRequired = document.getElementById('descriptionRequired');
+            const damagePhotoFile = document.getElementById('DamagePhotoFile');
+            const damagePhotoPreview = document.getElementById('damagePhotoPreview');
+            const previewDamageImg = document.getElementById('previewDamageImg');
+
+            flagReasonSelect.addEventListener('change', function() {
+                const isDamage = this.value === 'Damage';
+                
+                damageDescriptionGroup.style.display = isDamage ? 'block' : 'none';
+                damageCostGroup.style.display = isDamage ? 'block' : 'none';
+                damagePhotoGroup.style.display = isDamage ? 'block' : 'none';
+                otherDescriptionGroup.style.display = isDamage ? 'none' : 'block';
+                descriptionRequired.style.display = isDamage ? 'none' : 'inline';
+                
+                // Clear damage-specific fields if not damage
+                if (!isDamage) {
+                    document.getElementById('DamageCost').value = '';
+                    document.getElementById('DamagePhotoFile').value = '';
+                    damagePhotoPreview.style.display = 'none';
+                }
+            });
+
+            // Photo preview
+            if (damagePhotoFile) {
+                damagePhotoFile.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewDamageImg.src = e.target.result;
+                            damagePhotoPreview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        damagePhotoPreview.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
 }
 

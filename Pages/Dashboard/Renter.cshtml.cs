@@ -25,6 +25,8 @@ public class RenterDashboardModel : PageModel
     public int TotalRentalsCount { get; set; }
     public decimal TotalSpent { get; set; }
     public decimal CO2Saved { get; set; }
+    public int PendingDamagesCount { get; set; }
+    public decimal PendingDamagesAmount { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -57,6 +59,12 @@ public class RenterDashboardModel : PageModel
             .Where(b => b.RenterId == userId.Value && b.DistanceSavedKm.HasValue)
             .SumAsync(b => b.DistanceSavedKm ?? 0);
         CO2Saved = totalKmSaved * 0.2m;
+
+        // Get pending damages count and amount
+        var bikeDamageService = HttpContext.RequestServices.GetRequiredService<BikeDamageService>();
+        var pendingDamages = await bikeDamageService.GetDamagesForRenterAsync(userId.Value);
+        PendingDamagesCount = pendingDamages.Count;
+        PendingDamagesAmount = pendingDamages.Sum(d => d.DamageCost);
 
         return Page();
     }

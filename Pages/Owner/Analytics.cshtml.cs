@@ -6,6 +6,7 @@ using BiketaBai.Data;
 using BiketaBai.Models;
 using BiketaBai.Helpers;
 using System;
+using System.Linq;
 
 namespace BiketaBai.Pages.Owner;
 
@@ -152,9 +153,10 @@ public class AnalyticsModel : PageModel
             .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Active")
             .CountAsync();
 
+        // Total bikes should be sum of quantities, not count of listings
         TotalBikes = await _context.Bikes
-            .Where(b => b.OwnerId == userId.Value)
-            .CountAsync();
+            .Where(b => b.OwnerId == userId.Value && !b.IsDeleted)
+            .SumAsync(b => b.Quantity);
 
         // Average rating
         var ownerRatings = await _context.Ratings
@@ -166,22 +168,53 @@ public class AnalyticsModel : PageModel
         // Daily Earnings Chart (last 30 days)
         try
         {
-            var dailyEarningsData = await _context.Bookings
+            var thirtyDaysAgo = now.AddDays(-30);
+            var completedBookings = await _context.Bookings
                 .Where(b => ownerBikeIds.Contains(b.BikeId) && 
-                           b.BookingStatus == "Completed" &&
-                           b.UpdatedAt >= now.AddDays(-30))
-                .Where(b => b.UpdatedAt != null)
-                .GroupBy(b => b.UpdatedAt.Date)
+                           b.BookingStatus == "Completed")
+                .ToListAsync();
+
+            // Group by date - use ActualReturnDate if available, otherwise EndDate, otherwise UpdatedAt
+            var dailyEarningsData = completedBookings
+                .Where(b => {
+                    var dateToUse = b.ActualReturnDate ?? b.EndDate ?? b.UpdatedAt;
+                    return dateToUse >= thirtyDaysAgo;
+                })
+                .GroupBy(b => {
+                    var dateToUse = b.ActualReturnDate ?? b.EndDate ?? b.UpdatedAt;
+                    return dateToUse.Date;
+                })
                 .Select(g => new DailyEarningsData
                 {
                     Date = g.Key.ToString("MMM dd, yyyy"),
                     Amount = g.Sum(b => b.TotalAmount * 0.9m)
                 })
                 .OrderBy(e => e.Date)
-                .ToListAsync();
-            DailyEarningsChart = dailyEarningsData ?? new List<DailyEarningsData>();
+                .ToList();
+
+            // Fill in missing dates with zero earnings for better chart visualization
+            var allDates = Enumerable.Range(0, 30)
+                .Select(i => now.AddDays(-i).Date)
+                .OrderBy(d => d)
+                .ToList();
+
+            var existingDates = dailyEarningsData.Select(d => DateTime.ParseExact(d.Date, "MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture).Date).ToHashSet();
+            
+            foreach (var date in allDates)
+            {
+                if (!existingDates.Contains(date))
+                {
+                    dailyEarningsData.Add(new DailyEarningsData
+                    {
+                        Date = date.ToString("MMM dd, yyyy"),
+                        Amount = 0
+                    });
+                }
+            }
+
+            DailyEarningsChart = dailyEarningsData.OrderBy(e => e.Date).ToList();
         }
-        catch
+        catch (Exception ex)
         {
             DailyEarningsChart = new List<DailyEarningsData>();
         }
