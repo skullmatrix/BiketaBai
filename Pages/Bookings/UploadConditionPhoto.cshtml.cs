@@ -144,7 +144,8 @@ public class UploadConditionPhotoModel : PageModel
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Bike condition photo uploaded successfully!";
-            return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId });
+            // Redirect to confirmation page with countdown and geofencing
+            return RedirectToPage("/Bookings/Confirmation", new { bookingId });
         }
         catch (Exception ex)
         {

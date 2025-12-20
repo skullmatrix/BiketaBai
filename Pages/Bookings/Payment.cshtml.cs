@@ -190,7 +190,7 @@ public class PaymentModel : PageModel
 
         if (result.success)
         {
-            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+            return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
         }
         else
         {

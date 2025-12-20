@@ -298,9 +298,9 @@
                 
                 // Check if this update is for the current booking and is a payment verification
                 if (data.bookingId === bookingId && data.updateType === "payment_verified") {
-                    console.log("Payment verified! Redirecting to geofencing...");
+                    console.log("Payment verified! Rental is now active.");
                     
-                    // Update UI to show success message
+                    // Update UI to show success message and reload page to show countdown
                     const paymentWaitingAlert = document.getElementById('paymentWaitingAlert');
                     if (paymentWaitingAlert) {
                         paymentWaitingAlert.className = 'alert-minimal alert-minimal-success mb-4';
@@ -308,18 +308,14 @@
                             <i class="bi bi-check-circle-fill"></i>
                             <div>
                                 <strong>Payment Verified!</strong>
-                                <p class="mb-0">Your rental has started. Redirecting to location tracking...</p>
+                                <p class="mb-0">Your rental has started. The countdown timer will appear shortly.</p>
                             </div>
                         `;
                     }
                     
-                    // Redirect to geofencing page after a short delay
+                    // Reload page after a short delay to show countdown and active status
                     setTimeout(function() {
-                        if (data.redirectUrl) {
-                            window.location.href = data.redirectUrl;
-                        } else {
-                            window.location.href = `/Bookings/TrackLocation/${bookingId}`;
-                        }
+                        window.location.reload();
                     }, 2000); // 2 second delay to show success message
                 }
             });

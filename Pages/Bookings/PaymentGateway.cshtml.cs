@@ -90,7 +90,7 @@ public class PaymentGatewayModel : PageModel
                         if (confirmResult.success)
                         {
                             TempData["SuccessMessage"] = "Payment confirmed successfully!";
-                            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                            return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                         }
                         else
                         {
@@ -121,7 +121,7 @@ public class PaymentGatewayModel : PageModel
                         if (confirmResult.success)
                         {
                             TempData["SuccessMessage"] = "Payment confirmed successfully!";
-                            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                            return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                         }
                         else
                         {
@@ -145,7 +145,7 @@ public class PaymentGatewayModel : PageModel
                         if (confirmResult.success)
                         {
                             TempData["SuccessMessage"] = "Payment confirmed successfully!";
-                            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                            return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                         }
                     }
                     
@@ -168,7 +168,7 @@ public class PaymentGatewayModel : PageModel
                     if (result.success)
                     {
                         TempData["SuccessMessage"] = "Payment confirmed successfully!";
-                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                     }
                 }
                 
@@ -254,7 +254,7 @@ public class PaymentGatewayModel : PageModel
                     var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
                     if (confirmResult.success)
                     {
-                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                     }
                 }
 
@@ -359,7 +359,7 @@ public class PaymentGatewayModel : PageModel
                     var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
                     if (confirmResult.success)
                     {
-                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                     }
                     else
                     {
@@ -388,7 +388,7 @@ public class PaymentGatewayModel : PageModel
                     var confirmResult = await _paymentService.ConfirmGatewayPaymentAsync(paymentIntentId);
                     if (confirmResult.success)
                     {
-                        return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+                        return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
                     }
                     
                     // If not succeeded, show processing page
@@ -428,7 +428,7 @@ public class PaymentGatewayModel : PageModel
 
         if (result.success)
         {
-            return RedirectToPage("/Bookings/Confirmation", new { bookingId = bookingId });
+            return RedirectToPage("/Bookings/UploadConditionPhoto", new { bookingId = bookingId });
         }
         else
         {

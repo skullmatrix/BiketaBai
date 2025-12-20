@@ -142,23 +142,23 @@ public class RentalRequestsModel : PageModel
             // Mark related notifications as read since owner took action
             await _notificationService.MarkNotificationsByBookingIdAsync(userId, booking.BookingId);
 
-            // Send notification to renter with geofencing link
+            // Send notification to renter to upload condition photos
             var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
             await _notificationService.CreateNotificationAsync(
                 booking.RenterId,
                 "Booking Accepted - Rental Active",
-                $"Your rental request for {booking.Bike.Brand} {booking.Bike.Model} has been accepted! Your rental is now active and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                $"Your rental request for {booking.Bike.Brand} {booking.Bike.Model} has been accepted! Your rental is now active and will end on {endDatePHT}. Please upload bike condition photos.",
                 "Booking",
-                $"/Bookings/TrackLocation/{booking.BookingId}"
+                $"/Bookings/UploadConditionPhoto/{booking.BookingId}"
             );
 
-            // Send real-time booking update via SignalR to redirect renter to geofencing
+            // Send real-time booking update via SignalR to redirect renter to condition photo upload
             await _notificationService.SendBookingUpdateAsync(
                 booking.RenterId,
                 booking.BookingId,
                 "approved",
                 $"Your rental request has been accepted! Your rental is now active and will end on {endDatePHT}.",
-                $"/Bookings/TrackLocation/{booking.BookingId}"
+                $"/Bookings/UploadConditionPhoto/{booking.BookingId}"
             );
 
             _logger.LogInformation($"Booking {booking.BookingId} accepted by owner {userId}");
@@ -328,23 +328,23 @@ public class RentalRequestsModel : PageModel
             // Mark related notifications as read since owner verified payment
             await _notificationService.MarkNotificationsByBookingIdAsync(userId, booking.BookingId);
 
-            // Send notification to renter with geofencing link
+            // Send notification to renter to upload condition photos
             var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
             await _notificationService.CreateNotificationAsync(
                 booking.RenterId,
                 "Payment Verified - Rental Started",
-                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental has started and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                $"Your cash payment of ₱{booking.TotalAmount:F2} for booking #{booking.BookingId} has been verified. Your rental has started and will end on {endDatePHT}. Please upload bike condition photos.",
                 "Payment",
-                $"/Bookings/TrackLocation/{booking.BookingId}"
+                $"/Bookings/UploadConditionPhoto/{booking.BookingId}"
             );
 
-            // Send real-time booking update via SignalR to redirect renter to geofencing
+            // Send real-time booking update via SignalR to redirect renter to condition photo upload
             await _notificationService.SendBookingUpdateAsync(
                 booking.RenterId,
                 booking.BookingId,
                 "payment_verified",
                 $"Your cash payment has been verified! Your rental has started and will end on {endDatePHT}.",
-                $"/Bookings/TrackLocation/{booking.BookingId}"
+                $"/Bookings/UploadConditionPhoto/{booking.BookingId}"
             );
 
             _logger.LogInformation($"Cash payment verified for booking {booking.BookingId} by owner {userId}. Rental started at {verificationTime:yyyy-MM-dd HH:mm:ss} UTC, ends at {booking.EndDate:yyyy-MM-dd HH:mm:ss} UTC");

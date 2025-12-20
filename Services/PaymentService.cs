@@ -183,14 +183,14 @@ public class PaymentService
             }
             else
             {
-                // For non-cash payments, booking is immediately active - send notification with geofencing link
+                // For non-cash payments, booking is immediately active - send notification to upload condition photos
                 var endDatePHT = TimeZoneHelper.FormatPhilippineTime(booking.EndDate);
                 await _notificationService.CreateNotificationAsync(
                     booking.RenterId,
                     "Payment Successful - Rental Active",
-                    $"Your payment of ₱{amount:F2} for booking #{bookingId} has been processed. Your rental is now active and will end on {endDatePHT}. Please start location tracking for geofencing.",
+                    $"Your payment of ₱{amount:F2} for booking #{bookingId} has been processed. Your rental is now active and will end on {endDatePHT}. Please upload bike condition photos.",
                     "Payment",
-                    $"/Bookings/TrackLocation/{bookingId}"
+                    $"/Bookings/UploadConditionPhoto/{bookingId}"
                 );
 
                 await _notificationService.CreateNotificationAsync(
@@ -432,7 +432,7 @@ public class PaymentService
                     "Payment Successful - Rental Active",
                     $"Your payment of ₱{payment.Amount:F2} has been processed. Your rental is now active and will end on {endDatePHT}. Please upload bike condition photos and start location tracking.",
                     "Payment",
-                    $"/Bookings/Confirmation/{payment.Booking.BookingId}"
+                    $"/Bookings/UploadConditionPhoto/{payment.Booking.BookingId}"
                 );
 
                 await _notificationService.CreateNotificationAsync(
