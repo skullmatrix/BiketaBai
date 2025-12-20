@@ -74,12 +74,8 @@
             <div class="stat-value">@Model.TotalBikes</div>
             <div class="stat-label">Total Listings</div>
             <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
-                @{
-                    var availableListings = Model.Bikes.Count(b => b.AvailabilityStatus == "Available");
-                    var totalAvailableUnits = Model.Bikes.Where(b => b.AvailabilityStatus == "Available").Sum(b => b.Quantity);
-                }
-                <div><i class="bi bi-list-check"></i> @availableListings Available Listing@(availableListings != 1 ? "s" : "")</div>
-                <div><i class="bi bi-bicycle"></i> @totalAvailableUnits Total Unit@(totalAvailableUnits != 1 ? "s" : "") Available</div>
+                <div><i class="bi bi-list-check"></i> @Model.TotalAvailableListings Available Listing@(Model.TotalAvailableListings != 1 ? "s" : "")</div>
+                <div><i class="bi bi-bicycle"></i> @Model.TotalAvailableUnits Total Unit@(Model.TotalAvailableUnits != 1 ? "s" : "") Available</div>
             </div>
         </div>
 

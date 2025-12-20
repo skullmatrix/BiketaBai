@@ -40,6 +40,9 @@ public class OwnerDashboardModel : PageModel
     public int UnreadNotifications { get; set; }
     public List<EarningsData> EarningsHistory { get; set; } = new();
     public Dictionary<int, bool> BookingFlaggedStatus { get; set; } = new();
+    public Dictionary<int, int> AvailableQuantities { get; set; } = new(); // BikeId -> Available Quantity
+    public int TotalAvailableListings { get; set; }
+    public int TotalAvailableUnits { get; set; }
     
     public class EarningsData
     {
@@ -181,10 +184,40 @@ public class OwnerDashboardModel : PageModel
             .GroupBy(b => b.BikeType.TypeName)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        BikeTypeAvailableCounts = bikesWithTypes
-            .Where(b => b.AvailabilityStatus == "Available")
-            .GroupBy(b => b.BikeType.TypeName)
-            .ToDictionary(g => g.Key, g => g.Sum(b => b.Quantity));
+        // Calculate available quantities for each bike based on active bookings
+        var allActiveBookings = await _context.Bookings
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && 
+                       (b.BookingStatus == "Active" || b.BookingStatus == "Pending") &&
+                       !b.IsReportedLost) // Exclude lost bikes from active count
+            .ToListAsync();
+
+        var lostBookings = await _context.Bookings
+            .Where(b => ownerBikeIds.Contains(b.BikeId) && b.IsReportedLost)
+            .ToListAsync();
+
+        foreach (var bike in Bikes)
+        {
+            var bikeActiveBookings = allActiveBookings.Where(b => b.BikeId == bike.BikeId).ToList();
+            var bikeLostBookings = lostBookings.Where(b => b.BikeId == bike.BikeId).ToList();
+            
+            var activeRentedQuantity = bikeActiveBookings.Sum(b => b.Quantity);
+            var lostQuantity = bikeLostBookings.Sum(b => b.Quantity);
+            var totalRentedQuantity = activeRentedQuantity + lostQuantity;
+            
+            AvailableQuantities[bike.BikeId] = Math.Max(0, bike.Quantity - totalRentedQuantity);
+        }
+
+        // Calculate total available listings (bikes with at least 1 available unit)
+        TotalAvailableListings = AvailableQuantities.Count(kvp => kvp.Value > 0);
+        
+        // Calculate total available units
+        TotalAvailableUnits = AvailableQuantities.Values.Sum();
+
+        // Calculate bike type available counts based on actual available quantities
+        BikeTypeAvailableCounts = Bikes
+            .Where(b => AvailableQuantities.ContainsKey(b.BikeId) && AvailableQuantities[b.BikeId] > 0)
+            .GroupBy(b => b.BikeType?.TypeName ?? "Unknown")
+            .ToDictionary(g => g.Key, g => g.Sum(b => AvailableQuantities[b.BikeId]));
 
         var ownerRatings = await _context.Ratings
             .Where(r => r.RatedUserId == userId.Value && r.IsRenterRatingOwner)
