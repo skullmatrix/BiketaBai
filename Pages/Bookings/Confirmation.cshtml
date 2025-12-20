@@ -223,16 +223,48 @@
     
     @if (Model.Booking.BookingStatus == "Active")
     {
-        var endDateStr = Model.Booking.EndDate.ToString("yyyy-MM-ddTHH:mm:ss");
+        var endDatePHT = TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "yyyy-MM-ddTHH:mm:ss");
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const endDate = new Date('@endDateStr');
+                // Helper function to get current Philippine time (UTC+8)
+                function getPhilippineTime() {
+                    const now = new Date();
+                    const phTimeStr = now.toLocaleString('en-US', { 
+                        timeZone: 'Asia/Manila',
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: false
+                    });
+                    const parts = phTimeStr.split(', ');
+                    const dateParts = parts[0].split('/');
+                    const timeParts = parts[1].split(':');
+                    return new Date(
+                        parseInt(dateParts[2]), parseInt(dateParts[0]) - 1, parseInt(dateParts[1]),
+                        parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2])
+                    );
+                }
+                
+                // Parse end date in Philippine time format
+                const endDateStr = '@endDatePHT';
+                const endDateParts = endDateStr.split('T');
+                const dateParts = endDateParts[0].split('-');
+                const timeParts = endDateParts[1].split(':');
+                
+                const endDate = new Date(
+                    parseInt(dateParts[0]), // year
+                    parseInt(dateParts[1]) - 1, // month (0-indexed)
+                    parseInt(dateParts[2]), // day
+                    parseInt(timeParts[0]), // hour
+                    parseInt(timeParts[1]), // minute
+                    parseInt(timeParts[2] || 0) // second
+                );
+                
                 const countdownDisplay = document.getElementById('countdownDisplay');
                 
                 if (countdownDisplay) {
                     function updateCountdown() {
-                        const now = new Date();
-                        const timeLeft = endDate - now;
+                        const nowPhilippine = getPhilippineTime();
+                        const timeLeft = endDate.getTime() - nowPhilippine.getTime();
                         
                         if (timeLeft <= 0) {
                             countdownDisplay.innerHTML = '<span style="color: #fee2e2;">RENTAL EXPIRED</span>';
@@ -257,6 +289,10 @@
                         }
                         
                         countdownDisplay.innerHTML = displayText;
+                        
+                        // Reset to default colors first
+                        countdownDisplay.style.color = 'white';
+                        countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-secondary) 100%)';
                         
                         // Change color as time runs out
                         const oneHour = 3600000;
