@@ -64,6 +64,23 @@ public class LoginModel : PageModel
             return Page();
         }
 
+        // Check if renter is red-tagged
+        if (user.IsRenter)
+        {
+            var redTagService = HttpContext.RequestServices.GetRequiredService<BiketaBai.Services.RenterRedTagService>();
+            var isRedTagged = await redTagService.IsRenterRedTaggedAsync(user.UserId);
+            
+            if (isRedTagged)
+            {
+                var activeRedTags = await redTagService.GetActiveRedTagsForRenterAsync(user.UserId);
+                var redTagReasons = activeRedTags.Select(rt => rt.RedTagReason).Distinct().ToList();
+                var reasonText = redTagReasons.Any() ? string.Join(", ", redTagReasons) : "policy violation";
+                
+                ErrorMessage = $"Your account has been restricted due to: {reasonText}. Please contact the administrator to resolve this issue. Email: support@biketabai.net or call our support line.";
+                return Page();
+            }
+        }
+
         if (!user.IsEmailVerified)
         {
             ErrorMessage = "Please verify your email address before logging in. Check your inbox for the verification link.";

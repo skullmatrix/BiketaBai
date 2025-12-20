@@ -25,20 +25,50 @@
                         <h1 class="page-title-minimal mb-3">Booking Confirmed!</h1>
                         <p class="text-muted-minimal mb-4">Your booking has been successfully created and payment processed.</p>
 
-                        <!-- Countdown Timer - Prominent Display -->
+                        <!-- Countdown Timer - Enhanced Modern Design -->
                         @if (Model.Booking.BookingStatus == "Active")
                         {
-                            <div class="card-minimal mb-4" style="background: linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-secondary) 100%); border: none; box-shadow: 0 8px 24px rgba(135, 169, 107, 0.3);">
-                                <div class="card-body-minimal text-center" style="padding: var(--space-5);">
-                                    <h3 style="color: white; margin-bottom: var(--space-3); font-weight: 600;">
-                                        <i class="bi bi-clock-history"></i> Rental Time Remaining
-                                    </h3>
-                                    <div id="countdownTimer" style="font-size: 3rem; font-weight: 700; color: white; font-family: 'Courier New', monospace; letter-spacing: 2px; margin: var(--space-4) 0;">
-                                        <div id="countdownDisplay">Calculating...</div>
+                            <div class="card-minimal mb-4" id="countdownCard" style="background: linear-gradient(135deg, #87A96B 0%, #A4C49A 50%, #6B8E5F 100%); border: none; box-shadow: 0 12px 40px rgba(135, 169, 107, 0.4); position: relative; overflow: hidden;">
+                                <!-- Animated Background Pattern -->
+                                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.1; background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>
+                                
+                                <div class="card-body-minimal text-center" style="padding: var(--space-6); position: relative; z-index: 1;">
+                                    <!-- Header with Icon -->
+                                    <div style="margin-bottom: var(--space-4);">
+                                        <div style="width: 80px; height: 80px; margin: 0 auto var(--space-3); background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); border: 3px solid rgba(255, 255, 255, 0.3);">
+                                            <i class="bi bi-clock-history" style="font-size: 2.5rem; color: white;"></i>
+                                        </div>
+                                        <h3 style="color: white; margin-bottom: var(--space-2); font-weight: 700; font-size: 1.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+                                            Rental Time Remaining
+                                        </h3>
+                                        <p style="color: rgba(255, 255, 255, 0.95); margin: 0; font-size: 0.875rem; font-weight: 500;">
+                                            Your rental is active and running
+                                        </p>
                                     </div>
-                                    <p style="color: rgba(255, 255, 255, 0.9); margin: 0; font-size: 0.875rem;">
-                                        Your rental ends on <strong>@TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy hh:mm tt")</strong>
-                                    </p>
+                                    
+                                    <!-- Countdown Display -->
+                                    <div id="countdownTimer" style="margin: var(--space-5) 0; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                                        <div id="countdownDisplay" style="font-size: 4rem; font-weight: 800; color: white; font-family: 'Courier New', monospace; letter-spacing: 4px; text-shadow: 0 4px 20px rgba(0,0,0,0.3); line-height: 1.2; transition: all 0.3s ease;">
+                                            Calculating...
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div style="margin: var(--space-4) 0;">
+                                        <div style="background: rgba(255, 255, 255, 0.2); height: 8px; border-radius: 10px; overflow: hidden; backdrop-filter: blur(10px);">
+                                            <div id="countdownProgress" style="background: white; height: 100%; border-radius: 10px; transition: width 1s linear; box-shadow: 0 0 20px rgba(255,255,255,0.5);"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- End Date Info -->
+                                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-4); border: 1px solid rgba(255, 255, 255, 0.2);">
+                                        <p style="color: rgba(255, 255, 255, 0.95); margin: 0; font-size: 0.875rem; font-weight: 500;">
+                                            <i class="bi bi-calendar-event"></i> Rental ends on
+                                        </p>
+                                        <p style="color: white; margin: var(--space-1) 0 0 0; font-size: 1.125rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                            @TimeZoneHelper.FormatPhilippineTime(Model.Booking.EndDate, "MMM dd, yyyy 'at' hh:mm tt")
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -262,13 +292,36 @@
                 const countdownDisplay = document.getElementById('countdownDisplay');
                 
                 if (countdownDisplay) {
+                    const countdownCard = document.getElementById('countdownCard');
+                    const progressBar = document.getElementById('countdownProgress');
+                    
+                    // Parse start date in Philippine time format
+                    const startDateStr = '@TimeZoneHelper.FormatPhilippineTime(Model.Booking.StartDate, "yyyy-MM-ddTHH:mm:ss")';
+                    const startDateParts = startDateStr.split('T');
+                    const startDatePartsDate = startDateParts[0].split('-');
+                    const startDatePartsTime = startDateParts[1].split(':');
+                    const startDate = new Date(
+                        parseInt(startDatePartsDate[0]),
+                        parseInt(startDatePartsDate[1]) - 1,
+                        parseInt(startDatePartsDate[2]),
+                        parseInt(startDatePartsTime[0]),
+                        parseInt(startDatePartsTime[1]),
+                        parseInt(startDatePartsTime[2] || 0)
+                    );
+                    const totalRentalTime = endDate.getTime() - startDate.getTime();
+                    
                     function updateCountdown() {
                         const nowPhilippine = getPhilippineTime();
                         const timeLeft = endDate.getTime() - nowPhilippine.getTime();
                         
                         if (timeLeft <= 0) {
-                            countdownDisplay.innerHTML = '<span style="color: #fee2e2;">RENTAL EXPIRED</span>';
-                            countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
+                            countdownDisplay.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);"><span style="color: #fee2e2; font-size: 2.5rem;">RENTAL EXPIRED</span><span style="color: rgba(255,255,255,0.9); font-size: 1rem;">Please return the bike</span></div>';
+                            if (countdownCard) {
+                                countdownCard.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
+                            }
+                            if (progressBar) {
+                                progressBar.style.width = '0%';
+                            }
                             return;
                         }
                         
@@ -277,22 +330,44 @@
                         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
                         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
                         
+                        // Enhanced display with better formatting
                         let displayText = '';
                         if (days > 0) {
-                            displayText = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
+                            displayText = `<div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${days}<small style="font-size: 0.5em; margin-left: 0.25rem;">d</small></span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${hours}<small style="font-size: 0.5em; margin-left: 0.25rem;">h</small></span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${minutes}<small style="font-size: 0.5em; margin-left: 0.25rem;">m</small></span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${seconds}<small style="font-size: 0.5em; margin-left: 0.25rem;">s</small></span>
+                            </div>`;
                         } else if (hours > 0) {
-                            displayText = hours + 'h ' + minutes + 'm ' + seconds + 's';
+                            displayText = `<div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${hours}<small style="font-size: 0.5em; margin-left: 0.25rem;">h</small></span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${minutes}<small style="font-size: 0.5em; margin-left: 0.25rem;">m</small></span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${seconds}<small style="font-size: 0.5em; margin-left: 0.25rem;">s</small></span>
+                            </div>`;
                         } else if (minutes > 0) {
-                            displayText = minutes + 'm ' + seconds + 's';
+                            displayText = `<div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${minutes}<small style="font-size: 0.5em; margin-left: 0.25rem;">m</small></span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; backdrop-filter: blur(10px);">${seconds}<small style="font-size: 0.5em; margin-left: 0.25rem;">s</small></span>
+                            </div>`;
                         } else {
-                            displayText = seconds + 's';
+                            displayText = `<span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1.5rem; border-radius: 8px; backdrop-filter: blur(10px);">${seconds}<small style="font-size: 0.5em; margin-left: 0.25rem;">s</small></span>`;
                         }
                         
                         countdownDisplay.innerHTML = displayText;
                         
+                        // Update progress bar
+                        if (progressBar && totalRentalTime > 0) {
+                            const elapsed = totalRentalTime - timeLeft;
+                            const progress = (elapsed / totalRentalTime) * 100;
+                            progressBar.style.width = Math.min(100, Math.max(0, progress)) + '%';
+                        }
+                        
                         // Reset to default colors first
                         countdownDisplay.style.color = 'white';
-                        countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, var(--sage-primary) 0%, var(--sage-secondary) 100%)';
+                        if (countdownCard) {
+                            countdownCard.style.background = 'linear-gradient(135deg, #87A96B 0%, #A4C49A 50%, #6B8E5F 100%)';
+                        }
                         
                         // Change color as time runs out
                         const oneHour = 3600000;
@@ -300,11 +375,13 @@
                         const isLessThanOneHour = timeLeft < oneHour;
                         const isLessThanThreeHours = timeLeft < threeHours;
                         if (isLessThanOneHour) {
-                            countdownDisplay.style.color = '#fee2e2';
-                            countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                            if (countdownCard) {
+                                countdownCard.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                            }
                         } else if (isLessThanThreeHours) {
-                            countdownDisplay.style.color = '#fef3c7';
-                            countdownDisplay.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)';
+                            if (countdownCard) {
+                                countdownCard.style.background = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)';
+                            }
                         }
                     }
                     

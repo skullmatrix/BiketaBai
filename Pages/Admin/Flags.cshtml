@@ -217,33 +217,74 @@
                 <button type="button" class="btn-close-premium" data-bs-dismiss="modal">×</button>
             </div>
             <div class="modal-body-premium">
-                <p id="redTagMessage"></p>
-                <div class="warning-box" style="background: #FEE2E2; border-left: 3px solid #DC2626; padding: var(--space-3); border-radius: var(--radius-md); margin-top: var(--space-3);">
-                    <i class="bi bi-info-circle-fill" style="color: #DC2626;"></i>
-                    <span style="font-size: 0.875rem;">Red tagging a renter will mark them as delinquent and may restrict their ability to rent bikes in the future.</span>
+                <div id="redTagMessage" style="padding: var(--space-3); background: var(--neutral-50); border-radius: var(--radius-md); margin-bottom: var(--space-3);"></div>
+                
+                <div class="warning-box" style="background: #FEE2E2; border-left: 4px solid #DC2626; padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+                    <div style="display: flex; align-items: start; gap: var(--space-2);">
+                        <i class="bi bi-exclamation-triangle-fill" style="color: #DC2626; font-size: 1.5rem; margin-top: 0.125rem;"></i>
+                        <div>
+                            <strong style="color: #DC2626; display: block; margin-bottom: var(--space-1);">Important: Account Restriction</strong>
+                            <p style="margin: 0; font-size: 0.875rem; color: #991B1B; line-height: 1.6;">
+                                Red tagging this renter will <strong>immediately block their account</strong>. They will not be able to log in and must contact the administrator to resolve the issue. This action should only be taken for serious violations.
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <form method="post" asp-page-handler="RedTag" style="margin-top: var(--space-3);">
+                
+                <form method="post" asp-page-handler="RedTag">
                     <input type="hidden" asp-for="RedTagInput.FlagId" id="redTagFlagId" />
-                    <div class="form-group-minimal mb-3">
-                        <label for="redTagReason" class="form-label-minimal">Reason <span style="color: var(--danger);">*</span></label>
-                        <select asp-for="RedTagInput.Reason" id="redTagReason" class="input-minimal" required>
-                            <option value="">Select a reason</option>
-                            <option value="Delinquent">Delinquent (e.g., late payments)</option>
-                            <option value="UnpaidDamages">Unpaid Damages</option>
-                            <option value="MultipleViolations">Multiple Policy Violations</option>
-                            <option value="Fraud">Fraudulent Activity</option>
-                            <option value="Other">Other (please specify in description)</option>
+                    <div class="form-group-minimal mb-4">
+                        <label for="redTagReason" class="form-label-minimal">
+                            <i class="bi bi-flag-fill"></i> Reason for Red Tagging <span style="color: var(--danger);">*</span>
+                        </label>
+                        <select asp-for="RedTagInput.Reason" id="redTagReason" class="input-minimal" required style="font-size: 1rem; padding: var(--space-3);">
+                            <option value="">-- Select a reason --</option>
+                            <option value="Delinquent">Delinquent - Late payments or failure to pay</option>
+                            <option value="UnpaidDamages">Unpaid Damages - Outstanding damage fees</option>
+                            <option value="MultipleViolations">Multiple Policy Violations - Repeated violations</option>
+                            <option value="Fraud">Fraudulent Activity - Fraud or misrepresentation</option>
+                            <option value="Other">Other - Please specify in description</option>
                         </select>
                         <span asp-validation-for="RedTagInput.Reason" class="text-danger-minimal"></span>
+                        <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                            Select the primary reason for restricting this renter's account
+                        </small>
                     </div>
-                    <div class="form-group-minimal mb-3">
-                        <label for="redTagDescription" class="form-label-minimal">Description (Optional)</label>
-                        <textarea asp-for="RedTagInput.Description" id="redTagDescription" class="input-minimal" rows="3" placeholder="Additional details about why this renter is being red-tagged..."></textarea>
+                    <div class="form-group-minimal mb-4">
+                        <label for="redTagDescription" class="form-label-minimal">
+                            <i class="bi bi-file-text"></i> Additional Details (Recommended)
+                        </label>
+                        <textarea asp-for="RedTagInput.Description" 
+                                  id="redTagDescription" 
+                                  class="input-minimal" 
+                                  rows="4" 
+                                  placeholder="Provide detailed information about the violation, incidents, dates, amounts, or any other relevant details that support this red tag action..."></textarea>
+                        <small style="color: var(--neutral-600); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                            Detailed information helps with account review and resolution
+                        </small>
                     </div>
+                    
+                    <div style="background: #FEF3C7; border-left: 3px solid #F59E0B; padding: var(--space-3); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+                        <div style="display: flex; align-items: start; gap: var(--space-2);">
+                            <i class="bi bi-info-circle-fill" style="color: #F59E0B; margin-top: 0.125rem;"></i>
+                            <div style="font-size: 0.875rem; color: #92400E;">
+                                <strong>What happens next:</strong>
+                                <ul style="margin: var(--space-2) 0 0 var(--space-4); padding-left: 0;">
+                                    <li>Renter's account will be immediately blocked from login</li>
+                                    <li>Renter will see a message to contact administrator</li>
+                                    <li>Flag will be automatically marked as resolved</li>
+                                    <li>Renter and owner will be notified</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn-modal-danger">
-                            <i class="bi bi-flag-fill"></i> Red Tag Renter
+                        <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn-modal-danger" id="redTagSubmitBtn">
+                            <i class="bi bi-flag-fill"></i> Confirm Red Tag & Block Account
                         </button>
                     </div>
                 </form>
@@ -266,16 +307,44 @@
                 
                 $('#redTagFlagId').val(flagId);
                 $('#redTagMessage').html(`
-                    <strong>Flag #${flagId.toString().padStart(6, '0')}</strong><br>
-                    <strong>Renter:</strong> ${renterName}<br>
-                    <strong>Flagged By:</strong> ${ownerName}<br>
-                    <strong>Booking:</strong> #${bookingId.toString().padStart(6, '0')}<br>
-                    <strong>Flag Reason:</strong> ${flagReason}<br><br>
-                    Please provide a reason for red tagging this renter.
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Flag ID</div>
+                            <div style="font-weight: 600; color: var(--warning);">#${flagId.toString().padStart(6, '0')}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Booking ID</div>
+                            <div style="font-weight: 600;">#${bookingId.toString().padStart(6, '0')}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Renter</div>
+                            <div style="font-weight: 600; color: var(--danger);">${renterName}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Flagged By</div>
+                            <div style="font-weight: 600;">${ownerName}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--neutral-200);">
+                        <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-1);">Original Flag Reason</div>
+                        <div style="font-weight: 600; color: var(--warning); padding: var(--space-2); background: #FFFBF0; border-radius: var(--radius-sm); border-left: 3px solid var(--warning);">
+                            ${flagReason}
+                        </div>
+                    </div>
                 `);
+                
+                // Reset form
+                $('#redTagReason').val('');
+                $('#redTagDescription').val('');
                 
                 const modal = new bootstrap.Modal(document.getElementById('redTagModal'));
                 modal.show();
+            });
+            
+            // Form submission handler
+            $('#redTagModal form').on('submit', function() {
+                const submitBtn = $('#redTagSubmitBtn');
+                submitBtn.html('<span class="spinner-border spinner-border-sm me-2"></span>Processing...').prop('disabled', true);
             });
         });
     </script>

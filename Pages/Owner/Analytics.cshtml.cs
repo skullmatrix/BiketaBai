@@ -23,6 +23,11 @@ public class AnalyticsModel : PageModel
     public decimal DailyEarnings { get; set; }
     public decimal WeeklyEarnings { get; set; }
     public decimal MonthlyEarnings { get; set; }
+    public decimal TotalServiceFees { get; set; }
+    public decimal DailyServiceFees { get; set; }
+    public decimal WeeklyServiceFees { get; set; }
+    public decimal MonthlyServiceFees { get; set; }
+    public decimal TotalRevenue { get; set; } // Total before service fee deduction
     public int TotalBookings { get; set; }
     public int CompletedBookings { get; set; }
     public int ActiveBookings { get; set; }
@@ -95,32 +100,44 @@ public class AnalyticsModel : PageModel
         var now = DateTime.UtcNow;
         var startDate = now.AddDays(-days);
 
-        // Calculate earnings
-        TotalEarnings = await _context.Bookings
+        // Calculate total revenue (before service fee)
+        TotalRevenue = await _context.Bookings
             .Where(b => ownerBikeIds.Contains(b.BikeId) && b.BookingStatus == "Completed")
-            .SumAsync(b => b.TotalAmount * 0.9m);
+            .SumAsync(b => b.TotalAmount);
+
+        // Calculate earnings (90% after service fee)
+        TotalEarnings = TotalRevenue * 0.9m;
+        
+        // Calculate service fees (10%)
+        TotalServiceFees = TotalRevenue * 0.1m;
 
         var todayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
         var weekStart = todayStart.AddDays(-(int)todayStart.DayOfWeek);
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        DailyEarnings = await _context.Bookings
+        var dailyRevenue = await _context.Bookings
             .Where(b => ownerBikeIds.Contains(b.BikeId) && 
                        b.BookingStatus == "Completed" &&
                        b.UpdatedAt >= todayStart)
-            .SumAsync(b => b.TotalAmount * 0.9m);
+            .SumAsync(b => b.TotalAmount);
+        DailyEarnings = dailyRevenue * 0.9m;
+        DailyServiceFees = dailyRevenue * 0.1m;
 
-        WeeklyEarnings = await _context.Bookings
+        var weeklyRevenue = await _context.Bookings
             .Where(b => ownerBikeIds.Contains(b.BikeId) && 
                        b.BookingStatus == "Completed" &&
                        b.UpdatedAt >= weekStart)
-            .SumAsync(b => b.TotalAmount * 0.9m);
+            .SumAsync(b => b.TotalAmount);
+        WeeklyEarnings = weeklyRevenue * 0.9m;
+        WeeklyServiceFees = weeklyRevenue * 0.1m;
 
-        MonthlyEarnings = await _context.Bookings
+        var monthlyRevenue = await _context.Bookings
             .Where(b => ownerBikeIds.Contains(b.BikeId) && 
                        b.BookingStatus == "Completed" &&
                        b.UpdatedAt >= monthStart)
-            .SumAsync(b => b.TotalAmount * 0.9m);
+            .SumAsync(b => b.TotalAmount);
+        MonthlyEarnings = monthlyRevenue * 0.9m;
+        MonthlyServiceFees = monthlyRevenue * 0.1m;
 
         // Calculate booking stats
         TotalBookings = await _context.Bookings
@@ -157,7 +174,7 @@ public class AnalyticsModel : PageModel
                 .GroupBy(b => b.UpdatedAt.Date)
                 .Select(g => new DailyEarningsData
                 {
-                    Date = g.Key.ToString("MMM dd"),
+                    Date = g.Key.ToString("MMM dd, yyyy"),
                     Amount = g.Sum(b => b.TotalAmount * 0.9m)
                 })
                 .OrderBy(e => e.Date)
