@@ -201,13 +201,17 @@
                                         }
                                     </div>
                                     <div style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--neutral-200);">
+                                        <div style="font-size: 0.75rem; color: var(--neutral-500); margin-bottom: var(--space-1); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Reason</div>
+                                        <div style="font-weight: 700; color: var(--warning); font-size: 1.125rem;">
+                                            <i class="bi bi-exclamation-triangle-fill" style="margin-right: var(--space-1);"></i>@redTag.RedTagReason
+                                        </div>
+                                    </div>
                                 }
-                                <div style="font-size: 0.75rem; color: var(--neutral-500); margin-bottom: var(--space-1); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Reason</div>
-                                <div style="font-weight: 700; color: var(--warning); font-size: 1.125rem;">
-                                    <i class="bi bi-exclamation-triangle-fill" style="margin-right: var(--space-1);"></i>@redTag.RedTagReason
-                                </div>
-                                @if (redTag.BookingId.HasValue && redTag.Booking != null)
+                                else
                                 {
+                                    <div style="font-size: 0.75rem; color: var(--neutral-500); margin-bottom: var(--space-1); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Reason</div>
+                                    <div style="font-weight: 700; color: var(--warning); font-size: 1.125rem;">
+                                        <i class="bi bi-exclamation-triangle-fill" style="margin-right: var(--space-1);"></i>@redTag.RedTagReason
                                     </div>
                                 }
                             </div>
