@@ -1,6 +1,7 @@
 @page
 @using Microsoft.AspNetCore.Authorization
 @using BiketaBai.Helpers
+@using BiketaBai.Services
 @attribute [Authorize]
 @model FlagsModel
 @{
@@ -75,8 +76,8 @@
                 var redTagService = HttpContext.RequestServices.GetRequiredService<RenterRedTagService>();
                 var damageService = HttpContext.RequestServices.GetRequiredService<BikeDamageService>();
                 var isRedTagged = await redTagService.IsRenterRedTaggedAsync(flag.RenterId);
-                var unpaidDamages = await damageService.GetDamagesForRenterAsync(flag.RenterId);
-                var totalUnpaidDamage = unpaidDamages.Sum(d => d.DamageCost);
+                var unpaidDamagesList = (await damageService.GetDamagesForRenterAsync(flag.RenterId)).ToList();
+                var totalUnpaidDamage = unpaidDamagesList.Sum(d => d.DamageCost);
 
                 <div class="card-minimal mb-4" style="border-left: 4px solid @(flag.IsResolved ? "var(--success)" : "var(--warning)");">
                     <div class="card-minimal-header">
@@ -170,22 +171,22 @@
                             </div>
                         }
 
-                        @if (unpaidDamages.Any())
+                        @if (unpaidDamagesList.Any())
                         {
                             <div style="padding: var(--space-3); background: #fffbf0; border-left: 3px solid var(--warning); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
                                 <div style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: var(--space-2);">
-                                    <strong>Unpaid Damages:</strong> @unpaidDamages.Count damage report(s) totaling ₱@totalUnpaidDamage.ToString("F2")
+                                    <strong>Unpaid Damages:</strong> @unpaidDamagesList.Count damage report(s) totaling ₱@totalUnpaidDamage.ToString("F2")
                                 </div>
                                 <div style="font-size: 0.875rem;">
-                                    @foreach (var damage in unpaidDamages.Take(3))
+                                    @foreach (var damage in unpaidDamagesList.Take(3))
                                     {
                                         <div style="margin-bottom: var(--space-1);">
                                             • @damage.DamageDescription - ₱@damage.DamageCost.ToString("F2")
                                         </div>
                                     }
-                                    @if (unpaidDamages.Count > 3)
+                                    @if (unpaidDamagesList.Count > 3)
                                     {
-                                        <div style="color: var(--neutral-600);">... and @(unpaidDamages.Count - 3) more</div>
+                                        <div style="color: var(--neutral-600);">... and @(unpaidDamagesList.Count - 3) more</div>
                                     }
                                 </div>
                             </div>

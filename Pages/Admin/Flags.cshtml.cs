@@ -109,7 +109,12 @@ public class FlagsModel : PageModel
         }
 
         // Admin can red tag based on flag
-        var adminId = AuthHelper.GetCurrentUserId(User).Value;
+        var adminId = AuthHelper.GetCurrentUserId(User);
+        if (!adminId.HasValue)
+        {
+            TempData["ErrorMessage"] = "User not authenticated.";
+            return RedirectToPage();
+        }
         
         // Create red tag (admin is acting on behalf of the owner who flagged)
         var redTag = new RenterRedTag
