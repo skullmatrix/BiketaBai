@@ -31,11 +31,19 @@
                 <p class="page-subtitle" style="color: var(--neutral-600); font-size: 0.875rem;">Damage Charge #@Model.Damage.DamageId.ToString("D6")</p>
             </div>
 
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage) || TempData["ErrorMessage"] != null)
             {
                 <div class="alert-minimal alert-minimal-error mb-4">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                    <div>@Model.ErrorMessage</div>
+                    <div>@(Model.ErrorMessage ?? TempData["ErrorMessage"]?.ToString())</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage) || TempData["SuccessMessage"] != null)
+            {
+                <div class="alert-minimal alert-minimal-success mb-4">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>@(Model.SuccessMessage ?? TempData["SuccessMessage"]?.ToString())</div>
                 </div>
             }
 

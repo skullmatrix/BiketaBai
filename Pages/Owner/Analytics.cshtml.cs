@@ -176,18 +176,16 @@ public class AnalyticsModel : PageModel
 
             // Group by date - use ActualReturnDate if available, otherwise EndDate, otherwise UpdatedAt
             var dailyEarningsData = completedBookings
-                .Where(b => {
-                    var dateToUse = b.ActualReturnDate ?? b.EndDate ?? b.UpdatedAt;
-                    return dateToUse >= thirtyDaysAgo;
+                .Select(b => new { 
+                    Booking = b, 
+                    DateToUse = b.ActualReturnDate ?? (DateTime?)b.EndDate ?? (DateTime?)b.UpdatedAt 
                 })
-                .GroupBy(b => {
-                    var dateToUse = b.ActualReturnDate ?? b.EndDate ?? b.UpdatedAt;
-                    return dateToUse.Date;
-                })
+                .Where(b => b.DateToUse.HasValue && b.DateToUse.Value >= thirtyDaysAgo)
+                .GroupBy(b => b.DateToUse!.Value.Date)
                 .Select(g => new DailyEarningsData
                 {
                     Date = g.Key.ToString("MMM dd, yyyy"),
-                    Amount = g.Sum(b => b.TotalAmount * 0.9m)
+                    Amount = g.Sum(b => b.Booking.TotalAmount * 0.9m)
                 })
                 .OrderBy(e => e.Date)
                 .ToList();
@@ -229,7 +227,6 @@ public class AnalyticsModel : PageModel
                 .ToListAsync();
 
             WeeklyEarningsChart = weeklyEarningsData
-                .Where(b => b.UpdatedAt != null)
                 .GroupBy(b => new { 
                     Year = b.UpdatedAt.Year, 
                     Week = GetWeekOfYear(b.UpdatedAt) 
@@ -255,7 +252,6 @@ public class AnalyticsModel : PageModel
                 .Where(b => ownerBikeIds.Contains(b.BikeId) && 
                            b.BookingStatus == "Completed" &&
                            b.UpdatedAt >= now.AddMonths(-12))
-                .Where(b => b.UpdatedAt != null)
                 .GroupBy(b => new { b.UpdatedAt.Year, b.UpdatedAt.Month })
                 .Select(g => new MonthlyEarningsData
                 {

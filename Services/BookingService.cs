@@ -224,8 +224,18 @@ public class BookingService
         booking.UpdatedAt = DateTime.UtcNow;
 
         // Update bike status back to available
-        booking.Bike.AvailabilityStatus = "Available";
-        booking.Bike.UpdatedAt = DateTime.UtcNow;
+        // Check if there are any other active bookings for this bike
+        var hasOtherActiveBookings = await _context.Bookings
+            .AnyAsync(b => b.BikeId == booking.BikeId && 
+                          b.BookingId != bookingId && 
+                          b.BookingStatus == "Active");
+        
+        // Only set to Available if there are no other active bookings
+        if (!hasOtherActiveBookings)
+        {
+            booking.Bike.AvailabilityStatus = "Available";
+            booking.Bike.UpdatedAt = DateTime.UtcNow;
+        }
 
         await _context.SaveChangesAsync();
 

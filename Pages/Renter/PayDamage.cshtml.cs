@@ -29,6 +29,9 @@ public class PayDamageModel : PageModel
     [BindProperty]
     public int PaymentMethodId { get; set; }
 
+    public string? ErrorMessage { get; set; }
+    public string? SuccessMessage { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int damageId)
     {
         var userId = AuthHelper.GetCurrentUserId(User);
@@ -47,14 +50,22 @@ public class PayDamageModel : PageModel
         if (Damage == null)
         {
             TempData["ErrorMessage"] = "Damage record not found.";
+            ErrorMessage = "Damage record not found.";
             return RedirectToPage("/Renter/Damages");
         }
 
         if (Damage.DamageStatus != "Pending")
         {
             TempData["ErrorMessage"] = "This damage has already been paid or resolved.";
+            ErrorMessage = "This damage has already been paid or resolved.";
             return RedirectToPage("/Renter/Damages");
         }
+
+        // Set error/success messages from TempData if present
+        if (TempData["ErrorMessage"] != null)
+            ErrorMessage = TempData["ErrorMessage"].ToString();
+        if (TempData["SuccessMessage"] != null)
+            SuccessMessage = TempData["SuccessMessage"].ToString();
 
         return Page();
     }
@@ -75,12 +86,14 @@ public class PayDamageModel : PageModel
         if (Damage == null || Damage.DamageStatus != "Pending")
         {
             TempData["ErrorMessage"] = "Invalid damage record or already paid.";
+            ErrorMessage = "Invalid damage record or already paid.";
             return RedirectToPage("/Renter/Damages");
         }
 
         if (PaymentMethodId <= 0)
         {
             ModelState.AddModelError(nameof(PaymentMethodId), "Please select a payment method.");
+            ErrorMessage = "Please select a payment method.";
             return Page();
         }
 
@@ -119,6 +132,7 @@ public class PayDamageModel : PageModel
                 else
                 {
                     TempData["ErrorMessage"] = gatewayResult.message ?? "Failed to process payment.";
+                    ErrorMessage = gatewayResult.message ?? "Failed to process payment.";
                     return Page();
                 }
             }
@@ -126,8 +140,15 @@ public class PayDamageModel : PageModel
         catch (Exception ex)
         {
             TempData["ErrorMessage"] = "An error occurred while processing payment. Please try again.";
+            ErrorMessage = "An error occurred while processing payment. Please try again.";
             return Page();
         }
+
+        // Set error/success messages from TempData if present
+        if (TempData["ErrorMessage"] != null)
+            ErrorMessage = TempData["ErrorMessage"].ToString();
+        if (TempData["SuccessMessage"] != null)
+            SuccessMessage = TempData["SuccessMessage"].ToString();
 
         return Page();
     }
