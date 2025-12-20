@@ -72,14 +72,14 @@
                 <i class="bi bi-bicycle"></i>
             </div>
             <div class="stat-value">@Model.TotalBikes</div>
-            <div class="stat-label">Total Bikes</div>
+            <div class="stat-label">Total Listings</div>
             <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: var(--space-2);">
                 @{
-                    var availableBikes = Model.Bikes.Count(b => b.AvailabilityStatus == "Available");
-                    var totalAvailableQty = Model.Bikes.Where(b => b.AvailabilityStatus == "Available").Sum(b => b.Quantity);
+                    var availableListings = Model.Bikes.Count(b => b.AvailabilityStatus == "Available");
+                    var totalAvailableUnits = Model.Bikes.Where(b => b.AvailabilityStatus == "Available").Sum(b => b.Quantity);
                 }
-                <div><i class="bi bi-check-circle"></i> @availableBikes Listings Available</div>
-                <div><i class="bi bi-bicycle"></i> @totalAvailableQty Total Bikes Available</div>
+                <div><i class="bi bi-list-check"></i> @availableListings Available Listing@(availableListings != 1 ? "s" : "")</div>
+                <div><i class="bi bi-bicycle"></i> @totalAvailableUnits Total Unit@(totalAvailableUnits != 1 ? "s" : "") Available</div>
             </div>
         </div>
 
@@ -107,11 +107,11 @@
                 <div><i class="bi bi-calendar-day"></i> Today: ₱@Model.DailyEarnings.ToString("F0")</div>
                 <div><i class="bi bi-calendar-week"></i> This Week: ₱@Model.WeeklyEarnings.ToString("F0")</div>
                 <div><i class="bi bi-calendar-month"></i> This Month: ₱@Model.MonthlyEarnings.ToString("F0")</div>
-                @if (Model.PendingEarnings > 0)
-                {
+            @if (Model.PendingEarnings > 0)
+            {
                     <div style="margin-top: var(--space-1);"><i class="bi bi-hourglass-split"></i> Pending: ₱@Model.PendingEarnings.ToString("F0")</div>
                 }
-            </div>
+                </div>
         </div>
 
         <div class="stat-card-minimal">
@@ -138,33 +138,33 @@
             </h2>
         </div>
         <div class="grid-minimal grid-minimal-4">
-            <a href="/Owner/MyBikes" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4);">
-                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/MyBikes" class="quick-action-card">
+                <div class="quick-action-icon">
                     <i class="bi bi-grid-3x3-gap"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">Manage Listings</div>
-                <div style="font-size: 0.75rem; color: var(--neutral-600);">View and edit your bikes</div>
+                <div class="quick-action-title">Manage Listings</div>
+                <div class="quick-action-description">View and edit your bikes</div>
             </a>
-            <a href="/Owner/RentalRequests" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4);">
-                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/RentalRequests" class="quick-action-card">
+                <div class="quick-action-icon">
                     <i class="bi bi-inbox"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">View Requests</div>
-                <div style="font-size: 0.75rem; color: var(--neutral-600);">Review rental requests</div>
+                <div class="quick-action-title">View Requests</div>
+                <div class="quick-action-description">Review rental requests</div>
             </a>
-            <a href="/Owner/Analytics" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4); background: linear-gradient(135deg, var(--sage-subtle) 0%, #E8F4FD 100%);">
-                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/Analytics" class="quick-action-card">
+                <div class="quick-action-icon">
                     <i class="bi bi-graph-up-arrow"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">Analytics</div>
-                <div style="font-size: 0.75rem; color: var(--neutral-600);">Detailed insights & graphs</div>
+                <div class="quick-action-title">Analytics</div>
+                <div class="quick-action-description">Detailed insights & graphs</div>
             </a>
-            <a href="/Owner/GeofenceSettings" class="card-minimal card-minimal-compact" style="text-decoration: none; text-align: center; transition: all var(--transition-base); padding: var(--space-4);">
-                <div style="font-size: 2.5rem; color: var(--sage-primary); margin-bottom: var(--space-2);">
+            <a href="/Owner/GeofenceSettings" class="quick-action-card">
+                <div class="quick-action-icon">
                     <i class="bi bi-geo-alt-fill"></i>
                 </div>
-                <div style="font-weight: 600; color: var(--neutral-800); margin-bottom: var(--space-1);">Geofence</div>
-                <div style="font-size: 0.75rem; color: var(--neutral-600);">Location tracking settings</div>
+                <div class="quick-action-title">Geofence</div>
+                <div class="quick-action-description">Location tracking settings</div>
             </a>
         </div>
     </div>
@@ -366,6 +366,9 @@
             <div style="font-size: 0.875rem; color: var(--neutral-600); padding: var(--space-3); background: #f8f9fa; border-radius: var(--radius-md);">
                 <p style="margin: 0;"><strong>Note:</strong> Earnings shown are after the 10% platform service fee. You receive 90% of the total booking amount. <a href="/Owner/Analytics" style="color: var(--sage-primary); text-decoration: underline;">View detailed analytics with graphs →</a></p>
             </div>
+            <div style="font-size: 0.75rem; color: var(--neutral-500); padding: var(--space-2) var(--space-3); text-align: center;">
+                <i class="bi bi-info-circle"></i> <strong>Listing vs. Units:</strong> A "listing" is one bike entry in your inventory. "Units" refers to the total number of bikes available (when quantity > 1).
+            </div>
         </div>
     </div>
 
@@ -375,7 +378,7 @@
         <div class="card-minimal mb-5">
             <div class="card-minimal-header">
                 <h2 class="card-minimal-title">
-                    <i class="bi bi-grid-3x3"></i> Bike Types Breakdown
+                    <i class="bi bi-grid-3x3"></i> Inventory by Bike Type
                 </h2>
             </div>
             <div style="padding: var(--space-4);">
@@ -386,8 +389,14 @@
                         <div style="padding: var(--space-3); background: var(--sage-subtle); border-radius: var(--radius-md); border-left: 4px solid var(--sage-primary);">
                             <div style="font-weight: 600; color: var(--neutral-900); margin-bottom: var(--space-2);">@typeCount.Key</div>
                             <div style="font-size: 0.875rem; color: var(--neutral-600);">
-                                <div>Total Listings: <strong>@typeCount.Value</strong></div>
-                                <div>Available Bikes: <strong>@availableCount</strong></div>
+                                <div style="margin-bottom: var(--space-1);">
+                                    <i class="bi bi-list-check" style="margin-right: 0.25rem;"></i>
+                                    <span>Total Listings: <strong>@typeCount.Value</strong></span>
+                                </div>
+                                <div>
+                                    <i class="bi bi-bicycle" style="margin-right: 0.25rem;"></i>
+                                    <span>Available Units: <strong>@availableCount</strong></span>
+                                </div>
                             </div>
                         </div>
                     }
@@ -596,5 +605,75 @@
         background: #e0f2fe;
         color: #0284c7;
         border: 1px solid #7dd3fc;
+    }
+
+    /* Quick Action Cards - Consistent Styling */
+    .quick-action-card {
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        padding: var(--space-4);
+        background: #ffffff;
+        border: 1px solid var(--neutral-200);
+        border-radius: var(--radius-md);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 160px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .quick-action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--sage-primary) 0%, var(--sage-secondary) 100%);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+    }
+
+    .quick-action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        border-color: var(--sage-primary);
+    }
+
+    .quick-action-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .quick-action-icon {
+        font-size: 2.5rem;
+        color: var(--sage-primary);
+        margin-bottom: var(--space-2);
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-card:hover .quick-action-icon {
+        transform: scale(1.1);
+        color: var(--sage-secondary);
+    }
+
+    .quick-action-title {
+        font-weight: 600;
+        color: var(--neutral-800);
+        margin-bottom: var(--space-1);
+        font-size: 1rem;
+    }
+
+    .quick-action-description {
+        font-size: 0.75rem;
+        color: var(--neutral-600);
+        line-height: 1.4;
+    }
+
+    .quick-action-card:hover .quick-action-title {
+        color: var(--sage-primary);
     }
 </style>
